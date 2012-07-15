@@ -1539,12 +1539,12 @@ void ofono_netreg_strength_notify(struct ofono_netreg *netreg, int strength)
 
 	if (strength != -1) {
 		const char *path = __ofono_atom_get_path(netreg->atom);
-		unsigned char strength = netreg->signal_strength;
+		unsigned char strength_byte = netreg->signal_strength;
 
 		ofono_dbus_signal_property_changed(conn, path,
 					OFONO_NETWORK_REGISTRATION_INTERFACE,
 					"Strength", DBUS_TYPE_BYTE,
-					&strength);
+					&strength_byte);
 	}
 
 	modem = __ofono_atom_get_modem(netreg->atom);
