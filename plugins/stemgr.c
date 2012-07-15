@@ -305,7 +305,7 @@ error:
 	dbus_message_unref(message);
 }
 
-static gboolean property_changed(DBusConnection *connection,
+static gboolean property_changed(DBusConnection *conn,
 					DBusMessage *message, void *user_data)
 {
 	DBusMessageIter iter;
@@ -335,9 +335,9 @@ static gboolean property_changed(DBusConnection *connection,
 	return TRUE;
 }
 
-static void mgr_connect(DBusConnection *connection, void *user_data)
+static void mgr_connect(DBusConnection *conn, void *user_data)
 {
-	property_changed_watch = g_dbus_add_signal_watch(connection,
+	property_changed_watch = g_dbus_add_signal_watch(conn,
 						MGR_SERVICE, NULL,
 						MGR_MODEM_INTERFACE,
 						PROPERTY_CHANGED,
@@ -346,10 +346,10 @@ static void mgr_connect(DBusConnection *connection, void *user_data)
 	get_modems();
 }
 
-static void mgr_disconnect(DBusConnection *connection, void *user_data)
+static void mgr_disconnect(DBusConnection *conn, void *user_data)
 {
 	g_hash_table_remove_all(modem_list);
-	g_dbus_remove_watch(connection, property_changed_watch);
+	g_dbus_remove_watch(conn, property_changed_watch);
 	property_changed_watch = 0;
 }
 
