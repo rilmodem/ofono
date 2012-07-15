@@ -535,10 +535,10 @@ static gboolean at_chat_handle_command_response(struct at_chat *p,
 	}
 
 	if (cmd->prefixes) {
-		int i;
+		int n;
 
-		for (i = 0; cmd->prefixes[i]; i++)
-			if (g_str_has_prefix(line, cmd->prefixes[i]))
+		for (n = 0; cmd->prefixes[n]; n++)
+			if (g_str_has_prefix(line, cmd->prefixes[n]))
 				goto out;
 
 		return FALSE;

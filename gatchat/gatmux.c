@@ -242,7 +242,7 @@ static void write_watcher_destroy_notify(gpointer user_data)
 	mux->write_watch = 0;
 }
 
-static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
+static gboolean can_write_data(GIOChannel *chan, GIOCondition cond,
 				gpointer data)
 {
 	GAtMux *mux = data;
