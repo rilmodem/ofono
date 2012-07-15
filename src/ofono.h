@@ -188,10 +188,10 @@ struct ofono_modem *__ofono_atom_get_modem(struct ofono_atom *atom);
 
 #define __ofono_atom_find(enum_type, modem)			\
 ({								\
-	struct ofono_atom *atom =				\
+	struct ofono_atom *tmp_atom =				\
 		__ofono_modem_find_atom(modem, enum_type);	\
 								\
-	atom ? __ofono_atom_get_data(atom) : NULL;		\
+	tmp_atom ? __ofono_atom_get_data(tmp_atom) : NULL;	\
 })
 
 void __ofono_atom_register(struct ofono_atom *atom,
