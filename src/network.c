@@ -200,15 +200,15 @@ static void set_registration_mode(struct ofono_netreg *netreg, int mode)
 	netreg->mode = mode;
 
 	if (netreg->settings) {
-		const char *mode;
+		const char *mode_str;
 
 		if (netreg->mode == NETWORK_REGISTRATION_MODE_MANUAL)
-			mode = "manual";
+			mode_str = "manual";
 		else
-			mode = "auto";
+			mode_str = "auto";
 
 		g_key_file_set_string(netreg->settings, SETTINGS_GROUP,
-					"Mode", mode);
+					"Mode", mode_str);
 		storage_sync(netreg->imsi, SETTINGS_STORE, netreg->settings);
 	}
 
