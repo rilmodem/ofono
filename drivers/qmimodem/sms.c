@@ -351,15 +351,15 @@ static void event_notify(struct qmi_result *result, void *user_data)
 
 	message = qmi_result_get(result, QMI_WMS_RESULT_MESSAGE, &len);
 	if (message) {
-		uint16_t len;
+		uint16_t plen;
 
-		len = GUINT16_FROM_LE(message->msg_length);
+		plen = GUINT16_FROM_LE(message->msg_length);
 
 		DBG("ack_required %d transaction id %u", message->ack_required,
 				GUINT32_FROM_LE(message->transaction_id));
-		DBG("msg format %d PDU length %d", message->msg_format, len);
+		DBG("msg format %d PDU length %d", message->msg_format, plen);
 
-		ofono_sms_deliver_notify(sms, message->msg_data, len, len);
+		ofono_sms_deliver_notify(sms, message->msg_data, plen, plen);
 	}
 }
 
