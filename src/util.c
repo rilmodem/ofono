@@ -628,8 +628,16 @@ char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len,
 
 			c = gsm_single_shift_lookup(&t, text[i]);
 
+			/*
+			 * According to the 3GPP specifications 23.038
+			 * section 6.2.1.1:
+			 * In the case there is no character in the extension
+			 * table, the character of the main default alphabet
+			 * table or the character from the National Language
+			 * Locking Shift Table should be displayed.
+			 */
 			if (c == GUND)
-				goto error;
+				c = gsm_locking_shift_lookup(&t, text[i]);
 		} else {
 			c = gsm_locking_shift_lookup(&t, text[i]);
 		}
@@ -647,9 +655,12 @@ char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len,
 	while (out < res + res_length) {
 		unsigned short c;
 
-		if (text[i] == 0x1b)
+		if (text[i] == 0x1b) {
 			c = gsm_single_shift_lookup(&t, text[++i]);
-		else
+			/* See 3GPP 23.038 section 6.2.1.1 */
+			if (c == GUND)
+				c = gsm_locking_shift_lookup(&t, text[i]);
+		} else
 			c = gsm_locking_shift_lookup(&t, text[i]);
 
 		out += g_unichar_to_utf8(c, out);
