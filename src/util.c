@@ -629,12 +629,16 @@ char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len,
 			c = gsm_single_shift_lookup(&t, text[i]);
 
 			/*
-			 * According to the 3GPP specifications 23.038
-			 * section 6.2.1.1:
-			 * In the case there is no character in the extension
-			 * table, the character of the main default alphabet
-			 * table or the character from the National Language
-			 * Locking Shift Table should be displayed.
+			 * According to the comment in the table from
+			 * 3GPP 23.038, Section 6.2.1.1:
+			 * "In the event that an MS receives a code where
+			 * a symbol is not represented in the above table
+			 * then the MS shall display either the character
+			 * shown in the main GSM 7 bit default  alphabet
+			 * table in subclause 6.2.1., or the character from
+			 * the National Language Locking Shift Table in the
+			 * case where the locking shift mechanism as defined
+			 * in subclause 6.2.1.2.3 is used."
 			 */
 			if (c == GUND)
 				c = gsm_locking_shift_lookup(&t, text[i]);
