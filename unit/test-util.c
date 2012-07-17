@@ -347,7 +347,7 @@ static void test_invalid(void)
 	long nread;
 	short unsigned int exp_code;
 	long exp_res_length;
-	char *res, *temp, *exp_res = NULL;
+	char *res, *exp_res = NULL;
 	unsigned char *gsm;
 
 	res = convert_gsm_to_utf8(invalid_gsm_extended, 0, &nread, &nwritten,
@@ -369,13 +369,8 @@ static void test_invalid(void)
 	exp_code = gsm_to_unicode_map[invalid_gsm_extended[1]*2 + 1];
 
 	exp_res_length = UTF8_LENGTH(exp_code);
-	exp_res = g_try_malloc(exp_res_length + 1);
-
-	g_assert(exp_res != NULL);
-
-	temp = exp_res;
-	temp += g_unichar_to_utf8(exp_code, temp);
-	*temp = '\0';
+	exp_res = g_new0(char, exp_res_length + 1);
+	g_unichar_to_utf8(exp_code, exp_res);
 
 	g_assert(g_strcmp0(res, exp_res) == 0);
 	g_assert(nread == exp_res_length);
