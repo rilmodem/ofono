@@ -642,9 +642,8 @@ char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len,
 			 */
 			if (c == GUND)
 				c = gsm_locking_shift_lookup(&t, text[i]);
-		} else {
+		} else
 			c = gsm_locking_shift_lookup(&t, text[i]);
-		}
 
 		res_length += UTF8_LENGTH(c);
 	}
@@ -661,7 +660,7 @@ char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len,
 
 		if (text[i] == 0x1b) {
 			c = gsm_single_shift_lookup(&t, text[++i]);
-			/* See 3GPP 23.038 section 6.2.1.1 */
+
 			if (c == GUND)
 				c = gsm_locking_shift_lookup(&t, text[i]);
 		} else
