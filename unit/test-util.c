@@ -345,7 +345,9 @@ static void test_invalid(void)
 {
 	long nwritten;
 	long nread;
-	char *res;
+	short unsigned int exp_code;
+	long exp_res_length;
+	char *res, *temp, *exp_res = NULL;
 	unsigned char *gsm;
 
 	res = convert_gsm_to_utf8(invalid_gsm_extended, 0, &nread, &nwritten,
@@ -356,11 +358,29 @@ static void test_invalid(void)
 	g_assert(res[0] == '\0');
 	g_free(res);
 
+	/*
+	 * In case of invalid GSM extended code, we should display
+	 * the character of the main default alphabet table.
+	 */
 	res = convert_gsm_to_utf8(invalid_gsm_extended,
 					sizeof(invalid_gsm_extended),
 					&nread, &nwritten, 0);
-	g_assert(res == NULL);
-	g_assert(nread == 1);
+
+	exp_code = gsm_to_unicode_map[invalid_gsm_extended[1]*2 + 1];
+
+	exp_res_length = UTF8_LENGTH(exp_code);
+	exp_res = g_try_malloc(exp_res_length + 1);
+
+	g_assert(exp_res != NULL);
+
+	temp = exp_res;
+	temp += g_unichar_to_utf8(exp_code, temp);
+	*temp = '\0';
+
+	g_assert(g_strcmp0(res, exp_res) == 0);
+	g_assert(nread == exp_res_length);
+	g_free(exp_res);
+	g_free(res);
 
 	res = convert_gsm_to_utf8(invalid_gsm_extended_len,
 					sizeof(invalid_gsm_extended_len),
