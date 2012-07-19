@@ -1,3 +1,8 @@
+ver 1.9:
+	Fix issue with missing CSSI and CSSU support for IFX modems.
+	Fix issue with GPRS shutdown handling when network is lost.
+	Fix issue with GSM to UTF-8 conversion mechanism.
+
 ver 1.8:
 	Fix issue with STK sync return from envelope callback.
 	Fix issue with missing NULL pointer check in GAtServer.
