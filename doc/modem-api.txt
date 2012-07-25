@@ -89,6 +89,14 @@ Properties	boolean Powered [readwrite]
 			List of currently enabled features. It uses simple
 			string abbreviations like "sms", "sim" etc.
 
+			Currently available features are:
+				"net", "rat", "cbs", "sms", "sim", "stk",
+				"ussd", "gprs", "tty", "gps".
+
+			Please note that this is a convenience property,
+			equivalent results can be obtained by reading the
+			Interfaces property directly.
+
 		array{string} Interfaces [readonly]
 
 			Set of interfaces currently supported by the mode
