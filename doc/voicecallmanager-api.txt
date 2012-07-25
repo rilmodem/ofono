@@ -33,7 +33,21 @@ Methods		dict GetProperties()
 				"disabled" - Shows callerid, CLIR Suppression
 						is used
 
-			This is usually implemented using the ATD AT command.
+			The number must be a string in the following format:
+				[+][0-9*#]{1,80}
+			In other words, it must be a non-empty string
+			optionally prefixed with a '+' followed by 1 to 80
+			characters.  The character set can contain numbers,
+			'*' and '#'.  Besides this sanity checking no further
+			number validation is performed.  It is assumed the
+			network will perform further validation.  The optional
+			'+' denotes an international number format.  For
+			example:
+				+15551234567 - International format
+				5551234567 - National / Uknown format
+
+			This method is usually implemented using the ATD AT
+			command.
 
 			NOTE: If an active call (single or multiparty) exists,
 			then it is automatically put on hold if the dial
