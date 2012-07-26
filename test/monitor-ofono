@@ -69,11 +69,11 @@ def event(member, path, interface):
 def message(msg, args, member, path, interface):
 	iface = interface[interface.rfind(".") + 1:]
 	print "{%s} [%s] %s %s (%s)" % (iface, path, member,
-					str(msg), pretty(args))
+					msg, pretty(args))
 
 def ussd(msg, member, path, interface):
 	iface = interface[interface.rfind(".") + 1:]
-	print "{%s} [%s] %s %s" % (iface, path, member, str(msg))
+	print "{%s} [%s] %s %s" % (iface, path, member, msg)
 
 def value(value, member, path, interface):
 	iface = interface[interface.rfind(".") + 1:]
