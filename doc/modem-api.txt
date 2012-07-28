@@ -130,6 +130,13 @@ Properties	boolean Powered [readwrite]
 				org.ofono.TextTelephony
 				org.ofono.VoiceCallManager
 
+			It is possible for extension interfaces (e.g. APIs
+			that are not part of the oFono standard API) to be
+			available in this list.  Also note that child object
+			interfaces, such as org.ofono.Message,
+			org.ofono.VoiceCall, org.ofono.NetworkOperator,
+			will never be part of this list.
+
 			Please note that the set of Interfaces can and does
 			change frequently (e.g. due to change in Powered
 			and Online properties.)  If a given interface is no
