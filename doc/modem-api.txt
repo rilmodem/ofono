@@ -104,6 +104,32 @@ Properties	boolean Powered [readwrite]
 			(registration status, SIM inserted status,
 			network capabilities, device capabilities, etc.)
 
+			Each string in the array is an interface from the
+			set supported by oFono by modem objects.  The set
+			includes:
+				org.ofono.AssistedSatelliteNavigation
+				org.ofono.AudioSettings
+				org.ofono.CallBarring
+				org.ofono.CallForwarding
+				org.ofono.CallMeter
+				org.ofono.CallSettings
+				org.ofono.CallVolume
+				org.ofono.CellBroadcast
+				org.ofono.Handsfree
+				org.ofono.LocationReporting
+				org.ofono.MessageManager
+				org.ofono.MessageWaiting
+				org.ofono.NetworkRegistration
+				org.ofono.Phonebook
+				org.ofono.PushNotification
+				org.ofono.RadioSettings
+				org.ofono.SimManager
+				org.ofono.SmartMessaging
+				org.ofono.SimToolkit
+				org.ofono.SupplementaryServices
+				org.ofono.TextTelephony
+				org.ofono.VoiceCallManager
+
 			Please note that the set of Interfaces can and does
 			change frequently (e.g. due to change in Powered
 			and Online properties.)  If a given interface is no
@@ -111,6 +137,13 @@ Properties	boolean Powered [readwrite]
 			that all data for that interface has become invalid,
 			e.g. calls have been dropped, network registration
 			lost, etc.
+
+			The set of possible interfaces supported is also
+			dependent on the modem hardware and driver support.
+			For example, HFP devices only support
+			org.ofono.VoiceCallManager,
+			org.ofono.NetworkRegistration, org.ofono.Handsfree and
+			org.ofono.CallVolume interfaces.
 
 		string Type [readonly]
 
