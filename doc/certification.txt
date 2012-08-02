@@ -1,0 +1,88 @@
+oFono Certification Testing
+***************************
+
+Introduction
+============
+
+The aim of this document is to briefly describe the GCF certification
+process and how the oFono projects intends to help make obtaining the relevant
+certifications easier.
+
+
+GCF certification
+=================
+
+All european network operators require a device to be certified for their
+network prior to being sold.  While each operator defines their own set of
+requirements, a common set is defined by Global Certification Forum, or GCF.
+In North America, these requirements are defined by PTCRB.
+
+Certification is achieved by successfully passing a set of test cases, which
+are defined in various 3GPP specifications.  The testing methodology is to
+perform end-to-end testing.  The tests are effectively testing the modem
+hardware, the telephony stack and the applications simultaneously.  In effect,
+any change to the above components requires the testing to be performed again.
+There is no consideration for separate component testing.
+
+
+The Goal
+========
+
+While it is not possible to certify oFono directly as a GCF compliant
+software stack, it is possible to alleviate some of the work required for
+obtaining such certifications in an end-product.  To accomplish this, oFono
+team will begin running all 3GPP test cases that are deemed relevant to
+achieving the above goal.
+
+The short-term approach is to perform manual test case runs to establish a
+baseline and fix any issues discovered.  In the longer term, we will be
+building more advanced testing tools.  The goals are automated testing to
+detect regressions and a full SIM toolkit test suite.
+
+
+Test case relevance and selection
+=================================
+
+Many of the defined test cases are not relevant to the telephony stack and
+applications; such test cases include testing of the modem roaming behavior,
+particular radio frequency details, etc.  These cases are not considered
+here; only test cases directly applicable to the telephony stack or
+applications will be considered.  All other test cases are assumed to be
+covered by the modem hardware manufacturer or device manufacturer as part of
+the full product certification cycle.
+
+
+Test cases considered applicable
+================================
+
+Below is a list of conformance test cases considered relevant to this effort:
+
+- 3GPP 51.010-1: 2G conformance specification
+section 26.7.6.1, 44.2.9.1.1, 44.2.9.1.2: NITZ (network identity and time zone)
+section 26.8.x : Tests related to circuit switched call control
+section 26.9.x: Structured procedures (MO/MT calls, emergency calls)
+section 31.x: Test of supplementary services
+section 34.x: Short Message Service
+section 44.2.1: Test case requirements for GPRS mobility management
+section 44.2.2: Attach/Detach procedure
+
+- 3GPP 34.123-1: Protocol conformance specification
+section 6.1.1.x: PLMN selection
+section 6.1.2.6: Emergency calls
+section 10.x: Circuit Switched Call Control (CC)
+section 11.x: Session Management Procedures
+section 12.2.x, 12.3.x: PS attach/detach procedure
+section 13.x: General tests (Emergency calls)
+section 16.x: Short message services
+
+- 3GPP 31.121: USIM application test specification
+section 6.x: Security related Tests
+
+- 3GPP 51.010-4: SIM application toolkit conformance specification
+section 27.22.x : SIM Application Toolkit
+
+- 3GPP 31.124: USAT conformance test specification
+section 27.22.x: USAT Application Toolkit
+
+NOTE: Many of the tests related to (U)SAT are described
+in ETSI TS 102.384 and not in the above 3GPP specifications.
