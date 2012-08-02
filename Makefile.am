@@ -622,7 +622,8 @@ test_scripts = test/backtrace \
 		test/set-context-property \
 		test/test-gnss \
 		test/swap-calls \
-		test/release-and-answer
+		test/release-and-answer \
+		test/hold-and-answer
 
 if TEST
 testdir = $(pkglibdir)/test
