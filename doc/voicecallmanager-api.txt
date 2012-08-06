@@ -106,6 +106,17 @@ Methods		dict GetProperties()
 					 [service].Error.NotImplemented
 					 [service].Error.Failed
 
+		void ReleaseAndSwap()
+
+			Releases currently active call (0 or more) and
+			activates any currently held calls. Please note that
+			if the current call is a multiparty call, then all
+			parties in the multi-party call will be released.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.Failed
+
 		void HoldAndAnswer()
 
 			Puts the current call (including multi-party calls) on
