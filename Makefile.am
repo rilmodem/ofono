@@ -624,6 +624,7 @@ test_scripts = test/backtrace \
 		test/test-gnss \
 		test/swap-calls \
 		test/release-and-answer \
+		test/release-and-swap \
 		test/hold-and-answer \
 		test/hangup-multiparty
 
