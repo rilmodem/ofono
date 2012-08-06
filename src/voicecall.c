@@ -1699,6 +1699,27 @@ static DBusMessage *manager_release_and_answer(DBusConnection *conn,
 	return NULL;
 }
 
+static DBusMessage *manager_release_and_swap(DBusConnection *conn,
+						DBusMessage *msg, void *data)
+{
+	struct ofono_voicecall *vc = data;
+
+	if (vc->pending || vc->dial_req || vc->pending_em)
+		return __ofono_error_busy(msg);
+
+	if (voicecalls_have_waiting(vc))
+		return __ofono_error_failed(msg);
+
+	if (vc->driver->release_all_active == NULL)
+		return __ofono_error_not_implemented(msg);
+
+	vc->pending = dbus_message_ref(msg);
+
+	vc->driver->release_all_active(vc, generic_callback, vc);
+
+	return NULL;
+}
+
 static DBusMessage *manager_hold_and_answer(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
@@ -2131,6 +2152,8 @@ static const GDBusMethodTable manager_methods[] = {
 	{ GDBUS_ASYNC_METHOD("SwapCalls",  NULL, NULL, manager_swap_calls) },
 	{ GDBUS_ASYNC_METHOD("ReleaseAndAnswer", NULL, NULL,
 						manager_release_and_answer) },
+	{ GDBUS_ASYNC_METHOD("ReleaseAndSwap", NULL, NULL,
+						manager_release_and_swap) },
 	{ GDBUS_ASYNC_METHOD("HoldAndAnswer", NULL, NULL,
 						manager_hold_and_answer) },
 	{ GDBUS_ASYNC_METHOD("HangupAll", NULL, NULL,
