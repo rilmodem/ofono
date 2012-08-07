@@ -100,56 +100,24 @@ if __name__ == '__main__':
 						path_keyword="path",
 						interface_keyword="interface")
 
-	bus.add_signal_receiver(added,
+	for member in ["ModemAdded",
+			"ContextAdded",
+			"CallAdded",
+			"MessageAdded"]:
+		bus.add_signal_receiver(added,
 					bus_name="org.ofono",
-					signal_name = "ModemAdded",
+					signal_name = member,
 						member_keyword="member",
 						path_keyword="path",
 						interface_keyword="interface")
 
-	bus.add_signal_receiver(removed,
+	for member in ["ModemRemoved",
+			"ContextRemoved",
+			"CallRemoved",
+			"MessageRemoved"]:
+		bus.add_signal_receiver(removed,
 					bus_name="org.ofono",
-					signal_name = "ModemRemoved",
-						member_keyword="member",
-						path_keyword="path",
-						interface_keyword="interface")
-
-	bus.add_signal_receiver(added,
-					bus_name="org.ofono",
-					signal_name = "ContextAdded",
-						member_keyword="member",
-						path_keyword="path",
-						interface_keyword="interface")
-
-	bus.add_signal_receiver(removed,
-					bus_name="org.ofono",
-					signal_name = "ContextRemoved",
-						member_keyword="member",
-						path_keyword="path",
-						interface_keyword="interface")
-
-	bus.add_signal_receiver(added,
-				bus_name="org.ofono",
-					signal_name = "CallAdded",
-						member_keyword="member",
-						path_keyword="path",
-						interface_keyword="interface")
-	bus.add_signal_receiver(removed,
-				bus_name="org.ofono",
-					signal_name = "CallRemoved",
-						member_keyword="member",
-						path_keyword="path",
-						interface_keyword="interface")
-
-	bus.add_signal_receiver(added,
-				bus_name="org.ofono",
-					signal_name = "MessageAdded",
-						member_keyword="member",
-						path_keyword="path",
-						interface_keyword="interface")
-	bus.add_signal_receiver(removed,
-				bus_name="org.ofono",
-					signal_name = "MessageRemoved",
+					signal_name = member,
 						member_keyword="member",
 						path_keyword="path",
 						interface_keyword="interface")
