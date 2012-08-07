@@ -583,7 +583,6 @@ test_scripts = test/backtrace \
 		test/test-ss-control-cb \
 		test/test-ss-control-cf \
 		test/test-ss-control-cs \
-		test/test-voicecall \
 		test/send-ussd \
 		test/cancel-ussd \
 		test/initiate-ussd \
