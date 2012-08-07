@@ -1,3 +1,7 @@
+ver 1.10:
+	Update multiple descriptions of the API documentation.
+	Add support for ReleaseAndSwap call handling.
+
 ver 1.9:
 	Fix issue with missing CSSI and CSSU support for IFX modems.
 	Fix issue with GPRS shutdown handling when network is lost.
