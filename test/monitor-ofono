@@ -85,10 +85,10 @@ if __name__ == '__main__':
 	bus = dbus.SystemBus()
 
 	bus.add_signal_receiver(property_changed,
-					bus_name="org.ofono",
-					signal_name = "PropertyChanged",
-						path_keyword="path",
-						interface_keyword="interface")
+				bus_name="org.ofono",
+				signal_name = "PropertyChanged",
+				path_keyword="path",
+				interface_keyword="interface")
 
 	for member in ["IncomingBarringInEffect",
 			"OutgoingBarringInEffect",
@@ -96,9 +96,9 @@ if __name__ == '__main__':
 		bus.add_signal_receiver(event,
 					bus_name="org.ofono",
 					signal_name = member,
-						member_keyword="member",
-						path_keyword="path",
-						interface_keyword="interface")
+					member_keyword="member",
+					path_keyword="path",
+					interface_keyword="interface")
 
 	for member in ["ModemAdded",
 			"ContextAdded",
@@ -107,9 +107,9 @@ if __name__ == '__main__':
 		bus.add_signal_receiver(added,
 					bus_name="org.ofono",
 					signal_name = member,
-						member_keyword="member",
-						path_keyword="path",
-						interface_keyword="interface")
+					member_keyword="member",
+					path_keyword="path",
+					interface_keyword="interface")
 
 	for member in ["ModemRemoved",
 			"ContextRemoved",
@@ -118,33 +118,33 @@ if __name__ == '__main__':
 		bus.add_signal_receiver(removed,
 					bus_name="org.ofono",
 					signal_name = member,
-						member_keyword="member",
-						path_keyword="path",
-						interface_keyword="interface")
+					member_keyword="member",
+					path_keyword="path",
+					interface_keyword="interface")
 
 	bus.add_signal_receiver(value,
 				bus_name="org.ofono",
-					signal_name = "DisconnectReason",
-						member_keyword="member",
-						path_keyword="path",
-						interface_keyword="interface")
+				signal_name = "DisconnectReason",
+				member_keyword="member",
+				path_keyword="path",
+				interface_keyword="interface")
 
 	for member in ["IncomingBroadcast", "EmergencyBroadcast",
 			"IncomingMessage", "ImmediateMessage"]:
 		bus.add_signal_receiver(message,
 					bus_name="org.ofono",
 					signal_name = member,
-						member_keyword="member",
-						path_keyword="path",
-						interface_keyword="interface")
+					member_keyword="member",
+					path_keyword="path",
+					interface_keyword="interface")
 
 	for member in ["NotificationReceived", "RequestReceived"]:
 		bus.add_signal_receiver(ussd,
 					bus_name="org.ofono",
 					signal_name = member,
-						member_keyword="member",
-						path_keyword="path",
-						interface_keyword="interface")
+					member_keyword="member",
+					path_keyword="path",
+					interface_keyword="interface")
 
 	mainloop = gobject.MainLoop()
 	mainloop.run()
