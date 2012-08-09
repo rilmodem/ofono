@@ -18,7 +18,7 @@ for path, properties in modems:
 			for i in properties[key]:
 				val += i + " "
 		else:
-			val = str(properties[key])
+			val = properties[key]
 		print "    %s = %s" % (key, val)
 
 	for interface in properties["Interfaces"]:
@@ -75,7 +75,7 @@ for path, properties in modems:
 						val += properties[key][i]
 				val += " }"
 			else:
-				val = str(properties[key])
+				val = properties[key]
 			print "        %s = %s" % (key, val)
 
 	print
