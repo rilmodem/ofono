@@ -385,6 +385,8 @@ err:
 	__ofono_dbus_pending_reply(&device->pending,
 				__dundee_error_failed(device->pending));
 	device->pending = NULL;
+
+	device->driver->disconnect(device, disconnect_callback, device);
 }
 
 static int device_dial_setup(struct dundee_device *device, int fd)
