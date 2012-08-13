@@ -105,7 +105,7 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 	struct ofono_gprs_context *gc = user_data;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 
-	DBG("");
+	DBG("Reason: %d", reason);
 
 	g_at_ppp_unref(gcd->ppp);
 	gcd->ppp = NULL;
