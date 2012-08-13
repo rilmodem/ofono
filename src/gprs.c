@@ -2266,7 +2266,7 @@ void ofono_gprs_bearer_notify(struct ofono_gprs *gprs, int bearer)
 	path = __ofono_atom_get_path(gprs->atom);
 	value = packet_bearer_to_string(bearer);
 	ofono_dbus_signal_property_changed(conn, path,
-					OFONO_CONNECTION_CONTEXT_INTERFACE,
+					OFONO_CONNECTION_MANAGER_INTERFACE,
 					"Bearer", DBUS_TYPE_STRING, &value);
 }
 
