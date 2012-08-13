@@ -31,7 +31,7 @@ Methods		dict GetProperties()
 
 Properties	boolean Enabled [readonly]
 
-                        Boolean representing the state of the NMEA stream.
+			Boolean representing the state of the NMEA stream.
 
 		string Type [readonly]
 
