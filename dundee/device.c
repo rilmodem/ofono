@@ -35,6 +35,8 @@
 
 #include "dundee.h"
 
+#define PPP_TIMEOUT 15
+
 static int next_device_id = 0;
 static GHashTable *device_hash;
 
@@ -59,6 +61,7 @@ struct dundee_device {
 	struct ipv4_settings settings;
 
 	DBusMessage *pending;
+	guint connect_timeout;
 	void *data;
 };
 
@@ -221,6 +224,11 @@ static void ppp_connect(const char *iface, const char *local, const char *peer,
 	DBG("Primary DNS Server: %s\n", dns1);
 	DBG("Secondary DNS Server: %s\n", dns2);
 
+	if (device->connect_timeout > 0) {
+		g_source_remove(device->connect_timeout);
+		device->connect_timeout = 0;
+	}
+
 	g_free(device->settings.interface);
 	device->settings.interface = g_strdup(iface);
 	if (device->settings.interface == NULL)
@@ -287,6 +295,23 @@ out:
 	device->pending = NULL;
 }
 
+static gboolean ppp_connect_timeout(gpointer user_data)
+{
+	struct dundee_device *device = user_data;
+
+	if (device->pending != NULL) {
+		__ofono_dbus_pending_reply(&device->pending,
+				__dundee_error_timed_out(device->pending));
+		device->pending = NULL;
+	}
+
+	device->driver->disconnect(device, disconnect_callback, device);
+
+	device->connect_timeout = 0;
+
+	return FALSE;
+}
+
 static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -343,6 +368,9 @@ static void dial_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		goto err;
 	}
 	g_at_ppp_set_debug(device->ppp, debug, "PPP");
+
+	device->connect_timeout = g_timeout_add_seconds(PPP_TIMEOUT,
+						ppp_connect_timeout, device);
 
 	/* set connect and disconnect callbacks */
 	g_at_ppp_set_connect_function(device->ppp, ppp_connect, device);

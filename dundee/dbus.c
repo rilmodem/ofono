@@ -43,3 +43,9 @@ DBusMessage *__dundee_error_failed(DBusMessage *msg)
 					".Failed",
 					"Operation failed");
 }
+
+DBusMessage *__dundee_error_timed_out(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DUNDEE_ERROR_INTERFACE ".Timedout",
+			"Operation failure due to timeout");
+}

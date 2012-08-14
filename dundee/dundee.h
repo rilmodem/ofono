@@ -94,6 +94,7 @@ void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply);
 
 DBusMessage *__dundee_error_invalid_args(DBusMessage *msg);
 DBusMessage *__dundee_error_failed(DBusMessage *msg);
+DBusMessage *__dundee_error_timed_out(DBusMessage *msg);
 
 
 int __dundee_manager_init(void);
