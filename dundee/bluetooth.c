@@ -28,6 +28,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/socket.h>
 
 #include <glib.h>
 
@@ -44,6 +45,8 @@ struct bluetooth_device {
 	char *address;
 	char *name;
 
+	int fd;
+
 	DBusPendingCall *call;
 };
 
@@ -53,6 +56,8 @@ static void bt_disconnect(struct dundee_device *device,
 	struct bluetooth_device *bt = dundee_device_get_data(device);
 
 	DBG("%p", bt);
+
+	shutdown(bt->fd, SHUT_RDWR);
 
 	CALLBACK_WITH_SUCCESS(cb, data);
 }
@@ -92,6 +97,8 @@ static void bt_connect_reply(DBusPendingCall *call, gpointer user_data)
 		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 		goto done;
 	}
+
+	bt->fd = fd;
 
 	CALLBACK_WITH_SUCCESS(cb, fd, cbd->data);
 
