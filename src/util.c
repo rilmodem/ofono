@@ -1276,6 +1276,12 @@ char *sim_string_to_utf8(const unsigned char *buffer, int length)
 		offset = 4;
 		break;
 
+	case 0xff: /* Special case of empty string */
+		num_chars = 0;
+		ucs2_offset = 0;
+		offset = 0;
+		break;
+
 	default:
 		return NULL;
 	}
