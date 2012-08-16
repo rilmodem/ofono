@@ -247,6 +247,41 @@ static void huawei_mode_notify(GAtResult *result, gpointer user_data)
 	ofono_gprs_bearer_notify(gprs, bearer);
 }
 
+static void telit_mode_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_gprs *gprs = user_data;
+	GAtResultIter iter;
+	gint nt, bearer;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "#PSNT:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter,&nt))
+		return;
+
+	switch (nt) {
+	case 0:
+		bearer = 1;    /* GPRS */
+		break;
+	case 1:
+		bearer = 2;    /* EDGE */
+		break;
+	case 2:
+		bearer = 3;    /* UMTS */
+		break;
+	case 3:
+		bearer = 5;    /* HSDPA */
+		break;
+	default:
+		bearer = 0;
+		break;
+	}
+
+	ofono_gprs_bearer_notify(gprs, bearer);
+}
+
 static void cpsb_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_gprs *gprs = user_data;
@@ -281,6 +316,11 @@ static void gprs_initialized(gboolean ok, GAtResult *result, gpointer user_data)
 		g_at_chat_register(gd->chat, "^MODE:", huawei_mode_notify,
 						FALSE, gprs, NULL);
 		break;
+	case OFONO_VENDOR_TELIT:
+		g_at_chat_register(gd->chat, "#PSNT:", telit_mode_notify,
+						FALSE, gprs, NULL);
+		g_at_chat_send(gd->chat, "AT#PSNT=1", none_prefix,
+						NULL, NULL, NULL);
 	default:
 		g_at_chat_register(gd->chat, "+CPSB:", cpsb_notify,
 						FALSE, gprs, NULL);
