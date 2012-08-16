@@ -873,10 +873,12 @@ static void at_pct_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	pin_type = ofono_sim_get_password_type(sim);
 	if (pin_type == OFONO_SIM_PASSWORD_NONE) {
 		DBG("Note: No password required, returning maximum retries:");
+
 		AT_PCT_SET_RETRIES(retries, OFONO_SIM_PASSWORD_SIM_PIN, 3);
 		AT_PCT_SET_RETRIES(retries, OFONO_SIM_PASSWORD_SIM_PIN2, 3);
 		AT_PCT_SET_RETRIES(retries, OFONO_SIM_PASSWORD_SIM_PUK, 10);
 		AT_PCT_SET_RETRIES(retries, OFONO_SIM_PASSWORD_SIM_PUK2, 10);
+
 		goto callback;
 	}
 
