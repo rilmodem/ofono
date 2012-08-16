@@ -856,6 +856,7 @@ static void at_pct_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_error error;
 	int retries[OFONO_SIM_PASSWORD_INVALID];
 	size_t i;
+	enum ofono_sim_password_type pin_type;
 
 	decode_at_error(&error, final);
 
@@ -869,7 +870,7 @@ static void at_pct_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	for (i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++)
 		retries[i] = -1;
 
-	enum ofono_sim_password_type pin_type = ofono_sim_get_password_type(sim);
+	pin_type = ofono_sim_get_password_type(sim);
 	if (pin_type == OFONO_SIM_PASSWORD_NONE) {
 		DBG("Note: No password required, returning maximum retries:");
 		AT_PCT_SET_RETRIES(retries, OFONO_SIM_PASSWORD_SIM_PIN, 3);
