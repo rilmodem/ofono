@@ -559,6 +559,8 @@ static void telit_pre_sim(struct ofono_modem *modem)
 static void telit_post_sim(struct ofono_modem *modem)
 {
 	struct telit_data *data = ofono_modem_get_data(modem);
+	struct ofono_gprs *gprs;
+	struct ofono_gprs_context *gc;
 
 	if (data->sap_modem)
 		modem = data->sap_modem;
@@ -566,6 +568,12 @@ static void telit_post_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_sms_create(modem, 0, "atmodem", data->chat);
+
+	gprs = ofono_gprs_create(modem, OFONO_VENDOR_TELIT, "atmodem", data->chat);
+	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->chat);
+
+	if (gprs && gc)
+		ofono_gprs_add_context(gprs, gc);
 }
 
 static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -595,8 +603,6 @@ static void telit_post_online(struct ofono_modem *modem)
 {
 	struct telit_data *data = ofono_modem_get_data(modem);
 	struct ofono_message_waiting *mw;
-	struct ofono_gprs *gprs;
-	struct ofono_gprs_context *gc;
 
 	if(data->sap_modem)
 		modem = data->sap_modem;
@@ -609,12 +615,6 @@ static void telit_post_online(struct ofono_modem *modem)
 	ofono_call_settings_create(modem, 0, "atmodem", data->chat);
 	ofono_call_meter_create(modem, 0, "atmodem", data->chat);
 	ofono_call_barring_create(modem, 0, "atmodem", data->chat);
-
-	gprs = ofono_gprs_create(modem, 0, "atmodem", data->chat);
-	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->chat);
-
-	if (gprs && gc)
-		ofono_gprs_add_context(gprs, gc);
 
 	mw = ofono_message_waiting_create(modem);
 	if (mw)
