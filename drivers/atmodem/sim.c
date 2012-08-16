@@ -65,6 +65,7 @@ static const char *oercn_prefix[] = { "_OERCN:", NULL };
 static const char *cpinr_prefixes[] = { "+CPINR:", "+CPINRE:", NULL };
 static const char *epin_prefix[] = { "*EPIN:", NULL };
 static const char *spic_prefix[] = { "+SPIC:", NULL };
+static const char *pct_prefix[] = { "#PCT:", NULL };
 static const char *none_prefix[] = { NULL };
 
 static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -841,12 +842,67 @@ error:
 	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
 }
 
+#define AT_PCT_SET_RETRIES(retries, pin_type, value) \
+	retries[pin_type] = value; \
+	DBG("retry counter id=%d, val=%d", pin_type, value);
+
+static void at_pct_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_sim_pin_retries_cb_t cb = cbd->cb;
+	struct ofono_sim *sim = cbd->user;
+	const char *final = g_at_result_final_response(result);
+	GAtResultIter iter;
+	struct ofono_error error;
+	int retries[OFONO_SIM_PASSWORD_INVALID];
+	size_t i;
+
+	decode_at_error(&error, final);
+
+	if (!ok) {
+		cb(&error, NULL, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_init(&iter, result);
+
+	for (i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++)
+		retries[i] = -1;
+
+	enum ofono_sim_password_type pin_type = ofono_sim_get_password_type(sim);
+	if (pin_type == OFONO_SIM_PASSWORD_NONE) {
+		DBG("Note: No password required, returning maximum retries:");
+		AT_PCT_SET_RETRIES(retries, OFONO_SIM_PASSWORD_SIM_PIN, 3);
+		AT_PCT_SET_RETRIES(retries, OFONO_SIM_PASSWORD_SIM_PIN2, 3);
+		AT_PCT_SET_RETRIES(retries, OFONO_SIM_PASSWORD_SIM_PUK, 10);
+		AT_PCT_SET_RETRIES(retries, OFONO_SIM_PASSWORD_SIM_PUK2, 10);
+		goto callback;
+	}
+
+	if (g_at_result_iter_next(&iter, "#PCT:") == FALSE)
+		goto error;
+
+	if (g_at_result_iter_next_number(&iter, &retries[pin_type]) == FALSE)
+		goto error;
+
+	DBG("retry counter id=%d, val=%d", pin_type, retries[pin_type]);
+
+callback:
+	cb(&error, retries, cbd->data);
+
+	return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
+}
+
 static void at_pin_retries_query(struct ofono_sim *sim,
 					ofono_sim_pin_retries_cb_t cb,
 					void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
+	cbd->user = sim;
 
 	DBG("");
 
@@ -889,6 +945,11 @@ static void at_pin_retries_query(struct ofono_sim *sim,
 	case OFONO_VENDOR_SIMCOM:
 		if (g_at_chat_send(sd->chat, "AT+SPIC", spic_prefix,
 					at_spic_cb, cbd, g_free) > 0)
+			return;
+		break;
+	case OFONO_VENDOR_TELIT:
+		if (g_at_chat_send(sd->chat, "AT#PCT", pct_prefix,
+					at_pct_cb, cbd, g_free) > 0)
 			return;
 		break;
 	default:
