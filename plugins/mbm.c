@@ -251,7 +251,7 @@ static void emrdy_query(gboolean ok, GAtResult *result, gpointer user_data)
 	 */
 	g_at_chat_send(data->modem_port, "AT+CFUN?", cfun_prefix,
 					cfun_query, modem, NULL);
-};
+}
 
 static GAtChat *create_port(const char *device)
 {
