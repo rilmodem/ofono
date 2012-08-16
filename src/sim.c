@@ -2243,6 +2243,14 @@ enum ofono_sim_cphs_phase ofono_sim_get_cphs_phase(struct ofono_sim *sim)
 	return sim->cphs_phase;
 }
 
+enum ofono_sim_password_type ofono_sim_get_password_type(struct ofono_sim *sim)
+{
+	if (sim == NULL)
+		return OFONO_SIM_PASSWORD_NONE;
+
+	return sim->pin_type;
+}
+
 const unsigned char *ofono_sim_get_cphs_service_table(struct ofono_sim *sim)
 {
 	if (sim == NULL)
