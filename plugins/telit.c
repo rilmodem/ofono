@@ -569,7 +569,8 @@ static void telit_post_sim(struct ofono_modem *modem)
 
 	ofono_sms_create(modem, 0, "atmodem", data->chat);
 
-	gprs = ofono_gprs_create(modem, OFONO_VENDOR_TELIT, "atmodem", data->chat);
+	gprs = ofono_gprs_create(modem, OFONO_VENDOR_TELIT, "atmodem",
+					data->chat);
 	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->chat);
 
 	if (gprs && gc)
