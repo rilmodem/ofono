@@ -894,6 +894,7 @@ static unsigned char sim_82_1[] = { 0x82, 0x05, 0x04, 0x00, 0x2D, 0xB3, 0xB4,
 					0x2D, 0x31 };
 static unsigned char sim_82_2[] = { 0x82, 0x05, 0xD8, 0x00, 0x2D, 0xB3, 0xB4,
 					0x2D, 0x31 };
+static unsigned char sim_7bit_empty[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
 static void test_sim(void)
 {
@@ -943,6 +944,11 @@ static void test_sim(void)
 
 	utf8 = sim_string_to_utf8(sim_82_2, sizeof(sim_82_2));
 	g_assert(utf8 == NULL);
+
+	utf8 = sim_string_to_utf8(sim_7bit_empty, sizeof(sim_7bit_empty));
+	g_assert(utf8);
+	g_assert(strcmp(utf8, "") == 0);
+	g_free(utf8);
 }
 
 static void test_unicode_to_gsm(void)
