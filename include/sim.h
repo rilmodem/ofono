@@ -189,6 +189,8 @@ enum ofono_sim_phase ofono_sim_get_phase(struct ofono_sim *sim);
 enum ofono_sim_cphs_phase ofono_sim_get_cphs_phase(struct ofono_sim *sim);
 const unsigned char *ofono_sim_get_cphs_service_table(struct ofono_sim *sim);
 
+enum ofono_sim_password_type ofono_sim_get_password_type(struct ofono_sim *sim);
+
 unsigned int ofono_sim_add_state_watch(struct ofono_sim *sim,
 					ofono_sim_state_event_cb_t cb,
 					void *data, ofono_destroy_func destroy);
