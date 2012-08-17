@@ -615,7 +615,7 @@ static gboolean setup_telit(struct modem_info *modem)
 	DBG("modem=%s aux=%s gps=%s diag=%s", mdm, aux, gps, diag);
 
 	ofono_modem_set_string(modem->modem, "Modem", mdm);
-	ofono_modem_set_string(modem->modem, "Data", aux);
+	ofono_modem_set_string(modem->modem, "Aux", aux);
 	ofono_modem_set_string(modem->modem, "GPS", gps);
 
 	return TRUE;
