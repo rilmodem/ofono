@@ -65,8 +65,8 @@ static const char *qss_prefix[] = { "#QSS:", NULL };
 static const char *rsen_prefix[]= { "#RSEN:", NULL };
 
 struct telit_data {
-	GAtChat *chat;
-	GAtChat *aux;
+	GAtChat *chat;		/* AT chat */
+	GAtChat *modem;		/* Data port */
 	struct ofono_sim *sim;
 	guint sim_inserted_source;
 	struct ofono_modem *sap_modem;
@@ -305,6 +305,13 @@ static void cfun_enable_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
+	/*
+	 * Switch data carrier detect signal off.
+	 * When the DCD is disabled the modem does not hangup anymore
+	 * after the data connection.
+	 */
+	g_at_chat_send(data->chat, "AT&C0", NULL, NULL, NULL, NULL);
+
 	ofono_modem_set_powered(m, TRUE);
 
 	/* Enable sim state notification */
@@ -325,9 +332,18 @@ static int telit_enable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	data->chat = open_device(modem, "Modem", "Modem: ");
-	if (data->chat == NULL)
+	data->modem = open_device(modem, "Modem", "Modem: ");
+	if (data->modem == NULL)
 		return -EINVAL;
+
+	data->chat = open_device(modem, "Aux", "Aux: ");
+	if (data->chat == NULL) {
+		g_at_chat_unref(data->modem);
+		data->modem = NULL;
+		return -EIO;
+	}
+
+	g_at_chat_set_slave(data->modem, data->chat);
 
 	/*
 	 * Disable command echo and
@@ -376,8 +392,6 @@ static void rsen_enable_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	DBG("%p", modem);
 
 	if (!ok) {
-		g_at_chat_unref(data->aux);
-		data->aux = NULL;
 		ofono_modem_set_powered(data->sap_modem, FALSE);
 		sap_close_io(modem);
 		return;
@@ -411,6 +425,11 @@ static int telit_disable(struct ofono_modem *modem)
 	struct telit_data *data = ofono_modem_get_data(modem);
 	DBG("%p", modem);
 
+	g_at_chat_cancel_all(data->modem);
+	g_at_chat_unregister_all(data->modem);
+	g_at_chat_unref(data->modem);
+	data->modem = NULL;
+
 	g_at_chat_cancel_all(data->chat);
 	g_at_chat_unregister_all(data->chat);
 
@@ -427,9 +446,6 @@ static void rsen_disable_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct telit_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
-
-	g_at_chat_unref(data->aux);
-	data->aux = NULL;
 
 	sap_close_io(modem);
 
@@ -486,10 +502,6 @@ static int telit_sap_enable(struct ofono_modem *modem,
 	g_io_channel_set_buffered(data->hw_io, FALSE);
 	g_io_channel_set_close_on_unref(data->hw_io, TRUE);
 
-	data->aux = open_device(modem, "Data", "Aux: ");
-	if (data->aux == NULL)
-		goto error;
-
 	data->bt_io = g_io_channel_unix_new(bt_fd);
 	if (data->bt_io == NULL)
 		goto error;
@@ -508,13 +520,13 @@ static int telit_sap_enable(struct ofono_modem *modem,
 
 	data->sap_modem = sap_modem;
 
-	g_at_chat_register(data->aux, "#RSEN:", telit_rsen_notify,
+	g_at_chat_register(data->chat, "#RSEN:", telit_rsen_notify,
 				FALSE, modem, NULL);
 
-	g_at_chat_send(data->aux, "AT#NOPT=0", NULL, NULL, NULL, NULL);
+	g_at_chat_send(data->chat, "AT#NOPT=0", NULL, NULL, NULL, NULL);
 
 	/* Set SAP functionality */
-	g_at_chat_send(data->aux, "AT#RSEN=1,1,0,2,0", rsen_prefix,
+	g_at_chat_send(data->chat, "AT#RSEN=1,1,0,2,0", rsen_prefix,
 				rsen_enable_cb, modem, NULL);
 
 	return -EINPROGRESS;
@@ -533,10 +545,7 @@ static int telit_sap_disable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	g_at_chat_cancel_all(data->aux);
-	g_at_chat_unregister_all(data->aux);
-
-	g_at_chat_send(data->aux, "AT#RSEN=0", rsen_prefix,
+	g_at_chat_send(data->chat, "AT#RSEN=0", rsen_prefix,
 				rsen_disable_cb, modem, NULL);
 
 	return -EINPROGRESS;
@@ -572,7 +581,7 @@ static void telit_post_sim(struct ofono_modem *modem)
 
 	gprs = ofono_gprs_create(modem, OFONO_VENDOR_TELIT, "atmodem",
 					data->chat);
-	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->chat);
+	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->modem);
 
 	if (gprs && gc)
 		ofono_gprs_add_context(gprs, gc);
@@ -662,6 +671,10 @@ static void telit_remove(struct ofono_modem *modem)
 
 	if (data->sim_inserted_source > 0)
 		g_source_remove(data->sim_inserted_source);
+
+	/* Cleanup after hot-unplug */
+	g_at_chat_unref(data->chat);
+	g_at_chat_unref(data->modem);
 
 	g_free(data);
 }
