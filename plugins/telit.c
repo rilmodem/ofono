@@ -443,7 +443,6 @@ static int telit_disable(struct ofono_modem *modem)
 static void rsen_disable_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
-	struct telit_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
 
