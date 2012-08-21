@@ -314,6 +314,13 @@ static void cfun_enable_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	ofono_modem_set_powered(m, TRUE);
 
+	/*
+	 * Tell the modem not to automatically initiate auto-attach
+	 * proceedures on its own.
+	 */
+	g_at_chat_send(data->chat, "AT#AUTOATT=0", none_prefix,
+				NULL, NULL, NULL);
+
 	/* Enable sim state notification */
 	g_at_chat_send(data->chat, "AT#QSS=1", none_prefix, NULL, NULL, NULL);
 
