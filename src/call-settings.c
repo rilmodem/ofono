@@ -726,9 +726,10 @@ static void clir_ss_query_callback(const struct ofono_error *error,
 	const char *value;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		DBG("setting clir via SS failed");
+		DBG("clir query via SS failed with error: %s",
+					telephony_error_to_str(error));
 		__ofono_dbus_pending_reply(&cs->pending,
-					__ofono_error_failed(cs->pending));
+				__ofono_error_from_error(error, cs->pending));
 
 		return;
 	}
