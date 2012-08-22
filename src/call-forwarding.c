@@ -981,9 +981,10 @@ static void ss_set_query_cf_callback(const struct ofono_error *error, int total,
 	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_error("Setting succeeded, but query failed");
+		ofono_error("Query failed with error: %s",
+						telephony_error_to_str(error));
 		cf->flags &= ~CALL_FORWARDING_FLAG_CACHED;
-		reply = __ofono_error_failed(cf->pending);
+		reply = __ofono_error_from_error(error, cf->pending);
 		__ofono_dbus_pending_reply(&cf->pending, reply);
 		return;
 	}
