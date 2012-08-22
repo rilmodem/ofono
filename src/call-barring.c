@@ -284,14 +284,13 @@ static void cb_ss_query_next_lock_callback(const struct ofono_error *error,
 	struct ofono_call_barring *cb = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		if (cb->ss_req_type != SS_CONTROL_TYPE_QUERY)
-			ofono_error("Enabling/disabling Call Barring via SS "
-					"successful, but query was not");
+		ofono_error("Query failed with error: %s",
+						telephony_error_to_str(error));
 
 		cb->flags &= ~CALL_BARRING_FLAG_CACHED;
 
 		__ofono_dbus_pending_reply(&cb->pending,
-					__ofono_error_failed(cb->pending));
+				__ofono_error_from_error(error, cb->pending));
 		return;
 	}
 
