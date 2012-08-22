@@ -1084,6 +1084,36 @@ static void at_epev_notify(GAtResult *result, gpointer user_data)
 	sd->ready_id = 0;
 }
 
+static void at_qss_notify(GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	struct sim_data *sd = cbd->user;
+	ofono_sim_lock_unlock_cb_t cb = cbd->cb;
+	struct ofono_error error = { .type = OFONO_ERROR_TYPE_NO_ERROR };
+	GAtResultIter iter;
+	int state;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "#QSS:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &state))
+		return;
+
+	switch (state) {
+	case 2:	/* PIN unlocked */
+		break;
+	default:
+		return;
+	}
+
+	cb(&error, cbd->data);
+
+	g_at_chat_unregister(sd->chat, sd->ready_id);
+	sd->ready_id = 0;
+}
+
 static void sim_state_cb(gboolean present, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -1131,6 +1161,16 @@ static void at_pin_send_cb(gboolean ok, GAtResult *result,
 		 */
 		sd->ready_id = g_at_chat_register(sd->chat, "*EPEV",
 							at_epev_notify,
+							FALSE, cbd, g_free);
+		return;
+	case OFONO_VENDOR_TELIT:
+		/*
+		 * On the Telit modem, AT+CPIN? can return READY too
+		 * early and so use #QSS notification to detect
+		 * the ready state of the SIM.
+		 */
+		sd->ready_id = g_at_chat_register(sd->chat, "#QSS",
+							at_qss_notify,
 							FALSE, cbd, g_free);
 		return;
 	case OFONO_VENDOR_ZTE:
