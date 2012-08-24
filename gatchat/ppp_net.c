@@ -155,8 +155,12 @@ struct ppp_net *ppp_net_new(GAtPPP *ppp, int fd)
 	if (fd < 0) {
 		/* open a tun interface */
 		fd = open("/dev/net/tun", O_RDWR);
-		if (fd < 0)
+		if (fd < 0) {
+			ppp_debug(ppp, "Couldn't open tun device. "
+					"Do you run oFono as root and do you "
+					"have the TUN module loaded?");
 			goto error;
+		}
 
 		ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
 		strcpy(ifr.ifr_name, "ppp%d");
