@@ -2021,11 +2021,6 @@ static gboolean handle_command_send_ussd(const struct stk_command *cmd,
 					cmd->send_ussd.ussd_string.len,
 					send_ussd_callback, stk);
 
-	if (err >= 0) {
-		stk->cancel_cmd = send_ussd_cancel;
-
-		return FALSE;
-	}
 
 	if (err == -ENOSYS) {
 		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
@@ -2037,6 +2032,20 @@ static gboolean handle_command_send_ussd(const struct stk_command *cmd,
 					busy_on_ussd_result);
 		return TRUE;
 	}
+
+	if (err < 0) {
+		unsigned char no_cause_result[] = { 0x00 };
+
+		/*
+		 * We most likely got an out of memory error, tell SIM
+		 * to retry
+		 */
+		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					no_cause_result);
+		return TRUE;
+	}
+
+	stk->cancel_cmd = send_ussd_cancel;
 
 	stk_alpha_id_set(stk, cmd->send_ussd.alpha_id,
 				&cmd->send_ussd.text_attr,
