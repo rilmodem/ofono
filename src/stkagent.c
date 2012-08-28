@@ -584,6 +584,38 @@ int stk_agent_request_digit(struct stk_agent *agent, const char *text,
 	return 0;
 }
 
+int stk_agent_request_quick_digit(struct stk_agent *agent, const char *text,
+					const struct stk_icon_id *icon,
+					stk_agent_string_cb cb, void *user_data,
+					ofono_destroy_func destroy, int timeout)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+
+	agent->msg = dbus_message_new_method_call(agent->bus, agent->path,
+							OFONO_SIM_APP_INTERFACE,
+							"RequestQuickDigit");
+	if (agent->msg == NULL)
+		return -ENOMEM;
+
+	dbus_message_append_args(agent->msg,
+					DBUS_TYPE_STRING, &text,
+					DBUS_TYPE_BYTE, &icon->id,
+					DBUS_TYPE_INVALID);
+
+	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
+						timeout) == FALSE ||
+			agent->call == NULL)
+		return -EIO;
+
+	agent->user_cb = cb;
+	agent->user_data = user_data;
+	agent->user_destroy = destroy;
+
+	dbus_pending_call_set_notify(agent->call, get_digit_cb, agent, NULL);
+
+	return 0;
+}
+
 static void get_key_cb(DBusPendingCall *call, void *data)
 {
 	struct stk_agent *agent = data;

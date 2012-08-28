@@ -102,6 +102,12 @@ int stk_agent_request_digit(struct stk_agent *agent, const char *text,
 				stk_agent_string_cb cb, void *user_data,
 				ofono_destroy_func destroy, int timeout);
 
+int stk_agent_request_quick_digit(struct stk_agent *agent, const char *text,
+					const struct stk_icon_id *icon,
+					stk_agent_string_cb cb, void *user_data,
+					ofono_destroy_func destroy,
+					int timeout);
+
 int stk_agent_request_key(struct stk_agent *agent, const char *text,
 				const struct stk_icon_id *icon,
 				ofono_bool_t unicode_charset,
