@@ -193,6 +193,15 @@ Methods		byte RequestSelection(string title, byte icon_id,
 			Possible Errors: [service].Error.SimToolkit.GoBack
 					 [service].Error.SimToolkit.EndSession
 
+		string RequestQuickDigit(string alpha, byte icon_id)
+
+			Same as above but the entered digit shall not be
+			displayed and the response shall be sent immediately
+			after the key press. "+" is not allowed for user input.
+
+			Possible Errors: [service].Error.SimToolkit.GoBack
+					 [service].Error.SimToolkit.EndSession
+
 		boolean RequestConfirmation(string alpha, byte icon_id)
 
 			Asks the agent to get confirmation from the user.
