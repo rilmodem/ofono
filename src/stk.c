@@ -1522,9 +1522,9 @@ static gboolean handle_command_get_inkey(const struct stk_command *cmd,
 	gboolean alphabet = (qualifier & (1 << 0)) != 0;
 	gboolean ucs2 = (qualifier & (1 << 1)) != 0;
 	gboolean yesno = (qualifier & (1 << 2)) != 0;
+	gboolean immediate = (qualifier & (1 << 3)) != 0;
 	/*
-	 * Note: immediate response and help parameter values are not
-	 * provided by current api.
+	 * Note: help parameter value is not provided by current api.
 	 */
 	int err;
 
@@ -1548,6 +1548,11 @@ static gboolean handle_command_get_inkey(const struct stk_command *cmd,
 						&gi->icon_id, ucs2,
 						request_key_cb, stk, NULL,
 						timeout);
+	else if (immediate)
+		err = stk_agent_request_quick_digit(stk->current_agent,
+							text, &gi->icon_id,
+							request_key_cb, stk,
+							NULL, timeout);
 	else
 		err = stk_agent_request_digit(stk->current_agent, text,
 						&gi->icon_id, request_key_cb,
