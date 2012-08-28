@@ -59,6 +59,9 @@ struct stk_agent {
 	DBusPendingCall *call;
 	void *user_cb;
 	void *user_data;
+	int min_length;
+	int max_length;
+	ofono_bool_t hidden_entry;
 	ofono_destroy_func user_destroy;
 
 	const struct stk_menu *request_selection_menu;
@@ -539,10 +542,20 @@ static void get_digit_cb(DBusPendingCall *call, void *data)
 
 	if (dbus_message_get_args(reply, NULL,
 					DBUS_TYPE_STRING, &digit,
-					DBUS_TYPE_INVALID) == FALSE ||
-			strlen(digit) != 1 ||
-			!valid_phone_number_format(digit)) {
+					DBUS_TYPE_INVALID) == FALSE) {
 		ofono_error("Can't parse the reply to GetDigit()");
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	if (strlen(digit) != 1 || !strspn(digit, "0123456789*#+")) {
+		ofono_error("Invalid character");
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	if (agent->hidden_entry && digit[0] == '+') {
+		ofono_error("The character + is not allowed in this mode");
 		remove_agent = TRUE;
 		goto error;
 	}
@@ -578,6 +591,7 @@ int stk_agent_request_digit(struct stk_agent *agent, const char *text,
 	agent->user_cb = cb;
 	agent->user_data = user_data;
 	agent->user_destroy = destroy;
+	agent->hidden_entry = FALSE;
 
 	dbus_pending_call_set_notify(agent->call, get_digit_cb, agent, NULL);
 
@@ -610,6 +624,7 @@ int stk_agent_request_quick_digit(struct stk_agent *agent, const char *text,
 	agent->user_cb = cb;
 	agent->user_data = user_data;
 	agent->user_destroy = destroy;
+	agent->hidden_entry = TRUE;
 
 	dbus_pending_call_set_notify(agent->call, get_digit_cb, agent, NULL);
 
@@ -692,6 +707,7 @@ static void get_digits_cb(DBusPendingCall *call, void *data)
 	enum stk_agent_result result;
 	gboolean remove_agent;
 	char *string;
+	int len, span;
 
 	if (check_error(agent, reply,
 			ALLOWED_ERROR_GO_BACK | ALLOWED_ERROR_TERMINATE,
@@ -709,6 +725,25 @@ static void get_digits_cb(DBusPendingCall *call, void *data)
 					DBUS_TYPE_STRING, &string,
 					DBUS_TYPE_INVALID) == FALSE) {
 		ofono_error("Can't parse the reply to GetDigits()");
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	len = strlen(string);
+
+	if (len < agent->min_length || len > agent->max_length) {
+		ofono_error("Length not acceptable");
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	if (agent->hidden_entry)
+		span = strspn(string, "0123456789*#");
+	else
+		span = strspn(string, "0123456789*#+");
+
+	if (span != len) {
+		ofono_error("Invalid character found");
 		remove_agent = TRUE;
 		goto error;
 	}
@@ -756,6 +791,9 @@ int stk_agent_request_digits(struct stk_agent *agent, const char *text,
 	agent->user_cb = cb;
 	agent->user_data = user_data;
 	agent->user_destroy = destroy;
+	agent->min_length = min_val;
+	agent->max_length = max_val;
+	agent->hidden_entry = hidden_val;
 
 	dbus_pending_call_set_notify(agent->call, get_digits_cb, agent, NULL);
 
@@ -770,6 +808,7 @@ static void get_input_cb(DBusPendingCall *call, void *data)
 	enum stk_agent_result result;
 	gboolean remove_agent;
 	char *string;
+	int len;
 
 	if (check_error(agent, reply,
 			ALLOWED_ERROR_GO_BACK | ALLOWED_ERROR_TERMINATE,
@@ -787,6 +826,14 @@ static void get_input_cb(DBusPendingCall *call, void *data)
 					DBUS_TYPE_STRING, &string,
 					DBUS_TYPE_INVALID) == FALSE) {
 		ofono_error("Can't parse the reply to GetInput()");
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	len = g_utf8_strlen(string, -1);
+
+	if (len < agent->min_length || len > agent->max_length) {
+		ofono_error("Length not acceptable");
 		remove_agent = TRUE;
 		goto error;
 	}
@@ -835,6 +882,9 @@ int stk_agent_request_input(struct stk_agent *agent, const char *text,
 	agent->user_cb = cb;
 	agent->user_data = user_data;
 	agent->user_destroy = destroy;
+	agent->min_length = min_val;
+	agent->max_length = max_val;
+	agent->hidden_entry = hidden_val;
 
 	dbus_pending_call_set_notify(agent->call, get_input_cb, agent, NULL);
 
