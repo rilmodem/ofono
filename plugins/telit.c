@@ -61,14 +61,14 @@
 #include "bluetooth.h"
 
 static const char *none_prefix[] = { NULL };
-static const char *qss_prefix[] = { "#QSS:", NULL };
 static const char *rsen_prefix[]= { "#RSEN:", NULL };
 
 struct telit_data {
 	GAtChat *chat;		/* AT chat */
 	GAtChat *modem;		/* Data port */
 	struct ofono_sim *sim;
-	guint sim_inserted_source;
+	ofono_bool_t have_sim;
+	ofono_bool_t sms_phonebook_added;
 	struct ofono_modem *sap_modem;
 	GIOChannel *bt_io;
 	GIOChannel *hw_io;
@@ -211,43 +211,36 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	return chat;
 }
 
-static gboolean sim_inserted_timeout_cb(gpointer user_data)
-{
-	struct ofono_modem *modem = user_data;
-	struct telit_data *data = ofono_modem_get_data(modem);
-
-	DBG("%p", modem);
-
-	data->sim_inserted_source = 0;
-
-	ofono_sim_inserted_notify(data->sim, TRUE);
-
-	return FALSE;
-}
-
 static void switch_sim_state_status(struct ofono_modem *modem, int status)
 {
 	struct telit_data *data = ofono_modem_get_data(modem);
 
-	DBG("%p", modem);
+	DBG("%p, SIM status: %d", modem, status);
 
 	switch (status) {
-	case 0:
-		DBG("SIM not inserted");
-		ofono_sim_inserted_notify(data->sim, FALSE);
+	case 0:	/* SIM not inserted */
+		if (data->have_sim == TRUE) {
+			ofono_sim_inserted_notify(data->sim, FALSE);
+			data->have_sim = FALSE;
+			data->sms_phonebook_added = FALSE;
+		}
 		break;
-	case 1:
-		DBG("SIM inserted");
-		/* We need to sleep a bit */
-		data->sim_inserted_source = g_timeout_add_seconds(1,
-							sim_inserted_timeout_cb,
-							modem);
+	case 1:	/* SIM inserted */
+	case 2:	/* SIM inserted and PIN unlocked */
+		if (data->have_sim == FALSE) {
+			ofono_sim_inserted_notify(data->sim, TRUE);
+			data->have_sim = TRUE;
+		}
 		break;
-	case 2:
-		DBG("SIM inserted and PIN unlocked");
+	case 3:	/* SIM inserted, SMS and phonebook ready */
+		if (data->sms_phonebook_added == FALSE) {
+			ofono_phonebook_create(modem, 0, "atmodem", data->chat);
+			ofono_sms_create(modem, 0, "atmodem", data->chat);
+			data->sms_phonebook_added = TRUE;
+		}
 		break;
-	case 3:
-		DBG("SIM inserted and ready");
+	default:
+		ofono_warn("Unknown SIM state %d received", status);
 		break;
 	}
 }
@@ -265,25 +258,6 @@ static void telit_qss_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next(&iter, "#QSS:"))
 		return;
 
-	g_at_result_iter_next_number(&iter, &status);
-
-	switch_sim_state_status(modem, status);
-}
-
-static void telit_qss_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct ofono_modem *modem = user_data;
-	int mode;
-	int status;
-	GAtResultIter iter;
-	g_at_result_iter_init(&iter, result);
-
-	DBG("%p", modem);
-
-	if (!g_at_result_iter_next(&iter, "#QSS:"))
-		return;
-
-	g_at_result_iter_next_number(&iter, &mode);
 	g_at_result_iter_next_number(&iter, &status);
 
 	switch_sim_state_status(modem, status);
@@ -312,6 +286,9 @@ static void cfun_enable_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	 */
 	g_at_chat_send(data->chat, "AT&C0", NULL, NULL, NULL, NULL);
 
+	data->have_sim = FALSE;
+	data->sms_phonebook_added = FALSE;
+
 	ofono_modem_set_powered(m, TRUE);
 
 	/*
@@ -321,16 +298,12 @@ static void cfun_enable_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_send(data->chat, "AT#AUTOATT=0", none_prefix,
 				NULL, NULL, NULL);
 
-	/* Enable sim state notification */
-	g_at_chat_send(data->chat, "AT#QSS=1", none_prefix, NULL, NULL, NULL);
-
 	/* Follow sim state */
 	g_at_chat_register(data->chat, "#QSS:", telit_qss_notify,
 				FALSE, modem, NULL);
 
-	/* Query current sim state */
-	g_at_chat_send(data->chat, "AT#QSS?", qss_prefix,
-				telit_qss_cb, modem, NULL);
+	/* Enable sim state notification */
+	g_at_chat_send(data->chat, "AT#QSS=2", none_prefix, NULL, NULL, NULL);
 }
 
 static int telit_enable(struct ofono_modem *modem)
@@ -358,6 +331,12 @@ static int telit_enable(struct ofono_modem *modem)
 	 */
 	g_at_chat_send(data->chat, "ATE0 +CMEE=1", none_prefix,
 				NULL, NULL, NULL);
+
+	/*
+	 * Disable sim state notification so that we sure get a notification
+	 * when we enable it again later and don't have to query it.
+	 */
+	g_at_chat_send(data->chat, "AT#QSS=0", none_prefix, NULL, NULL, NULL);
 
 	/* Set phone functionality */
 	g_at_chat_send(data->chat, "AT+CFUN=4", none_prefix,
@@ -417,9 +396,6 @@ static void cfun_disable_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_chat_unref(data->chat);
 	data->chat = NULL;
-
-	if (data->sim_inserted_source > 0)
-		g_source_remove(data->sim_inserted_source);
 
 	if (ok)
 		ofono_modem_set_powered(modem, FALSE);
@@ -583,8 +559,6 @@ static void telit_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_sms_create(modem, 0, "atmodem", data->chat);
-
 	gprs = ofono_gprs_create(modem, OFONO_VENDOR_TELIT, "atmodem",
 					data->chat);
 	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->modem);
@@ -674,9 +648,6 @@ static void telit_remove(struct ofono_modem *modem)
 	bluetooth_sap_client_unregister(modem);
 
 	ofono_modem_set_data(modem, NULL);
-
-	if (data->sim_inserted_source > 0)
-		g_source_remove(data->sim_inserted_source);
 
 	/* Cleanup after hot-unplug */
 	g_at_chat_unref(data->chat);
