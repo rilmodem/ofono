@@ -608,7 +608,7 @@ static void telit_set_online(struct ofono_modem *modem, ofono_bool_t online,
 {
 	struct telit_data *data = ofono_modem_get_data(modem);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
-	char const *command = online ? "AT+CFUN=1" : "AT+CFUN=4";
+	char const *command = online ? "AT+CFUN=1,0" : "AT+CFUN=4,0";
 
 	DBG("modem %p %s", modem, online ? "online" : "offline");
 
