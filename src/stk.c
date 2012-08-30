@@ -515,6 +515,9 @@ static gboolean stk_alpha_id_set(struct ofono_stk *stk,
 	if (alpha == NULL)
 		return FALSE;
 
+	if (stk->current_agent == NULL)
+		return FALSE;
+
 	if (stk->respond_on_exit)
 		stk_agent_display_action(stk->current_agent, alpha, icon,
 						user_termination_cb, stk, NULL);
@@ -2640,6 +2643,9 @@ static gboolean handle_setup_call_confirmation_req(struct stk_command *cmd,
 	if (alpha_id == NULL)
 		goto out;
 
+	if (stk->current_agent == FALSE)
+		goto out;
+
 	err = stk_agent_confirm_call(stk->current_agent, alpha_id,
 					&sc->icon_id_usr_cfm,
 					confirm_handled_call_cb,
@@ -2747,6 +2753,9 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 		case STK_COMMAND_TYPE_GET_INPUT:
 		case STK_COMMAND_TYPE_PLAY_TONE:
 		case STK_COMMAND_TYPE_SETUP_CALL:
+		case STK_COMMAND_TYPE_SEND_SMS:
+		case STK_COMMAND_TYPE_SEND_USSD:
+		case STK_COMMAND_TYPE_SEND_DTMF:
 			send_simple_response(stk, STK_RESULT_TYPE_NOT_CAPABLE);
 			return;
 
