@@ -81,11 +81,11 @@ void extract_bcd_number(const unsigned char *buf, int len, char *out)
 	for (i = 0; i < len; i++) {
 		oct = buf[i];
 
-		out[i*2] = digit_lut[oct & 0x0f];
-		out[i*2+1] = digit_lut[(oct & 0xf0) >> 4];
+		out[i * 2] = digit_lut[oct & 0x0f];
+		out[i * 2 + 1] = digit_lut[(oct & 0xf0) >> 4];
 	}
 
-	out[i*2] = '\0';
+	out[i * 2] = '\0';
 }
 
 static inline int to_semi_oct(char in)
@@ -600,7 +600,7 @@ gboolean sms_encode_address_field(const struct sms_address *in, gboolean sc,
 out:
 	pdu[0] = addr_len;
 	pdu[1] = (in->number_type << 4) | in->numbering_plan | 0x80;
-	memcpy(pdu+2, p, (sc ? addr_len - 1 : (addr_len + 1) / 2));
+	memcpy(pdu + 2, p, (sc ? addr_len - 1 : (addr_len + 1) / 2));
 
 	*offset = *offset + 2 + (sc ? addr_len - 1 : (addr_len + 1) / 2);
 
@@ -768,7 +768,7 @@ static gboolean decode_deliver(const unsigned char *pdu, int len,
 	if ((len - offset) < expected)
 		return FALSE;
 
-	memcpy(out->deliver.ud, pdu+offset, expected);
+	memcpy(out->deliver.ud, pdu + offset, expected);
 
 	return TRUE;
 }
@@ -929,11 +929,11 @@ static gboolean decode_submit_report(const unsigned char *pdu, int len,
 		if (out->type == SMS_TYPE_SUBMIT_REPORT_ERROR) {
 			out->submit_err_report.udl = udl;
 			memcpy(out->submit_err_report.ud,
-					pdu+offset, expected);
+					pdu + offset, expected);
 		} else {
 			out->submit_ack_report.udl = udl;
 			memcpy(out->submit_ack_report.ud,
-					pdu+offset, expected);
+					pdu + offset, expected);
 		}
 	}
 
@@ -1063,7 +1063,7 @@ static gboolean decode_status_report(const unsigned char *pdu, int len,
 		if ((len - offset) < expected)
 			return FALSE;
 
-		memcpy(out->status_report.ud, pdu+offset, expected);
+		memcpy(out->status_report.ud, pdu + offset, expected);
 	}
 
 	return TRUE;
@@ -1214,11 +1214,11 @@ static gboolean decode_deliver_report(const unsigned char *pdu, int len,
 		if (out->type == SMS_TYPE_DELIVER_REPORT_ERROR) {
 			out->deliver_err_report.udl = udl;
 			memcpy(out->deliver_err_report.ud,
-					pdu+offset, expected);
+					pdu + offset, expected);
 		} else {
 			out->deliver_ack_report.udl = udl;
 			memcpy(out->deliver_ack_report.ud,
-					pdu+offset, expected);
+					pdu + offset, expected);
 		}
 	}
 
@@ -1371,7 +1371,7 @@ static gboolean decode_submit(const unsigned char *pdu, int len,
 	if (expected > (int) sizeof(out->submit.ud))
 		return FALSE;
 
-	memcpy(out->submit.ud, pdu+offset, expected);
+	memcpy(out->submit.ud, pdu + offset, expected);
 
 	return TRUE;
 }
@@ -1450,7 +1450,7 @@ static gboolean decode_command(const unsigned char *pdu, int len,
 	if ((len - offset) < out->command.cdl)
 		return FALSE;
 
-	memcpy(out->command.cd, pdu+offset, out->command.cdl);
+	memcpy(out->command.cd, pdu + offset, out->command.cdl);
 
 	return TRUE;
 }
@@ -1866,7 +1866,7 @@ void sms_address_from_string(struct sms_address *addr, const char *str)
 	addr->numbering_plan = SMS_NUMBERING_PLAN_ISDN;
 	if (str[0] == '+') {
 		addr->number_type = SMS_NUMBER_TYPE_INTERNATIONAL;
-		strcpy(addr->address, str+1);
+		strcpy(addr->address, str + 1);
 	} else {
 		addr->number_type = SMS_NUMBER_TYPE_UNKNOWN;
 		strcpy(addr->address, str);
@@ -4139,7 +4139,7 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 					break;
 
 				buf[bufsize] = ud[i];
-				buf[bufsize + 1] = ud[i+1];
+				buf[bufsize + 1] = ud[i + 1];
 
 				bufsize += 2;
 				i += 2;
