@@ -1236,6 +1236,10 @@ static const char *cbs2 = "0110003201114679785E96371A8D46A3D168341A8D46A3D1683"
 	"41A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D168"
 	"341A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D100";
 
+static const char *cbs3 = "001000000111E280604028180E888462C168381E90886442A95"
+	"82E988C66C3E9783EA09068442A994EA8946AC56AB95EB0986C46ABD96EB89C6EC7EBF"
+	"97EC0A070482C1A8FC8A472C96C3A9FD0A8744AAD5AAFD8AC76CB05";
+
 static void test_cbs_encode_decode(void)
 {
 	unsigned char *decoded_pdu;
@@ -1387,6 +1391,58 @@ static void test_cbs_assembly(void)
 	g_slist_free(l);
 
 	cbs_assembly_free(assembly);
+}
+
+static void test_cbs_padding_character(void)
+{
+	unsigned char *decoded_pdu;
+	long pdu_len;
+	gboolean ret;
+	struct cbs cbs;
+	GSList *l;
+	char iso639_lang[3];
+	char *utf8;
+
+	decoded_pdu = decode_hex(cbs3, -1, &pdu_len, 0);
+
+	g_assert(decoded_pdu);
+	g_assert(pdu_len == 88);
+
+	ret = cbs_decode(decoded_pdu, pdu_len, &cbs);
+
+	g_free(decoded_pdu);
+
+	g_assert(ret);
+
+	g_assert(cbs.gs == CBS_GEO_SCOPE_CELL_IMMEDIATE);
+	g_assert(cbs.message_code == 1);
+	g_assert(cbs.update_number == 0);
+	g_assert(cbs.message_identifier == 0);
+	g_assert(cbs.dcs == 1);
+	g_assert(cbs.max_pages == 1);
+	g_assert(cbs.page == 1);
+
+	l = g_slist_append(NULL, &cbs);
+
+	utf8 = cbs_decode_text(l, iso639_lang);
+
+	g_assert(utf8);
+
+	if (g_test_verbose()) {
+		g_printf("%s\n", utf8);
+		if (iso639_lang[0] == '\0')
+			g_printf("Lang: Unspecified\n");
+		else
+			g_printf("Lang: %s\n", iso639_lang);
+	}
+
+	g_assert(strcmp(utf8, "b£$¥èéùìòÇ\x0AØø\x0DÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !\"#¤"
+				"\x25&'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLM"
+				"NOPQRSTUVWXYZÄÖ") == 0);
+	g_assert(strcmp(iso639_lang, "en") == 0);
+
+	g_free(utf8);
+	g_slist_free(l);
 }
 
 static const char *ranges[] = { "1-5, 2, 3, 600, 569-900, 999",
@@ -1678,6 +1734,9 @@ int main(int argc, char **argv)
 	g_test_add_func("/testsms/Test CBS Encode / Decode",
 			test_cbs_encode_decode);
 	g_test_add_func("/testsms/Test CBS Assembly", test_cbs_assembly);
+
+	g_test_add_func("/testsms/Test CBS Padding Character",
+			test_cbs_padding_character);
 
 	g_test_add_func("/testsms/Range minimizer", test_range_minimizer);
 
