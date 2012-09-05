@@ -3675,7 +3675,7 @@ int __ofono_voicecall_dial(struct ofono_voicecall *vc,
 {
 	struct dial_request *req;
 
-	if (!valid_phone_number_format(addr))
+	if (!valid_long_phone_number_format(addr))
 		return -EINVAL;
 
 	if (vc->driver->dial == NULL)
