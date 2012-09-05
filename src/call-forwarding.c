@@ -1012,7 +1012,15 @@ static void ss_set_query_cf_callback(const struct ofono_error *error, int total,
 
 static void ss_set_query_next_cf_cond(struct ofono_call_forwarding *cf)
 {
-	cf->driver->query(cf, cf->query_next, BEARER_CLASS_DEFAULT,
+	int cls;
+
+	cls = (cf->ss_req->ss_type == SS_CONTROL_TYPE_QUERY) ?
+			cf->ss_req->cls : BEARER_CLASS_DEFAULT;
+
+	if (cls == BEARER_CLASS_SS_DEFAULT)
+			cls = BEARER_CLASS_DEFAULT;
+
+	cf->driver->query(cf, cf->query_next, cls,
 			ss_set_query_cf_callback, cf);
 }
 
