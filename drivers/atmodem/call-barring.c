@@ -89,7 +89,10 @@ static void at_call_barring_query(struct ofono_call_barring *cb,
 	if (strlen(lock) != 2)
 		goto error;
 
-	snprintf(buf, sizeof(buf), "AT+CLCK=\"%s\",2", lock);
+	if (cls == 7)
+		snprintf(buf, sizeof(buf), "AT+CLCK=\"%s\",2", lock);
+	else
+		snprintf(buf, sizeof(buf), "AT+CLCK=\"%s\",2,,%d", lock, cls);
 
 	if (g_at_chat_send(chat, buf, clck_prefix,
 				clck_query_cb, cbd, g_free) > 0)
