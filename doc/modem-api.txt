@@ -56,7 +56,9 @@ Properties	boolean Powered [readwrite]
 
 		string Name [readonly, optional]
 
-			Friendly name of the modem device.
+			Friendly name of the modem device.  In the case of
+			Bluetooth devices (e.g. Type="sap" or "hfp") this
+			corresponds to the remote device name or it's alias.
 
 		string Manufacturer [readonly, optional]
 
@@ -83,6 +85,10 @@ Properties	boolean Powered [readwrite]
 			device.
 
 			This is usually obtained by using the +CGSN AT command.
+
+			In the case of Bluetooth devices (e.g. Type="sap" or
+			"hfp") this corresponds to the Bluetooth Device
+			Address of the remote device.
 
 		array{string} Features [readonly]
 
