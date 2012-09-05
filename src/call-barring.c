@@ -310,7 +310,8 @@ static void cb_ss_query_next_lock(struct ofono_call_barring *cb)
 {
 	int cls;
 
-	cls = cb->ss_req_cls | BEARER_CLASS_DEFAULT;
+	cls = (cb->ss_req_type == SS_CONTROL_TYPE_QUERY) ?
+			cb->ss_req_cls : cb->ss_req_cls | BEARER_CLASS_DEFAULT;
 
 	cb->driver->query(cb, cb_locks[cb->query_next].fac, cls,
 			cb_ss_query_next_lock_callback, cb);
