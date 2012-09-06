@@ -35,6 +35,7 @@ Methods		string, variant Initiate(string command)
 					 [service].Error.AccessDenied
 					 [service].Error.Failed
 					 [service].Error.NotRecognized
+					 [service].Error.Terminated
 
 		string Respond(string reply)
 
@@ -48,6 +49,7 @@ Methods		string, variant Initiate(string command)
 					 [service].Error.InvalidArguments
 					 [service].Error.InvalidFormat
 					 [service].Error.Failed
+					 [service].Error.Terminated
 
 		void Cancel()
 
