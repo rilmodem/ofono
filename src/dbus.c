@@ -409,6 +409,14 @@ DBusMessage *__ofono_error_not_recognized(DBusMessage *msg)
 					"String not recognized as USSD/SS");
 }
 
+DBusMessage *__ofono_error_network_terminated(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, OFONO_ERROR_INTERFACE
+					".Terminated",
+					"Operation was terminated by the"
+					" network");
+}
+
 DBusMessage *__ofono_error_from_error(const struct ofono_error *error,
 						DBusMessage *msg)
 {

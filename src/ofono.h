@@ -66,6 +66,7 @@ DBusMessage *__ofono_error_emergency_active(DBusMessage *msg);
 DBusMessage *__ofono_error_incorrect_password(DBusMessage *msg);
 DBusMessage *__ofono_error_not_allowed(DBusMessage *msg);
 DBusMessage *__ofono_error_not_recognized(DBusMessage *msg);
+DBusMessage *__ofono_error_network_terminated(DBusMessage *msg);
 
 DBusMessage *__ofono_error_from_error(const struct ofono_error *error,
 						DBusMessage *msg);
