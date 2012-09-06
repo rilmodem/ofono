@@ -539,6 +539,18 @@ static gboolean stk_alpha_id_set(struct ofono_stk *stk,
 	if (stk->current_agent == NULL)
 		return FALSE;
 
+	/*
+	 * According to 3GPP TS 102.223 section 8.31:
+	 * If icon is self-explanatory, it replaces the alpha identifier or
+	 * text string.
+	 * If icon is not self-explanatory, it shall be displayed together
+	 * with the alpha identifier or text string.
+	 */
+
+	if (icon->id != 0 && icon->qualifier ==
+			STK_ICON_QUALIFIER_TYPE_SELF_EXPLANATORY)
+		alpha[0]='\0';
+
 	if (stk->respond_on_exit)
 		stk_agent_display_action(stk->current_agent, alpha, icon,
 						user_termination_cb, stk, NULL);
