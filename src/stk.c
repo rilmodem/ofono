@@ -104,6 +104,27 @@ static void timers_update(struct ofono_stk *stk);
 		result.additional_len = sizeof(addn_info);	\
 		result.additional = addn_info;			\
 
+static gboolean convert_to_phone_number_format(const char *input_str,
+							char *output_str)
+{
+	char *digit;
+	char *digit_from = "01234567890abcABC";
+	char *digit_to = "01234567890*#p*#p";
+	int pos;
+
+	for (pos = 0; input_str[pos] != '\0'; pos++) {
+		digit = strchr(digit_from, input_str[pos]);
+		if (digit == NULL)
+			return FALSE;
+
+		output_str[pos] = digit_to[digit - digit_from];
+	}
+
+	output_str[pos] = '\0';
+
+	return TRUE;
+}
+
 static int stk_respond(struct ofono_stk *stk, struct stk_response *rsp,
 			ofono_stk_generic_cb_t cb)
 {
@@ -1715,6 +1736,8 @@ static void confirm_call_cb(enum stk_agent_result result, gboolean confirm,
 	char *alpha_id = NULL;
 	struct ofono_voicecall *vc;
 	struct stk_response rsp;
+	char number[256];
+	char *pause_chr;
 	int err;
 
 	switch (result) {
@@ -1752,7 +1775,20 @@ static void confirm_call_cb(enum stk_agent_result result, gboolean confirm,
 		}
 	}
 
-	err = __ofono_voicecall_dial(vc, sc->addr.number, sc->addr.ton_npi,
+	/* Convert the setup call number to phone number format */
+	if (convert_to_phone_number_format(sc->addr.number, number) == FALSE) {
+		send_simple_response(stk, STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD);
+		return;
+	}
+
+	/* Remove the DTMF string from the phone number */
+	pause_chr = strchr(number, 'p');
+
+	if (pause_chr)
+		number[pause_chr - number] = '\0';
+
+	/* TODO: send the DTMF after call is connected */
+	err = __ofono_voicecall_dial(vc, number, sc->addr.ton_npi,
 					alpha_id, sc->icon_id_call_setup.id,
 					qualifier >> 1, call_setup_connected,
 					stk);
@@ -2353,10 +2389,8 @@ static gboolean handle_command_send_dtmf(const struct stk_command *cmd,
 {
 	static unsigned char not_in_speech_call_result[] = { 0x07 };
 	struct ofono_voicecall *vc = NULL;
-	char dtmf[256], *digit;
-	char *dtmf_from = "01234567890abcABC";
-	char *dtmf_to = "01234567890*#p*#p";
-	int err, pos;
+	char dtmf[256];
+	int err;
 
 	vc = __ofono_atom_find(OFONO_ATOM_TYPE_VOICECALL,
 				__ofono_atom_get_modem(stk->atom));
@@ -2366,17 +2400,11 @@ static gboolean handle_command_send_dtmf(const struct stk_command *cmd,
 	}
 
 	/* Convert the DTMF string to phone number format */
-	for (pos = 0; cmd->send_dtmf.dtmf[pos] != '\0'; pos++) {
-		digit = strchr(dtmf_from, cmd->send_dtmf.dtmf[pos]);
-		if (digit == NULL) {
-			rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
-			return TRUE;
-		}
-
-		dtmf[pos] = dtmf_to[digit - dtmf_from];
+	if (convert_to_phone_number_format(cmd->send_dtmf.dtmf, dtmf) ==
+						FALSE) {
+		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
+		return TRUE;
 	}
-
-	dtmf[pos] = '\0';
 
 	err = __ofono_voicecall_tone_send(vc, dtmf, dtmf_sent_cb, stk);
 
