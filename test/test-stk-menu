@@ -6,6 +6,10 @@ import sys
 import dbus
 import dbus.service
 import dbus.mainloop.glib
+import signal
+
+def handler(signum, frame):
+	raise Exception("\nSingle tone is finished!")
 
 class GoBack(dbus.DBusException):
 	_dbus_error_name = "org.ofono.Error.GoBack"
@@ -194,6 +198,20 @@ class StkAgent(dbus.service.Object):
 		print "PlayTone: %s" % (tone)
 		print "Text: %s" % (text)
 		print "Icon: %d" % (icon)
+
+		signal.signal(signal.SIGALRM, handler)
+		signal.alarm(5)
+
+		try:
+			key = raw_input("Press return to end before end of"
+							 " single tone (t):")
+			signal.alarm(0)
+
+			if key == 't':
+				raise EndSession("User wishes to terminate"
+								 " session");
+		except Exception, exc:
+			print exc
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 					in_signature="ssy", out_signature="")
