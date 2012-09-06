@@ -127,6 +127,20 @@ class StkAgent(dbus.service.Object):
 			return key
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",
+				in_signature="sy", out_signature="s")
+	def RequestQuickDigit(self, title, icon):
+		print "Title: (%s)" % (title)
+		print "Icon: (%d)" % (icon)
+		key = raw_input("Quick digit (0-9, *, #, t, b):")
+
+		if key == 'b':
+			raise GoBack("User wishes to go back");
+		elif key == 't':
+			raise EndSession("User wishes to terminate session");
+		else:
+			return key
+
+	@dbus.service.method("org.ofono.SimToolkitAgent",
 				in_signature="sy", out_signature="b")
 	def RequestConfirmation(self, title, icon):
 		print "Title: (%s)" % (title)
