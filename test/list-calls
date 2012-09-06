@@ -24,7 +24,8 @@ for path, properties in modems:
 		print "    [ %s ]" % (path)
 
 		for key in properties.keys():
-			val = str(properties[key])
-			print "        %s = %s" % (key, val)
-
-		print
+			if key == 'Icon':
+				print "        %s = %d" % (key, properties[key])
+			else:
+				val = str(properties[key])
+				print "        %s = %s" % (key, val)
