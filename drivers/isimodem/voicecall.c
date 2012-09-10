@@ -1504,7 +1504,20 @@ static void isi_dial(struct ofono_voicecall *ovc,
 static void isi_answer(struct ofono_voicecall *ovc, ofono_voicecall_cb_t cb,
 			void *data)
 {
-	isi_call_answer_req(ovc, CALL_ID_ALL, cb, data);
+	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
+	int id;
+
+	for (id = 1; id <= 7; id++) {
+
+		if (ivc->calls[id].status == CALL_STATUS_MT_ALERTING)
+			goto answer_by_id;
+
+	}
+
+	id = CALL_ID_ALL;
+
+answer_by_id:
+	isi_call_answer_req(ovc, id, cb, data);
 }
 
 static void isi_hangup_current(struct ofono_voicecall *ovc,
