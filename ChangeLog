@@ -1,3 +1,14 @@
+ver 1.11:
+	Fix issue with Bluetooth disconnect handling.
+	Fix issue with handling EFspn with filler characters.
+	Fix issue with processing multiple *EMRDY notifications.
+	Fix issue with wrong data bearer property signal.
+	Add support for data bearer reporting and Telit modems.
+	Add support for SIM status notification and Telit modems.
+	Add support for PIN retry counter status and Telit modems.
+	Add support for long phone number format and SIM Toolkit.
+	Add support for RequestQuickDigit to SIM Toolkit agent.
+
 ver 1.10:
 	Update multiple descriptions of the API documentation.
 	Add support for ReleaseAndSwap call handling.
