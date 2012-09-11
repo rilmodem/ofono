@@ -756,7 +756,8 @@ gatchat_test_qcdm_SOURCES = gatchat/test-qcdm.c $(gatchat_sources)
 gatchat_test_qcdm_LDADD = @GLIB_LIBS@
 
 
-DISTCHECK_CONFIGURE_FLAGS = --disable-datafiles
+DISTCHECK_CONFIGURE_FLAGS = --disable-datafiles \
+				--enable-dundee --enable-tools
 
 MAINTAINERCLEANFILES = Makefile.in \
 	aclocal.m4 configure config.h.in config.sub config.guess \
