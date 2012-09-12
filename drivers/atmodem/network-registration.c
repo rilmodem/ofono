@@ -1647,8 +1647,6 @@ static void cind_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_chat_send(nd->chat, "AT+CMER=?", cmer_prefix,
 				at_cmer_query_cb, netreg, NULL);
-	g_at_chat_register(nd->chat, "+CIEV:",
-				ciev_notify, FALSE, netreg, NULL);
 
 	/*
 	 * Telit uses strings instead of numbers to identify indicators
