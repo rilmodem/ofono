@@ -2115,14 +2115,16 @@ int __ofono_sms_txq_set_submit_notify(struct ofono_sms *sms,
 					ofono_destroy_func destroy)
 {
 	GList *l;
-	struct tx_queue_entry *entry;
+	struct tx_queue_entry *entry = g_queue_peek_tail(sms->txq);
 
-	l = g_queue_find_custom(sms->txq, uuid, entry_compare_by_uuid);
+	if (memcmp(&entry->uuid, uuid, sizeof(entry->uuid))) {
+		l = g_queue_find_custom(sms->txq, uuid, entry_compare_by_uuid);
 
-	if (l == NULL)
-		return -ENOENT;
+		if (l == NULL)
+			return -ENOENT;
 
-	entry = l->data;
+		entry = l->data;
+	}
 
 	tx_queue_entry_set_submit_notify(entry, cb, data, destroy);
 
