@@ -1431,14 +1431,36 @@ static void at_cmer_not_supported(struct ofono_netreg *netreg)
 {
 	ofono_error("+CMER not supported by this modem.  If this is an error"
 			" please submit patches to support this hardware");
+
+	ofono_netreg_remove(netreg);
 }
 
 static void at_cmer_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 
-	if (!ok)
+	if (!ok) {
 		at_cmer_not_supported(netreg);
+		return;
+	}
+
+	/*
+	 * Telit uses strings instead of numbers to identify indicators
+	 * in a +CIEV URC.
+	 * Handle them in a separate function to keep the code clean.
+	 */
+	if (nd->vendor == OFONO_VENDOR_TELIT)
+		g_at_chat_register(nd->chat, "+CIEV:",
+				telit_ciev_notify, FALSE, netreg, NULL);
+	else
+		g_at_chat_register(nd->chat, "+CIEV:",
+				ciev_notify, FALSE, netreg, NULL);
+
+	g_at_chat_register(nd->chat, "+CREG:",
+				creg_notify, FALSE, netreg, NULL);
+
+	ofono_netreg_register(netreg);
 }
 
 static inline char wanted_cmer(int supported, const char *pref)
@@ -1648,22 +1670,6 @@ static void cind_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_send(nd->chat, "AT+CMER=?", cmer_prefix,
 				at_cmer_query_cb, netreg, NULL);
 
-	/*
-	 * Telit uses strings instead of numbers to identify indicators
-	 * in a +CIEV URC.
-	 * Handle them in a separate function to keep the code clean.
-	 */
-	if (nd->vendor == OFONO_VENDOR_TELIT)
-		g_at_chat_register(nd->chat, "+CIEV:",
-				telit_ciev_notify, FALSE, netreg, NULL);
-	else
-		g_at_chat_register(nd->chat, "+CIEV:",
-				ciev_notify, FALSE, netreg, NULL);
-
-	g_at_chat_register(nd->chat, "+CREG:",
-				creg_notify, FALSE, netreg, NULL);
-
-	ofono_netreg_register(netreg);
 	return;
 
 error:
