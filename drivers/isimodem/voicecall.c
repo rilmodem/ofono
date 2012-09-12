@@ -1507,12 +1507,9 @@ static void isi_answer(struct ofono_voicecall *ovc, ofono_voicecall_cb_t cb,
 	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
 	int id;
 
-	for (id = 1; id <= 7; id++) {
-
+	for (id = 1; id <= 7; id++)
 		if (ivc->calls[id].status == CALL_STATUS_MT_ALERTING)
 			goto answer_by_id;
-
-	}
 
 	id = CALL_ID_ALL;
 
