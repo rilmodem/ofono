@@ -4143,13 +4143,12 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 			}
 
 			while (i < max_offset) {
-				if (ud[i] == 0x00 && ud[i+1] == '\r') {
+				if (ud[i] == 0x00 && ud[i + 1] == '\r') {
 					int j = i + 2;
 
 					for (; j < max_offset; j = j + 2)
-						if (ud[j] != 0x00 ||
-								ud[j + 1] !=
-									'\r')
+						if (ud[j + 1] != '\r' ||
+								ud[j] != 0x00)
 							break;
 
 					if (j == max_offset)
