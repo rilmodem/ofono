@@ -4103,11 +4103,19 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 
 			/*
 			 * CR is a padding character, which means we can
-			 * safely discard everything afterwards
+			 * safely discard everything afterwards if there are
+			 * only trailing CR characters.
 			 */
 			for (; i < written; i++, bufsize++) {
-				if (unpacked[i] == '\r')
-					break;
+				if (unpacked[i] == '\r') {
+					unsigned int t;
+
+					t = strspn((const char *) unpacked + i,
+							"\r");
+
+					if (t + i == written)
+						break;
+				}
 
 				buf[bufsize] = unpacked[i];
 			}
