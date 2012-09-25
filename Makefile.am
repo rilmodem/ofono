@@ -725,6 +725,13 @@ noinst_PROGRAMS += tools/qmi
 tools_qmi_SOURCES = $(qmi_sources) tools/qmi.c
 tools_qmi_LDADD = @GLIB_LIBS@
 endif
+
+if MAINTAINER_MODE
+noinst_PROGRAMS += tools/stktest
+
+tools_stktest_SOURCES = $(gdbus_sources) tools/stktest.c
+tools_stktest_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
+endif
 endif
 
 if DUNDEE
