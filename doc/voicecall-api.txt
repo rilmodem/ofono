@@ -58,7 +58,10 @@ Methods		dict GetProperties()
 
 			NOTE: Releasing active calls does not produce
 			side-effects.  That is the state of held or waiting
-			calls is not affected.
+			calls is not affected.  As an exception, in the case
+			where a single active call and a waiting call are
+			present, releasing the active call will result in the
+			waiting call transitioning to the 'incoming' state.
 
 			Possible Errors: [service].Error.InProgress
 					 [service].Error.Failed
