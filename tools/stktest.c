@@ -38,9 +38,11 @@
 
 #define OFONO_SERVICE	"org.ofono"
 #define STKTEST_PATH	"/stktest"
+#define STKTEST_ERROR	"org.ofono.stktest"
 #define OFONO_MANAGER_INTERFACE		OFONO_SERVICE ".Manager"
 #define OFONO_MODEM_INTERFACE		OFONO_SERVICE ".Modem"
 #define OFONO_STK_INTERFACE		OFONO_SERVICE ".SimToolkit"
+#define OFONO_STKAGENT_INTERFACE	OFONO_SERVICE ".SimToolkitAgent"
 
 #define LISTEN_PORT	12765
 
@@ -68,6 +70,38 @@ static GAtServer *emulator;
 static int modem_mode = 0;
 
 static gboolean create_tcp(void);
+
+static DBusMessage *stktest_error_invalid_args(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, STKTEST_ERROR ".InvalidArguments",
+					"Invalid arguments provided");
+}
+
+static DBusMessage *agent_release(DBusConnection *conn, DBusMessage *msg,
+					void *data)
+{
+	g_print("Got Release");
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *agent_display_text(DBusConnection *conn, DBusMessage *msg,
+					void *data)
+{
+	const char *text;
+	unsigned char icon_id;
+	dbus_bool_t urgent;
+
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &text,
+						DBUS_TYPE_BYTE, &icon_id,
+						DBUS_TYPE_BOOLEAN, &urgent,
+						DBUS_TYPE_INVALID) == FALSE)
+		return stktest_error_invalid_args(msg);
+
+	g_print("Got DisplayText with: %s, %u, %d\n", text, icon_id, urgent);
+
+	return dbus_message_new_method_return(msg);
+}
 
 static void server_debug(const char *str, void *data)
 {
@@ -538,18 +572,36 @@ static int get_modems(DBusConnection *conn)
 	return 0;
 }
 
+static const GDBusMethodTable agent_methods[] = {
+	{ GDBUS_METHOD("Release", NULL, NULL, agent_release) },
+	{ GDBUS_METHOD("DisplayText",
+		GDBUS_ARGS({ "text", "s" }, { "icon_id", "y" },
+				{ "urgent", "b" }), NULL,
+				agent_display_text) },
+	{ },
+};
+
 static void ofono_connect(DBusConnection *conn, void *user_data)
 {
 	g_print("starting telephony interface\n");
 
-	ofono_running = TRUE;
+	if (!g_dbus_register_interface(conn, "/default",
+					OFONO_STKAGENT_INTERFACE,
+					agent_methods, NULL, NULL,
+					NULL, NULL)) {
+		g_printerr("Unable to register local agent");
+		g_main_loop_quit(main_loop);
+	}
 
+	ofono_running = TRUE;
 	get_modems(conn);
 }
 
 static void ofono_disconnect(DBusConnection *conn, void *user_data)
 {
 	g_print("stopping telephony interface\n");
+
+	g_dbus_unregister_interface(conn, "/default", OFONO_STKAGENT_INTERFACE);
 
 	ofono_running = FALSE;
 
