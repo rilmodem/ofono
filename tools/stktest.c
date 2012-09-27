@@ -353,6 +353,64 @@ static gboolean has_stk_interface(DBusMessageIter *iter)
 	return FALSE;
 }
 
+static int send_with_reply(const char *path, const char *interface,
+				const char *method, DBusPendingCall **call,
+				DBusPendingCallNotifyFunction cb,
+				void *user_data, DBusFreeFunction free_func,
+				int timeout, int type, ...)
+{
+	DBusMessage *msg;
+	DBusPendingCall *c;
+	va_list args;
+	int err;
+
+	msg = dbus_message_new_method_call(OFONO_SERVICE, path,
+						interface, method);
+	if (msg == NULL) {
+		g_printerr("Unable to allocate new D-Bus %s message\n", method);
+		err = -ENOMEM;
+		goto fail;
+	}
+
+	va_start(args, type);
+
+	if (!dbus_message_append_args_valist(msg, type, args)) {
+		va_end(args);
+		err = -EIO;
+		goto fail;
+	}
+
+	va_end(args);
+
+	if (timeout > 0)
+		timeout *= 1000;
+
+	if (!dbus_connection_send_with_reply(conn, msg, &c, timeout)) {
+		g_printerr("Sending %s failed\n", method);
+		err = -EIO;
+		goto fail;
+	}
+
+	if (call != NULL)
+		*call = c;
+
+	dbus_pending_call_set_notify(c, cb, user_data, free_func);
+	dbus_pending_call_unref(c);
+
+	dbus_message_unref(msg);
+
+	return 0;
+
+fail:
+	if (free_func && user_data)
+		free_func(user_data);
+
+	if (msg)
+		dbus_message_unref(msg);
+
+	return err;
+}
+
 static void set_property_reply(DBusPendingCall *call, void *user_data)
 {
 	DBusMessage *reply = dbus_pending_call_steal_reply(call);
