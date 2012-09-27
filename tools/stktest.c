@@ -312,6 +312,73 @@ static gboolean has_stk_interface(DBusMessageIter *iter)
 	return FALSE;
 }
 
+static void set_property_reply(DBusPendingCall *call, void *user_data)
+{
+	DBusMessage *reply = dbus_pending_call_steal_reply(call);
+	DBusError err;
+
+	dbus_error_init(&err);
+
+	if (dbus_set_error_from_message(&err, reply) == TRUE) {
+		g_printerr("%s: %s\n", err.name, err.message);
+		dbus_error_free(&err);
+	}
+
+	dbus_message_unref(reply);
+}
+
+static int set_property(const char *key, int type, const void *val,
+				DBusPendingCallNotifyFunction notify,
+				gpointer user_data,
+				DBusFreeFunction destroy)
+{
+	DBusMessage *msg;
+	DBusMessageIter iter, value;
+	DBusPendingCall *call;
+	const char *signature;
+
+	msg = dbus_message_new_method_call(OFONO_SERVICE, STKTEST_PATH,
+					OFONO_MODEM_INTERFACE, "SetProperty");
+	if (msg == NULL)
+		return -ENOMEM;
+
+	dbus_message_set_auto_start(msg, FALSE);
+
+	dbus_message_iter_init_append(msg, &iter);
+
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &key);
+
+	switch (type) {
+	case DBUS_TYPE_BOOLEAN:
+		signature = DBUS_TYPE_BOOLEAN_AS_STRING;
+		break;
+	default:
+		dbus_message_unref(msg);
+		return -EINVAL;
+	}
+
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_VARIANT,
+							signature, &value);
+	dbus_message_iter_append_basic(&value, type, val);
+	dbus_message_iter_close_container(&iter, &value);
+
+	if (dbus_connection_send_with_reply(conn, msg, &call, -1) == FALSE) {
+		dbus_message_unref(msg);
+		return -EIO;
+	}
+
+	dbus_message_unref(msg);
+
+	if (call == NULL)
+		return -EINVAL;
+
+	dbus_pending_call_set_notify(call, notify, user_data, destroy);
+
+	dbus_pending_call_unref(call);
+
+	return 0;
+}
+
 static gboolean modem_changed(DBusConnection *conn,
 				DBusMessage *msg, void *user_data)
 {
@@ -346,6 +413,13 @@ static gboolean modem_changed(DBusConnection *conn,
 	}
 
 	return TRUE;
+}
+
+static void powerup(void)
+{
+	dbus_bool_t powered = TRUE;
+	set_property("Powered", DBUS_TYPE_BOOLEAN, &powered,
+			set_property_reply, NULL, NULL);
 }
 
 static void get_modems_reply(DBusPendingCall *call, void *user_data)
@@ -406,6 +480,8 @@ done:
 		g_printerr("Unable to listen on modem emulator socket\n");
 		g_main_loop_quit(main_loop);
 	}
+
+	powerup();
 }
 
 static int get_modems(DBusConnection *conn)
