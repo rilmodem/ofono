@@ -44,6 +44,13 @@
 
 #define LISTEN_PORT	12765
 
+enum test_state {
+	TEST_STATE_POWERING_UP = 1,
+	TEST_STATE_REGISTERING_AGENT,
+	TEST_STATE_RUNNING,
+	TEST_STATE_POWERING_DOWN,
+};
+
 static GMainLoop *main_loop = NULL;
 static volatile sig_atomic_t __terminated = 0;
 
@@ -51,7 +58,7 @@ static volatile sig_atomic_t __terminated = 0;
 static DBusConnection *conn;
 static gboolean ofono_running = FALSE;
 static guint modem_changed_watch;
-static gboolean stk_ready = FALSE;
+enum test_state state;
 
 /* Emulator setup */
 static guint server_watch;
@@ -327,18 +334,19 @@ static void set_property_reply(DBusPendingCall *call, void *user_data)
 	dbus_message_unref(reply);
 }
 
-static int set_property(const char *key, int type, const void *val,
-				DBusPendingCallNotifyFunction notify,
-				gpointer user_data,
-				DBusFreeFunction destroy)
+static int set_property(const char *path, const char *interface,
+			const char *key, int type, const void *val,
+			DBusPendingCallNotifyFunction notify,
+			gpointer user_data,
+			DBusFreeFunction destroy)
 {
 	DBusMessage *msg;
 	DBusMessageIter iter, value;
 	DBusPendingCall *call;
 	const char *signature;
 
-	msg = dbus_message_new_method_call(OFONO_SERVICE, STKTEST_PATH,
-					OFONO_MODEM_INTERFACE, "SetProperty");
+	msg = dbus_message_new_method_call(OFONO_SERVICE, path, interface,
+						"SetProperty");
 	if (msg == NULL)
 		return -ENOMEM;
 
@@ -379,6 +387,12 @@ static int set_property(const char *key, int type, const void *val,
 	return 0;
 }
 
+static void register_agent()
+{
+	state = TEST_STATE_REGISTERING_AGENT;
+	g_print("Gained STK interface, registering agent...\n");
+}
+
 static gboolean modem_changed(DBusConnection *conn,
 				DBusMessage *msg, void *user_data)
 {
@@ -404,13 +418,19 @@ static gboolean modem_changed(DBusConnection *conn,
 
 	has_stk = has_stk_interface(&value);
 
-	if (stk_ready && has_stk == FALSE) {
-		stk_ready = FALSE;
-		g_print("Lost STK interface\n");
-	} else if (stk_ready == FALSE && has_stk == TRUE) {
-		stk_ready = TRUE;
-		g_print("Gained STK interface\n");
-	}
+	switch (state) {
+	case TEST_STATE_POWERING_UP:
+		if (has_stk)
+			register_agent();
+		break;
+	case TEST_STATE_REGISTERING_AGENT:
+	case TEST_STATE_RUNNING:
+		if (has_stk == FALSE)
+			g_printerr("Unexpectedly lost STK interface\n");
+		/* Fall through */
+	case TEST_STATE_POWERING_DOWN:
+		break;
+	};
 
 	return TRUE;
 }
@@ -418,7 +438,10 @@ static gboolean modem_changed(DBusConnection *conn,
 static void powerup(void)
 {
 	dbus_bool_t powered = TRUE;
-	set_property("Powered", DBUS_TYPE_BOOLEAN, &powered,
+
+	state = TEST_STATE_POWERING_UP;
+	set_property(STKTEST_PATH, OFONO_MODEM_INTERFACE, "Powered",
+			DBUS_TYPE_BOOLEAN, &powered,
 			set_property_reply, NULL, NULL);
 }
 
