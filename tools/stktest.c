@@ -71,6 +71,27 @@ static int modem_mode = 0;
 
 static gboolean create_tcp(void);
 
+static const char *to_hex(const unsigned char *data, unsigned int len)
+{
+	static char buf[512+1];
+	unsigned int i;
+
+	for (i = 0; i < len; i++)
+		sprintf(buf + i * 2, "%02hhX", data[i]);
+
+	buf[i*2] = '\0';
+
+	return buf;
+}
+
+static void send_proactive_command(const unsigned char *pdu, unsigned int len)
+{
+	char buf[1024];
+
+	sprintf(buf, "+CUSATP: %s", to_hex(pdu, len));
+	g_at_server_send_unsolicited(emulator, buf);
+}
+
 static DBusMessage *stktest_error_invalid_args(DBusMessage *msg)
 {
 	return g_dbus_create_error(msg, STKTEST_ERROR ".InvalidArguments",
