@@ -479,10 +479,43 @@ static int set_property(const char *path, const char *interface,
 	return 0;
 }
 
+static void register_agent_reply(DBusPendingCall *call, void *user_data)
+{
+	DBusMessage *reply = dbus_pending_call_steal_reply(call);
+	DBusError err;
+
+	dbus_error_init(&err);
+
+	if (dbus_set_error_from_message(&err, reply) == TRUE) {
+		g_printerr("%s: %s\n", err.name, err.message);
+		dbus_error_free(&err);
+	}
+
+	dbus_message_unref(reply);
+
+	state = TEST_STATE_RUNNING;
+}
+
 static void register_agent()
 {
-	state = TEST_STATE_REGISTERING_AGENT;
+	const char *path = "/default";
+	int status;
+
 	g_print("Gained STK interface, registering agent...\n");
+
+	status = send_with_reply(STKTEST_PATH, OFONO_STK_INTERFACE,
+					"RegisterAgent", NULL,
+					register_agent_reply, NULL, NULL, 1,
+					DBUS_TYPE_OBJECT_PATH, &path,
+					DBUS_TYPE_INVALID);
+
+	if (status < 0) {
+		g_printerr("Unable to register agent with oFono\n");
+		g_main_loop_quit(main_loop);
+		return;
+	}
+
+	state = TEST_STATE_REGISTERING_AGENT;
 }
 
 static gboolean modem_changed(DBusConnection *conn,
