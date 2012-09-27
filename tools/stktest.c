@@ -30,8 +30,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <gdbus.h>
+#include <gatchat/gatserver.h>
 
 #define OFONO_SERVICE	"org.ofono"
 #define STKTEST_PATH	"/stktest"
@@ -39,12 +42,255 @@
 #define OFONO_MODEM_INTERFACE		OFONO_SERVICE ".Modem"
 #define OFONO_STK_INTERFACE		OFONO_SERVICE ".SimToolkit"
 
+#define LISTEN_PORT	12765
+
 static GMainLoop *main_loop = NULL;
 static volatile sig_atomic_t __terminated = 0;
+
+/* DBus related */
 static DBusConnection *conn;
 static gboolean ofono_running = FALSE;
 static guint modem_changed_watch;
 static gboolean stk_ready = FALSE;
+
+/* Emulator setup */
+static guint server_watch;
+static GAtServer *emulator;
+
+/* Emulated modem state variables */
+static int modem_mode = 0;
+
+static gboolean create_tcp(void);
+
+static void server_debug(const char *str, void *data)
+{
+	g_print("%s: %s\n", (char *) data, str);
+}
+
+static void cgmi_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
+{
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
+		g_at_server_send_info(server, "oFono", TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+	};
+}
+
+static void cgmm_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
+{
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
+		g_at_server_send_info(server, "oFono pre-1.0", TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+	};
+}
+
+static void cgmr_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
+{
+	char buf[256];
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
+		sprintf(buf, "oFono pre-1.0 version: %s", VERSION);
+		g_at_server_send_info(server, buf, TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+	};
+}
+
+static void cgsn_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
+{
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
+		g_at_server_send_info(server, "123456789", TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+	};
+}
+
+static gboolean send_ok(gpointer user)
+{
+	GAtServer *server = user;
+
+	g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+
+	return FALSE;
+}
+
+static void cfun_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
+{
+	char buf[12];
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_info(server, "+CFUN: (0-1,4)", TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_QUERY:
+		snprintf(buf, sizeof(buf), "+CFUN: %d", modem_mode);
+		g_at_server_send_info(server, buf, TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+	{
+		GAtResultIter iter;
+		int mode;
+
+		g_at_result_iter_init(&iter, cmd);
+		g_at_result_iter_next(&iter, "");
+
+		if (g_at_result_iter_next_number(&iter, &mode) == FALSE)
+			goto error;
+
+		if (mode != 0 && mode != 1)
+			goto error;
+
+		if (modem_mode == mode) {
+			g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+			break;
+		}
+
+		modem_mode = mode;
+		g_timeout_add_seconds(1, send_ok, server);
+		break;
+	}
+	default:
+		goto error;
+	};
+
+	return;
+
+error:
+	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+}
+
+static void listen_again(gpointer user_data)
+{
+	if (create_tcp() == TRUE)
+		return;
+
+	g_print("Error listening to socket\n");
+	g_main_loop_quit(main_loop);
+}
+
+static void setup_emulator(GAtServer *server)
+{
+	g_at_server_set_debug(server, server_debug, "Server");
+
+	g_at_server_register(server, "+CGMI",    cgmi_cb,    NULL, NULL);
+	g_at_server_register(server, "+CGMM",    cgmm_cb,    NULL, NULL);
+	g_at_server_register(server, "+CGMR",    cgmr_cb,    NULL, NULL);
+	g_at_server_register(server, "+CGSN",    cgsn_cb,    NULL, NULL);
+	g_at_server_register(server, "+CFUN",    cfun_cb,    NULL, NULL);
+
+	g_at_server_set_disconnect_function(server, listen_again, NULL);
+}
+
+static gboolean on_socket_connected(GIOChannel *chan, GIOCondition cond,
+							gpointer user)
+{
+	struct sockaddr saddr;
+	unsigned int len = sizeof(saddr);
+	int fd;
+	GIOChannel *client_io = NULL;
+
+	if (cond != G_IO_IN)
+		goto error;
+
+	fd = accept(g_io_channel_unix_get_fd(chan), &saddr, &len);
+	if (fd == -1)
+		goto error;
+
+	client_io = g_io_channel_unix_new(fd);
+
+	emulator = g_at_server_new(client_io);
+	g_io_channel_unref(client_io);
+
+	if (emulator == NULL)
+		goto error;
+
+	setup_emulator(emulator);
+
+error:
+	server_watch = 0;
+	return FALSE;
+}
+
+static gboolean create_tcp(void)
+{
+	struct sockaddr_in addr;
+	int sk;
+	int reuseaddr = 1;
+	GIOChannel *server_io;
+
+	sk = socket(PF_INET, SOCK_STREAM, 0);
+	if (sk < 0) {
+		g_print("Can't create tcp/ip socket: %s (%d)\n",
+						strerror(errno), errno);
+		return FALSE;
+	}
+
+	memset(&addr, 0, sizeof(addr));
+
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = INADDR_ANY;
+	addr.sin_port = htons(LISTEN_PORT);
+
+	setsockopt(sk, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr));
+	if (bind(sk, (struct sockaddr *) &addr, sizeof(struct sockaddr)) < 0) {
+		g_print("Can't bind socket: %s (%d)", strerror(errno), errno);
+		close(sk);
+		return FALSE;
+	}
+
+	if (listen(sk, 1) < 0) {
+		g_print("Can't listen on socket: %s (%d)",
+						strerror(errno), errno);
+		close(sk);
+		return FALSE;
+	}
+
+	g_print("new tcp is created at tcp port %d\n", LISTEN_PORT);
+
+	server_io = g_io_channel_unix_new(sk);
+	g_io_channel_set_close_on_unref(server_io, TRUE);
+
+	server_watch = g_io_add_watch_full(server_io,
+				G_PRIORITY_DEFAULT,
+				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
+				on_socket_connected, NULL, NULL);
+
+	g_io_channel_unref(server_io);
+
+	return TRUE;
+}
 
 static gboolean has_stk_interface(DBusMessageIter *iter)
 {
@@ -155,6 +401,11 @@ done:
 							"PropertyChanged",
 							modem_changed,
 							NULL, NULL);
+
+	if (create_tcp() == FALSE) {
+		g_printerr("Unable to listen on modem emulator socket\n");
+		g_main_loop_quit(main_loop);
+	}
 }
 
 static int get_modems(DBusConnection *conn)
@@ -205,6 +456,14 @@ static void ofono_disconnect(DBusConnection *conn, void *user_data)
 
 	g_dbus_remove_watch(conn, modem_changed_watch);
 	modem_changed_watch = 0;
+
+	if (server_watch) {
+		g_source_remove(server_watch);
+		server_watch = 0;
+	}
+
+	g_at_server_unref(emulator);
+	emulator = NULL;
 }
 
 static void sig_term(int sig)
