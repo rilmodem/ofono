@@ -38,7 +38,7 @@
 
 #define OFONO_SERVICE	"org.ofono"
 #define STKTEST_PATH	"/stktest"
-#define STKTEST_ERROR	"org.ofono.stktest"
+#define STKTEST_ERROR	"org.ofono.stktest.Error"
 #define OFONO_MANAGER_INTERFACE		OFONO_SERVICE ".Manager"
 #define OFONO_MODEM_INTERFACE		OFONO_SERVICE ".Modem"
 #define OFONO_STK_INTERFACE		OFONO_SERVICE ".SimToolkit"
