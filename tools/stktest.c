@@ -281,8 +281,6 @@ error:
 static void cusatt_cb(GAtServer *server, GAtServerRequestType type,
 			GAtResult *cmd, gpointer user)
 {
-	char buf[12];
-
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
