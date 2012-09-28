@@ -330,6 +330,7 @@ static gboolean on_socket_connected(GIOChannel *chan, GIOCondition cond,
 	client_io = g_io_channel_unix_new(fd);
 
 	emulator = g_at_server_new(client_io);
+	g_at_server_set_echo(emulator, FALSE);
 	g_io_channel_unref(client_io);
 
 	if (emulator == NULL)
