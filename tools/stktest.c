@@ -126,7 +126,7 @@ static DBusMessage *stktest_error_busy(DBusMessage *msg)
 static DBusMessage *agent_release(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
-	g_print("Got Release");
+	g_print("Got Release\n");
 
 	return dbus_message_new_method_return(msg);
 }
