@@ -266,11 +266,11 @@ static void setup_emulator(GAtServer *server)
 {
 	g_at_server_set_debug(server, server_debug, "Server");
 
-	g_at_server_register(server, "+CGMI",    cgmi_cb,    NULL, NULL);
-	g_at_server_register(server, "+CGMM",    cgmm_cb,    NULL, NULL);
-	g_at_server_register(server, "+CGMR",    cgmr_cb,    NULL, NULL);
-	g_at_server_register(server, "+CGSN",    cgsn_cb,    NULL, NULL);
-	g_at_server_register(server, "+CFUN",    cfun_cb,    NULL, NULL);
+	g_at_server_register(server, "+CGMI", cgmi_cb, NULL, NULL);
+	g_at_server_register(server, "+CGMM", cgmm_cb, NULL, NULL);
+	g_at_server_register(server, "+CGMR", cgmr_cb, NULL, NULL);
+	g_at_server_register(server, "+CGSN", cgsn_cb, NULL, NULL);
+	g_at_server_register(server, "+CFUN", cfun_cb, NULL, NULL);
 
 	g_at_server_set_disconnect_function(server, listen_again, NULL);
 }
