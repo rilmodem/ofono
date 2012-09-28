@@ -946,6 +946,18 @@ static DBusMessage *test_display_text_13(DBusMessage *msg,
 	return dbus_message_new_method_return(msg);
 }
 
+static DBusMessage *test_display_text_14(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Toolkit Test 3"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -1014,6 +1026,11 @@ static void __stktest_test_init(void)
 				display_text_response_131,
 				sizeof(display_text_response_131),
 				test_display_text_13, expect_response);
+	stktest_add_test("Display Text 1.4", "DisplayText",
+				display_text_141, sizeof(display_text_141),
+				display_text_response_141,
+				sizeof(display_text_response_141),
+				test_display_text_14, expect_response);
 }
 
 static void test_destroy(gpointer user_data)
