@@ -36,6 +36,8 @@
 #include <gdbus.h>
 #include <gatchat/gatserver.h>
 
+#include "unit/stk-test-data.h"
+
 #define OFONO_SERVICE	"org.ofono"
 #define STKTEST_PATH	"/stktest"
 #define STKTEST_ERROR	"org.ofono.stktest.Error"
@@ -891,6 +893,35 @@ static void disconnect_callback(DBusConnection *conn, void *user_data)
 	g_main_loop_quit(main_loop);
 }
 
+static gboolean end_session_and_finish(gpointer user_data)
+{
+	g_at_server_send_unsolicited(emulator, "+CUSATEND");
+	__stktest_test_finish(TRUE);
+
+	return FALSE;
+}
+
+static void expect_response(const unsigned char *pdu, unsigned int len)
+{
+	struct test *test = cur_test->data;
+
+	STKTEST_RESPONSE_ASSERT(test->rsp_pdu, test->rsp_len, pdu, len);
+
+	g_idle_add(end_session_and_finish, NULL);
+}
+
+static DBusMessage *test_display_text_11(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Toolkit Test 1"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -944,6 +975,11 @@ static void stktest_add_test(const char *name, const char *method,
 
 static void __stktest_test_init(void)
 {
+	stktest_add_test("Display Text 1.1", "DisplayText",
+				display_text_111, sizeof(display_text_111),
+				display_text_response_111,
+				sizeof(display_text_response_111),
+				test_display_text_11, expect_response);
 }
 
 static void test_destroy(gpointer user_data)
