@@ -54,8 +54,34 @@ enum test_state {
 	TEST_STATE_POWERING_DOWN,
 };
 
+enum test_result {
+	TEST_RESULT_NOT_RUN = 0,
+	TEST_RESULT_PASSED,
+	TEST_RESULT_FAILED
+};
+
+typedef DBusMessage *(*display_text_cb_t)(DBusMessage *msg, const char *text,
+						unsigned char icon_id,
+						gboolean urgent);
+typedef void (*terminal_response_func)(const unsigned char *pdu,
+					unsigned int len);
+
+struct test {
+	char *name;
+	char *method;
+	unsigned char *req_pdu;
+	unsigned int req_len;
+	unsigned char *rsp_pdu;
+	unsigned int rsp_len;
+	void *agent_func;
+	terminal_response_func tr_func;
+	enum test_result result;
+};
+
 static GMainLoop *main_loop = NULL;
 static volatile sig_atomic_t __terminated = 0;
+GList *tests = NULL;
+GList *cur_test = NULL;
 
 /* DBus related */
 static DBusConnection *conn;
@@ -810,6 +836,75 @@ static void disconnect_callback(DBusConnection *conn, void *user_data)
 	g_main_loop_quit(main_loop);
 }
 
+static void stktest_add_test(const char *name, const char *method,
+				const unsigned char *req, unsigned int req_len,
+				const unsigned char *rsp, unsigned int rsp_len,
+				void *agent_func,
+				terminal_response_func tr_func)
+{
+	struct test *test = g_new0(struct test, 1);
+
+	test->name = g_strdup(name);
+	test->method = g_strdup(method);
+	test->req_pdu = g_memdup(req, req_len);
+	test->req_len = req_len;
+	test->rsp_pdu = g_memdup(rsp, rsp_len);
+	test->rsp_len = rsp_len;
+	test->agent_func = agent_func;
+	test->tr_func = tr_func;
+
+	tests = g_list_append(tests, test);
+}
+
+static void __stktest_test_init(void)
+{
+}
+
+static void test_destroy(gpointer user_data)
+{
+	struct test *test = user_data;
+
+	g_free(test->name);
+	g_free(test->method);
+	g_free(test->req_pdu);
+	g_free(test->rsp_pdu);
+
+	g_free(test);
+}
+
+static void __stktest_test_summarize(void)
+{
+	GList *l;
+
+	g_print("\n\nTest Summary\n");
+	g_print("============\n");
+
+	for (l = tests; l; l = l->next) {
+		struct test *test = l->data;
+
+		g_print("%-60s", test->name);
+
+		switch (test->result) {
+		case TEST_RESULT_NOT_RUN:
+			g_print("Not Run\n");
+			break;
+		case TEST_RESULT_PASSED:
+			g_print("Passed\n");
+			break;
+		case TEST_RESULT_FAILED:
+			g_print("Failed\n");
+		break;
+		}
+	}
+}
+
+static void __stktest_test_cleanup(void)
+{
+	g_list_free_full(tests, test_destroy);
+	tests = NULL;
+	cur_test = NULL;
+}
+
 static gboolean option_version = FALSE;
 
 static GOptionEntry options[] = {
@@ -845,6 +940,8 @@ int main(int argc, char **argv)
 		exit(0);
 	}
 
+	__stktest_test_init();
+
 	main_loop = g_main_loop_new(NULL, FALSE);
 
 	dbus_error_init(&err);
@@ -879,6 +976,9 @@ int main(int argc, char **argv)
 	dbus_connection_unref(conn);
 
 	g_main_loop_unref(main_loop);
+
+	__stktest_test_summarize();
+	__stktest_test_cleanup();
 
 	return 0;
 }
