@@ -1138,6 +1138,11 @@ static void __stktest_test_init(void)
 				display_text_response_181,
 				sizeof(display_text_response_181),
 				test_display_text_18, expect_response);
+	stktest_add_test("Display Text 1.9", "DisplayText",
+				display_text_191, sizeof(display_text_191),
+				display_text_response_191,
+				sizeof(display_text_response_191),
+				NULL, expect_response);
 }
 
 static void test_destroy(gpointer user_data)
