@@ -96,7 +96,41 @@ static GAtServer *emulator;
 /* Emulated modem state variables */
 static int modem_mode = 0;
 
+void __stktest_test_next();
+void __stktest_test_finish(gboolean successful);
 static gboolean create_tcp(void);
+
+#define STKTEST_AGENT_ASSERT(expr)					\
+	do {								\
+		if (!(expr)) {						\
+			g_printerr("Assertion Failed %s:%d %s\n",	\
+					__FILE__, __LINE__, #expr);	\
+			__stktest_test_finish(FALSE);			\
+			return stktest_error_failed(msg);		\
+		}							\
+	} while (0)
+
+#define STKTEST_RESPONSE_ASSERT(expect_pdu, expect_pdu_len,		\
+				got_pdu, got_pdu_len)			\
+	do {								\
+		if ((expect_pdu_len) != (got_pdu_len)) {		\
+			g_printerr("Assertion Failed %s:%d"		\
+					" Wrong response len"		\
+					" want: %d, got: %d\n",		\
+					__FILE__, __LINE__,		\
+					expect_pdu_len, got_pdu_len);	\
+			__stktest_test_finish(FALSE);			\
+			return;						\
+		}							\
+									\
+		if (memcmp(expect_pdu, got_pdu, expect_pdu_len) != 0) {	\
+			g_printerr("Assertion Failed %s:%d"		\
+					"Wrong response\n",		\
+					__FILE__, __LINE__);		\
+			__stktest_test_finish(FALSE);			\
+			return;						\
+		}							\
+	} while (0)
 
 static const char *to_hex(const unsigned char *data, unsigned int len)
 {
@@ -163,6 +197,8 @@ static DBusMessage *agent_display_text(DBusConnection *conn, DBusMessage *msg,
 	const char *text;
 	unsigned char icon_id;
 	dbus_bool_t urgent;
+	struct test *test;
+	display_text_cb_t func;
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &text,
 						DBUS_TYPE_BYTE, &icon_id,
@@ -170,9 +206,13 @@ static DBusMessage *agent_display_text(DBusConnection *conn, DBusMessage *msg,
 						DBUS_TYPE_INVALID) == FALSE)
 		return stktest_error_invalid_args(msg);
 
-	g_print("Got DisplayText with: %s, %u, %d\n", text, icon_id, urgent);
+	if (cur_test == NULL)
+		return stktest_error_failed(msg);
 
-	return dbus_message_new_method_return(msg);
+	test = cur_test->data;
+	func = test->agent_func;
+
+	return func(msg, text, icon_id, urgent);
 }
 
 static void server_debug(const char *str, void *data)
@@ -319,6 +359,8 @@ static void cusatt_cb(GAtServer *server, GAtServerRequestType type,
 		GAtResultIter iter;
 		const unsigned char *pdu;
 		int len;
+		struct test *test;
+		terminal_response_func func;
 
 		g_at_result_iter_init(&iter, cmd);
 		g_at_result_iter_next(&iter, "");
@@ -326,7 +368,14 @@ static void cusatt_cb(GAtServer *server, GAtServerRequestType type,
 		if (g_at_result_iter_next_hexstring(&iter, &pdu, &len) == FALSE)
 			goto error;
 
+		if (cur_test == NULL)
+			goto error;
+
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+
+		test = cur_test->data;
+		func = test->tr_func;
+		func(pdu, len);
 		break;
 	}
 	default:
@@ -341,6 +390,9 @@ error:
 
 static void listen_again(gpointer user_data)
 {
+	g_at_server_unref(emulator);
+	emulator = NULL;
+
 	if (create_tcp() == TRUE)
 		return;
 
@@ -592,6 +644,7 @@ static void register_agent_reply(DBusPendingCall *call, void *user_data)
 {
 	DBusMessage *reply = dbus_pending_call_steal_reply(call);
 	DBusError err;
+	struct test *test;
 
 	dbus_error_init(&err);
 
@@ -603,6 +656,8 @@ static void register_agent_reply(DBusPendingCall *call, void *user_data)
 	dbus_message_unref(reply);
 
 	state = TEST_STATE_RUNNING;
+	test = cur_test->data;
+	send_proactive_command(test->req_pdu, test->req_len);
 }
 
 static void register_agent()
@@ -738,7 +793,7 @@ done:
 		g_main_loop_quit(main_loop);
 	}
 
-	powerup();
+	__stktest_test_next();
 }
 
 static int get_modems(DBusConnection *conn)
@@ -834,6 +889,37 @@ static void disconnect_callback(DBusConnection *conn, void *user_data)
 	g_printerr("D-Bus disconnect\n");
 
 	g_main_loop_quit(main_loop);
+}
+
+static void power_down_reply(DBusPendingCall *call, void *user_data)
+{
+	__stktest_test_next();
+}
+
+void __stktest_test_finish(gboolean successful)
+{
+	struct test *test = cur_test->data;
+	dbus_bool_t powered = FALSE;
+
+	test->result = successful ? TEST_RESULT_PASSED : TEST_RESULT_FAILED;
+
+	state = TEST_STATE_POWERING_DOWN;
+	set_property(STKTEST_PATH, OFONO_MODEM_INTERFACE, "Powered",
+			DBUS_TYPE_BOOLEAN, &powered,
+			power_down_reply, NULL, NULL);
+}
+
+void __stktest_test_next()
+{
+	if (cur_test == NULL)
+		cur_test = tests;
+	else
+		cur_test = cur_test->next;
+
+	if (cur_test == NULL)
+		g_main_loop_quit(main_loop);
+
+	powerup();
 }
 
 static void stktest_add_test(const char *name, const char *method,
