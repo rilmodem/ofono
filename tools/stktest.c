@@ -253,6 +253,42 @@ error:
 	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 }
 
+static void cusatt_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
+{
+	char buf[12];
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_QUERY:
+		g_at_server_send_ext_final(server, "+CME ERROR: 4");
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+	{
+		GAtResultIter iter;
+		const unsigned char *pdu;
+		int len;
+
+		g_at_result_iter_init(&iter, cmd);
+		g_at_result_iter_next(&iter, "");
+
+		if (g_at_result_iter_next_hexstring(&iter, &pdu, &len) == FALSE)
+			goto error;
+
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	}
+	default:
+		goto error;
+	};
+
+	return;
+
+error:
+	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+}
 static void listen_again(gpointer user_data)
 {
 	if (create_tcp() == TRUE)
@@ -271,6 +307,7 @@ static void setup_emulator(GAtServer *server)
 	g_at_server_register(server, "+CGMR", cgmr_cb, NULL, NULL);
 	g_at_server_register(server, "+CGSN", cgsn_cb, NULL, NULL);
 	g_at_server_register(server, "+CFUN", cfun_cb, NULL, NULL);
+	g_at_server_register(server, "+CUSATT", cusatt_cb, NULL, NULL);
 
 	g_at_server_set_disconnect_function(server, listen_again, NULL);
 }
