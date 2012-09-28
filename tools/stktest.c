@@ -289,6 +289,7 @@ static void cusatt_cb(GAtServer *server, GAtServerRequestType type,
 error:
 	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 }
+
 static void listen_again(gpointer user_data)
 {
 	if (create_tcp() == TRUE)
