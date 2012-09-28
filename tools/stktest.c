@@ -231,6 +231,18 @@ static DBusMessage *agent_display_text(DBusConnection *conn, DBusMessage *msg,
 	test = cur_test->data;
 	func = test->agent_func;
 
+	if (strcmp(test->method, "DisplayText")) {
+		g_printerr("Wrong method called!\n");
+		__stktest_test_finish(FALSE);
+		return stktest_error_failed(msg);
+	}
+
+	if (func == NULL) {
+		g_printerr("DisplayText not expected to be called");
+		__stktest_test_finish(FALSE);
+		return stktest_error_failed(msg);
+	}
+
 	return func(msg, text, icon_id, urgent);
 }
 
