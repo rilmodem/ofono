@@ -1007,6 +1007,19 @@ static DBusMessage *test_display_text_16(DBusMessage *msg,
 	return dbus_message_new_method_return(msg);
 }
 
+static DBusMessage *test_display_text_17(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	/* oFono gives rich text formatting in HTML */
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "&lt;GO-BACKWARDS&gt;"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return stktest_error_go_back(msg);
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -1090,6 +1103,11 @@ static void __stktest_test_init(void)
 				display_text_response_161,
 				sizeof(display_text_response_161),
 				test_display_text_16, expect_response);
+	stktest_add_test("Display Text 1.7", "DisplayText",
+				display_text_171, sizeof(display_text_171),
+				display_text_response_171,
+				sizeof(display_text_response_171),
+				test_display_text_17, expect_response);
 }
 
 static void test_destroy(gpointer user_data)
