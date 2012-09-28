@@ -39,6 +39,7 @@
 #define OFONO_SERVICE	"org.ofono"
 #define STKTEST_PATH	"/stktest"
 #define STKTEST_ERROR	"org.ofono.stktest.Error"
+#define OFONO_ERROR	"org.ofono.Error"
 #define OFONO_MANAGER_INTERFACE		OFONO_SERVICE ".Manager"
 #define OFONO_MODEM_INTERFACE		OFONO_SERVICE ".Modem"
 #define OFONO_STK_INTERFACE		OFONO_SERVICE ".SimToolkit"
@@ -96,6 +97,30 @@ static DBusMessage *stktest_error_invalid_args(DBusMessage *msg)
 {
 	return g_dbus_create_error(msg, STKTEST_ERROR ".InvalidArguments",
 					"Invalid arguments provided");
+}
+
+static DBusMessage *stktest_error_failed(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, STKTEST_ERROR ".Failed",
+					"Operation failed");
+}
+
+static DBusMessage *stktest_error_end_session(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, OFONO_ERROR ".EndSession",
+					"End Session Request");
+}
+
+static DBusMessage *stktest_error_go_back(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, OFONO_ERROR ".GoBack",
+					"Go Back Request");
+}
+
+static DBusMessage *stktest_error_busy(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, OFONO_ERROR ".Busy",
+					"UI Busy");
 }
 
 static DBusMessage *agent_release(DBusConnection *conn, DBusMessage *msg,
