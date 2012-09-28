@@ -1045,6 +1045,20 @@ static DBusMessage *test_display_text_18(DBusMessage *msg,
 	return stktest_error_end_session(msg);
 }
 
+static DBusMessage *test_display_text_21(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "&lt;TIME-OUT&gt;"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	pending = dbus_message_ref(msg);
+
+	return NULL;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -1143,6 +1157,11 @@ static void __stktest_test_init(void)
 				display_text_response_191,
 				sizeof(display_text_response_191),
 				NULL, expect_response);
+	stktest_add_test("Display Text 2.1", "DisplayText",
+				display_text_211, sizeof(display_text_211),
+				display_text_response_211,
+				sizeof(display_text_response_211),
+				test_display_text_21, expect_response);
 }
 
 static void test_destroy(gpointer user_data)
