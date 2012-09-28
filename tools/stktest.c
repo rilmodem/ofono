@@ -990,6 +990,23 @@ static DBusMessage *test_display_text_15(DBusMessage *msg,
 	return NULL;
 }
 
+static DBusMessage *test_display_text_16(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "This command instructs the ME"
+						" to display a text message. "
+						"It allows the SIM to define "
+						"the priority of that message, "
+						"and the text string format. "
+						"Two types of prio"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -1068,6 +1085,11 @@ static void __stktest_test_init(void)
 				display_text_response_151,
 				sizeof(display_text_response_151),
 				test_display_text_15, expect_response);
+	stktest_add_test("Display Text 1.6", "DisplayText",
+				display_text_161, sizeof(display_text_161),
+				display_text_response_161,
+				sizeof(display_text_response_161),
+				test_display_text_16, expect_response);
 }
 
 static void test_destroy(gpointer user_data)
