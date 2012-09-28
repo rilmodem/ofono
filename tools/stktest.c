@@ -90,6 +90,7 @@ static DBusConnection *conn;
 static gboolean ofono_running = FALSE;
 static guint modem_changed_watch;
 enum test_state state;
+DBusMessage *pending = NULL;
 
 /* Emulator setup */
 static guint server_watch;
@@ -190,7 +191,23 @@ static DBusMessage *agent_release(DBusConnection *conn, DBusMessage *msg,
 {
 	g_print("Got Release\n");
 
+	if (pending) {
+		dbus_message_unref(pending);
+		pending = NULL;
+	}
+
 	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *agent_cancel(DBusConnection *conn, DBusMessage *msg,
+					void *data)
+{
+	if (pending) {
+		dbus_message_unref(pending);
+		pending = NULL;
+	}
+
+	return NULL;
 }
 
 static DBusMessage *agent_display_text(DBusConnection *conn, DBusMessage *msg,
@@ -831,10 +848,11 @@ static int get_modems(DBusConnection *conn)
 
 static const GDBusMethodTable agent_methods[] = {
 	{ GDBUS_METHOD("Release", NULL, NULL, agent_release) },
-	{ GDBUS_METHOD("DisplayText",
+	{ GDBUS_ASYNC_METHOD("DisplayText",
 		GDBUS_ARGS({ "text", "s" }, { "icon_id", "y" },
 				{ "urgent", "b" }), NULL,
 				agent_display_text) },
+	{ GDBUS_NOREPLY_METHOD("Cancel", NULL, NULL, agent_cancel) },
 	{ },
 };
 
