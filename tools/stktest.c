@@ -1059,6 +1059,25 @@ static DBusMessage *test_display_text_21(DBusMessage *msg,
 	return NULL;
 }
 
+static DBusMessage *test_display_text_31(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	static const char *expected = "This command instructs the ME to display"
+					" a text message, and/or an icon "
+					"(see 6.5.4). It allows the "
+					"SIM to define the priority of that "
+					"message, and the text string format. "
+					"Two types of priority are defined:- "
+					"display normal priority text and/";
+	STKTEST_AGENT_ASSERT(g_str_equal(text, expected));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -1162,6 +1181,11 @@ static void __stktest_test_init(void)
 				display_text_response_211,
 				sizeof(display_text_response_211),
 				test_display_text_21, expect_response);
+	stktest_add_test("Display Text 3.1", "DisplayText",
+				display_text_311, sizeof(display_text_311),
+				display_text_response_311,
+				sizeof(display_text_response_311),
+				test_display_text_31, expect_response);
 }
 
 static void test_destroy(gpointer user_data)
