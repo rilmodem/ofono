@@ -936,7 +936,8 @@ static gboolean end_session_and_finish(gpointer user_data)
 	return FALSE;
 }
 
-static void expect_response(const unsigned char *pdu, unsigned int len)
+static void expect_response_and_finish(const unsigned char *pdu,
+					unsigned int len)
 {
 	struct test *test = cur_test->data;
 
@@ -1136,57 +1137,67 @@ static void __stktest_test_init(void)
 				display_text_111, sizeof(display_text_111),
 				display_text_response_111,
 				sizeof(display_text_response_111),
-				test_display_text_11, expect_response);
+				test_display_text_11,
+				expect_response_and_finish);
 	stktest_add_test("Display Text 1.2", "DisplayText",
 				display_text_111, sizeof(display_text_111),
 				display_text_response_121,
 				sizeof(display_text_response_121),
-				test_display_text_12, expect_response);
+				test_display_text_12,
+				expect_response_and_finish);
 	stktest_add_test("Display Text 1.3", "DisplayText",
 				display_text_131, sizeof(display_text_131),
 				display_text_response_131,
 				sizeof(display_text_response_131),
-				test_display_text_13, expect_response);
+				test_display_text_13,
+				expect_response_and_finish);
 	stktest_add_test("Display Text 1.4", "DisplayText",
 				display_text_141, sizeof(display_text_141),
 				display_text_response_141,
 				sizeof(display_text_response_141),
-				test_display_text_14, expect_response);
+				test_display_text_14,
+				expect_response_and_finish);
 	stktest_add_test("Display Text 1.5", "DisplayText",
 				display_text_151, sizeof(display_text_151),
 				display_text_response_151,
 				sizeof(display_text_response_151),
-				test_display_text_15, expect_response);
+				test_display_text_15,
+				expect_response_and_finish);
 	stktest_add_test("Display Text 1.6", "DisplayText",
 				display_text_161, sizeof(display_text_161),
 				display_text_response_161,
 				sizeof(display_text_response_161),
-				test_display_text_16, expect_response);
+				test_display_text_16,
+				expect_response_and_finish);
 	stktest_add_test("Display Text 1.7", "DisplayText",
 				display_text_171, sizeof(display_text_171),
 				display_text_response_171,
 				sizeof(display_text_response_171),
-				test_display_text_17, expect_response);
+				test_display_text_17,
+				expect_response_and_finish);
 	stktest_add_test("Display Text 1.8", "DisplayText",
 				display_text_181, sizeof(display_text_181),
 				display_text_response_181,
 				sizeof(display_text_response_181),
-				test_display_text_18, expect_response);
+				test_display_text_18,
+				expect_response_and_finish);
 	stktest_add_test("Display Text 1.9", "DisplayText",
 				display_text_191, sizeof(display_text_191),
 				display_text_response_191,
 				sizeof(display_text_response_191),
-				NULL, expect_response);
+				NULL, expect_response_and_finish);
 	stktest_add_test("Display Text 2.1", "DisplayText",
 				display_text_211, sizeof(display_text_211),
 				display_text_response_211,
 				sizeof(display_text_response_211),
-				test_display_text_21, expect_response);
+				test_display_text_21,
+				expect_response_and_finish);
 	stktest_add_test("Display Text 3.1", "DisplayText",
 				display_text_311, sizeof(display_text_311),
 				display_text_response_311,
 				sizeof(display_text_response_311),
-				test_display_text_31, expect_response);
+				test_display_text_31,
+				expect_response_and_finish);
 }
 
 static void test_destroy(gpointer user_data)
