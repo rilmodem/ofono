@@ -1213,8 +1213,10 @@ void __stktest_test_next()
 	else
 		cur_test = cur_test->next;
 
-	if (cur_test == NULL)
+	if (cur_test == NULL) {
 		g_main_loop_quit(main_loop);
+		return;
+	}
 
 	powerup();
 }
