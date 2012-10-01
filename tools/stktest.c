@@ -946,6 +946,61 @@ static void expect_response_and_finish(const unsigned char *pdu,
 	g_idle_add(end_session_and_finish, NULL);
 }
 
+static void expect_response(const unsigned char *pdu, unsigned int len)
+{
+	struct test *test = cur_test->data;
+
+	STKTEST_RESPONSE_ASSERT(test->rsp_pdu, test->rsp_len, pdu, len);
+}
+
+static gboolean poweroff_not_canceled_after_3(gpointer user_data)
+{
+	__stktest_test_finish(pending != NULL);
+	return FALSE;
+}
+
+static gboolean end_session_and_not_canceled_after_3(gpointer user_data)
+{
+	g_at_server_send_unsolicited(emulator, "+CUSATEND");
+	g_timeout_add_seconds(3, poweroff_not_canceled_after_3, NULL);
+
+	return FALSE;
+}
+
+static void expect_response_and_not_canceled_after_3(const unsigned char *pdu,
+							unsigned int len)
+{
+	struct test *test = cur_test->data;
+
+	STKTEST_RESPONSE_ASSERT(test->rsp_pdu, test->rsp_len, pdu, len);
+
+	g_idle_add(end_session_and_not_canceled_after_3, NULL);
+}
+
+static gboolean poweroff_and_canceled_after_21(gpointer user_data)
+{
+	__stktest_test_finish(pending == NULL);
+	return FALSE;
+}
+
+static gboolean end_session_and_canceled_after_21(gpointer user_data)
+{
+	g_at_server_send_unsolicited(emulator, "+CUSATEND");
+	g_timeout_add_seconds(21, poweroff_and_canceled_after_21, NULL);
+
+	return FALSE;
+}
+
+static void expect_response_and_canceled_after_21(const unsigned char *pdu,
+							unsigned int len)
+{
+	struct test *test = cur_test->data;
+
+	STKTEST_RESPONSE_ASSERT(test->rsp_pdu, test->rsp_len, pdu, len);
+
+	g_idle_add(end_session_and_canceled_after_21, NULL);
+}
+
 static DBusMessage *test_display_text_11(DBusMessage *msg,
 						const char *text,
 						unsigned char icon_id,
@@ -1080,6 +1135,59 @@ static DBusMessage *test_display_text_31(DBusMessage *msg,
 	return dbus_message_new_method_return(msg);
 }
 
+static DBusMessage *test_display_text_41(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Toolkit Test 1"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return NULL;
+}
+
+static DBusMessage *test_display_text_42(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Toolkit Test 2"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return NULL;
+}
+
+static gboolean user_response(gpointer user_data)
+{
+	if (pending == NULL) {
+		__stktest_test_finish(FALSE);
+		return FALSE;
+	}
+
+	g_dbus_send_reply(conn, pending, DBUS_TYPE_INVALID);
+	dbus_message_unref(pending);
+	pending = NULL;
+
+	__stktest_test_finish(TRUE);
+
+	return FALSE;
+}
+
+static DBusMessage *test_display_text_43(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Toolkit Test 3"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	g_timeout_add_seconds(3, user_response, NULL);
+	return NULL;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -1198,6 +1306,23 @@ static void __stktest_test_init(void)
 				sizeof(display_text_response_311),
 				test_display_text_31,
 				expect_response_and_finish);
+	stktest_add_test("Display Text 4.1", "DisplayText",
+				display_text_411, sizeof(display_text_411),
+				display_text_response_411,
+				sizeof(display_text_response_411),
+				test_display_text_41,
+				expect_response_and_not_canceled_after_3);
+	stktest_add_test("Display Text 4.2", "DisplayText",
+				display_text_421, sizeof(display_text_421),
+				display_text_response_421,
+				sizeof(display_text_response_421),
+				test_display_text_42,
+				expect_response_and_canceled_after_21);
+	stktest_add_test("Display Text 4.3", "DisplayText",
+				display_text_431, sizeof(display_text_431),
+				display_text_response_431,
+				sizeof(display_text_response_431),
+				test_display_text_43, expect_response);
 }
 
 static void test_destroy(gpointer user_data)
