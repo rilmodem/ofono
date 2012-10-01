@@ -218,6 +218,7 @@ static DBusMessage *agent_display_text(DBusConnection *conn, DBusMessage *msg,
 	dbus_bool_t urgent;
 	struct test *test;
 	display_text_cb_t func;
+	DBusMessage *reply;
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &text,
 						DBUS_TYPE_BYTE, &icon_id,
@@ -243,7 +244,11 @@ static DBusMessage *agent_display_text(DBusConnection *conn, DBusMessage *msg,
 		return stktest_error_failed(msg);
 	}
 
-	return func(msg, text, icon_id, urgent);
+	reply = func(msg, text, icon_id, urgent);
+	if (reply == NULL)
+		pending = dbus_message_ref(msg);
+
+	return reply;
 }
 
 static void server_debug(const char *str, void *data)
@@ -997,8 +1002,6 @@ static DBusMessage *test_display_text_15(DBusMessage *msg,
 	STKTEST_AGENT_ASSERT(icon_id == 0);
 	STKTEST_AGENT_ASSERT(urgent == FALSE);
 
-	pending = dbus_message_ref(msg);
-
 	return NULL;
 }
 
@@ -1053,8 +1056,6 @@ static DBusMessage *test_display_text_21(DBusMessage *msg,
 	STKTEST_AGENT_ASSERT(g_str_equal(text, "&lt;TIME-OUT&gt;"));
 	STKTEST_AGENT_ASSERT(icon_id == 0);
 	STKTEST_AGENT_ASSERT(urgent == FALSE);
-
-	pending = dbus_message_ref(msg);
 
 	return NULL;
 }
