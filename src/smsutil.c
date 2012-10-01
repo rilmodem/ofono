@@ -4108,7 +4108,7 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 			 */
 			for (; i < written; i++, bufsize++) {
 				if (unpacked[i] == '\r') {
-					unsigned int t;
+					int t;
 
 					t = strspn((const char *) unpacked + i,
 							"\r");
