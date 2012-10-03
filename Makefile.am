@@ -730,7 +730,8 @@ endif
 if MAINTAINER_MODE
 noinst_PROGRAMS += tools/stktest
 
-tools_stktest_SOURCES = $(gatchat_sources) $(gdbus_sources) tools/stktest.c
+tools_stktest_SOURCES = $(gatchat_sources) $(gdbus_sources) tools/stktest.c \
+				unit/stk-test-data.h
 tools_stktest_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
 endif
 endif
