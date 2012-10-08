@@ -1236,6 +1236,18 @@ static DBusMessage *test_display_text_61(DBusMessage *msg,
 	return dbus_message_new_method_return(msg);
 }
 
+static DBusMessage *test_display_text_71(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "10 Second"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return NULL;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -1396,6 +1408,12 @@ static void __stktest_test_init(void)
 				display_text_response_611,
 				sizeof(display_text_response_611),
 				test_display_text_61,
+				expect_response_and_finish);
+	stktest_add_test("Display Text 7.1", "DisplayText",
+				display_text_711, sizeof(display_text_711),
+				display_text_response_711,
+				sizeof(display_text_response_711),
+				test_display_text_71,
 				expect_response_and_finish);
 }
 
