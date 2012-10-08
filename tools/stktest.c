@@ -1418,6 +1418,34 @@ static DBusMessage *test_display_text_810(DBusMessage *msg,
 	return dbus_message_new_method_return(msg);
 }
 
+static DBusMessage *test_display_text_91(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	const char *expect = "你好";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(text, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_display_text_101(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	const char *expect = "80ル";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(text, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -1650,6 +1678,18 @@ static void __stktest_test_init(void)
 				display_text_response_8101,
 				sizeof(display_text_response_8101),
 				test_display_text_810,
+				expect_response_and_finish);
+	stktest_add_test("Display Text 9.1", "DisplayText",
+				display_text_911, sizeof(display_text_911),
+				display_text_response_911,
+				sizeof(display_text_response_911),
+				test_display_text_91,
+				expect_response_and_finish);
+	stktest_add_test("Display Text 10.1", "DisplayText",
+				display_text_1011, sizeof(display_text_1011),
+				display_text_response_1011,
+				sizeof(display_text_response_1011),
+				test_display_text_101,
 				expect_response_and_finish);
 }
 
