@@ -1248,6 +1248,176 @@ static DBusMessage *test_display_text_71(DBusMessage *msg,
 	return NULL;
 }
 
+static DBusMessage *test_display_text_81(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	const char *expect =
+		"<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>"
+		"</div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(text, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_display_text_82(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	const char *expect =
+		"<div style=\"text-align: center;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>"
+		"</div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(text, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_display_text_83(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	const char *expect =
+		"<div style=\"text-align: right;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>"
+		"</div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(text, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_display_text_84(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	const char *expect =
+		"<div style=\"text-align: left;\"><span style=\"font-size: "
+		"big;color: #347235;background-color: #FFFF00;\">"
+		"Text Attribute 1</span></div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(text, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_display_text_85(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	const char *expect =
+		"<div style=\"text-align: left;\"><span style=\"font-size: "
+		"small;color: #347235;background-color: #FFFF00;\">"
+		"Text Attribute 1</span></div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(text, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_display_text_86(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	const char *expect =
+		"<div style=\"text-align: left;\"><span style=\"font-weight: "
+		"bold;color: #347235;background-color: #FFFF00;\">"
+		"Text Attribute 1</span></div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(text, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_display_text_87(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	const char *expect =
+		"<div style=\"text-align: left;\"><span style=\"font-style: "
+		"italic;color: #347235;background-color: #FFFF00;\">"
+		"Text Attribute 1</span></div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(text, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_display_text_88(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	const char *expect =
+		"<div style=\"text-align: left;\"><span style=\""
+		"text-decoration: underline;color: #347235;"
+		"background-color: #FFFF00;\">Text Attribute 1</span></div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(text, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_display_text_89(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	const char *expect =
+		"<div style=\"text-align: left;\"><span style=\""
+		"text-decoration: line-through;color: #347235;"
+		"background-color: #FFFF00;\">Text Attribute 1</span></div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(text, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_display_text_810(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	const char *expect =
+		"<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>"
+		"</div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(text, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -1414,6 +1584,72 @@ static void __stktest_test_init(void)
 				display_text_response_711,
 				sizeof(display_text_response_711),
 				test_display_text_71,
+				expect_response_and_finish);
+	/*
+	 * We skip parts where the UI is asked to display simple text to ensure
+	 * that the alignment, font is set up correctly and not 'remembered'
+	 * from a previous state.  oFono does not keep any state of the
+	 * previous commands
+	 */
+	stktest_add_test("Display Text 8.1", "DisplayText",
+				display_text_811, sizeof(display_text_811),
+				display_text_response_811,
+				sizeof(display_text_response_811),
+				test_display_text_81,
+				expect_response_and_finish);
+	stktest_add_test("Display Text 8.2", "DisplayText",
+				display_text_821, sizeof(display_text_821),
+				display_text_response_821,
+				sizeof(display_text_response_821),
+				test_display_text_82,
+				expect_response_and_finish);
+	stktest_add_test("Display Text 8.3", "DisplayText",
+				display_text_831, sizeof(display_text_831),
+				display_text_response_831,
+				sizeof(display_text_response_831),
+				test_display_text_83,
+				expect_response_and_finish);
+	stktest_add_test("Display Text 8.4", "DisplayText",
+				display_text_841, sizeof(display_text_841),
+				display_text_response_841,
+				sizeof(display_text_response_841),
+				test_display_text_84,
+				expect_response_and_finish);
+	stktest_add_test("Display Text 8.5", "DisplayText",
+				display_text_851, sizeof(display_text_851),
+				display_text_response_851,
+				sizeof(display_text_response_851),
+				test_display_text_85,
+				expect_response_and_finish);
+	stktest_add_test("Display Text 8.6", "DisplayText",
+				display_text_861, sizeof(display_text_861),
+				display_text_response_861,
+				sizeof(display_text_response_861),
+				test_display_text_86,
+				expect_response_and_finish);
+	stktest_add_test("Display Text 8.7", "DisplayText",
+				display_text_871, sizeof(display_text_871),
+				display_text_response_871,
+				sizeof(display_text_response_871),
+				test_display_text_87,
+				expect_response_and_finish);
+	stktest_add_test("Display Text 8.8", "DisplayText",
+				display_text_881, sizeof(display_text_881),
+				display_text_response_881,
+				sizeof(display_text_response_881),
+				test_display_text_88,
+				expect_response_and_finish);
+	stktest_add_test("Display Text 8.9", "DisplayText",
+				display_text_891, sizeof(display_text_891),
+				display_text_response_891,
+				sizeof(display_text_response_891),
+				test_display_text_89,
+				expect_response_and_finish);
+	stktest_add_test("Display Text 8.10", "DisplayText",
+				display_text_8101, sizeof(display_text_8101),
+				display_text_response_8101,
+				sizeof(display_text_response_8101),
+				test_display_text_810,
 				expect_response_and_finish);
 }
 
