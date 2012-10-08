@@ -1188,6 +1188,42 @@ static DBusMessage *test_display_text_43(DBusMessage *msg,
 	return NULL;
 }
 
+static DBusMessage *test_display_text_51(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Basic Icon"));
+	STKTEST_AGENT_ASSERT(icon_id == 1);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_display_text_52(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Colour Icon"));
+	STKTEST_AGENT_ASSERT(icon_id == 2);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_display_text_53(DBusMessage *msg,
+						const char *text,
+						unsigned char icon_id,
+						gboolean urgent)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Basic Icon"));
+	STKTEST_AGENT_ASSERT(icon_id == 1);
+	STKTEST_AGENT_ASSERT(urgent == FALSE);
+
+	return dbus_message_new_method_return(msg);
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -1325,6 +1361,24 @@ static void __stktest_test_init(void)
 				display_text_response_431,
 				sizeof(display_text_response_431),
 				test_display_text_43, expect_response);
+	stktest_add_test("Display Text 5.1A", "DisplayText",
+				display_text_511, sizeof(display_text_511),
+				display_text_response_511a,
+				sizeof(display_text_response_511a),
+				test_display_text_51,
+				expect_response_and_finish);
+	stktest_add_test("Display Text 5.2A", "DisplayText",
+				display_text_521, sizeof(display_text_521),
+				display_text_response_521a,
+				sizeof(display_text_response_521a),
+				test_display_text_52,
+				expect_response_and_finish);
+	stktest_add_test("Display Text 5.3A", "DisplayText",
+				display_text_531, sizeof(display_text_531),
+				display_text_response_531a,
+				sizeof(display_text_response_531a),
+				test_display_text_53,
+				expect_response_and_finish);
 }
 
 static void test_destroy(gpointer user_data)
