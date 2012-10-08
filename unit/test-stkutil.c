@@ -800,7 +800,7 @@ static struct display_text_test display_text_data_871 = {
 	},
 	.html = "<div style=\"text-align: left;\"><span style=\"font-style: "
 		"italic;color: #347235;background-color: #FFFF00;\">"
-		"Text Attribute 1</span>",
+		"Text Attribute 1</span></div>",
 };
 
 static struct display_text_test display_text_data_881 = {
@@ -828,7 +828,7 @@ static struct display_text_test display_text_data_891 = {
 	},
 	.html = "<div style=\"text-align: left;\"><span style=\""
 		"text-decoration: line-through;color: #347235;"
-		"background-color: #FFFF00;\">Text Attribute 1</span>",
+		"background-color: #FFFF00;\">Text Attribute 1</span></div>",
 };
 
 static struct display_text_test display_text_data_911 = {
