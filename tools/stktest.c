@@ -82,15 +82,15 @@ struct test {
 
 static GMainLoop *main_loop = NULL;
 static volatile sig_atomic_t __terminated = 0;
-GList *tests = NULL;
-GList *cur_test = NULL;
+static GList *tests = NULL;
+static GList *cur_test = NULL;
 
 /* DBus related */
 static DBusConnection *conn;
 static gboolean ofono_running = FALSE;
 static guint modem_changed_watch;
-enum test_state state;
-DBusMessage *pending = NULL;
+static enum test_state state;
+static DBusMessage *pending = NULL;
 
 /* Emulator setup */
 static guint server_watch;
