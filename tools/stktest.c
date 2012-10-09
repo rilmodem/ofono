@@ -295,6 +295,7 @@ static DBusMessage *func(DBusConnection *conn, DBusMessage *msg,	\
 
 GET_INKEY_TEMPLATE(agent_request_key, "RequestKey")
 GET_INKEY_TEMPLATE(agent_request_digit, "RequestDigit")
+GET_INKEY_TEMPLATE(agent_request_confirmation, "RequestConfirmation")
 
 static void server_debug(const char *str, void *data)
 {
@@ -922,6 +923,10 @@ static const GDBusMethodTable agent_methods[] = {
 		GDBUS_ARGS({ "alpha", "s" }, { "icon_id", "y" }),
 		GDBUS_ARGS({ "key", "s" }),
 				agent_request_key) },
+	{ GDBUS_ASYNC_METHOD("RequestConfirmation",
+		GDBUS_ARGS({ "alpha", "s" }, { "icon_id", "y" }),
+		GDBUS_ARGS({ "confirmation", "b" }),
+				agent_request_confirmation) },
 	{ GDBUS_NOREPLY_METHOD("Cancel", NULL, NULL, agent_cancel) },
 	{ },
 };
