@@ -1659,6 +1659,40 @@ static DBusMessage *test_get_inkey_41(DBusMessage *msg,
 	return reply;
 }
 
+static DBusMessage *test_get_inkey_51a(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	dbus_bool_t ret = 1;
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "Enter YES"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_BOOLEAN, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_51b(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	dbus_bool_t ret = 0;
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "Enter NO"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_BOOLEAN, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -1963,6 +1997,18 @@ static void __stktest_test_init(void)
 				get_inkey_response_411,
 				sizeof(get_inkey_response_411),
 				test_get_inkey_41,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 5.1a", "RequestConfirmation",
+				get_inkey_511, sizeof(get_inkey_511),
+				get_inkey_response_511,
+				sizeof(get_inkey_response_511),
+				test_get_inkey_51a,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 5.1b", "RequestConfirmation",
+				get_inkey_512, sizeof(get_inkey_512),
+				get_inkey_response_512,
+				sizeof(get_inkey_response_512),
+				test_get_inkey_51b,
 				expect_response_and_finish);
 }
 
