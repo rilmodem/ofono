@@ -1491,6 +1491,60 @@ static DBusMessage *test_display_text_101(DBusMessage *msg,
 	return dbus_message_new_method_return(msg);
 }
 
+static DBusMessage *test_get_inkey_11(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "Enter \"+\""));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_12(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "0";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "Enter \"0\""));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_13(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "&lt;GO-BACKWARDS&gt;"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return stktest_error_go_back(msg);
+}
+
+static DBusMessage *test_get_inkey_14(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "&lt;ABORT&gt;"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return stktest_error_end_session(msg);
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -1735,6 +1789,30 @@ static void __stktest_test_init(void)
 				display_text_response_1011,
 				sizeof(display_text_response_1011),
 				test_display_text_101,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 1.1", "RequestDigit",
+				get_inkey_111, sizeof(get_inkey_111),
+				get_inkey_response_111,
+				sizeof(get_inkey_response_111),
+				test_get_inkey_11,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 1.2", "RequestDigit",
+				get_inkey_121, sizeof(get_inkey_121),
+				get_inkey_response_121,
+				sizeof(get_inkey_response_121),
+				test_get_inkey_12,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 1.3", "RequestDigit",
+				get_inkey_131, sizeof(get_inkey_131),
+				get_inkey_response_131,
+				sizeof(get_inkey_response_131),
+				test_get_inkey_13,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 1.4", "RequestDigit",
+				get_inkey_141, sizeof(get_inkey_141),
+				get_inkey_response_141,
+				sizeof(get_inkey_response_141),
+				test_get_inkey_14,
 				expect_response_and_finish);
 }
 
