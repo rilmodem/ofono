@@ -17710,7 +17710,7 @@ static const struct terminal_response_test get_inkey_response_data_811 = {
 		{ .get_inkey = {
 			.duration = {
 				.unit = STK_DURATION_TYPE_SECONDS,
-				.interval = 17,
+				.interval = 11,
 			},
 		}},
 	},
