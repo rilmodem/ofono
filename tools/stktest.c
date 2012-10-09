@@ -1693,6 +1693,74 @@ static DBusMessage *test_get_inkey_51b(DBusMessage *msg,
 	return reply;
 }
 
+static DBusMessage *test_get_inkey_61(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "&lt;NO-ICON&gt;"));
+	STKTEST_AGENT_ASSERT(icon_id == 1);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_62(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "&lt;BASIC-ICON&gt;"));
+	STKTEST_AGENT_ASSERT(icon_id == 1);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_63(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "&lt;NO-ICON&gt;"));
+	STKTEST_AGENT_ASSERT(icon_id == 2);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_64(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "&lt;COLOUR-ICON&gt;"));
+	STKTEST_AGENT_ASSERT(icon_id == 2);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -2009,6 +2077,30 @@ static void __stktest_test_init(void)
 				get_inkey_response_512,
 				sizeof(get_inkey_response_512),
 				test_get_inkey_51b,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 6.1", "RequestDigit",
+				get_inkey_611, sizeof(get_inkey_611),
+				get_inkey_response_611,
+				sizeof(get_inkey_response_611),
+				test_get_inkey_61,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 6.2", "RequestDigit",
+				get_inkey_621, sizeof(get_inkey_621),
+				get_inkey_response_621,
+				sizeof(get_inkey_response_621),
+				test_get_inkey_62,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 6.3", "RequestDigit",
+				get_inkey_631, sizeof(get_inkey_631),
+				get_inkey_response_631,
+				sizeof(get_inkey_response_631),
+				test_get_inkey_63,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 6.4", "RequestDigit",
+				get_inkey_641, sizeof(get_inkey_641),
+				get_inkey_response_641,
+				sizeof(get_inkey_response_641),
+				test_get_inkey_64,
 				expect_response_and_finish);
 }
 
