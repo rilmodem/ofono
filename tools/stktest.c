@@ -1761,6 +1761,19 @@ static DBusMessage *test_get_inkey_64(DBusMessage *msg,
 	return reply;
 }
 
+static DBusMessage *test_get_inkey_81(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "Enter \"+\""));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return NULL;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -2101,6 +2114,13 @@ static void __stktest_test_init(void)
 				get_inkey_response_641,
 				sizeof(get_inkey_response_641),
 				test_get_inkey_64,
+				expect_response_and_finish);
+	/* Test Sequence for GetInkey 7.1 skipped, we do not support help */
+	stktest_add_test("Get Inkey 8.1", "RequestDigit",
+				get_inkey_811, sizeof(get_inkey_811),
+				get_inkey_response_811,
+				sizeof(get_inkey_response_811),
+				test_get_inkey_81,
 				expect_response_and_finish);
 }
 
