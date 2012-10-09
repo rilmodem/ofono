@@ -1628,6 +1628,15 @@ static DBusMessage *test_get_inkey_16(DBusMessage *msg,
 	return reply;
 }
 
+static DBusMessage *test_get_inkey_21(DBusMessage *msg,
+					const char *text, unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "&lt;TIME-OUT&gt;"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return NULL;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -1908,6 +1917,12 @@ static void __stktest_test_init(void)
 				get_inkey_response_161,
 				sizeof(get_inkey_response_161),
 				test_get_inkey_16,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 2.1", "RequestDigit",
+				get_inkey_211, sizeof(get_inkey_211),
+				get_inkey_response_211,
+				sizeof(get_inkey_response_211),
+				test_get_inkey_21,
 				expect_response_and_finish);
 }
 
