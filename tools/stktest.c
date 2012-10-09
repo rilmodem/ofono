@@ -1708,6 +1708,9 @@ static void test_destroy(gpointer user_data)
 static void __stktest_test_summarize(void)
 {
 	GList *l;
+	unsigned int not_run = 0;
+	unsigned int passed = 0;
+	unsigned int failed = 0;
 
 	g_print("\n\nTest Summary\n");
 	g_print("============\n");
@@ -1720,15 +1723,23 @@ static void __stktest_test_summarize(void)
 		switch (test->result) {
 		case TEST_RESULT_NOT_RUN:
 			g_print("Not Run\n");
+			not_run += 1;
 			break;
 		case TEST_RESULT_PASSED:
 			g_print("Passed\n");
+			passed += 1;
 			break;
 		case TEST_RESULT_FAILED:
 			g_print("Failed\n");
+			failed += 1;
 		break;
 		}
 	}
+
+	g_print("\nTotal: %d, Passed: %d(%.1f%%), Failed: %d, NotRun: %d\n",
+			not_run + passed + failed, passed,
+			(float) passed * 100 / (not_run + passed + failed),
+			failed, not_run);
 }
 
 static void __stktest_test_cleanup(void)
