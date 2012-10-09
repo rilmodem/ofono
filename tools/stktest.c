@@ -1774,6 +1774,214 @@ static DBusMessage *test_get_inkey_81(DBusMessage *msg,
 	return NULL;
 }
 
+static DBusMessage *test_get_inkey_91(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+	const char *expect =
+		"<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter \"+\"</span></div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_92(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+	const char *expect =
+		"<div style=\"text-align: center;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter \"+\"</span>"
+		"</div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_93(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+	const char *expect =
+		"<div style=\"text-align: right;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter \"+\"</span>"
+		"</div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_94(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+	const char *expect =
+		"<div style=\"text-align: left;\"><span style=\"font-size: "
+		"big;color: #347235;background-color: #FFFF00;\">Enter \"+\""
+		"</span></div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_95(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+	const char *expect =
+		"<div style=\"text-align: left;\"><span style=\"font-size: "
+		"small;color: #347235;background-color: #FFFF00;\">"
+		"Enter \"+\"</span></div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_96(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+	const char *expect =
+		"<div style=\"text-align: left;\"><span style=\"font-weight: "
+		"bold;color: #347235;background-color: #FFFF00;\">Enter \"+\""
+		"</span></div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_97(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+	const char *expect =
+		"<div style=\"text-align: left;\"><span style=\"font-style: "
+		"italic;color: #347235;background-color: #FFFF00;\">"
+		"Enter \"+\"</span></div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_98(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+	const char *expect =
+		"<div style=\"text-align: left;\"><span style=\""
+		"text-decoration: underline;color: #347235;"
+		"background-color: #FFFF00;\">Enter \"+\"</span></div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_99(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+	const char *expect =
+		"<div style=\"text-align: left;\"><span style=\""
+		"text-decoration: line-through;color: #347235;"
+		"background-color: #FFFF00;\">Enter \"+\"</span></div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_910(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+	const char *expect =
+		"<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter \"+\"</span></div>";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -2121,6 +2329,66 @@ static void __stktest_test_init(void)
 				get_inkey_response_811,
 				sizeof(get_inkey_response_811),
 				test_get_inkey_81,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 9.1", "RequestDigit",
+				get_inkey_911, sizeof(get_inkey_911),
+				get_inkey_response_911,
+				sizeof(get_inkey_response_911),
+				test_get_inkey_91,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 9.2", "RequestDigit",
+				get_inkey_921, sizeof(get_inkey_921),
+				get_inkey_response_921,
+				sizeof(get_inkey_response_921),
+				test_get_inkey_92,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 9.3", "RequestDigit",
+				get_inkey_931, sizeof(get_inkey_931),
+				get_inkey_response_931,
+				sizeof(get_inkey_response_931),
+				test_get_inkey_93,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 9.4", "RequestDigit",
+				get_inkey_941, sizeof(get_inkey_941),
+				get_inkey_response_941,
+				sizeof(get_inkey_response_941),
+				test_get_inkey_94,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 9.5", "RequestDigit",
+				get_inkey_951, sizeof(get_inkey_951),
+				get_inkey_response_951,
+				sizeof(get_inkey_response_951),
+				test_get_inkey_95,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 9.6", "RequestDigit",
+				get_inkey_961, sizeof(get_inkey_961),
+				get_inkey_response_961,
+				sizeof(get_inkey_response_961),
+				test_get_inkey_96,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 9.7", "RequestDigit",
+				get_inkey_971, sizeof(get_inkey_971),
+				get_inkey_response_971,
+				sizeof(get_inkey_response_971),
+				test_get_inkey_97,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 9.8", "RequestDigit",
+				get_inkey_981, sizeof(get_inkey_981),
+				get_inkey_response_981,
+				sizeof(get_inkey_response_981),
+				test_get_inkey_98,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 9.9", "RequestDigit",
+				get_inkey_991, sizeof(get_inkey_991),
+				get_inkey_response_991,
+				sizeof(get_inkey_response_991),
+				test_get_inkey_99,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 9.10", "RequestDigit",
+				get_inkey_9101, sizeof(get_inkey_9101),
+				get_inkey_response_9101,
+				sizeof(get_inkey_response_9101),
+				test_get_inkey_910,
 				expect_response_and_finish);
 }
 
