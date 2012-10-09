@@ -65,9 +65,7 @@ enum test_result {
 typedef DBusMessage *(*display_text_cb_t)(DBusMessage *msg, const char *text,
 						unsigned char icon_id,
 						gboolean urgent);
-typedef DBusMessage *(*request_digit_cb_t)(DBusMessage *msg, const char *alpha,
-						unsigned char icon_id);
-typedef DBusMessage *(*request_key_cb_t)(DBusMessage *msg, const char *alpha,
+typedef DBusMessage *(*get_inkey_cb_t)(DBusMessage *msg, const char *alpha,
 						unsigned char icon_id);
 typedef void (*terminal_response_func)(const unsigned char *pdu,
 					unsigned int len);
@@ -255,83 +253,48 @@ static DBusMessage *agent_display_text(DBusConnection *conn, DBusMessage *msg,
 	return reply;
 }
 
-static DBusMessage *agent_request_digit(DBusConnection *conn, DBusMessage *msg,
-					void *data)
-{
-	const char *alpha;
-	unsigned char icon_id;
-	struct test *test;
-	request_digit_cb_t func;
-	DBusMessage *reply;
+#define GET_INKEY_TEMPLATE(func, method_name)				\
+static DBusMessage *func(DBusConnection *conn, DBusMessage *msg,	\
+				void *data)				\
+{									\
+	const char *alpha;						\
+	unsigned char icon_id;						\
+	struct test *test;						\
+	get_inkey_cb_t func;						\
+	DBusMessage *reply;						\
+									\
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &alpha,	\
+					DBUS_TYPE_BYTE, &icon_id,	\
+					DBUS_TYPE_INVALID) == FALSE)	\
+		return stktest_error_invalid_args(msg);			\
+									\
+	if (cur_test == NULL)						\
+		return stktest_error_failed(msg);			\
+									\
+	test = cur_test->data;						\
+	func = test->agent_func;					\
+									\
+	if (strcmp(test->method, method_name)) {			\
+		g_printerr("Wrong method called!\n");			\
+		__stktest_test_finish(FALSE);				\
+		return stktest_error_failed(msg);			\
+	}								\
+									\
+	if (func == NULL) {						\
+		g_printerr(method_name " not expected to be called");	\
+		__stktest_test_finish(FALSE);				\
+		return stktest_error_failed(msg);			\
+	}								\
+									\
+	reply = func(msg, alpha, icon_id);				\
+	if (reply == NULL)						\
+		pending = dbus_message_ref(msg);			\
+									\
+	return reply;							\
+}									\
 
-	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &alpha,
-						DBUS_TYPE_BYTE, &icon_id,
-						DBUS_TYPE_INVALID) == FALSE)
-		return stktest_error_invalid_args(msg);
-
-	if (cur_test == NULL)
-		return stktest_error_failed(msg);
-
-	test = cur_test->data;
-	func = test->agent_func;
-
-	if (strcmp(test->method, "RequestDigit")) {
-		g_printerr("Wrong method called!\n");
-		__stktest_test_finish(FALSE);
-		return stktest_error_failed(msg);
-	}
-
-	if (func == NULL) {
-		g_printerr("RequestDigit not expected to be called");
-		__stktest_test_finish(FALSE);
-		return stktest_error_failed(msg);
-	}
-
-	reply = func(msg, alpha, icon_id);
-	if (reply == NULL)
-		pending = dbus_message_ref(msg);
-
-	return reply;
-}
-
-static DBusMessage *agent_request_key(DBusConnection *conn, DBusMessage *msg,
-					void *data)
-{
-	const char *alpha;
-	unsigned char icon_id;
-	struct test *test;
-	request_key_cb_t func;
-	DBusMessage *reply;
-
-	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &alpha,
-						DBUS_TYPE_BYTE, &icon_id,
-						DBUS_TYPE_INVALID) == FALSE)
-		return stktest_error_invalid_args(msg);
-
-	if (cur_test == NULL)
-		return stktest_error_failed(msg);
-
-	test = cur_test->data;
-	func = test->agent_func;
-
-	if (strcmp(test->method, "RequestKey")) {
-		g_printerr("Wrong method called!\n");
-		__stktest_test_finish(FALSE);
-		return stktest_error_failed(msg);
-	}
-
-	if (func == NULL) {
-		g_printerr("RequestKey not expected to be called");
-		__stktest_test_finish(FALSE);
-		return stktest_error_failed(msg);
-	}
-
-	reply = func(msg, alpha, icon_id);
-	if (reply == NULL)
-		pending = dbus_message_ref(msg);
-
-	return reply;
-}
+GET_INKEY_TEMPLATE(agent_request_key, "RequestKey")
+GET_INKEY_TEMPLATE(agent_request_digit, "RequestDigit")
 
 static void server_debug(const char *str, void *data)
 {
