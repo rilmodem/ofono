@@ -2039,6 +2039,46 @@ static DBusMessage *test_get_inkey_111(DBusMessage *msg,
 	return reply;
 }
 
+static DBusMessage *test_get_inkey_121(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+	const char *expect = "ル";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_122(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "+";
+	const char *expect =
+		"ルルルルルルルルルルルルルルルルルルルル"
+		"ルルルルルルルルルルルルルルルルルルルル"
+		"ルルルルルルルルルルルルルルルルルルルル"
+		"ルルルルルルルルルル";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, expect));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -2464,6 +2504,18 @@ static void __stktest_test_init(void)
 				get_inkey_response_1111,
 				sizeof(get_inkey_response_1111),
 				test_get_inkey_111,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 12.1", "RequestDigit",
+				get_inkey_1211, sizeof(get_inkey_1211),
+				get_inkey_response_1211,
+				sizeof(get_inkey_response_1211),
+				test_get_inkey_121,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 12.2", "RequestDigit",
+				get_inkey_1221, sizeof(get_inkey_1221),
+				get_inkey_response_1221,
+				sizeof(get_inkey_response_1221),
+				test_get_inkey_122,
 				expect_response_and_finish);
 }
 
