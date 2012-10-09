@@ -2079,6 +2079,23 @@ static DBusMessage *test_get_inkey_122(DBusMessage *msg,
 	return reply;
 }
 
+static DBusMessage *test_get_inkey_131(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "ル";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "Enter"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -2516,6 +2533,12 @@ static void __stktest_test_init(void)
 				get_inkey_response_1221,
 				sizeof(get_inkey_response_1221),
 				test_get_inkey_122,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 13.1", "RequestKey",
+				get_inkey_1311, sizeof(get_inkey_1311),
+				get_inkey_response_1311,
+				sizeof(get_inkey_response_1311),
+				test_get_inkey_131,
 				expect_response_and_finish);
 }
 
