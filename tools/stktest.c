@@ -1590,6 +1590,44 @@ static DBusMessage *test_get_inkey_14(DBusMessage *msg,
 	return stktest_error_end_session(msg);
 }
 
+static DBusMessage *test_get_inkey_15(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "q";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "Enter \"q\""));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_inkey_16(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id)
+{
+	DBusMessage *reply;
+	const char *ret = "x";
+	const char *expected =
+		"Enter \"x\". This command instructs the ME to display text, "
+		"and to expect the user to enter a single character. Any "
+		"response entered by the user shall be passed t";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, expected));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -1858,6 +1896,18 @@ static void __stktest_test_init(void)
 				get_inkey_response_141,
 				sizeof(get_inkey_response_141),
 				test_get_inkey_14,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 1.5", "RequestKey",
+				get_inkey_151, sizeof(get_inkey_151),
+				get_inkey_response_151,
+				sizeof(get_inkey_response_151),
+				test_get_inkey_15,
+				expect_response_and_finish);
+	stktest_add_test("Get Inkey 1.6", "RequestKey",
+				get_inkey_161, sizeof(get_inkey_161),
+				get_inkey_response_161,
+				sizeof(get_inkey_response_161),
+				test_get_inkey_16,
 				expect_response_and_finish);
 }
 
