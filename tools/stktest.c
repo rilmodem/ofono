@@ -1765,9 +1765,6 @@ static DBusMessage *test_get_inkey_81(DBusMessage *msg,
 					const char *alpha,
 					unsigned char icon_id)
 {
-	DBusMessage *reply;
-	const char *ret = "+";
-
 	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "Enter \"+\""));
 	STKTEST_AGENT_ASSERT(icon_id == 0);
 
