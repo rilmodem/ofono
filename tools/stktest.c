@@ -2358,6 +2358,30 @@ static DBusMessage *test_get_input_18(DBusMessage *msg,
 	return reply;
 }
 
+static DBusMessage *test_get_input_19(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id,
+					const char *def_input,
+					unsigned char min, unsigned char max,
+					gboolean hide_typing)
+{
+	DBusMessage *reply;
+	const char *ret = "";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "&lt;SEND&gt;"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(g_str_equal(def_input, ""));
+	STKTEST_AGENT_ASSERT(min == 0);
+	STKTEST_AGENT_ASSERT(max == 1);
+	STKTEST_AGENT_ASSERT(hide_typing == FALSE);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -2849,6 +2873,12 @@ static void __stktest_test_init(void)
 				get_input_response_181,
 				sizeof(get_input_response_181),
 				test_get_input_18,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 1.9", "RequestDigits",
+				get_input_191, sizeof(get_input_191),
+				get_input_response_191a,
+				sizeof(get_input_response_191a),
+				test_get_input_19,
 				expect_response_and_finish);
 }
 
