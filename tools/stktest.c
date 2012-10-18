@@ -2190,6 +2190,30 @@ static DBusMessage *test_get_input_11(DBusMessage *msg,
 	return reply;
 }
 
+static DBusMessage *test_get_input_12(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id,
+					const char *def_input,
+					unsigned char min, unsigned char max,
+					gboolean hide_typing)
+{
+	DBusMessage *reply;
+	const char *ret = "67*#+";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "Enter 67*#+"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(g_str_equal(def_input, ""));
+	STKTEST_AGENT_ASSERT(min == 5);
+	STKTEST_AGENT_ASSERT(max == 5);
+	STKTEST_AGENT_ASSERT(hide_typing == FALSE);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -2639,6 +2663,12 @@ static void __stktest_test_init(void)
 				get_input_response_111,
 				sizeof(get_input_response_111),
 				test_get_input_11,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 1.2", "RequestDigits",
+				get_input_121, sizeof(get_input_121),
+				get_input_response_121,
+				sizeof(get_input_response_121),
+				test_get_input_12,
 				expect_response_and_finish);
 }
 
