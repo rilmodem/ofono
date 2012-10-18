@@ -281,7 +281,9 @@ static DBusMessage *func(DBusConnection *conn, DBusMessage *msg,	\
 	func = test->agent_func;					\
 									\
 	if (strcmp(test->method, method_name)) {			\
-		g_printerr("Wrong method called!\n");			\
+		g_printerr("Wrong method called!"			\
+				"  Expected: %s, Got: %s\n",		\
+				test->method, method_name);		\
 		__stktest_test_finish(FALSE);				\
 		return stktest_error_failed(msg);			\
 	}								\
@@ -334,7 +336,9 @@ static DBusMessage *func(DBusConnection *conn, DBusMessage *msg,	\
 	func = test->agent_func;					\
 									\
 	if (strcmp(test->method, method_name)) {			\
-		g_printerr("Wrong method called!\n");			\
+		g_printerr("Wrong method called!"			\
+				"  Expected: %s, Got: %s\n",		\
+				test->method, method_name);		\
 		__stktest_test_finish(FALSE);				\
 		return stktest_error_failed(msg);			\
 	}								\
