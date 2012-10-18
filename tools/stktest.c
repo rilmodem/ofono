@@ -2288,6 +2288,25 @@ static DBusMessage *test_get_input_15(DBusMessage *msg,
 	return reply;
 }
 
+static DBusMessage *test_get_input_16(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id,
+					const char *def_input,
+					unsigned char min, unsigned char max,
+					gboolean hide_typing)
+{
+	DBusMessage *reply;
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "&lt;GO-BACKWARDS&gt;"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(g_str_equal(def_input, ""));
+	STKTEST_AGENT_ASSERT(min == 0);
+	STKTEST_AGENT_ASSERT(max == 8);
+	STKTEST_AGENT_ASSERT(hide_typing == FALSE);
+
+	return stktest_error_go_back(msg);
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -2761,6 +2780,12 @@ static void __stktest_test_init(void)
 				get_input_response_151,
 				sizeof(get_input_response_151),
 				test_get_input_15,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 1.6", "RequestDigits",
+				get_input_161, sizeof(get_input_161),
+				get_input_response_161,
+				sizeof(get_input_response_161),
+				test_get_input_16,
 				expect_response_and_finish);
 }
 
