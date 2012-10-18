@@ -2238,6 +2238,31 @@ static DBusMessage *test_get_input_13(DBusMessage *msg,
 	return reply;
 }
 
+static DBusMessage *test_get_input_14(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id,
+					const char *def_input,
+					unsigned char min, unsigned char max,
+					gboolean hide_typing)
+{
+	DBusMessage *reply;
+	const char *ret = "2345678";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha,
+					"Password 1&lt;SEND&gt;2345678"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(g_str_equal(def_input, ""));
+	STKTEST_AGENT_ASSERT(min == 4);
+	STKTEST_AGENT_ASSERT(max == 8);
+	STKTEST_AGENT_ASSERT(hide_typing == TRUE);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -2699,6 +2724,12 @@ static void __stktest_test_init(void)
 				get_input_response_131,
 				sizeof(get_input_response_131),
 				test_get_input_13,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 1.4", "RequestDigits",
+				get_input_141, sizeof(get_input_141),
+				get_input_response_141,
+				sizeof(get_input_response_141),
+				test_get_input_14,
 				expect_response_and_finish);
 }
 
