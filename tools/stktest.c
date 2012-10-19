@@ -2527,6 +2527,56 @@ static DBusMessage *test_get_input_42(DBusMessage *msg,
 	return reply;
 }
 
+static DBusMessage *test_get_input_51(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id,
+					const char *def_input,
+					unsigned char min, unsigned char max,
+					gboolean hide_typing)
+{
+	DBusMessage *reply;
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "Enter 12345"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(g_str_equal(def_input, "12345"));
+	STKTEST_AGENT_ASSERT(min == 5);
+	STKTEST_AGENT_ASSERT(max == 5);
+	STKTEST_AGENT_ASSERT(hide_typing == FALSE);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &def_input,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_input_52(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id,
+					const char *def_input,
+					unsigned char min, unsigned char max,
+					gboolean hide_typing)
+{
+	DBusMessage *reply;
+	const char *def_expect =
+	"***1111111111###***2222222222###***3333333333###***4444444444###***"
+	"5555555555###***6666666666###***7777777777###***8888888888###***9999"
+	"999999###***0000000000###";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "Enter:"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(g_str_equal(def_input, def_expect));
+	STKTEST_AGENT_ASSERT(min == 160);
+	STKTEST_AGENT_ASSERT(max == 160);
+	STKTEST_AGENT_ASSERT(hide_typing == FALSE);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &def_input,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -3060,6 +3110,18 @@ static void __stktest_test_init(void)
 				get_input_response_421,
 				sizeof(get_input_response_421),
 				test_get_input_42,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 5.1", "RequestDigits",
+				get_input_511, sizeof(get_input_511),
+				get_input_response_511,
+				sizeof(get_input_response_511),
+				test_get_input_51,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 5.2", "RequestDigits",
+				get_input_521, sizeof(get_input_521),
+				get_input_response_521,
+				sizeof(get_input_response_521),
+				test_get_input_52,
 				expect_response_and_finish);
 }
 
