@@ -2747,6 +2747,38 @@ GET_INPUT_8X_TEMPLATE(10,
 		"<div style=\"text-align: left;\"><span style=\"color: "
 		"#347235;background-color: #FFFF00;\">Enter 12345</span></div>")
 
+#define GET_INPUT_9X_11X_TEMPLATE(seq, expect)				\
+static DBusMessage *test_get_input_##seq(DBusMessage *msg,		\
+					const char *alpha,		\
+					unsigned char icon_id,		\
+					const char *def_input,		\
+					unsigned char min,		\
+					unsigned char max,		\
+					gboolean hide_typing)		\
+{									\
+	DBusMessage *reply;						\
+	const char *ret = "HELLO";					\
+									\
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, expect));		\
+	STKTEST_AGENT_ASSERT(icon_id == 0);				\
+	STKTEST_AGENT_ASSERT(g_str_equal(def_input, ""));		\
+	STKTEST_AGENT_ASSERT(min == 5);					\
+	STKTEST_AGENT_ASSERT(max == 5);					\
+	STKTEST_AGENT_ASSERT(hide_typing == FALSE);			\
+									\
+	reply = dbus_message_new_method_return(msg);			\
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,		\
+					DBUS_TYPE_INVALID);		\
+									\
+	return reply;							\
+}
+
+GET_INPUT_9X_11X_TEMPLATE(91, "你好")
+GET_INPUT_9X_11X_TEMPLATE(92, "你好你好你好你好你好你好你好你好你好你好"
+				"你好你好你好你好你好你好你好你好你好你好"
+				"你好你好你好你好你好你好你好你好你好你好"
+				"你好你好你好你好你好")
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -3377,6 +3409,18 @@ static void __stktest_test_init(void)
 				get_input_response_8101,
 				sizeof(get_input_response_8101),
 				test_get_input_810,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 9.1", "RequestInput",
+				get_input_911, sizeof(get_input_911),
+				get_input_response_911,
+				sizeof(get_input_response_911),
+				test_get_input_91,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 9.2", "RequestInput",
+				get_input_921, sizeof(get_input_921),
+				get_input_response_921,
+				sizeof(get_input_response_921),
+				test_get_input_92,
 				expect_response_and_finish);
 }
 
