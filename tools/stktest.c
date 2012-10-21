@@ -2673,6 +2673,80 @@ static DBusMessage *test_get_input_64(DBusMessage *msg,
 	return reply;
 }
 
+#define GET_INPUT_8X_TEMPLATE(seq, expect)				\
+static DBusMessage *test_get_input_8##seq(DBusMessage *msg,		\
+					const char *alpha,		\
+					unsigned char icon_id,		\
+					const char *def_input,		\
+					unsigned char min,		\
+					unsigned char max,		\
+					gboolean hide_typing)		\
+{									\
+	DBusMessage *reply;						\
+	const char *ret = "12345";					\
+									\
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, expect));		\
+	STKTEST_AGENT_ASSERT(icon_id == 0);				\
+	STKTEST_AGENT_ASSERT(g_str_equal(def_input, ""));		\
+	STKTEST_AGENT_ASSERT(min == 5);					\
+	STKTEST_AGENT_ASSERT(max == 5);					\
+	STKTEST_AGENT_ASSERT(hide_typing == FALSE);			\
+									\
+	reply = dbus_message_new_method_return(msg);			\
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,		\
+					DBUS_TYPE_INVALID);		\
+									\
+	return reply;							\
+}
+
+GET_INPUT_8X_TEMPLATE(1,
+		"<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter 12345</span></div>")
+
+GET_INPUT_8X_TEMPLATE(2,
+		"<div style=\"text-align: center;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter 12345</span>"
+		"</div>")
+
+GET_INPUT_8X_TEMPLATE(3,
+		"<div style=\"text-align: right;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter 12345</span>"
+		"</div>")
+
+GET_INPUT_8X_TEMPLATE(4,
+		"<div style=\"text-align: left;\"><span style=\"font-size: "
+		"big;color: #347235;background-color: #FFFF00;\">Enter 12345"
+		"</span></div>")
+
+GET_INPUT_8X_TEMPLATE(5,
+		"<div style=\"text-align: left;\"><span style=\"font-size: "
+		"small;color: #347235;background-color: #FFFF00;\">Enter "
+		"12345</span></div>")
+
+GET_INPUT_8X_TEMPLATE(6,
+		"<div style=\"text-align: left;\"><span style=\"font-weight: "
+		"bold;color: #347235;background-color: #FFFF00;\">Enter "
+		"12345</span></div>")
+
+GET_INPUT_8X_TEMPLATE(7,
+		"<div style=\"text-align: left;\"><span style=\"font-style: "
+		"italic;color: #347235;background-color: #FFFF00;\">Enter "
+		"12345</span></div>")
+
+GET_INPUT_8X_TEMPLATE(8,
+		"<div style=\"text-align: left;\"><span "
+		"style=\"text-decoration: underline;color: #347235;"
+		"background-color: #FFFF00;\">Enter 12345</span></div>")
+
+GET_INPUT_8X_TEMPLATE(9,
+		"<div style=\"text-align: left;\"><span "
+		"style=\"text-decoration: line-through;color: #347235;"
+		"background-color: #FFFF00;\">Enter 12345</span></div>")
+
+GET_INPUT_8X_TEMPLATE(10,
+		"<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter 12345</span></div>")
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -3242,6 +3316,67 @@ static void __stktest_test_init(void)
 				get_input_response_641a,
 				sizeof(get_input_response_641a),
 				test_get_input_64,
+				expect_response_and_finish);
+	/* GetInput 7.1 skipped, Help not supported */
+	stktest_add_test("Get Input 8.1", "RequestDigits",
+				get_input_811, sizeof(get_input_811),
+				get_input_response_811,
+				sizeof(get_input_response_811),
+				test_get_input_81,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 8.2", "RequestDigits",
+				get_input_821, sizeof(get_input_821),
+				get_input_response_821,
+				sizeof(get_input_response_821),
+				test_get_input_82,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 8.3", "RequestDigits",
+				get_input_831, sizeof(get_input_831),
+				get_input_response_831,
+				sizeof(get_input_response_831),
+				test_get_input_83,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 8.4", "RequestDigits",
+				get_input_841, sizeof(get_input_841),
+				get_input_response_841,
+				sizeof(get_input_response_841),
+				test_get_input_84,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 8.5", "RequestDigits",
+				get_input_851, sizeof(get_input_851),
+				get_input_response_851,
+				sizeof(get_input_response_851),
+				test_get_input_85,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 8.6", "RequestDigits",
+				get_input_861, sizeof(get_input_861),
+				get_input_response_861,
+				sizeof(get_input_response_861),
+				test_get_input_86,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 8.7", "RequestDigits",
+				get_input_871, sizeof(get_input_871),
+				get_input_response_871,
+				sizeof(get_input_response_871),
+				test_get_input_87,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 8.8", "RequestDigits",
+				get_input_881, sizeof(get_input_881),
+				get_input_response_881,
+				sizeof(get_input_response_881),
+				test_get_input_88,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 8.9", "RequestDigits",
+				get_input_891, sizeof(get_input_891),
+				get_input_response_891,
+				sizeof(get_input_response_891),
+				test_get_input_89,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 8.10", "RequestDigits",
+				get_input_8101, sizeof(get_input_8101),
+				get_input_response_8101,
+				sizeof(get_input_response_8101),
+				test_get_input_810,
 				expect_response_and_finish);
 }
 
