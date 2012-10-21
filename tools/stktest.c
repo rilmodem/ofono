@@ -2295,8 +2295,6 @@ static DBusMessage *test_get_input_16(DBusMessage *msg,
 					unsigned char min, unsigned char max,
 					gboolean hide_typing)
 {
-	DBusMessage *reply;
-
 	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "&lt;GO-BACKWARDS&gt;"));
 	STKTEST_AGENT_ASSERT(icon_id == 0);
 	STKTEST_AGENT_ASSERT(g_str_equal(def_input, ""));
@@ -2314,8 +2312,6 @@ static DBusMessage *test_get_input_17(DBusMessage *msg,
 					unsigned char min, unsigned char max,
 					gboolean hide_typing)
 {
-	DBusMessage *reply;
-
 	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "&lt;ABORT&gt;"));
 	STKTEST_AGENT_ASSERT(icon_id == 0);
 	STKTEST_AGENT_ASSERT(g_str_equal(def_input, ""));
@@ -2413,8 +2409,6 @@ static DBusMessage *test_get_input_21(DBusMessage *msg,
 					unsigned char min, unsigned char max,
 					gboolean hide_typing)
 {
-	DBusMessage *reply;
-
 	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "&lt;TIME-OUT&gt;"));
 	STKTEST_AGENT_ASSERT(icon_id == 0);
 	STKTEST_AGENT_ASSERT(g_str_equal(def_input, ""));
