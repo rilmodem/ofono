@@ -2838,6 +2838,57 @@ GET_INPUT_9X_11X_TEMPLATE(112, "ルルルルルルルルルルルルルルルル
 				"ルルルルルルルルルルルルルルルルルルルル"
 				"ルルルルルルルルルル")
 
+static DBusMessage *test_get_input_121(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id,
+					const char *def_input,
+					unsigned char min, unsigned char max,
+					gboolean hide_typing)
+{
+	DBusMessage *reply;
+	const char *ret = "ルル";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "Enter Hello"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(g_str_equal(def_input, ""));
+	STKTEST_AGENT_ASSERT(min == 2);
+	STKTEST_AGENT_ASSERT(max == 2);
+	STKTEST_AGENT_ASSERT(hide_typing == FALSE);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
+static DBusMessage *test_get_input_122(DBusMessage *msg,
+					const char *alpha,
+					unsigned char icon_id,
+					const char *def_input,
+					unsigned char min, unsigned char max,
+					gboolean hide_typing)
+{
+	DBusMessage *reply;
+	const char *ret = "ルルルルルルルルルルルルルルルルルルルル"
+				"ルルルルルルルルルルルルルルルルルルルル"
+				"ルルルルルルルルルルルルルルルルルルルル"
+				"ルルルルルルルルルル";
+
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "Enter Hello"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+	STKTEST_AGENT_ASSERT(g_str_equal(def_input, ""));
+	STKTEST_AGENT_ASSERT(min == 5);
+	STKTEST_AGENT_ASSERT(max == 255);
+	STKTEST_AGENT_ASSERT(hide_typing == FALSE);
+
+	reply = dbus_message_new_method_return(msg);
+	dbus_message_append_args(reply, DBUS_TYPE_STRING, &ret,
+					DBUS_TYPE_INVALID);
+
+	return reply;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -3504,6 +3555,18 @@ static void __stktest_test_init(void)
 				get_input_response_1121,
 				sizeof(get_input_response_1121),
 				test_get_input_112,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 12.1", "RequestInput",
+				get_input_1211, sizeof(get_input_1211),
+				get_input_response_1211,
+				sizeof(get_input_response_1211),
+				test_get_input_121,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 12.2", "RequestInput",
+				get_input_1221, sizeof(get_input_1221),
+				get_input_response_1221,
+				sizeof(get_input_response_1221),
+				test_get_input_122,
 				expect_response_and_finish);
 }
 
