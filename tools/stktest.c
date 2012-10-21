@@ -2832,6 +2832,12 @@ static DBusMessage *test_get_input_102(DBusMessage *msg,
 	return reply;
 }
 
+GET_INPUT_9X_11X_TEMPLATE(111,"ル")
+GET_INPUT_9X_11X_TEMPLATE(112, "ルルルルルルルルルルルルルルルルルルルル"
+				"ルルルルルルルルルルルルルルルルルルルル"
+				"ルルルルルルルルルルルルルルルルルルルル"
+				"ルルルルルルルルルル")
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -3486,6 +3492,18 @@ static void __stktest_test_init(void)
 				get_input_response_1021,
 				sizeof(get_input_response_1021),
 				test_get_input_102,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 11.1", "RequestInput",
+				get_input_1111, sizeof(get_input_1111),
+				get_input_response_1111,
+				sizeof(get_input_response_1111),
+				test_get_input_111,
+				expect_response_and_finish);
+	stktest_add_test("Get Input 11.2", "RequestInput",
+				get_input_1121, sizeof(get_input_1121),
+				get_input_response_1121,
+				sizeof(get_input_response_1121),
+				test_get_input_112,
 				expect_response_and_finish);
 }
 
