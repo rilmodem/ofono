@@ -73,6 +73,9 @@ typedef DBusMessage *(*get_input_cb_t)(DBusMessage *msg, const char *alpha,
 						unsigned char min_chars,
 						unsigned char max_chars,
 						gboolean hide_typing);
+typedef DBusMessage *(*play_tone_cb_t)(DBusMessage *msg, const char *tone,
+						const char *text,
+						unsigned char icon_id);
 typedef void (*terminal_response_func)(const unsigned char *pdu,
 					unsigned int len);
 
@@ -359,6 +362,53 @@ static DBusMessage *func(DBusConnection *conn, DBusMessage *msg,	\
 
 GET_INPUT_TEMPLATE(agent_request_input, "RequestInput")
 GET_INPUT_TEMPLATE(agent_request_digits, "RequestDigits")
+
+#define PLAY_TONE_TEMPLATE(func, method_name)				\
+static DBusMessage *func(DBusConnection *conn, DBusMessage *msg,	\
+				void *data)				\
+{									\
+	const char *tone;						\
+	const char *text;						\
+	unsigned char icon_id;						\
+	struct test *test;						\
+	play_tone_cb_t func;						\
+	DBusMessage *reply;						\
+									\
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &tone,	\
+					DBUS_TYPE_STRING, &text,	\
+					DBUS_TYPE_BYTE, &icon_id,	\
+					DBUS_TYPE_INVALID) == FALSE)	\
+		return stktest_error_invalid_args(msg);			\
+									\
+	if (cur_test == NULL)						\
+		return stktest_error_failed(msg);			\
+									\
+	test = cur_test->data;						\
+	func = test->agent_func;					\
+									\
+	if (strcmp(test->method, method_name)) {			\
+		g_printerr("Wrong method called!"			\
+				"  Expected: %s, Got: %s\n",		\
+				test->method, method_name);		\
+		__stktest_test_finish(FALSE);				\
+		return stktest_error_failed(msg);			\
+	}								\
+									\
+	if (func == NULL) {						\
+		g_printerr(method_name " not expected to be called");	\
+		__stktest_test_finish(FALSE);				\
+		return stktest_error_failed(msg);			\
+	}								\
+									\
+	reply = func(msg, tone, text, icon_id);				\
+	if (reply == NULL)						\
+		pending = dbus_message_ref(msg);			\
+									\
+	return reply;							\
+}									\
+
+PLAY_TONE_TEMPLATE(agent_play_tone, "PlayTone")
+PLAY_TONE_TEMPLATE(agent_loop_tone, "LoopTone")
 
 static void server_debug(const char *str, void *data)
 {
@@ -1000,6 +1050,14 @@ static const GDBusMethodTable agent_methods[] = {
 				{ "default", "s" }, { "min_chars", "y" },
 				{ "max_chars", "y" }, { "hide_typing", "b" }),
 		GDBUS_ARGS({ "digits", "s" }), agent_request_digits) },
+	{ GDBUS_ASYNC_METHOD("PlayTone",
+		GDBUS_ARGS({ "tone", "s" }, { "text", "s" },
+				{ "icon_id", "y" }),
+		NULL, agent_play_tone) },
+	{ GDBUS_ASYNC_METHOD("LoopTone",
+		GDBUS_ARGS({ "tone", "s" }, { "text", "s" },
+				{ "icon_id", "y" }),
+		NULL, agent_loop_tone) },
 	{ GDBUS_NOREPLY_METHOD("Cancel", NULL, NULL, agent_cancel) },
 	{ },
 };
