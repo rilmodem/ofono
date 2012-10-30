@@ -2469,9 +2469,6 @@ struct more_time_test {
 	unsigned char qualifier;
 };
 
-static unsigned char more_time_111[] = { 0xD0, 0x09, 0x81, 0x03, 0x01, 0x02,
-						0x00, 0x82, 0x02, 0x81, 0x82 };
-
 static struct more_time_test more_time_data_111 = {
 	.pdu = more_time_111,
 	.pdu_len = sizeof(more_time_111),
@@ -17663,11 +17660,6 @@ static const struct terminal_response_test get_input_response_data_1221 = {
 			},
 		}},
 	},
-};
-
-static const unsigned char more_time_response_111[] = {
-	0x81, 0x03, 0x01, 0x02, 0x00, 0x82, 0x02, 0x82,
-	0x81, 0x83, 0x01, 0x00,
 };
 
 static const struct terminal_response_test more_time_response_data_111 = {
