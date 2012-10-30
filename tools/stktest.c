@@ -3562,6 +3562,11 @@ static void __stktest_test_init(void)
 				sizeof(get_input_response_1221),
 				test_get_input_122,
 				expect_response_and_finish);
+	stktest_add_test("More Time 1.1", NULL,
+				more_time_111, sizeof(more_time_111),
+				more_time_response_111,
+				sizeof(more_time_response_111),
+				NULL, expect_response_and_finish);
 }
 
 static void test_destroy(gpointer user_data)
