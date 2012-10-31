@@ -89,12 +89,15 @@ struct test {
 	void *agent_func;
 	terminal_response_func tr_func;
 	enum test_result result;
+	gdouble min_time;
+	gdouble max_time;
 };
 
 static GMainLoop *main_loop = NULL;
 static volatile sig_atomic_t __terminated = 0;
 static GList *tests = NULL;
 static GList *cur_test = NULL;
+static GTimer *timer = NULL;
 
 /* DBus related */
 static DBusConnection *conn;
@@ -853,6 +856,9 @@ static void register_agent_reply(DBusPendingCall *call, void *user_data)
 	state = TEST_STATE_RUNNING;
 	test = cur_test->data;
 	send_proactive_command(test->req_pdu, test->req_len);
+
+	if (test->min_time != 0.0 || test->max_time != 0.0)
+		g_timer_start(timer);
 }
 
 static void register_agent()
@@ -1131,6 +1137,26 @@ static void expect_response_and_finish(const unsigned char *pdu,
 	struct test *test = cur_test->data;
 
 	STKTEST_RESPONSE_ASSERT(test->rsp_pdu, test->rsp_len, pdu, len);
+
+	if (test->min_time != 0.0 || test->max_time != 0.0) {
+		gdouble elapsed = g_timer_elapsed(timer, NULL);
+
+		if (elapsed < test->min_time) {
+			g_printerr("Response received too soon, elapsed:%.2f,"
+					" expected: %.2f\n", elapsed,
+					test->min_time);
+			__stktest_test_finish(FALSE);
+			return;
+		}
+
+		if (elapsed > test->max_time) {
+			g_printerr("Response received too late, elapsed: %.2f,"
+					" expected: %.2f\n", elapsed,
+					test->max_time);
+			__stktest_test_finish(FALSE);
+			return;
+		}
+	}
 
 	g_idle_add(end_session_and_finish, NULL);
 }
@@ -2994,6 +3020,29 @@ static void stktest_add_test(const char *name, const char *method,
 	tests = g_list_append(tests, test);
 }
 
+static void stktest_add_timed_test(const char *name, const char *method,
+					const unsigned char *req,
+					unsigned int req_len,
+					const unsigned char *rsp,
+					unsigned int rsp_len,
+					void *agent_func,
+					terminal_response_func tr_func,
+					gdouble expected_min_time,
+					gdouble expected_max_time)
+{
+	GList *last;
+	struct test *test;
+
+	stktest_add_test(name, method, req, req_len, rsp, rsp_len, agent_func,
+				tr_func);
+
+	last = g_list_last(tests);
+	test = last->data;
+
+	test->min_time = expected_min_time;
+	test->max_time = expected_max_time;
+}
+
 static void __stktest_test_init(void)
 {
 	stktest_add_test("Display Text 1.1", "DisplayText",
@@ -3744,7 +3793,11 @@ int main(int argc, char **argv)
 	watch = g_dbus_add_service_watch(conn, OFONO_SERVICE,
 				ofono_connect, ofono_disconnect, NULL, NULL);
 
+	timer = g_timer_new();
+
 	g_main_loop_run(main_loop);
+
+	g_timer_destroy(timer);
 
 	g_dbus_remove_watch(conn, watch);
 
