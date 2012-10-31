@@ -3167,6 +3167,54 @@ static DBusMessage *test_play_tone_21(DBusMessage *msg,
 	return dbus_message_new_method_return(msg);
 }
 
+static DBusMessage *test_play_tone_31(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "positive-acknowledgement"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "&lt;BASIC-ICON&gt;"));
+	STKTEST_AGENT_ASSERT(icon_id == 1);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_play_tone_32(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "positive-acknowledgement"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "&lt;BASIC-ICON&gt;"));
+	STKTEST_AGENT_ASSERT(icon_id == 1);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_play_tone_33(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "positive-acknowledgement"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "&lt;COLOUR-ICON&gt;"));
+	STKTEST_AGENT_ASSERT(icon_id == 2);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_play_tone_34(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "positive-acknowledgement"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "&lt;COLOUR-ICON&gt;"));
+	STKTEST_AGENT_ASSERT(icon_id == 2);
+
+	return dbus_message_new_method_return(msg);
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -3988,6 +4036,30 @@ static void __stktest_test_init(void)
 				play_tone_response_213,
 				sizeof(play_tone_response_213),
 				test_play_tone_21,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 3.1", "PlayTone",
+				play_tone_311, sizeof(play_tone_311),
+				play_tone_response_311,
+				sizeof(play_tone_response_311),
+				test_play_tone_31,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 3.2", "PlayTone",
+				play_tone_321, sizeof(play_tone_321),
+				play_tone_response_321,
+				sizeof(play_tone_response_321),
+				test_play_tone_32,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 3.3", "PlayTone",
+				play_tone_331, sizeof(play_tone_331),
+				play_tone_response_331,
+				sizeof(play_tone_response_331),
+				test_play_tone_33,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 3.4", "PlayTone",
+				play_tone_341, sizeof(play_tone_341),
+				play_tone_response_341,
+				sizeof(play_tone_response_341),
+				test_play_tone_34,
 				expect_response_and_finish);
 }
 
