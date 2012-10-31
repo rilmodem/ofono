@@ -58,29 +58,34 @@ Data only modems
 
  - Huawei
 
-	Support for one PPP based GPRS connection.
-
-	Limited support for text messaging and USSD.
+	Support for one PPP based GPRS connection with extra support
+	for text messaging and USSD.
 
 	Modems based on EM770 have voice call support.
 
+	Newer Qualcomm QMI based versions are also supported.
+
  - Novatel
 
-	Support for one PPP based GPRS connection.
+	Support for one PPP based GPRS connection with extra support
+	for text messaging and USSD.
 
-	Limited support for text messaging and USSD.
+	Newer Qualcomm QMI based versions are also supported.
 
  - ZTE
 
-	Support for one PPP based GPRS connection.
+	Support for one PPP based GPRS connection with extra support
+	for text messaging and USSD.
 
-	Limited support for text messaging and USSD.
+	Newer Qualcomm QMI based versions are also supported.
 
  - Sierra
 
-	Support for PPP based GPRS connection still work in progress.
+	Support for PPP based GPRS connection still work in progress
+	and it has limited support for text messaging and USSD.
 
-	Limited support for text messaging and USSD.
+	Devices with DirectIP are supported and have extra support
+	for text messaging and USSD.
 
  - Nvidia Icera
 
