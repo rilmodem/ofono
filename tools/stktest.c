@@ -3063,6 +3063,96 @@ static DBusMessage *test_play_tone_11h(DBusMessage *msg,
 	return NULL;
 }
 
+static DBusMessage *test_play_tone_11i(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	const char *expect_text =
+			"This command instructs the ME to play an audio tone. "
+			"Upon receiving this command, the ME shall check "
+			"if it is currently in, or in the process of setting "
+			"up (SET-UP message sent to the network, see "
+			"GSM\"04.08\"(8)), a speech call. - If the ME I";
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "general-beep"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, expect_text));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_play_tone_11j(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "general-beep"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Beep"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_play_tone_11k(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "positive-acknowledgement"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Positive"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_play_tone_11l(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "negative-acknowledgement"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Negative"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_play_tone_11m(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "general-beep"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Quick"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_play_tone_11n(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "error"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "&lt;ABORT&gt;"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return stktest_error_end_session(msg);
+}
+
+static DBusMessage *test_play_tone_11o(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "general-beep"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, ""));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return dbus_message_new_method_return(msg);
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -3825,6 +3915,48 @@ static void __stktest_test_init(void)
 				test_play_tone_11h,
 				expect_response_and_finish,
 				5.0, 6.0);
+	stktest_add_test("Play Tone 1.1i", "PlayTone",
+				play_tone_119, sizeof(play_tone_119),
+				play_tone_response_119,
+				sizeof(play_tone_response_119),
+				test_play_tone_11i,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 1.1j", "PlayTone",
+				play_tone_1110, sizeof(play_tone_1110),
+				play_tone_response_1110,
+				sizeof(play_tone_response_1110),
+				test_play_tone_11j,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 1.1k", "PlayTone",
+				play_tone_1111, sizeof(play_tone_1111),
+				play_tone_response_1111,
+				sizeof(play_tone_response_1111),
+				test_play_tone_11k,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 1.1l", "PlayTone",
+				play_tone_1112, sizeof(play_tone_1112),
+				play_tone_response_1112,
+				sizeof(play_tone_response_1112),
+				test_play_tone_11l,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 1.1m", "PlayTone",
+				play_tone_1113, sizeof(play_tone_1113),
+				play_tone_response_1113,
+				sizeof(play_tone_response_1113),
+				test_play_tone_11m,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 1.1n", "LoopTone",
+				play_tone_1114, sizeof(play_tone_1114),
+				play_tone_response_1114,
+				sizeof(play_tone_response_1114),
+				test_play_tone_11n,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 1.1o", "PlayTone",
+				play_tone_1115, sizeof(play_tone_1115),
+				play_tone_response_1115,
+				sizeof(play_tone_response_1115),
+				test_play_tone_11o,
+				expect_response_and_finish);
 }
 
 static void test_destroy(gpointer user_data)
