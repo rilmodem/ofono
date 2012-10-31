@@ -3155,6 +3155,18 @@ static DBusMessage *test_play_tone_11o(DBusMessage *msg,
 	return dbus_message_new_method_return(msg);
 }
 
+static DBusMessage *test_play_tone_21(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "positive-acknowledgement"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, CYRILLIC));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return dbus_message_new_method_return(msg);
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -3958,6 +3970,24 @@ static void __stktest_test_init(void)
 				play_tone_response_1115,
 				sizeof(play_tone_response_1115),
 				test_play_tone_11o,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 2.1a", "PlayTone",
+				play_tone_211, sizeof(play_tone_211),
+				play_tone_response_211,
+				sizeof(play_tone_response_211),
+				test_play_tone_21,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 2.1b", "PlayTone",
+				play_tone_212, sizeof(play_tone_212),
+				play_tone_response_212,
+				sizeof(play_tone_response_212),
+				test_play_tone_21,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 2.1c", "PlayTone",
+				play_tone_213, sizeof(play_tone_213),
+				play_tone_response_213,
+				sizeof(play_tone_response_213),
+				test_play_tone_21,
 				expect_response_and_finish);
 }
 
