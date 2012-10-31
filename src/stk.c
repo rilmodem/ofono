@@ -2488,7 +2488,7 @@ static gboolean handle_command_play_tone(const struct stk_command *cmd,
 	static const struct {
 		const char *name;
 		/* Continuous true/false according to 02.40 */
-		gboolean continuous;
+		gboolean repeatable;
 	} tone_infos[] = {
 		/* Default */
 		[0x00] = { "general-beep", FALSE },
@@ -2498,9 +2498,9 @@ static gboolean handle_command_play_tone(const struct stk_command *cmd,
 		[0x02] = { "busy", TRUE },
 		[0x03] = { "congestion", TRUE },
 		[0x04] = { "radio-path-acknowledge", FALSE },
-		[0x05] = { "radio-path-not-available", FALSE },
+		[0x05] = { "radio-path-not-available", TRUE },
 		[0x06] = { "error", TRUE },
-		[0x07] = { "call-waiting", FALSE },
+		[0x07] = { "call-waiting", TRUE },
 		[0x08] = { "ringing-tone", TRUE },
 
 		/* Proprietary */
@@ -2557,7 +2557,15 @@ static gboolean handle_command_play_tone(const struct stk_command *cmd,
 	else
 		timeout = manufacturer_timeout;
 
-	if (!tone_infos[pt->tone].continuous)
+	/*
+	 * According to TS 102.223 section 6.6.6:
+	 * "the length of time for which the Terminal shall generate the tone,
+	 * if the tone is contunious or repeatable.  For single tones, the
+	 * value of this data object shall be ignored by the Terminal.  If no
+	 * duration is specified, the Terminal shall default to a duration
+	 * determined by the Terminal manufacturer
+	 */
+	if (!tone_infos[pt->tone].repeatable)
 		/* Duration ignored */
 		err = stk_agent_play_tone(stk->current_agent, text,
 						&pt->icon_id, vibrate,
