@@ -49,6 +49,8 @@
 
 #define LISTEN_PORT	12765
 
+#define CYRILLIC "ЗДРАВСТВУЙТЕ"
+
 enum test_state {
 	TEST_STATE_POWERING_UP = 1,
 	TEST_STATE_REGISTERING_AGENT,
@@ -1444,7 +1446,7 @@ static DBusMessage *test_display_text_61(DBusMessage *msg,
 						unsigned char icon_id,
 						gboolean urgent)
 {
-	STKTEST_AGENT_ASSERT(g_str_equal(text, "ЗДРАВСТВУЙТЕ"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, CYRILLIC));
 	STKTEST_AGENT_ASSERT(icon_id == 0);
 	STKTEST_AGENT_ASSERT(urgent == FALSE);
 
@@ -1769,7 +1771,7 @@ static DBusMessage *test_get_inkey_31(DBusMessage *msg,
 	DBusMessage *reply;
 	const char *ret = "+";
 
-	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "ЗДРАВСТВУЙТЕ"));
+	STKTEST_AGENT_ASSERT(g_str_equal(alpha, CYRILLIC));
 	STKTEST_AGENT_ASSERT(icon_id == 0);
 
 	reply = dbus_message_new_method_return(msg);
@@ -2511,7 +2513,7 @@ static DBusMessage *test_get_input_31(DBusMessage *msg,
 					gboolean hide_typing)
 {
 	DBusMessage *reply;
-	const char *expect = "ЗДРАВСТВУЙТЕ";
+	const char *expect = CYRILLIC;
 	const char *ret = "HELLO";
 
 	STKTEST_AGENT_ASSERT(g_str_equal(alpha, expect));
@@ -2563,7 +2565,7 @@ static DBusMessage *test_get_input_41(DBusMessage *msg,
 					gboolean hide_typing)
 {
 	DBusMessage *reply;
-	const char *ret = "ЗДРАВСТВУЙТЕ";
+	const char *ret = CYRILLIC;
 
 	STKTEST_AGENT_ASSERT(g_str_equal(alpha, "Enter Hello"));
 	STKTEST_AGENT_ASSERT(icon_id == 0);
