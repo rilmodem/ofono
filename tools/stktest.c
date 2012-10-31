@@ -2967,6 +2967,102 @@ static DBusMessage *test_get_input_122(DBusMessage *msg,
 	return reply;
 }
 
+static DBusMessage *test_play_tone_11a(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "dial-tone"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Dial Tone"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return NULL;
+}
+
+static DBusMessage *test_play_tone_11b(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "busy"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Sub. Busy"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return NULL;
+}
+
+static DBusMessage *test_play_tone_11c(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "congestion"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Congestion"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return NULL;
+}
+
+static DBusMessage *test_play_tone_11d(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "radio-path-acknowledge"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "RP Ack"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *test_play_tone_11e(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "radio-path-not-available"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "No RP"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return NULL;
+}
+
+static DBusMessage *test_play_tone_11f(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "error"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Spec Info"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return NULL;
+}
+
+static DBusMessage *test_play_tone_11g(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "call-waiting"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Call Wait"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return NULL;
+}
+
+static DBusMessage *test_play_tone_11h(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "ringing-tone"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "Ring Tone"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return NULL;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -3674,6 +3770,61 @@ static void __stktest_test_init(void)
 				more_time_response_111,
 				sizeof(more_time_response_111),
 				NULL, expect_response_and_finish);
+	stktest_add_timed_test("Play Tone 1.1a", "LoopTone",
+				play_tone_111, sizeof(play_tone_111),
+				play_tone_response_111,
+				sizeof(play_tone_response_111),
+				test_play_tone_11a,
+				expect_response_and_finish,
+				5.0, 6.0);
+	stktest_add_timed_test("Play Tone 1.1b", "LoopTone",
+				play_tone_112, sizeof(play_tone_112),
+				play_tone_response_112,
+				sizeof(play_tone_response_112),
+				test_play_tone_11b,
+				expect_response_and_finish,
+				5.0, 6.0);
+	stktest_add_timed_test("Play Tone 1.1c", "LoopTone",
+				play_tone_113, sizeof(play_tone_113),
+				play_tone_response_113,
+				sizeof(play_tone_response_113),
+				test_play_tone_11c,
+				expect_response_and_finish,
+				5.0, 6.0);
+	stktest_add_test("Play Tone 1.1d", "PlayTone",
+				play_tone_114, sizeof(play_tone_114),
+				play_tone_response_114,
+				sizeof(play_tone_response_114),
+				test_play_tone_11d,
+				expect_response_and_finish);
+	stktest_add_timed_test("Play Tone 1.1e", "LoopTone",
+				play_tone_115, sizeof(play_tone_115),
+				play_tone_response_115,
+				sizeof(play_tone_response_115),
+				test_play_tone_11e,
+				expect_response_and_finish,
+				5.0, 6.0);
+	stktest_add_timed_test("Play Tone 1.1f", "LoopTone",
+				play_tone_116, sizeof(play_tone_116),
+				play_tone_response_116,
+				sizeof(play_tone_response_116),
+				test_play_tone_11f,
+				expect_response_and_finish,
+				5.0, 6.0);
+	stktest_add_timed_test("Play Tone 1.1g", "LoopTone",
+				play_tone_117, sizeof(play_tone_117),
+				play_tone_response_117,
+				sizeof(play_tone_response_117),
+				test_play_tone_11g,
+				expect_response_and_finish,
+				5.0, 6.0);
+	stktest_add_timed_test("Play Tone 1.1h", "LoopTone",
+				play_tone_118, sizeof(play_tone_118),
+				play_tone_response_118,
+				sizeof(play_tone_response_118),
+				test_play_tone_11h,
+				expect_response_and_finish,
+				5.0, 6.0);
 }
 
 static void test_destroy(gpointer user_data)
