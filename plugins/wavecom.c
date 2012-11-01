@@ -111,6 +111,8 @@ static int wavecom_enable(struct ofono_modem *modem)
 	if (chat == NULL)
 		return -ENOMEM;
 
+	g_at_chat_add_terminator(chat, "+CPIN:", 6, TRUE);
+
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(chat, wavecom_debug, "");
 
