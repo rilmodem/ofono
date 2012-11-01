@@ -967,6 +967,12 @@ static void at_pin_retries_query(struct ofono_sim *sim,
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
 
+static int needs_wavecom_sim_quirk(int vendor)
+{
+	return vendor == OFONO_VENDOR_WAVECOM ||
+			vendor == OFONO_VENDOR_WAVECOM_Q2XXX;
+}
+
 static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -980,7 +986,7 @@ static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	int len = sizeof(at_sim_name) / sizeof(*at_sim_name);
 	const char *final = g_at_result_final_response(result);
 
-	if (sd->vendor == OFONO_VENDOR_WAVECOM && ok && strlen(final) > 7)
+	if (needs_wavecom_sim_quirk(sd->vendor) && ok && strlen(final) > 7)
 		decode_at_error(&error, "OK");
 	else
 		decode_at_error(&error, final);
@@ -990,8 +996,7 @@ static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	if (sd->vendor == OFONO_VENDOR_WAVECOM ||
-			sd->vendor == OFONO_VENDOR_WAVECOM_Q2XXX) {
+	if (needs_wavecom_sim_quirk(sd->vendor)) {
 		/* +CPIN: <pin> */
 		pin_required = final + 7;
 	} else {
@@ -1402,19 +1407,8 @@ static int at_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 	sd->chat = g_at_chat_clone(chat);
 	sd->vendor = vendor;
 
-	switch (sd->vendor) {
-	case OFONO_VENDOR_WAVECOM:
-		g_at_chat_add_terminator(sd->chat, "+CPIN:", 6, TRUE);
-		break;
-	case OFONO_VENDOR_MBM:
+	if (sd->vendor == OFONO_VENDOR_MBM)
 		g_at_chat_send(sd->chat, "AT*EPEE=1", NULL, NULL, NULL, NULL);
-		break;
-	case OFONO_VENDOR_WAVECOM_Q2XXX:
-		g_at_chat_add_terminator(chat, "+CPIN: READY", -1, TRUE);
-		break;
-	default:
-		break;
-	}
 
 	ofono_sim_set_data(sim, sd);
 	g_idle_add(at_sim_register, sim);
