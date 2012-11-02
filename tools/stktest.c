@@ -3314,6 +3314,18 @@ PLAY_TONE_4X_TEMPLATE(10a,
 		"</div>")
 PLAY_TONE_4X_TEMPLATE(10b, "Text Attribute 2")
 
+static DBusMessage *test_play_tone_51(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "positive-acknowledgement"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "中一"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return dbus_message_new_method_return(msg);
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -4315,6 +4327,24 @@ static void __stktest_test_init(void)
 				play_tone_response_4102,
 				sizeof(play_tone_response_4102),
 				test_play_tone_410b,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 5.1a", "PlayTone",
+				play_tone_511, sizeof(play_tone_511),
+				play_tone_response_511,
+				sizeof(play_tone_response_511),
+				test_play_tone_51,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 5.1b", "PlayTone",
+				play_tone_512, sizeof(play_tone_512),
+				play_tone_response_512,
+				sizeof(play_tone_response_512),
+				test_play_tone_51,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 5.1c", "PlayTone",
+				play_tone_513, sizeof(play_tone_513),
+				play_tone_response_513,
+				sizeof(play_tone_response_513),
+				test_play_tone_51,
 				expect_response_and_finish);
 }
 
