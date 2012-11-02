@@ -3215,6 +3215,105 @@ static DBusMessage *test_play_tone_34(DBusMessage *msg,
 	return dbus_message_new_method_return(msg);
 }
 
+#define PLAY_TONE_4X_TEMPLATE(seq, expect)				\
+static DBusMessage *test_play_tone_4##seq(DBusMessage *msg,		\
+					const char *tone,		\
+					const char *text,		\
+					unsigned char icon_id)		\
+{									\
+	g_print("%s\n", text);						\
+	STKTEST_AGENT_ASSERT(g_str_equal(tone,				\
+					"positive-acknowledgement"));	\
+	STKTEST_AGENT_ASSERT(g_str_equal(text, expect));		\
+	STKTEST_AGENT_ASSERT(icon_id == 0);				\
+									\
+	return dbus_message_new_method_return(msg);			\
+}									\
+
+PLAY_TONE_4X_TEMPLATE(1a,
+		"<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>"
+		"</div>")
+PLAY_TONE_4X_TEMPLATE(1b, "Text Attribute 2")
+
+PLAY_TONE_4X_TEMPLATE(2a,
+		"<div style=\"text-align: center;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>"
+		"</div>")
+PLAY_TONE_4X_TEMPLATE(2b, "Text Attribute 2")
+
+PLAY_TONE_4X_TEMPLATE(3a,
+		"<div style=\"text-align: right;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>"
+		"</div>")
+PLAY_TONE_4X_TEMPLATE(3b, "Text Attribute 2")
+
+PLAY_TONE_4X_TEMPLATE(4a,
+		"<div style=\"text-align: left;\"><span style=\"font-size: "
+		"big;color: #347235;background-color: #FFFF00;\">"
+		"Text Attribute 1</span></div>")
+PLAY_TONE_4X_TEMPLATE(4b,
+		"<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 2</span>"
+		"</div>")
+PLAY_TONE_4X_TEMPLATE(4c, "Text Attribute 3")
+
+PLAY_TONE_4X_TEMPLATE(5a,
+		"<div style=\"text-align: left;\"><span style=\"font-size: "
+		"small;color: #347235;background-color: #FFFF00;\">"
+		"Text Attribute 1</span></div>")
+PLAY_TONE_4X_TEMPLATE(5b,
+		"<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 2</span>"
+		"</div>")
+PLAY_TONE_4X_TEMPLATE(5c, "Text Attribute 3")
+
+PLAY_TONE_4X_TEMPLATE(6a,
+		"<div style=\"text-align: left;\"><span style=\"font-weight: "
+		"bold;color: #347235;background-color: #FFFF00;\">"
+		"Text Attribute</span></div> 1")
+PLAY_TONE_4X_TEMPLATE(6b,
+		"<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 2</span>"
+		"</div>")
+PLAY_TONE_4X_TEMPLATE(6c, "Text Attribute 3")
+
+PLAY_TONE_4X_TEMPLATE(7a,
+		"<div style=\"text-align: left;\"><span style=\"font-style: "
+		"italic;color: #347235;background-color: #FFFF00;\">"
+		"Text Attribute</span></div> 1")
+PLAY_TONE_4X_TEMPLATE(7b,
+		"<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 2</span>"
+		"</div>")
+PLAY_TONE_4X_TEMPLATE(7c, "Text Attribute 3")
+
+PLAY_TONE_4X_TEMPLATE(8a,
+		"<div style=\"text-align: left;\"><span "
+		"style=\"text-decoration: underline;color: #347235;"
+		"background-color: #FFFF00;\">Text Attribute 1</span></div>")
+PLAY_TONE_4X_TEMPLATE(8b,
+		"<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 2</span>"
+		"</div>")
+PLAY_TONE_4X_TEMPLATE(8c, "Text Attribute 3")
+
+PLAY_TONE_4X_TEMPLATE(9a,
+		"<div style=\"text-align: left;\"><span "
+		"style=\"text-decoration: line-through;color: #347235;"
+		"background-color: #FFFF00;\">Text Attribute 1</span></div>")
+PLAY_TONE_4X_TEMPLATE(9b,
+		"<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 2</span>"
+		"</div>")
+PLAY_TONE_4X_TEMPLATE(9c, "Text Attribute 3")
+
+PLAY_TONE_4X_TEMPLATE(10a,
+		"<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>"
+		"</div>")
+PLAY_TONE_4X_TEMPLATE(10b, "Text Attribute 2")
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -4060,6 +4159,162 @@ static void __stktest_test_init(void)
 				play_tone_response_341,
 				sizeof(play_tone_response_341),
 				test_play_tone_34,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.1a", "PlayTone",
+				play_tone_411, sizeof(play_tone_411),
+				play_tone_response_411,
+				sizeof(play_tone_response_411),
+				test_play_tone_41a,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.1b", "PlayTone",
+				play_tone_412, sizeof(play_tone_412),
+				play_tone_response_412,
+				sizeof(play_tone_response_412),
+				test_play_tone_41b,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.2a", "PlayTone",
+				play_tone_421, sizeof(play_tone_421),
+				play_tone_response_421,
+				sizeof(play_tone_response_421),
+				test_play_tone_42a,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.2b", "PlayTone",
+				play_tone_422, sizeof(play_tone_422),
+				play_tone_response_422,
+				sizeof(play_tone_response_422),
+				test_play_tone_42b,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.3a", "PlayTone",
+				play_tone_431, sizeof(play_tone_431),
+				play_tone_response_431,
+				sizeof(play_tone_response_431),
+				test_play_tone_43a,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.3b", "PlayTone",
+				play_tone_432, sizeof(play_tone_432),
+				play_tone_response_432,
+				sizeof(play_tone_response_432),
+				test_play_tone_43b,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.4a", "PlayTone",
+				play_tone_441, sizeof(play_tone_441),
+				play_tone_response_441,
+				sizeof(play_tone_response_441),
+				test_play_tone_44a,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.4b", "PlayTone",
+				play_tone_442, sizeof(play_tone_442),
+				play_tone_response_442,
+				sizeof(play_tone_response_442),
+				test_play_tone_44b,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.4c", "PlayTone",
+				play_tone_443, sizeof(play_tone_443),
+				play_tone_response_443,
+				sizeof(play_tone_response_443),
+				test_play_tone_44c,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.5a", "PlayTone",
+				play_tone_451, sizeof(play_tone_451),
+				play_tone_response_451,
+				sizeof(play_tone_response_451),
+				test_play_tone_45a,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.5b", "PlayTone",
+				play_tone_452, sizeof(play_tone_452),
+				play_tone_response_452,
+				sizeof(play_tone_response_452),
+				test_play_tone_45b,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.5c", "PlayTone",
+				play_tone_453, sizeof(play_tone_453),
+				play_tone_response_453,
+				sizeof(play_tone_response_453),
+				test_play_tone_45c,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.6a", "PlayTone",
+				play_tone_461, sizeof(play_tone_461),
+				play_tone_response_461,
+				sizeof(play_tone_response_461),
+				test_play_tone_46a,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.6b", "PlayTone",
+				play_tone_462, sizeof(play_tone_462),
+				play_tone_response_462,
+				sizeof(play_tone_response_462),
+				test_play_tone_46b,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.6c", "PlayTone",
+				play_tone_463, sizeof(play_tone_463),
+				play_tone_response_463,
+				sizeof(play_tone_response_463),
+				test_play_tone_46c,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.7a", "PlayTone",
+				play_tone_471, sizeof(play_tone_471),
+				play_tone_response_471,
+				sizeof(play_tone_response_471),
+				test_play_tone_47a,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.7b", "PlayTone",
+				play_tone_472, sizeof(play_tone_472),
+				play_tone_response_472,
+				sizeof(play_tone_response_472),
+				test_play_tone_47b,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.7c", "PlayTone",
+				play_tone_473, sizeof(play_tone_473),
+				play_tone_response_473,
+				sizeof(play_tone_response_473),
+				test_play_tone_47c,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.8a", "PlayTone",
+				play_tone_481, sizeof(play_tone_481),
+				play_tone_response_481,
+				sizeof(play_tone_response_481),
+				test_play_tone_48a,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.8b", "PlayTone",
+				play_tone_482, sizeof(play_tone_482),
+				play_tone_response_482,
+				sizeof(play_tone_response_482),
+				test_play_tone_48b,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.8c", "PlayTone",
+				play_tone_483, sizeof(play_tone_483),
+				play_tone_response_483,
+				sizeof(play_tone_response_483),
+				test_play_tone_48c,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.9a", "PlayTone",
+				play_tone_491, sizeof(play_tone_491),
+				play_tone_response_491,
+				sizeof(play_tone_response_491),
+				test_play_tone_49a,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.9b", "PlayTone",
+				play_tone_492, sizeof(play_tone_492),
+				play_tone_response_492,
+				sizeof(play_tone_response_492),
+				test_play_tone_49b,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.9c", "PlayTone",
+				play_tone_493, sizeof(play_tone_493),
+				play_tone_response_493,
+				sizeof(play_tone_response_493),
+				test_play_tone_49c,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.10a", "PlayTone",
+				play_tone_4101, sizeof(play_tone_4101),
+				play_tone_response_4101,
+				sizeof(play_tone_response_4101),
+				test_play_tone_410a,
+				expect_response_and_finish);
+	stktest_add_test("Play Tone 4.10b", "PlayTone",
+				play_tone_4102, sizeof(play_tone_4102),
+				play_tone_response_4102,
+				sizeof(play_tone_response_4102),
+				test_play_tone_410b,
 				expect_response_and_finish);
 }
 
