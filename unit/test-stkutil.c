@@ -3229,7 +3229,8 @@ static struct play_tone_test play_tone_data_4101 = {
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
 	},
 	.html = "<div style=\"text-align: left;\"><span style=\"color: "
-		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>",
+		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>"
+		"</div>",
 };
 
 static struct play_tone_test play_tone_data_4102 = {
