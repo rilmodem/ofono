@@ -4402,6 +4402,11 @@ static void __stktest_test_init(void)
 				test_play_tone_61c,
 				expect_response_and_finish,
 				5.0, 6.0);
+	stktest_add_test("Poll Interval 1.1", NULL,
+				poll_interval_111, sizeof(poll_interval_111),
+				poll_interval_response_111,
+				sizeof(poll_interval_response_111),
+				NULL, expect_response_and_finish);
 }
 
 static void test_destroy(gpointer user_data)
