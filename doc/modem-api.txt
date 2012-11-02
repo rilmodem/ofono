@@ -167,4 +167,4 @@ Properties	boolean Powered [readwrite]
 			not give any hints on which Interfaces will be
 			supported by this modem.
 
-			Possible values are "hfp", "sap" and "hardware".
+			Possible values are "test", "hfp", "sap" and "hardware".
