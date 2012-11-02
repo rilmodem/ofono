@@ -34,6 +34,7 @@ enum ofono_modem_type {
 	OFONO_MODEM_TYPE_HARDWARE = 0,
 	OFONO_MODEM_TYPE_HFP,
 	OFONO_MODEM_TYPE_SAP,
+	OFONO_MODEM_TYPE_TEST,
 };
 
 typedef void (*ofono_modem_online_cb_t)(const struct ofono_error *error,
