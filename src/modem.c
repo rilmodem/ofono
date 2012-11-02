@@ -128,6 +128,8 @@ static const char *modem_type_to_string(enum ofono_modem_type type)
 		return "hfp";
 	case OFONO_MODEM_TYPE_SAP:
 		return "sap";
+	case OFONO_MODEM_TYPE_TEST:
+		return "test";
 	}
 
 	return "unknown";
