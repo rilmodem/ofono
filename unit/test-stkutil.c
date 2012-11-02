@@ -3315,10 +3315,6 @@ struct poll_interval_test {
 	struct stk_duration duration;
 };
 
-static unsigned char poll_interval_111[] = { 0xD0, 0x0D, 0x81, 0x03, 0x01, 0x03,
-						0x00, 0x82, 0x02, 0x81, 0x82,
-						0x84, 0x02, 0x01, 0x14 };
-
 static struct poll_interval_test poll_interval_data_111 = {
 	.pdu = poll_interval_111,
 	.pdu_len = sizeof(poll_interval_111),
@@ -17324,12 +17320,6 @@ static const struct terminal_response_test play_tone_response_data_311b = {
 			.type = STK_RESULT_TYPE_NO_ICON,
 		},
 	},
-};
-
-/* TS 102 384 */
-static const unsigned char poll_interval_response_111[] = {
-	0x81, 0x03, 0x01, 0x03, 0x00, 0x82, 0x02, 0x82,
-	0x81, 0x83, 0x01, 0x00, 0x84, 0x02, 0x01, 0x14,
 };
 
 static const struct terminal_response_test poll_interval_response_data_111 = {
