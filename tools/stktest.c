@@ -3326,6 +3326,41 @@ static DBusMessage *test_play_tone_51(DBusMessage *msg,
 	return dbus_message_new_method_return(msg);
 }
 
+static DBusMessage *test_play_tone_61a(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "dial-tone"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "80ル0"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return NULL;
+}
+
+static DBusMessage *test_play_tone_61b(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "dial-tone"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "81ル1"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return NULL;
+}
+static DBusMessage *test_play_tone_61c(DBusMessage *msg,
+					const char *tone,
+					const char *text,
+					unsigned char icon_id)
+{
+	STKTEST_AGENT_ASSERT(g_str_equal(tone, "dial-tone"));
+	STKTEST_AGENT_ASSERT(g_str_equal(text, "82ル2"));
+	STKTEST_AGENT_ASSERT(icon_id == 0);
+
+	return NULL;
+}
+
 static void power_down_reply(DBusPendingCall *call, void *user_data)
 {
 	__stktest_test_next();
@@ -4346,6 +4381,27 @@ static void __stktest_test_init(void)
 				sizeof(play_tone_response_513),
 				test_play_tone_51,
 				expect_response_and_finish);
+	stktest_add_timed_test("Play Tone 6.1a", "LoopTone",
+				play_tone_611, sizeof(play_tone_611),
+				play_tone_response_611,
+				sizeof(play_tone_response_611),
+				test_play_tone_61a,
+				expect_response_and_finish,
+				5.0, 6.0);
+	stktest_add_timed_test("Play Tone 6.1b", "LoopTone",
+				play_tone_612, sizeof(play_tone_612),
+				play_tone_response_612,
+				sizeof(play_tone_response_612),
+				test_play_tone_61b,
+				expect_response_and_finish,
+				5.0, 6.0);
+	stktest_add_timed_test("Play Tone 6.1c", "LoopTone",
+				play_tone_613, sizeof(play_tone_613),
+				play_tone_response_613,
+				sizeof(play_tone_response_613),
+				test_play_tone_61c,
+				expect_response_and_finish,
+				5.0, 6.0);
 }
 
 static void test_destroy(gpointer user_data)
