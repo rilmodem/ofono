@@ -137,7 +137,9 @@ static void sim_state_cb(gboolean present, gpointer user_data)
 	at_util_sim_state_query_free(data->sim_state_query);
 	data->sim_state_query = NULL;
 
-	data->flags |= MBM_FLAG_HAVE_SIM;
+	if (present)
+		data->flags |= MBM_FLAG_HAVE_SIM;
+
 	ofono_modem_set_powered(modem, TRUE);
 }
 
