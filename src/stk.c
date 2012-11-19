@@ -1385,6 +1385,9 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 	if (dt->duration.interval)
 		timeout = duration_to_msecs(&dt->duration);
 
+	if (cmd->display_text.immediate_response)
+		timeout = stk->timeout * 1000;
+
 	err = stk_agent_display_text(stk->current_agent, text, &dt->icon_id,
 					priority, display_text_cb, stk,
 					display_text_destroy, timeout);
