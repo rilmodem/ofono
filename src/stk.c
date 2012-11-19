@@ -1380,7 +1380,7 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 	}
 
 	if (qualifier & (1 << 7))
-		timeout = stk->timeout * 1000;
+		timeout = stk->short_timeout * 1000;
 
 	if (dt->duration.interval)
 		timeout = duration_to_msecs(&dt->duration);
@@ -3151,7 +3151,7 @@ void ofono_stk_register(struct ofono_stk *stk)
 	__ofono_atom_register(stk->atom, stk_unregister);
 
 	stk->timeout = 180; /* 3 minutes */
-	stk->short_timeout = 20; /* 20 seconds */
+	stk->short_timeout = 25; /* 25 seconds */
 	stk->envelope_q = g_queue_new();
 }
 
