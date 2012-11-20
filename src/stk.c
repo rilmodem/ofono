@@ -1273,7 +1273,7 @@ static gboolean handle_command_select_item(const struct stk_command *cmd,
 					stk->select_item_menu,
 					request_selection_cb, stk,
 					request_selection_destroy,
-					stk->timeout * 1000) < 0) {
+					stk->short_timeout * 1000) < 0) {
 		unsigned char no_cause_result[] = { 0x00 };
 
 		request_selection_destroy(stk);
