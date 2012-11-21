@@ -2316,6 +2316,42 @@ static void sim_free_early_state(struct ofono_sim *sim)
 	}
 }
 
+static void sim_spn_close(struct ofono_sim *sim)
+{
+	if (sim->spn_watches) {
+		__ofono_watchlist_free(sim->spn_watches);
+		sim->spn_watches = NULL;
+	}
+
+	/*
+	 * We have not initialized SPN logic at all yet, either because
+	 * no netreg / gprs atom has been needed or we have not reached the
+	 * post_sim state
+	 */
+	if (sim->ef_spn_watch == 0)
+		return;
+
+	ofono_sim_remove_file_watch(sim->context, sim->ef_spn_watch);
+	sim->ef_spn_watch = 0;
+
+	ofono_sim_remove_file_watch(sim->context, sim->cphs_spn_watch);
+	sim->cphs_spn_watch = 0;
+
+	if (sim->cphs_spn_short_watch) {
+		ofono_sim_remove_file_watch(sim->context,
+						sim->cphs_spn_short_watch);
+		sim->cphs_spn_short_watch = 0;
+	}
+
+	sim->flags &= ~SIM_FLAG_READING_SPN;
+
+	g_free(sim->spn);
+	sim->spn = NULL;
+
+	g_free(sim->spn_dc);
+	sim->spn_dc = NULL;
+}
+
 static void sim_free_main_state(struct ofono_sim *sim)
 {
 	int i;
@@ -2383,6 +2419,8 @@ static void sim_free_main_state(struct ofono_sim *sim)
 
 	sim->fixed_dialing = FALSE;
 	sim->barred_dialing = FALSE;
+
+	sim_spn_close(sim);
 
 	if (sim->context) {
 		ofono_sim_context_free(sim->context);
@@ -2601,40 +2639,6 @@ static void sim_spn_init(struct ofono_sim *sim)
 				sim_spn_changed, sim, NULL);
 }
 
-static void sim_spn_close(struct ofono_sim *sim)
-{
-	__ofono_watchlist_free(sim->spn_watches);
-	sim->spn_watches = NULL;
-
-	/*
-	 * We have not initialized SPN logic at all yet, either because
-	 * no netreg / gprs atom has been needed or we have not reached the
-	 * post_sim state
-	 */
-	if (sim->ef_spn_watch == 0)
-		return;
-
-	ofono_sim_remove_file_watch(sim->context, sim->ef_spn_watch);
-	sim->ef_spn_watch = 0;
-
-	ofono_sim_remove_file_watch(sim->context, sim->cphs_spn_watch);
-	sim->cphs_spn_watch = 0;
-
-	if (sim->cphs_spn_short_watch) {
-		ofono_sim_remove_file_watch(sim->context,
-						sim->cphs_spn_short_watch);
-		sim->cphs_spn_short_watch = 0;
-	}
-
-	sim->flags &= ~SIM_FLAG_READING_SPN;
-
-	g_free(sim->spn);
-	sim->spn = NULL;
-
-	g_free(sim->spn_dc);
-	sim->spn_dc = NULL;
-}
-
 ofono_bool_t ofono_sim_add_spn_watch(struct ofono_sim *sim, unsigned int *id,
 					ofono_sim_spn_cb_t cb, void *data,
 					ofono_destroy_func destroy)
@@ -2805,8 +2809,6 @@ static void sim_unregister(struct ofono_atom *atom)
 
 	__ofono_watchlist_free(sim->state_watches);
 	sim->state_watches = NULL;
-
-	sim_spn_close(sim);
 
 	g_dbus_unregister_interface(conn, path, OFONO_SIM_MANAGER_INTERFACE);
 	ofono_modem_remove_interface(modem, OFONO_SIM_MANAGER_INTERFACE);
