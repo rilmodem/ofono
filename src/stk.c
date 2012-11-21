@@ -612,7 +612,7 @@ static DBusMessage *stk_get_properties(DBusConnection *conn,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
 
-	str = stk->idle_mode_text;
+	str = stk->idle_mode_text ? stk->idle_mode_text : "";
 	ofono_dbus_dict_append(&dict, "IdleModeText", DBUS_TYPE_STRING, &str);
 
 	icon = stk->idle_mode_icon.id;
