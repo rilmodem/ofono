@@ -126,24 +126,31 @@ struct ofono_sim_driver {
 	int (*probe)(struct ofono_sim *sim, unsigned int vendor, void *data);
 	void (*remove)(struct ofono_sim *sim);
 	void (*read_file_info)(struct ofono_sim *sim, int fileid,
+			const unsigned char *path, unsigned int path_len,
 			ofono_sim_file_info_cb_t cb, void *data);
 	void (*read_file_transparent)(struct ofono_sim *sim, int fileid,
 			int start, int length,
+			const unsigned char *path, unsigned int path_len,
 			ofono_sim_read_cb_t cb, void *data);
 	void (*read_file_linear)(struct ofono_sim *sim, int fileid,
 			int record, int length,
+			const unsigned char *path, unsigned int path_len,
 			ofono_sim_read_cb_t cb, void *data);
 	void (*read_file_cyclic)(struct ofono_sim *sim, int fileid,
 			int record, int length,
+			const unsigned char *path, unsigned int path_len,
 			ofono_sim_read_cb_t cb, void *data);
 	void (*write_file_transparent)(struct ofono_sim *sim, int fileid,
 			int start, int length, const unsigned char *value,
+			const unsigned char *path, unsigned int path_len,
 			ofono_sim_write_cb_t cb, void *data);
 	void (*write_file_linear)(struct ofono_sim *sim, int fileid,
 			int record, int length, const unsigned char *value,
+			const unsigned char *path, unsigned int path_len,
 			ofono_sim_write_cb_t cb, void *data);
 	void (*write_file_cyclic)(struct ofono_sim *sim, int fileid,
 			int length, const unsigned char *value,
+			const unsigned char *path, unsigned int path_len,
 			ofono_sim_write_cb_t cb, void *data);
 	void (*read_imsi)(struct ofono_sim *sim,
 			ofono_sim_imsi_cb_t cb, void *data);
