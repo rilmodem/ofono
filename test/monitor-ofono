@@ -48,6 +48,9 @@ def pretty(d):
 		if t is tuple:
 			return "( %s )" % d
 
+	if t is str:
+		return "%s" % d
+
 	return str(d)
 
 def property_changed(name, value, path, interface):
