@@ -42,6 +42,8 @@ struct sim_data {
 };
 
 static void qmi_read_file_info(struct ofono_sim *sim, int fileid,
+				const unsigned char *path,
+				unsigned int path_len,
 				ofono_sim_file_info_cb_t cb, void *user_data)
 {
 	unsigned char access[3] = { 0x0f, 0xff, 0xff };
@@ -94,8 +96,10 @@ static void get_iccid_cb(struct qmi_result *result, void *user_data)
 }
 
 static void qmi_read_file_transparent(struct ofono_sim *sim,
-				int fileid, int start, int length,
-				ofono_sim_read_cb_t cb, void *user_data)
+					int fileid, int start, int length,
+					const unsigned char *path,
+					unsigned int path_len,
+					ofono_sim_read_cb_t cb, void *user_data)
 {
 	struct sim_data *data = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
