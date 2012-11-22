@@ -2834,6 +2834,7 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 						read_sim_ecc_numbers, vc, NULL);
 		break;
 	case OFONO_SIM_STATE_NOT_PRESENT:
+	case OFONO_SIM_STATE_RESETTING:
 		/* TODO: Must release all non-emergency calls */
 
 		if (vc->sim_context) {
