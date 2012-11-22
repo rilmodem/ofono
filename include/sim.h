@@ -77,6 +77,7 @@ enum ofono_sim_state {
 	OFONO_SIM_STATE_INSERTED,
 	OFONO_SIM_STATE_LOCKED_OUT,
 	OFONO_SIM_STATE_READY,
+	OFONO_SIM_STATE_RESETTING,
 };
 
 typedef void (*ofono_sim_file_info_cb_t)(const struct ofono_error *error,
