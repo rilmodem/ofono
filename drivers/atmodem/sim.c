@@ -133,8 +133,9 @@ error:
 }
 
 static void at_sim_read_info(struct ofono_sim *sim, int fileid,
-					ofono_sim_file_info_cb_t cb,
-					void *data)
+				const unsigned char *path,
+				unsigned int path_len,
+				ofono_sim_file_info_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd;
@@ -223,8 +224,10 @@ static void at_crsm_read_cb(gboolean ok, GAtResult *result,
 }
 
 static void at_sim_read_binary(struct ofono_sim *sim, int fileid,
-					int start, int length,
-					ofono_sim_read_cb_t cb, void *data)
+				int start, int length,
+				const unsigned char *path,
+				unsigned int path_len,
+				ofono_sim_read_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
@@ -243,8 +246,10 @@ static void at_sim_read_binary(struct ofono_sim *sim, int fileid,
 }
 
 static void at_sim_read_record(struct ofono_sim *sim, int fileid,
-					int record, int length,
-					ofono_sim_read_cb_t cb, void *data)
+				int record, int length,
+				const unsigned char *path,
+				unsigned int path_len,
+				ofono_sim_read_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
@@ -304,6 +309,8 @@ static void at_crsm_update_cb(gboolean ok, GAtResult *result,
 static void at_sim_update_file(struct ofono_sim *sim, int cmd, int fileid,
 				int p1, int p2, int p3,
 				const unsigned char *value,
+				const unsigned char *path,
+				unsigned int path_len,
 				ofono_sim_write_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
@@ -358,26 +365,33 @@ error:
 static void at_sim_update_binary(struct ofono_sim *sim, int fileid,
 					int start, int length,
 					const unsigned char *value,
+					const unsigned char *path,
+					unsigned int path_len,
 					ofono_sim_write_cb_t cb, void *data)
 {
 	at_sim_update_file(sim, 214, fileid, start >> 8, start & 0xff,
-				length, value, cb, data);
+				length, value, path, path_len, cb, data);
 }
 
 static void at_sim_update_record(struct ofono_sim *sim, int fileid,
 					int record, int length,
 					const unsigned char *value,
+					const unsigned char *path,
+					unsigned int path_len,
 					ofono_sim_write_cb_t cb, void *data)
 {
 	at_sim_update_file(sim, 220, fileid, record, 4, length,
-				value, cb, data);
+				value, path, path_len, cb, data);
 }
 
 static void at_sim_update_cyclic(struct ofono_sim *sim, int fileid,
 					int length, const unsigned char *value,
+					const unsigned char *path,
+					unsigned int path_len,
 					ofono_sim_write_cb_t cb, void *data)
 {
-	at_sim_update_file(sim, 220, fileid, 0, 3, length, value, cb, data);
+	at_sim_update_file(sim, 220, fileid, 0, 3, length, value,
+				path, path_len, cb, data);
 }
 
 static void at_cimi_cb(gboolean ok, GAtResult *result, gpointer user_data)
