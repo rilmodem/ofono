@@ -470,6 +470,8 @@ void sim_adn_build(unsigned char *data, int length,
 			const char *identifier);
 
 struct sim_ef_info *sim_ef_db_lookup(unsigned short efid);
+unsigned int sim_ef_db_get_path_2g(unsigned short id, unsigned char path[]);
+unsigned int sim_ef_db_get_path_3g(unsigned short id, unsigned char path[]);
 
 gboolean sim_parse_3g_get_response(const unsigned char *data, int len,
 					int *file_len, int *record_len,

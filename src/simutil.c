@@ -1289,6 +1289,72 @@ struct sim_ef_info *sim_ef_db_lookup(unsigned short id)
 	return result;
 }
 
+unsigned int sim_ef_db_get_path_2g(unsigned short id, unsigned char out_path[])
+{
+	struct sim_ef_info *info;
+	unsigned int nelem = sizeof(ef_db) / sizeof(struct sim_ef_info);
+	unsigned char path[6];
+	int i = 0;
+	int j;
+
+	info = bsearch(GUINT_TO_POINTER((unsigned int) id), ef_db, nelem,
+				sizeof(struct sim_ef_info), find_ef_by_id);
+	if (info == NULL)
+		return 0;
+
+	path[i++] = info->parent2g & 0xff;
+	path[i++] = info->parent2g >> 8;
+
+	while (info->parent2g != ROOTMF) {
+		info = bsearch(GUINT_TO_POINTER((unsigned int) info->parent2g),
+				ef_db, nelem, sizeof(struct sim_ef_info),
+				find_ef_by_id);
+		if (info == NULL)
+			return 0;
+
+		path[i++] = info->parent2g & 0xff;
+		path[i++] = info->parent2g >> 8;
+	}
+
+	for (j = 0; j < i; j++)
+		out_path[j] = path[i - j - 1];
+
+	return i;
+}
+
+unsigned int sim_ef_db_get_path_3g(unsigned short id, unsigned char out_path[])
+{
+	struct sim_ef_info *info;
+	unsigned int nelem = sizeof(ef_db) / sizeof(struct sim_ef_info);
+	unsigned char path[6];
+	int i = 0;
+	int j;
+
+	info = bsearch(GUINT_TO_POINTER((unsigned int) id), ef_db, nelem,
+				sizeof(struct sim_ef_info), find_ef_by_id);
+	if (info == NULL)
+		return 0;
+
+	path[i++] = info->parent3g & 0xff;
+	path[i++] = info->parent3g >> 8;
+
+	while (info->parent3g != ROOTMF) {
+		info = bsearch(GUINT_TO_POINTER((unsigned int) info->parent3g),
+				ef_db, nelem, sizeof(struct sim_ef_info),
+				find_ef_by_id);
+		if (info == NULL)
+			return 0;
+
+		path[i++] = info->parent3g & 0xff;
+		path[i++] = info->parent3g >> 8;
+	}
+
+	for (j = 0; j < i; j++)
+		out_path[j] = path[i - j - 1];
+
+	return i;
+}
+
 gboolean sim_parse_3g_get_response(const unsigned char *data, int len,
 					int *file_len, int *record_len,
 					int *structure, unsigned char *access,
