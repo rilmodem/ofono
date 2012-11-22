@@ -667,6 +667,8 @@ static void ifx_pre_sim(struct ofono_modem *modem)
 static void ifx_post_sim(struct ofono_modem *modem)
 {
 	struct ifx_data *data = ofono_modem_get_data(modem);
+	struct ofono_gprs *gprs;
+	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
 
@@ -678,33 +680,6 @@ static void ifx_post_sim(struct ofono_modem *modem)
 
 	ofono_sms_create(modem, OFONO_VENDOR_IFX,
 					"atmodem", data->dlcs[AUX_DLC]);
-}
-
-static void ifx_post_online(struct ofono_modem *modem)
-{
-	struct ifx_data *data = ofono_modem_get_data(modem);
-	struct ofono_message_waiting *mw;
-	struct ofono_gprs *gprs;
-	struct ofono_gprs_context *gc;
-
-	DBG("%p", modem);
-
-	ofono_netreg_create(modem, OFONO_VENDOR_IFX,
-					"atmodem", data->dlcs[NETREG_DLC]);
-
-	ofono_cbs_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
-	ofono_ussd_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
-
-	ofono_gnss_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
-
-	ofono_call_settings_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
-	ofono_call_meter_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
-	ofono_call_barring_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
-	ofono_call_volume_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
-
-	mw = ofono_message_waiting_create(modem);
-	if (mw)
-		ofono_message_waiting_register(mw);
 
 	gprs = ofono_gprs_create(modem, OFONO_VENDOR_IFX,
 					"atmodem", data->dlcs[NETREG_DLC]);
@@ -727,6 +702,31 @@ static void ifx_post_online(struct ofono_modem *modem)
 		if (gc)
 			ofono_gprs_add_context(gprs, gc);
 	}
+}
+
+static void ifx_post_online(struct ofono_modem *modem)
+{
+	struct ifx_data *data = ofono_modem_get_data(modem);
+	struct ofono_message_waiting *mw;
+
+	DBG("%p", modem);
+
+	ofono_netreg_create(modem, OFONO_VENDOR_IFX,
+					"atmodem", data->dlcs[NETREG_DLC]);
+
+	ofono_cbs_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+	ofono_ussd_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+
+	ofono_gnss_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+
+	ofono_call_settings_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+	ofono_call_meter_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+	ofono_call_barring_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+	ofono_call_volume_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+
+	mw = ofono_message_waiting_create(modem);
+	if (mw)
+		ofono_message_waiting_register(mw);
 }
 
 static struct ofono_modem_driver ifx_driver = {
