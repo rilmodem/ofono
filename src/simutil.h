@@ -27,12 +27,7 @@ enum sim_fileid {
 	SIM_EF_ICCID_FILEID =			0x2FE2,
 	SIM_MF_FILEID =				0x3F00,
 	SIM_EFIMG_FILEID =			0x4F20,
-	SIM_EFPSC_FILEID =			0x4F22,
-	SIM_EFCC_FILEID =			0x4F23,
-	SIM_EFPUID_FILEID =			0x4F24,
-	SIM_EFPBR_FILEID =			0x4F30,
 	SIM_DFPHONEBOOK_FILEID =		0x5F3A,
-	SIM_DFMULTIMEDIA_FILEID =		0x5F3B,
 	SIM_EFLI_FILEID =			0x6F05,
 	SIM_EFARR_FILEID =			0x6F06,
 	SIM_EFIMSI_FILEID =			0x6F07,
@@ -288,7 +283,8 @@ struct sim_eons_operator_info {
 
 struct sim_ef_info {
 	unsigned short id;
-	unsigned short parent;
+	unsigned short parent2g;
+	unsigned short parent3g;
 	unsigned char file_type;
 	unsigned char file_structure;
 	unsigned char size;
