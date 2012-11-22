@@ -395,9 +395,6 @@ static void test_ef_db(void)
 
 	info = sim_ef_db_lookup(0x2F05);
 	g_assert(info);
-
-	info = sim_ef_db_lookup(0x6FE3);
-	g_assert(info);
 }
 
 static const char *binary_ef = "62178202412183022F058A01058B032F060F8002000A"
