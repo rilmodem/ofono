@@ -1514,7 +1514,7 @@ static void sim_retrieve_imsi(struct ofono_sim *sim)
 	}
 
 	sim->driver->read_file_transparent(sim, SIM_EFIMSI_FILEID, 0, 9,
-						sim_efimsi_cb, sim);
+						NULL, 0, sim_efimsi_cb, sim);
 }
 
 static void sim_fdn_enabled(struct ofono_sim *sim)
