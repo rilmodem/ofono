@@ -289,6 +289,7 @@ struct sim_eons_operator_info {
 struct sim_ef_info {
 	unsigned short id;
 	unsigned short parent;
+	unsigned char file_type;
 	unsigned char file_structure;
 	unsigned char size;
 	enum sim_file_access perm_read;
