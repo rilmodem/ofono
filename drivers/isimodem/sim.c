@@ -129,6 +129,8 @@ static gboolean fake_file_info(gpointer user)
 }
 
 static void isi_read_file_info(struct ofono_sim *sim, int fileid,
+				const unsigned char *path,
+				unsigned int path_len,
 				ofono_sim_file_info_cb_t cb, void *data)
 {
 	int i;
@@ -246,6 +248,8 @@ static gboolean isi_read_iccid(struct ofono_sim *sim, struct isi_cb_data *cbd)
 
 static void isi_read_file_transparent(struct ofono_sim *sim, int fileid,
 					int start, int length,
+					const unsigned char *path,
+					unsigned int path_len,
 					ofono_sim_read_cb_t cb, void *data)
 {
 	struct isi_cb_data *cbd;
@@ -280,6 +284,8 @@ error:
 
 static void isi_read_file_linear(struct ofono_sim *sim, int fileid,
 					int record, int length,
+					const unsigned char *path,
+					unsigned int path_len,
 					ofono_sim_read_cb_t cb, void *data)
 {
 	DBG("Fileid %04X not implemented", fileid);
@@ -288,6 +294,8 @@ static void isi_read_file_linear(struct ofono_sim *sim, int fileid,
 
 static void isi_read_file_cyclic(struct ofono_sim *sim, int fileid,
 					int record, int length,
+					const unsigned char *path,
+					unsigned int path_len,
 					ofono_sim_read_cb_t cb, void *data)
 {
 	DBG("Fileid %04X not implemented", fileid);
@@ -297,6 +305,8 @@ static void isi_read_file_cyclic(struct ofono_sim *sim, int fileid,
 static void isi_write_file_transparent(struct ofono_sim *sim, int fileid,
 					int start, int length,
 					const unsigned char *value,
+					const unsigned char *path,
+					unsigned int path_len,
 					ofono_sim_write_cb_t cb, void *data)
 {
 	DBG("Fileid %04X not implemented", fileid);
@@ -306,6 +316,8 @@ static void isi_write_file_transparent(struct ofono_sim *sim, int fileid,
 static void isi_write_file_linear(struct ofono_sim *sim, int fileid,
 					int record, int length,
 					const unsigned char *value,
+					const unsigned char *path,
+					unsigned int path_len,
 					ofono_sim_write_cb_t cb, void *data)
 {
 	DBG("Fileid %04X not implemented", fileid);
@@ -314,6 +326,8 @@ static void isi_write_file_linear(struct ofono_sim *sim, int fileid,
 
 static void isi_write_file_cyclic(struct ofono_sim *sim, int fileid,
 					int length, const unsigned char *value,
+					const unsigned char *path,
+					unsigned int path_len,
 					ofono_sim_write_cb_t cb, void *data)
 {
 	DBG("Fileid %04X not implemented", fileid);
