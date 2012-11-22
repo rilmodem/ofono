@@ -472,6 +472,28 @@ static void test_application_entry_decode(void)
 	g_free(ef_dir);
 }
 
+static void test_get_3g_path(void)
+{
+	unsigned char path[6];
+	unsigned int len;
+	unsigned char path1[] = { 0x3F, 0x00, 0x7F, 0xFF };
+
+	len = sim_ef_db_get_path_3g(SIM_EFPNN_FILEID, path);
+	g_assert(len == 4);
+	g_assert(!memcmp(path, path1, len));
+}
+
+static void test_get_2g_path(void)
+{
+	unsigned char path[6];
+	unsigned int len;
+	unsigned char path1[] = { 0x3F, 0x00, 0x7F, 0x20 };
+
+	len = sim_ef_db_get_path_2g(SIM_EFPNN_FILEID, path);
+	g_assert(len == 4);
+	g_assert(!memcmp(path, path1, len));
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -488,6 +510,8 @@ int main(int argc, char **argv)
 	g_test_add_func("/testsimutil/3G Status response", test_3g_status_data);
 	g_test_add_func("/testsimutil/Application entries decoding",
 			test_application_entry_decode);
+	g_test_add_func("/testsimutil/3G path", test_get_3g_path);
+	g_test_add_func("/testsimutil/2G path", test_get_2g_path);
 
 	return g_test_run();
 }
