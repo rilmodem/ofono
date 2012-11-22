@@ -95,7 +95,6 @@ struct ifx_data {
 	int mux_ldisc;
 	int saved_ldisc;
 	struct ofono_sim *sim;
-	gboolean have_sim;
 };
 
 static void ifx_debug(const char *str, void *user_data)
@@ -141,10 +140,7 @@ static void ifx_set_sim_state(struct ifx_data *data, int state)
 	switch (state) {
 	case 0:	/* SIM not present */
 	case 9:	/* SIM Removed */
-		if (data->have_sim == TRUE) {
-			ofono_sim_inserted_notify(data->sim, FALSE);
-			data->have_sim = FALSE;
-		}
+		ofono_sim_inserted_notify(data->sim, FALSE);
 		break;
 	case 1:	/* PIN verification needed */
 	case 2:	/* PIN verification not needed – Ready */
@@ -154,10 +150,7 @@ static void ifx_set_sim_state(struct ifx_data *data, int state)
 	case 6:	/* SIM Error */
 	case 7:	/* ready for attach (+COPS) */
 	case 8:	/* SIM Technical Problem */
-		if (data->have_sim == FALSE) {
-			ofono_sim_inserted_notify(data->sim, TRUE);
-			data->have_sim = TRUE;
-		}
+		ofono_sim_inserted_notify(data->sim, TRUE);
 		break;
 	case 10: /* SIM Reactivating */
 	case 11: /* SIM Reactivated */
@@ -322,8 +315,6 @@ static void xgendata_query(gboolean ok, GAtResult *result, gpointer user_data)
 	/* disable UART for power saving */
 	g_at_chat_send(data->dlcs[AUX_DLC], "AT+XPOW=0,0,0", none_prefix,
 							NULL, NULL, NULL);
-
-	data->have_sim = FALSE;
 
 	/* notify that the modem is ready so that pre_sim gets called */
 	ofono_modem_set_powered(modem, TRUE);
