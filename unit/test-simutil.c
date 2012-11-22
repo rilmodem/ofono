@@ -445,7 +445,8 @@ static char *at_cuad_response = "611B4F10A0000000871002FFFFFFFF8905080000"
 	"FFFFFFFFFFFFFFFFFFFFFFFFFF611F4F0CA000000063504B43532D"
 	"313550094D49445066696C657351043F007F80";
 
-static void test_application_entry_decode(void) {
+static void test_application_entry_decode(void)
+{
 	unsigned char *ef_dir;
 	long len;
 	GSList *entries;
