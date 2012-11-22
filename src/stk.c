@@ -1548,7 +1548,7 @@ static gboolean handle_command_get_inkey(const struct stk_command *cmd,
 						struct stk_response *rsp,
 						struct ofono_stk *stk)
 {
-	int timeout = stk->timeout * 1000;
+	int timeout = stk->short_timeout * 1000;
 	const struct stk_command_get_inkey *gi = &cmd->get_inkey;
 	char *text = dbus_apply_text_attributes(gi->text, &gi->text_attr);
 	uint8_t qualifier = stk->pending_cmd->qualifier;
