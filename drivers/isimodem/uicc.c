@@ -395,6 +395,8 @@ static gboolean send_uicc_read_file_info(GIsiClient *client, uint8_t app_id,
 }
 
 static void uicc_read_file_info(struct ofono_sim *sim, int fileid,
+				const unsigned char *path,
+				unsigned int path_len,
 				ofono_sim_file_info_cb_t cb, void *data)
 {
 	struct uicc_sim_data *sd = ofono_sim_get_data(sim);
@@ -531,6 +533,8 @@ static gboolean send_uicc_read_file_transparent(GIsiClient *client,
 
 static void uicc_read_file_transparent(struct ofono_sim *sim, int fileid,
 					int start, int length,
+					const unsigned char *path,
+					unsigned int path_len,
 					ofono_sim_read_cb_t cb, void *data)
 {
 	struct uicc_sim_data *sd = ofono_sim_get_data(sim);
@@ -653,8 +657,10 @@ static gboolean send_uicc_read_file_linear(GIsiClient *client, uint8_t app_id,
 }
 
 static void uicc_read_file_linear(struct ofono_sim *sim, int fileid, int record,
-					int rec_length, ofono_sim_read_cb_t cb,
-					void *data)
+					int rec_length,
+					const unsigned char *path,
+					unsigned int path_len,
+					ofono_sim_read_cb_t cb,	void *data)
 {
 	struct uicc_sim_data *sd = ofono_sim_get_data(sim);
 	struct isi_cb_data *cbd = isi_cb_data_new(sim, cb, data);
@@ -686,6 +692,8 @@ error:
 
 static void uicc_read_file_cyclic(struct ofono_sim *sim, int fileid,
 					int record, int length,
+					const unsigned char *path,
+					unsigned int path_len,
 					ofono_sim_read_cb_t cb, void *data)
 {
 	DBG("Not implemented");
@@ -695,6 +703,8 @@ static void uicc_read_file_cyclic(struct ofono_sim *sim, int fileid,
 static void uicc_write_file_transparent(struct ofono_sim *sim, int fileid,
 					int start, int length,
 					const unsigned char *value,
+					const unsigned char *path,
+					unsigned int path_len,
 					ofono_sim_write_cb_t cb, void *data)
 {
 	DBG("Not implemented");
@@ -703,14 +713,19 @@ static void uicc_write_file_transparent(struct ofono_sim *sim, int fileid,
 
 static void uicc_write_file_linear(struct ofono_sim *sim, int fileid, int record,
 					int length, const unsigned char *value,
+					const unsigned char *path,
+					unsigned int path_len,
 					ofono_sim_write_cb_t cb, void *data)
 {
 	DBG("Not implemented");
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
-static void uicc_write_file_cyclic(struct ofono_sim *sim, int fileid, int length,
+static void uicc_write_file_cyclic(struct ofono_sim *sim, int fileid,
+					int length,
 					const unsigned char *value,
+					const unsigned char *path,
+					unsigned int path_len,
 					ofono_sim_write_cb_t cb, void *data)
 {
 	DBG("Not implemented");
