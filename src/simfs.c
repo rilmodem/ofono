@@ -472,6 +472,7 @@ static gboolean sim_fs_op_read_block(gpointer user_data)
 	fs->driver->read_file_transparent(fs->sim, op->id,
 						op->current * 256,
 						read_bytes,
+						NULL, 0,
 						sim_fs_op_read_block_cb, fs);
 
 	return FALSE;
@@ -561,6 +562,7 @@ static gboolean sim_fs_op_read_record(gpointer user)
 
 		driver->read_file_linear(fs->sim, op->id, op->current,
 						op->record_length,
+						NULL, 0,
 						sim_fs_op_retrieve_cb, fs);
 		break;
 	case OFONO_SIM_FILE_STRUCTURE_CYCLIC:
@@ -571,6 +573,7 @@ static gboolean sim_fs_op_read_record(gpointer user)
 
 		driver->read_file_cyclic(fs->sim, op->id, op->current,
 						op->record_length,
+						NULL, 0,
 						sim_fs_op_retrieve_cb, fs);
 		break;
 	default:
@@ -818,23 +821,24 @@ static gboolean sim_fs_op_next(gpointer user_data)
 		if (sim_fs_op_check_cached(fs))
 			return FALSE;
 
-		driver->read_file_info(fs->sim, op->id, sim_fs_op_info_cb, fs);
+		driver->read_file_info(fs->sim, op->id, NULL, 0,
+					sim_fs_op_info_cb, fs);
 	} else {
 		switch (op->structure) {
 		case OFONO_SIM_FILE_STRUCTURE_TRANSPARENT:
 			driver->write_file_transparent(fs->sim, op->id, 0,
 					op->length, op->buffer,
-					sim_fs_op_write_cb, fs);
+					NULL, 0, sim_fs_op_write_cb, fs);
 			break;
 		case OFONO_SIM_FILE_STRUCTURE_FIXED:
 			driver->write_file_linear(fs->sim, op->id, op->current,
 					op->length, op->buffer,
-					sim_fs_op_write_cb, fs);
+					NULL, 0, sim_fs_op_write_cb, fs);
 			break;
 		case OFONO_SIM_FILE_STRUCTURE_CYCLIC:
 			driver->write_file_cyclic(fs->sim, op->id,
 					op->length, op->buffer,
-					sim_fs_op_write_cb, fs);
+					NULL, 0, sim_fs_op_write_cb, fs);
 			break;
 		default:
 			ofono_error("Unrecognized file structure, "
