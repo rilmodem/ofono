@@ -2436,6 +2436,16 @@ static void sim_free_state(struct ofono_sim *sim)
 
 void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted)
 {
+	if (sim->state == OFONO_SIM_STATE_RESETTING && inserted) {
+		/*
+		 * Start initialization procedure from after EFiccid,
+		 * EFli and EFpl are retrieved.
+		 */
+		sim->state = OFONO_SIM_STATE_INSERTED;
+		__ofono_sim_recheck_pin(sim);
+		return;
+	}
+
 	if (inserted == TRUE && sim->state == OFONO_SIM_STATE_NOT_PRESENT)
 		sim->state = OFONO_SIM_STATE_INSERTED;
 	else if (inserted == FALSE && sim->state != OFONO_SIM_STATE_NOT_PRESENT)
@@ -3119,7 +3129,7 @@ void __ofono_sim_refresh(struct ofono_sim *sim, GSList *file_list,
 		/* Force the sim state out of READY */
 		sim_free_main_state(sim);
 
-		sim->state = OFONO_SIM_STATE_INSERTED;
+		sim->state = OFONO_SIM_STATE_RESETTING;
 		__ofono_modem_sim_reset(__ofono_atom_get_modem(sim->atom));
 	}
 
@@ -3137,18 +3147,5 @@ void __ofono_sim_refresh(struct ofono_sim *sim, GSList *file_list,
 
 			sim_fs_notify_file_watches(sim->simfs, id);
 		}
-	}
-
-	if (reinit_naa) {
-		/*
-		 * REVISIT: There's some concern that on re-insertion the
-		 * atoms will start to talk to the SIM before it becomes
-		 * ready, on certain SIMs.
-		 */
-		/*
-		 * Start initialization procedure from after EFiccid,
-		 * EFli and EFpl are retrieved.
-		 */
-		__ofono_sim_recheck_pin(sim);
 	}
 }
