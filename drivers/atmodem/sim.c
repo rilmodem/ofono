@@ -139,7 +139,8 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd;
-	char buf[64];
+	char buf[128];
+	unsigned int len;
 
 	if (sd->vendor == OFONO_VENDOR_OPTION_HSO) {
 		unsigned char access[3] = { 0x00, 0x00, 0x00 };
@@ -153,16 +154,32 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 
 	cbd = cb_data_new(cb, data);
 
-	snprintf(buf, sizeof(buf), "AT+CRSM=192,%i", fileid);
+	len = snprintf(buf, sizeof(buf), "AT+CRSM=192,%i", fileid);
 
 	switch (sd->vendor) {
+	default:
+		if (path_len == 0)
+			break;
+
+		/* Fall through */
 	case OFONO_VENDOR_ZTE:
 	case OFONO_VENDOR_HUAWEI:
 	case OFONO_VENDOR_SIERRA:
 	case OFONO_VENDOR_SPEEDUP:
 	case OFONO_VENDOR_QUALCOMM_MSM:
-		strcat(buf, ",0,0,255"); /* Maximum possible length */
+		/* Maximum possible length */
+		len += sprintf(buf + len, ",0,0,255");
 		break;
+	}
+
+	if (path_len > 0) {
+		len += sprintf(buf + len, ",,\"");
+
+		for (; path_len; path_len--)
+			len += sprintf(buf + len, "%02hhX", *path++);
+
+		buf[len++] = '\"';
+		buf[len] = '\0';
 	}
 
 	if (g_at_chat_send(sd->chat, buf, crsm_prefix,
@@ -232,9 +249,22 @@ static void at_sim_read_binary(struct ofono_sim *sim, int fileid,
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
+	unsigned int len;
 
-	snprintf(buf, sizeof(buf), "AT+CRSM=176,%i,%i,%i,%i", fileid,
+	len = snprintf(buf, sizeof(buf), "AT+CRSM=176,%i,%i,%i,%i", fileid,
 			start >> 8, start & 0xff, length);
+
+	if (path_len > 0) {
+		buf[len++] = ',';
+		buf[len++] = ',';
+		buf[len++] = '\"';
+
+		for (; path_len; path_len--)
+			len += sprintf(buf + len, "%02hhX", *path++);
+
+		buf[len++] = '\"';
+		buf[len] = '\0';
+	}
 
 	if (g_at_chat_send(sd->chat, buf, crsm_prefix,
 				at_crsm_read_cb, cbd, g_free) > 0)
@@ -253,7 +283,7 @@ static void at_sim_read_record(struct ofono_sim *sim, int fileid,
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
-	char buf[64];
+	char buf[128];
 
 	snprintf(buf, sizeof(buf), "AT+CRSM=178,%i,%i,4,%i", fileid,
 			record, length);
