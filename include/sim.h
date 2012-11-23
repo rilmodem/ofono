@@ -238,6 +238,7 @@ int ofono_sim_write(struct ofono_sim_context *context, int id,
 
 int ofono_sim_read_bytes(struct ofono_sim_context *context, int id,
 			unsigned short offset, unsigned short num_bytes,
+			const unsigned char *path, unsigned int path_len,
 			ofono_sim_file_read_cb_t cb, void *data);
 
 unsigned int ofono_sim_add_file_watch(struct ofono_sim_context *context,
