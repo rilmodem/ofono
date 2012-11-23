@@ -54,13 +54,21 @@ class StkAgent(dbus.service.Object):
 			return int(select);
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",
-					in_signature="syb", out_signature="")
-	def DisplayText(self, title, icon, urgent):
+					in_signature="syb", out_signature="",
+					async_callbacks=("reply_func",
+							"error_func"))
+	def DisplayText(self, title, icon, urgent, reply_func, error_func):
 		print "DisplayText (%s)" % (title)
 		print "Icon: (%d)" % (icon)
 		print "Urgent: (%d)" % (urgent)
 		key = raw_input("Press return to clear ('t' terminates, "
-				"'b' goes back, 'n' busy):")
+						"'b' goes back, 'n' busy, "
+						"'w' return and wait):")
+
+		if key == 'w':
+			seconds = 60
+		else:
+			seconds = 0
 
 		if key == 'b':
 			raise GoBack("User wishes to go back")
@@ -68,6 +76,11 @@ class StkAgent(dbus.service.Object):
 			raise EndSession("User wishes to terminate session")
 		elif key == 'n':
 			raise Busy("User wishes to simulate busy screen")
+
+		if (seconds > 0):
+			print "Waiting for %d seconds" % (seconds)
+
+		gobject.timeout_add_seconds(seconds,  lambda: reply_func())
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 				in_signature="sysyyb", out_signature="s")
