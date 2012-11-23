@@ -679,6 +679,54 @@ static void ifx_xhomezr_notify(GAtResult *result, gpointer user_data)
 	ofono_info("Home zone: %s", label);
 }
 
+static void ifx_xreg_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	int state;
+	const char *band;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+XREG:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &state))
+		return;
+
+	if (!g_at_result_iter_next_unquoted_string(&iter, &band))
+
+	DBG("state %d band %s", state, band);
+
+	switch (state) {
+	case 0:	/* not registered */
+		nd->tech = -1;
+		break;
+	case 1:	/* registered, GPRS attached */
+		nd->tech = ACCESS_TECHNOLOGY_GSM;
+		break;
+	case 2:	/* registered, EDGE attached */
+		nd->tech = ACCESS_TECHNOLOGY_GSM_EGPRS;
+		break;
+	case 3:	/* registered, WCDMA attached */
+		nd->tech = ACCESS_TECHNOLOGY_UTRAN;
+		break;
+	case 4:	/* registered, HSDPA attached */
+		nd->tech = ACCESS_TECHNOLOGY_UTRAN_HSDPA;
+		break;
+	case 5:	/* registered, HSUPA attached */
+		nd->tech = ACCESS_TECHNOLOGY_UTRAN_HSUPA;
+		break;
+	case 6:	/* registered, HSUPA and HSDPA attached */
+		nd->tech = ACCESS_TECHNOLOGY_UTRAN_HSDPA_HSUPA;
+		break;
+	case 7:	/* registered, GSM */
+		nd->tech = ACCESS_TECHNOLOGY_GSM;
+		break;
+	}
+}
+
 static void ifx_xciev_notify(GAtResult *result, gpointer user_data)
 {
 	//struct ofono_netreg *netreg = user_data;
@@ -1785,6 +1833,16 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		g_at_chat_send(nd->chat, "AT+XCSQ=1", none_prefix,
 						NULL, NULL, NULL);
 		g_at_chat_send(nd->chat, "AT+XMER=1", none_prefix,
+						NULL, NULL, NULL);
+
+		/* Register for network technology updates */
+		g_at_chat_register(nd->chat, "+XREG:", ifx_xreg_notify,
+						FALSE, netreg, NULL);
+		g_at_chat_send(nd->chat, "AT+XREG=1", none_prefix,
+						NULL, NULL, NULL);
+		g_at_chat_send(nd->chat, "AT+XBANDSEL?", none_prefix,
+						NULL, NULL, NULL);
+		g_at_chat_send(nd->chat, "AT+XUBANDSEL?", none_prefix,
 						NULL, NULL, NULL);
 
 		/* Register for home zone reports */
