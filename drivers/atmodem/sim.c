@@ -346,37 +346,22 @@ static void at_sim_update_file(struct ofono_sim *sim, int cmd, int fileid,
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char *buf;
-	gboolean quote = FALSE;
 	int len, ret;
-	int size = 36 + p3 * 2;
+	int size = 38 + p3 * 2;
 
 	DBG("");
-
-	/* Add quotes */
-	switch (sd->vendor) {
-	case OFONO_VENDOR_MBM:
-	case OFONO_VENDOR_ZTE:
-	case OFONO_VENDOR_HUAWEI:
-	case OFONO_VENDOR_SPEEDUP:
-		quote = TRUE;
-		size += 2;
-		break;
-	}
 
 	buf = g_try_new(char, size);
 	if (buf == NULL)
 		goto error;
 
-	len = sprintf(buf, "AT+CRSM=%i,%i,%i,%i,%i,", cmd, fileid,p1, p2, p3);
-
-	if (quote)
-		buf[len++] = '\"';
+	len = sprintf(buf, "AT+CRSM=%i,%i,%i,%i,%i,\"", cmd, fileid,p1, p2, p3);
 
 	for (; p3; p3--)
 		len += sprintf(buf + len, "%02hhX", *value++);
 
-	if (quote)
-		buf[len++] = '\"';
+	buf[len++] = '\"';
+	buf[len] = '\0';
 
 	ret = g_at_chat_send(sd->chat, buf, crsm_prefix,
 				at_crsm_update_cb, cbd, g_free);
