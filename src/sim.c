@@ -923,6 +923,8 @@ static void sim_iidf_read_cb(int ok, int length, int record,
 	unsigned short iidf_id;
 	unsigned short offset;
 	unsigned short clut_len;
+	unsigned char path[6];
+	unsigned int path_len;
 
 	DBG("ok: %d", ok);
 
@@ -952,8 +954,12 @@ static void sim_iidf_read_cb(int ok, int length, int record,
 	iidf_id = efimg[3] << 8 | efimg[4];
 	sim->iidf_image = g_memdup(data, length);
 
+	/* The path it the same between 2G and 3G */
+	path_len = sim_ef_db_get_path_3g(SIM_EFIMG_FILEID, path);
+
 	/* read the clut data */
 	ofono_sim_read_bytes(sim->context, iidf_id, offset, clut_len,
+					path, path_len,
 					sim_iidf_read_clut_cb, sim);
 }
 
@@ -987,9 +993,16 @@ static void sim_get_image(struct ofono_sim *sim, unsigned char id,
 	iidf_len = efimg[7] << 8 | efimg[8];
 
 	/* read the image data */
-	if (image == NULL)
+	if (image == NULL) {
+		unsigned char path[6];
+		unsigned int path_len;
+
+		/* The path it the same between 2G and 3G */
+		path_len = sim_ef_db_get_path_3g(SIM_EFIMG_FILEID, path);
 		ofono_sim_read_bytes(sim->context, iidf_id, iidf_offset,
-					iidf_len, sim_iidf_read_cb, sim);
+					iidf_len, path, path_len,
+					sim_iidf_read_cb, sim);
+	}
 
 	if (sim->iidf_watch_ids[id] > 0)
 		return;
@@ -2156,20 +2169,21 @@ void ofono_sim_context_free(struct ofono_sim_context *context)
 
 int ofono_sim_read_bytes(struct ofono_sim_context *context, int id,
 			unsigned short offset, unsigned short num_bytes,
+			const unsigned char *path, unsigned int len,
 			ofono_sim_file_read_cb_t cb, void *data)
 {
 	if (num_bytes == 0)
 		return -1;
 
 	return sim_fs_read(context, id, OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-				offset, num_bytes, cb, data);
+				offset, num_bytes, path, len, cb, data);
 }
 
 int ofono_sim_read(struct ofono_sim_context *context, int id,
 			enum ofono_sim_file_structure expected_type,
 			ofono_sim_file_read_cb_t cb, void *data)
 {
-	return sim_fs_read(context, id, expected_type, 0, 0, cb, data);
+	return sim_fs_read(context, id, expected_type, 0, 0, NULL, 0, cb, data);
 }
 
 int ofono_sim_write(struct ofono_sim_context *context, int id,
