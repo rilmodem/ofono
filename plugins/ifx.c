@@ -159,6 +159,12 @@ static void ifx_set_sim_state(struct ifx_data *data, int state)
 			data->have_sim = TRUE;
 		}
 		break;
+	case 10: /* SIM Reactivating */
+	case 11: /* SIM Reactivated */
+	case 12: /* SIM SMS Caching Completed */
+	case 99: /* SIM State Unknown */
+		ofono_warn("Unhandled SIM state %d received", state);
+		break;
 	default:
 		ofono_warn("Unknown SIM state %d received", state);
 		break;
