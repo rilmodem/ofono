@@ -42,6 +42,7 @@ void sim_fs_notify_file_watches(struct sim_fs *fs, int id);
 int sim_fs_read(struct ofono_sim_context *context, int id,
 		enum ofono_sim_file_structure expected_type,
 		unsigned short offset, unsigned short num_bytes,
+		const unsigned char *path, unsigned int len,
 		ofono_sim_file_read_cb_t cb, void *data);
 
 int sim_fs_read_info(struct ofono_sim_context *context, int id,
