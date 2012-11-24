@@ -104,6 +104,7 @@ struct qmi_param *qmi_param_new_uint32(uint8_t type, uint32_t value);
 struct qmi_result;
 
 bool qmi_result_set_error(struct qmi_result *result, uint16_t *error);
+const char *qmi_result_get_error(struct qmi_result *result);
 
 const void *qmi_result_get(struct qmi_result *result, uint8_t type,
 							uint16_t *length);
