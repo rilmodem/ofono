@@ -1581,6 +1581,10 @@ static gboolean handle_command_get_inkey(const struct stk_command *cmd,
 
 	gettimeofday(&stk->get_inkey_start_ts, NULL);
 
+	if (gi->icon_id.id != 0 && gi->icon_id.qualifier ==
+			STK_ICON_QUALIFIER_TYPE_SELF_EXPLANATORY)
+		text[0]='\0';
+
 	if (yesno)
 		err = stk_agent_request_confirmation(stk->current_agent,
 							text, &gi->icon_id,
