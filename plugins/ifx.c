@@ -139,18 +139,23 @@ static void ifx_set_sim_state(struct ifx_data *data, int state)
 
 	switch (state) {
 	case 0:	/* SIM not present */
+	case 6:	/* SIM Error */
+	case 8:	/* SIM Technical Problem */
 	case 9:	/* SIM Removed */
 		ofono_sim_inserted_notify(data->sim, FALSE);
 		break;
 	case 1:	/* PIN verification needed */
-	case 2:	/* PIN verification not needed – Ready */
-	case 3:	/* PIN verified – Ready */
 	case 4:	/* PUK verification needed */
 	case 5:	/* SIM permanently blocked */
-	case 6:	/* SIM Error */
 	case 7:	/* ready for attach (+COPS) */
-	case 8:	/* SIM Technical Problem */
 		ofono_sim_inserted_notify(data->sim, TRUE);
+		break;
+	case 2:	/* PIN verification not needed – Ready */
+	case 3:	/* PIN verified – Ready */
+		/*
+		 * State 3 is handled in the SIM atom driver
+		 * while for state 2 we should be waiting for state 7
+		 */
 		break;
 	case 10: /* SIM Reactivating */
 	case 11: /* SIM Reactivated */
