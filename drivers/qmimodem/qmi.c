@@ -444,6 +444,7 @@ static void __debug_msg(const char dir, const void *buf, size_t len,
 	const void *ptr;
 	uint16_t offset;
 	char strbuf[72 + 16], *str;
+	bool pending_print = false;
 
 	if (!function || !len)
 		return;
@@ -547,17 +548,21 @@ static void __debug_msg(const char dir, const void *buf, size_t len,
 								tlv_length);
 		}
 
-		if (str - strbuf > 72) {
+		if (str - strbuf > 60) {
 			function(strbuf, user_data);
 
 			str = strbuf;
 			str += sprintf(str, "      ");
-		}
+
+			pending_print = false;
+		} else
+			pending_print = true;
 
 		offset += QMI_TLV_HDR_SIZE + tlv_length;
 	}
 
-	function(strbuf, user_data);
+	if (pending_print)
+		function(strbuf, user_data);
 }
 
 static void __debug_device(struct qmi_device *device,
