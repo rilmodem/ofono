@@ -3140,11 +3140,12 @@ void __ofono_sim_refresh(struct ofono_sim *sim, GSList *file_list,
 	}
 
 	if (reinit_naa) {
-		/* Force the sim state out of READY */
-		sim_free_main_state(sim);
-
 		sim->state = OFONO_SIM_STATE_RESETTING;
 		__ofono_modem_sim_reset(__ofono_atom_get_modem(sim->atom));
+
+		/* Force the sim state out of READY */
+		sim_free_main_state(sim);
+		call_state_watches(sim);
 	}
 
 	/*
