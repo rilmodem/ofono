@@ -975,11 +975,11 @@ static gboolean handle_command_set_idle_text(const struct stk_command *cmd,
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(stk->atom);
+	const struct stk_command_setup_idle_mode_text *sim =
+						&cmd->setup_idle_mode_text;
 	char *idle_mode_text;
 
-	idle_mode_text = dbus_apply_text_attributes(
-					cmd->setup_idle_mode_text.text,
-					&cmd->setup_idle_mode_text.text_attr);
+	idle_mode_text = dbus_apply_text_attributes(sim->text, &sim->text_attr);
 
 	if (idle_mode_text == NULL) {
 		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
@@ -989,6 +989,10 @@ static gboolean handle_command_set_idle_text(const struct stk_command *cmd,
 	if (stk->idle_mode_text)
 		g_free(stk->idle_mode_text);
 
+	if (sim->icon_id.id != 0 && sim->icon_id.qualifier ==
+			STK_ICON_QUALIFIER_TYPE_SELF_EXPLANATORY)
+		idle_mode_text[0]='\0';
+
 	stk->idle_mode_text = idle_mode_text;
 
 	ofono_dbus_signal_property_changed(conn, path, OFONO_STK_INTERFACE,
@@ -996,8 +1000,8 @@ static gboolean handle_command_set_idle_text(const struct stk_command *cmd,
 						DBUS_TYPE_STRING,
 						&idle_mode_text);
 
-	if (stk->idle_mode_icon.id != cmd->setup_idle_mode_text.icon_id.id) {
-		memcpy(&stk->idle_mode_icon, &cmd->setup_idle_mode_text.icon_id,
+	if (stk->idle_mode_icon.id != sim->icon_id.id) {
+		memcpy(&stk->idle_mode_icon, &sim->icon_id,
 				sizeof(stk->idle_mode_icon));
 
 		ofono_dbus_signal_property_changed(conn, path,
