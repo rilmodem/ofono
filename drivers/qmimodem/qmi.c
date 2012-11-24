@@ -1027,6 +1027,7 @@ static void discover_callback(uint16_t message, uint16_t length,
 		uint16_t minor =
 			GUINT16_FROM_LE(service_list->services[i].minor);
 		uint8_t type = service_list->services[i].type;
+		const char *name = __service_type_to_string(type);
 
 		if (type == QMI_SERVICE_CONTROL) {
 			device->control_major = major;
@@ -1037,9 +1038,12 @@ static void discover_callback(uint16_t message, uint16_t length,
 		list[count].type = type;
 		list[count].major = major;
 		list[count].minor = minor;
-		list[count].name = __service_type_to_string(type);
+		list[count].name = name;
 
 		count++;
+
+		__debug_device(device, "found service [%s %d.%d]",
+						name, major, minor);
 	}
 
 	ptr = tlv_get(buffer, length, 0x10, &len);
