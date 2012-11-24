@@ -2577,6 +2577,10 @@ static gboolean handle_command_play_tone(const struct stk_command *cmd,
 	else
 		timeout = manufacturer_timeout;
 
+	if (pt->icon_id.id != 0 && pt->icon_id.qualifier ==
+			STK_ICON_QUALIFIER_TYPE_SELF_EXPLANATORY)
+		text[0]='\0';
+
 	/*
 	 * According to TS 102.223 section 6.6.6:
 	 * "the length of time for which the Terminal shall generate the tone,
