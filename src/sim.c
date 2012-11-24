@@ -1825,6 +1825,7 @@ static void sim_efphase_read_cb(int ok, int length, int record,
 static void sim_initialize_after_pin(struct ofono_sim *sim)
 {
 	sim->context = ofono_sim_context_create(sim);
+	sim->spn_watches = __ofono_watchlist_new(g_free);
 
 	ofono_sim_read(sim->context, SIM_EFPHASE_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
@@ -2963,7 +2964,6 @@ void ofono_sim_register(struct ofono_sim *sim)
 
 	ofono_modem_add_interface(modem, OFONO_SIM_MANAGER_INTERFACE);
 	sim->state_watches = __ofono_watchlist_new(g_free);
-	sim->spn_watches = __ofono_watchlist_new(g_free);
 	sim->simfs = sim_fs_new(sim, sim->driver);
 
 	__ofono_atom_register(sim->atom, sim_unregister);
