@@ -402,6 +402,11 @@ static struct stk_menu *stk_menu_create(const char *title,
 		if (item_icon_ids && item_icon_ids->len)
 			ret->items[i].icon_id = item_icon_ids->list[i];
 
+		if (ret->items[i].icon_id != 0 &&
+				item_icon_ids->qualifier ==
+				STK_ICON_QUALIFIER_TYPE_SELF_EXPLANATORY)
+			ret->items[i].text[0]='\0';
+
 		if (item->id == default_id)
 			ret->default_item = i;
 	}
