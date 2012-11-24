@@ -22,9 +22,22 @@ class Busy(dbus.DBusException):
 
 class StkAgent(dbus.service.Object):
 	exit_on_release = True
+	timeout_id = 0
+	timeout_reply_handler = None
 
 	def set_exit_on_release(self, exit_on_release):
 		self.exit_on_release = exit_on_release
+
+	def timeout_callback(self):
+		self.timeout_id = 0
+		self.timeout_reply_handler()
+		return False
+
+	def call_added(self, path, properties):
+		print "call added %s" % (path)
+		if (self.timeout_id > 0):
+			gobject.source_remove(self.timeout_id)
+			self.timeout_callback()
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 					in_signature="", out_signature="")
@@ -80,7 +93,9 @@ class StkAgent(dbus.service.Object):
 		if (seconds > 0):
 			print "Waiting for %d seconds" % (seconds)
 
-		gobject.timeout_add_seconds(seconds,  lambda: reply_func())
+		self.timeout_reply_handler = reply_func
+		self.timeout_id = gobject.timeout_add_seconds(seconds,
+							self.timeout_callback)
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 				in_signature="sysyyb", out_signature="s")
@@ -285,11 +300,12 @@ if __name__ == '__main__':
 	modems = manager.GetModems()
 
 	for path, properties in modems:
-		if "org.ofono.SimToolkit" not in properties["Interfaces"]:
-			continue
-
-		stk = dbus.Interface(bus.get_object('org.ofono', path),
-					'org.ofono.SimToolkit')
+		if "org.ofono.SimToolkit" in properties["Interfaces"]:
+			stk = dbus.Interface(bus.get_object('org.ofono', path),
+							'org.ofono.SimToolkit')
+		if "org.ofono.VoiceCallManager" in properties["Interfaces"]:
+			vcm = dbus.Interface(bus.get_object('org.ofono', path),
+						'org.ofono.VoiceCallManager')
 
 	stk.connect_to_signal("PropertyChanged", property_changed)
 
@@ -311,11 +327,15 @@ if __name__ == '__main__':
 		path = "/test/agent"
 		agent = StkAgent(bus, path)
 
+		vcm.connect_to_signal("CallAdded", agent.call_added)
+
 		select = int(raw_input("Enter Selection: "))
 		stk.SelectItem(select, path)
 	elif mode == 'agent':
 		path = "/test/agent"
 		agent = StkAgent(bus, path)
+
+		vcm.connect_to_signal("CallAdded", agent.call_added)
 
 		stk.RegisterAgent(path)
 
