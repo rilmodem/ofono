@@ -1393,6 +1393,10 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 	if (cmd->display_text.immediate_response)
 		timeout = stk->timeout * 1000;
 
+	if (dt->icon_id.id != 0 && dt->icon_id.qualifier ==
+			STK_ICON_QUALIFIER_TYPE_SELF_EXPLANATORY)
+		text[0]='\0';
+
 	err = stk_agent_display_text(stk->current_agent, text, &dt->icon_id,
 					priority, display_text_cb, stk,
 					display_text_destroy, timeout);
