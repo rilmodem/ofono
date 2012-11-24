@@ -1136,7 +1136,6 @@ static void at_xsim_notify(GAtResult *result, gpointer user_data)
 
 	switch (state) {
 	case 3:	/* PIN verified – Ready */
-	case 7:	/* ready for attach (+COPS) */
 		break;
 	default:
 		return;
