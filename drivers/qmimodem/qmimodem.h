@@ -33,6 +33,9 @@ extern void qmi_voicecall_exit(void);
 extern void qmi_sim_legacy_init(void);
 extern void qmi_sim_legacy_exit(void);
 
+extern void qmi_sim_init(void);
+extern void qmi_sim_exit(void);
+
 extern void qmi_sms_init(void);
 extern void qmi_sms_exit(void);
 

@@ -34,6 +34,7 @@ static int qmimodem_init(void)
 	qmi_netreg_init();
 	qmi_voicecall_init();
 	qmi_sim_legacy_init();
+	qmi_sim_init();
 	qmi_sms_init();
 	qmi_ussd_init();
 	qmi_gprs_init();
@@ -52,6 +53,7 @@ static void qmimodem_exit(void)
 	qmi_gprs_exit();
 	qmi_ussd_exit();
 	qmi_sms_exit();
+	qmi_sim_exit();
 	qmi_sim_legacy_exit();
 	qmi_voicecall_exit();
 	qmi_netreg_exit();
