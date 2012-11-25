@@ -540,9 +540,16 @@ static void __debug_msg(const char dir, const void *buf, size_t len,
 		if (tlv->type == 0x02 && tlv_length == QMI_RESULT_CODE_SIZE) {
 			const struct qmi_result_code *result = ptr + offset +
 							QMI_TLV_HDR_SIZE;
+			uint16_t error = GUINT16_FROM_LE(result->error);
+			const char *error_str;
 
-			str += sprintf(str, " {type=%d,error=%d}", tlv->type,
-						GUINT16_FROM_LE(result->error));
+			error_str = __error_to_string(error);
+			if (error_str)
+				str += sprintf(str, " {type=%d,error=%s}",
+							tlv->type, error_str);
+			else
+				str += sprintf(str, " {type=%d,error=%d}",
+							tlv->type, error);
 		} else {
 			str += sprintf(str, " {type=%d,len=%d}", tlv->type,
 								tlv_length);
