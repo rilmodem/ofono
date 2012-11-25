@@ -169,11 +169,19 @@ static void xcallstat_notify(GAtResult *result, gpointer user_data)
 		break;
 	}
 	case CALL_STATUS_DIALING:
+		new_call = create_call(vc, 0, CALL_DIRECTION_MOBILE_ORIGINATED,
+					status, NULL, 128,
+					CLIP_VALIDITY_NOT_AVAILABLE, id);
+		if (new_call == NULL) {
+			ofono_error("Unable to malloc. "
+					"Call management is fubar");
+			return;
+		}
+
+		ofono_voicecall_notify(vc, new_call);
+		break;
 	case CALL_STATUS_WAITING:
 	case CALL_STATUS_INCOMING:
-	{
-		int direction;
-
 		/* Handle the following situation:
 		 * Active Call + Waiting Call. Active Call is Released.
 		 * The Waiting call becomes Incoming. In this case, no
@@ -185,13 +193,8 @@ static void xcallstat_notify(GAtResult *result, gpointer user_data)
 			return;
 		}
 
-		if (status == CALL_STATUS_DIALING)
-			direction = CALL_DIRECTION_MOBILE_ORIGINATED;
-		else
-			direction = CALL_DIRECTION_MOBILE_TERMINATED;
-
-		new_call = create_call(vc, 0, direction, status,
-					NULL, 128,
+		new_call = create_call(vc, 0, CALL_DIRECTION_MOBILE_TERMINATED,
+					status, NULL, 128,
 					CLIP_VALIDITY_NOT_AVAILABLE, id);
 		if (new_call == NULL) {
 			ofono_error("Unable to malloc. "
@@ -199,9 +202,7 @@ static void xcallstat_notify(GAtResult *result, gpointer user_data)
 			return;
 		}
 
-		new_call->id = id;
 		break;
-	}
 	case CALL_STATUS_ALERTING:
 	case CALL_STATUS_ACTIVE:
 	case CALL_STATUS_HELD:
