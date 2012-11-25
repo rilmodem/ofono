@@ -1870,6 +1870,8 @@ static void confirm_handled_call_cb(enum stk_agent_result result,
 	const struct stk_command_setup_call *sc =
 					&stk->pending_cmd->setup_call;
 	struct ofono_voicecall *vc;
+	char number[256];
+	char *pause_chr;
 
 	if (stk->driver->user_confirmation == NULL)
 		goto out;
@@ -1879,6 +1881,17 @@ static void confirm_handled_call_cb(enum stk_agent_result result,
 		goto out;
 	}
 
+	if (convert_to_phone_number_format(sc->addr.number, number) == FALSE) {
+		stk->driver->user_confirmation(stk, FALSE);
+		goto out;
+	}
+
+	/* Remove the DTMF string from the phone number */
+	pause_chr = strchr(number, 'p');
+
+	if (pause_chr)
+		number[pause_chr - number] = '\0';
+
 	stk->driver->user_confirmation(stk, confirm);
 
 	vc = __ofono_atom_find(OFONO_ATOM_TYPE_VOICECALL,
@@ -1886,7 +1899,7 @@ static void confirm_handled_call_cb(enum stk_agent_result result,
 	if (vc == NULL)
 		goto out;
 
-	__ofono_voicecall_set_alpha_and_icon_id(vc, sc->addr.number,
+	__ofono_voicecall_set_alpha_and_icon_id(vc, number,
 						sc->addr.ton_npi,
 						sc->alpha_id_call_setup,
 						sc->icon_id_call_setup.id);
