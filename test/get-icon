@@ -17,8 +17,8 @@ manager = dbus.Interface(bus.get_object("org.ofono", "/"),
 modems = manager.GetModems()
 
 for path, properties in modems:
-	if "org.ofono.SimManager" not in properties["Interfaces"]:
-		continue
+	if "org.ofono.SimManager" in properties["Interfaces"]:
+		break
 
 sim = dbus.Interface(bus.get_object('org.ofono', path),
 				'org.ofono.SimManager')
