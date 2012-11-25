@@ -3873,11 +3873,14 @@ void __ofono_voicecall_set_alpha_and_icon_id(struct ofono_voicecall *vc,
 
 void __ofono_voicecall_clear_alpha_and_icon_id(struct ofono_voicecall *vc)
 {
-	g_free(vc->dial_req->message);
-	vc->dial_req->message = NULL;
 
-	g_free(vc->dial_req);
-	vc->dial_req = NULL;
+	if (vc->dial_req) {
+		g_free(vc->dial_req->message);
+		vc->dial_req->message = NULL;
+
+		g_free(vc->dial_req);
+		vc->dial_req = NULL;
+	}
 
 	vc->flags &= ~VOICECALL_FLAG_STK_MODEM_CALLSETUP;
 }
