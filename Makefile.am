@@ -685,7 +685,8 @@ unit_test_cdmasms_SOURCES = unit/test-cdmasms.c src/cdma-smsutil.c
 unit_test_cdmasms_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_cdmasms_OBJECTS)
 
-unit_test_sms_root_SOURCES = unit/test-sms.c src/util.c src/smsutil.c src/storage.c
+unit_test_sms_root_SOURCES = unit/test-sms-root.c \
+					src/util.c src/smsutil.c src/storage.c
 unit_test_sms_root_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_sms_root_OBJECTS)
 
