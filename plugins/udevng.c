@@ -338,9 +338,15 @@ static gboolean setup_huawei(struct modem_info *modem)
 		}
 	}
 
+	if (qmi != NULL && net != NULL) {
+		ofono_modem_set_driver(modem->modem, "gobi");
+		goto done;
+	}
+
 	if (mdm == NULL || pcui == NULL)
 		return FALSE;
 
+done:
 	DBG("mdm=%s pcui=%s diag=%s qmi=%s net=%s", mdm, pcui, diag, qmi, net);
 
 	ofono_modem_set_string(modem->modem, "Device", qmi);
