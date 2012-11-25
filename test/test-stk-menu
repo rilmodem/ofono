@@ -327,7 +327,10 @@ if __name__ == '__main__':
 		path = "/test/agent"
 		agent = StkAgent(bus, path)
 
-		vcm.connect_to_signal("CallAdded", agent.call_added)
+		try:
+			vcm.connect_to_signal("CallAdded", agent.call_added)
+		except:
+			pass
 
 		select = int(raw_input("Enter Selection: "))
 		stk.SelectItem(select, path)
@@ -335,7 +338,10 @@ if __name__ == '__main__':
 		path = "/test/agent"
 		agent = StkAgent(bus, path)
 
-		vcm.connect_to_signal("CallAdded", agent.call_added)
+		try:
+			vcm.connect_to_signal("CallAdded", agent.call_added)
+		except:
+			pass
 
 		stk.RegisterAgent(path)
 
