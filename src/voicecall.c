@@ -3869,10 +3869,13 @@ void __ofono_voicecall_set_alpha_and_icon_id(struct ofono_voicecall *vc,
 	vc->dial_req = req;
 
 	vc->flags |= VOICECALL_FLAG_STK_MODEM_CALLSETUP;
+
+	DBG("%p, %p", vc, vc->dial_req);
 }
 
 void __ofono_voicecall_clear_alpha_and_icon_id(struct ofono_voicecall *vc)
 {
+	DBG("%p, %p", vc, vc->dial_req);
 
 	if (vc->dial_req) {
 		g_free(vc->dial_req->message);
