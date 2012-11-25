@@ -270,6 +270,9 @@ static void discover_cb(uint8_t count, const struct qmi_version *list,
 		case QMI_SERVICE_PBM:
 			data->features |= GOBI_PBM;
 			break;
+		case QMI_SERVICE_UIM:
+			data->features |= GOBI_UIM;
+			break;
 		case QMI_SERVICE_CAT:
 			data->features |= GOBI_CAT;
 			break;
