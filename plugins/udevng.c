@@ -975,6 +975,7 @@ static struct {
 	{ "sierra",	"sierra_net"			},
 	{ "option",	"option",	"0af0"		},
 	{ "huawei",	"option",	"201e"		},
+	{ "huawei",	"cdc_wdm",	"12d1"		},
 	{ "huawei",	"cdc_ether",	"12d1"		},
 	{ "huawei",	"qmi_wwan",	"12d1"		},
 	{ "huawei",	"option",	"12d1"		},
