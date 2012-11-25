@@ -305,18 +305,25 @@ static gboolean setup_huawei(struct modem_info *modem)
 
 		if (g_strcmp0(info->label, "modem") == 0 ||
 				g_strcmp0(info->interface, "255/1/1") == 0 ||
-				g_strcmp0(info->interface, "255/2/1") == 0) {
+				g_strcmp0(info->interface, "255/2/1") == 0 ||
+				g_strcmp0(info->interface, "255/1/49") == 0) {
 			mdm = info->devnode;
 		} else if (g_strcmp0(info->label, "pcui") == 0 ||
 				g_strcmp0(info->interface, "255/1/2") == 0 ||
-				g_strcmp0(info->interface, "255/2/2") == 0) {
+				g_strcmp0(info->interface, "255/2/2") == 0 ||
+				g_strcmp0(info->interface, "255/1/50") == 0) {
 			pcui = info->devnode;
 		} else if (g_strcmp0(info->label, "diag") == 0 ||
 				g_strcmp0(info->interface, "255/1/3") == 0 ||
-				g_strcmp0(info->interface, "255/2/3") == 0) {
+				g_strcmp0(info->interface, "255/2/3") == 0 ||
+				g_strcmp0(info->interface, "255/1/51") == 0) {
 			diag = info->devnode;
-		} else if (g_strcmp0(info->interface, "255/1/8") == 0) {
+		} else if (g_strcmp0(info->interface, "255/1/8") == 0 ||
+				g_strcmp0(info->interface, "255/1/56") == 0) {
 			net = info->devnode;
+		} else if (g_strcmp0(info->interface, "255/1/9") == 0 ||
+				g_strcmp0(info->interface, "255/1/57") == 0) {
+			qmi = info->devnode;
 		} else if (g_strcmp0(info->interface, "255/255/255") == 0) {
 			if (g_strcmp0(info->number, "00") == 0)
 				mdm = info->devnode;
