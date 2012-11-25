@@ -2365,22 +2365,64 @@ static gboolean handle_command_provide_local_info(const struct stk_command *cmd,
 				struct stk_response *rsp, struct ofono_stk *stk)
 {
 	switch (cmd->qualifier) {
+	case 0:
+		DBG("Unhandled - Local information according to current NAA");
+		break;
+	case 1:
+		DBG("Unhandled - IMEI");
+		break;
+	case 2:
+		DBG("Unhandled - Network measurement results");
+		break;
 	case 3:
 		DBG("Date, time and time zone");
 		get_time(rsp);
 		return TRUE;
-
 	case 4:
 		DBG("Language setting");
 		get_lang(rsp, stk);
 		return FALSE;
+	case 6:
+		DBG("Unhandled - Access Technology");
+		break;
+	case 7:
+		DBG("Unhandled - ESN of the terminal");
+		break;
+	case 8:
+		DBG("Unhandled - IMEISV of the terminal");
+		break;
+	case 9:
+		DBG("Unhandled - Search mode");
+		break;
+	case 10:
+		DBG("Unhandled - Charge state of Battery");
+		break;
+	case 11:
+		DBG("Unhandled - MEID");
+		break;
+	case 13:
+		DBG("Unhandled - Broadcast Network information");
+		break;
+	case 14:
+		DBG("Unhandled - Multiple Access Technologies");
+		break;
+	case 15:
+		DBG("Unhandled - Location information for multiple access"
+			" technologies");
+		break;
+	case 16:
+		DBG("Unhandled - Measurement results for multiple access"
+			" technologies");
+		break;
 
 	default:
 		ofono_info("Unsupported Provide Local Info qualifier: %d",
 				cmd->qualifier);
-		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
-		return TRUE;
+		break;
 	}
+
+	rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
+	return TRUE;
 }
 
 static void send_dtmf_cancel(struct ofono_stk *stk)
