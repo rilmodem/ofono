@@ -51,7 +51,7 @@ class StkAgent(dbus.service.Object):
 	def RequestSelection(self, title, icon, items, default):
 		print "Title: (%s)" % (title)
 		print "Icon: (%d)" % (icon)
-		index = 0;
+		index = 0
 		for item in items:
 			print "%d. %s (icon: %d)" % (index, item[0], item[1])
 			index += 1
@@ -64,12 +64,12 @@ class StkAgent(dbus.service.Object):
 		elif select == 't':
 			raise EndSession("User wishes to terminate session")
 		else:
-			return int(select);
+			return int(select)
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 					in_signature="syb", out_signature="",
 					async_callbacks=("reply_func",
-							"error_func"))
+								"error_func"))
 	def DisplayText(self, title, icon, urgent, reply_func, error_func):
 		print "DisplayText (%s)" % (title)
 		print "Icon: (%d)" % (icon)
@@ -107,7 +107,7 @@ class StkAgent(dbus.service.Object):
 		print "Hide typing: (%s)" % (hide_typing)
 		print "Enter characters, min: %d, max: %d:" % (min_chars,
 								max_chars)
-		userin = raw_input("");
+		userin = raw_input("")
 
 		return userin
 
@@ -121,7 +121,7 @@ class StkAgent(dbus.service.Object):
 		print "Hide typing: (%s)" % (hide_typing)
 		print "Enter digits, min: %d, max: %d:" % (min_chars,
 								max_chars)
-		userin = raw_input("'t' terminates, 'b' goes back:");
+		userin = raw_input("'t' terminates, 'b' goes back:")
 
 		if userin == 'b':
 			raise GoBack("User wishes to go back")
@@ -138,9 +138,9 @@ class StkAgent(dbus.service.Object):
 		key = raw_input("Enter Key (t, b):")
 
 		if key == 'b':
-			raise GoBack("User wishes to go back");
+			raise GoBack("User wishes to go back")
 		elif key == 't':
-			raise EndSession("User wishes to terminate session");
+			raise EndSession("User wishes to terminate session")
 		else:
 			return key
 
@@ -152,9 +152,9 @@ class StkAgent(dbus.service.Object):
 		key = raw_input("Enter Digit (t, b):")
 
 		if key == 'b':
-			raise GoBack("User wishes to go back");
+			raise GoBack("User wishes to go back")
 		elif key == 't':
-			raise EndSession("User wishes to terminate session");
+			raise EndSession("User wishes to terminate session")
 		else:
 			return key
 
@@ -166,9 +166,9 @@ class StkAgent(dbus.service.Object):
 		key = raw_input("Quick digit (0-9, *, #, t, b):")
 
 		if key == 'b':
-			raise GoBack("User wishes to go back");
+			raise GoBack("User wishes to go back")
 		elif key == 't':
-			raise EndSession("User wishes to terminate session");
+			raise EndSession("User wishes to terminate session")
 		else:
 			return key
 
@@ -180,9 +180,9 @@ class StkAgent(dbus.service.Object):
 		key = raw_input("Enter Confirmation (t, b, y, n):")
 
 		if key == 'b':
-			raise GoBack("User wishes to go back");
+			raise GoBack("User wishes to go back")
 		elif key == 't':
-			raise EndSession("User wishes to terminate session");
+			raise EndSession("User wishes to terminate session")
 		elif key == 'y':
 			return True
 		else:
@@ -196,7 +196,7 @@ class StkAgent(dbus.service.Object):
 		key = raw_input("Enter Confirmation (t, y, n):")
 
 		if key == 't':
-			raise EndSession("User wishes to terminate session");
+			raise EndSession("User wishes to terminate session")
 		elif key == 'y':
 			return True
 		else:
@@ -276,7 +276,7 @@ class StkAgent(dbus.service.Object):
 		key = raw_input("Enter Confirmation (t, y, n):")
 
 		if key == 't':
-			raise EndSession("User wishes to terminate session");
+			raise EndSession("User wishes to terminate session")
 		elif key == 'y':
 			return True
 		else:
