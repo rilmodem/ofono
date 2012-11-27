@@ -237,20 +237,35 @@ class StkAgent(dbus.service.Object):
 
 			if key == 't':
 				raise EndSession("User wishes to terminate"
-								 " session");
+								 " session")
 		except Exception, exc:
 			print exc
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",
-					in_signature="ssy", out_signature="")
-	def LoopTone(self, tone, text, icon):
+					in_signature="ssy", out_signature="",
+					async_callbacks=("reply_func",
+								"error_func"))
+	def LoopTone(self, tone, text, icon, reply_func, error_func):
 		print "LoopTone: %s" % (tone)
 		print "Text: %s" % (text)
 		print "Icon: %d" % (icon)
-		key = raw_input("Press return to end before timeout (t):")
+		key = raw_input("Press return to end before timeout "
+				"('t' terminates, 'w' return and wait):")
+
+		if key == 'w':
+			seconds = 60
+		else:
+			seconds = 0
 
 		if key == 't':
-			raise EndSession("User wishes to terminate session");
+			raise EndSession("User wishes to terminate session")
+
+		if (seconds > 0):
+			print "Waiting for %d seconds" % (seconds)
+
+		self.timeout_reply_handler = reply_func
+		self.timeout_id = gobject.timeout_add_seconds(seconds,
+							self.timeout_callback)
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 					in_signature="sy", out_signature="")
