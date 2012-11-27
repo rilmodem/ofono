@@ -333,10 +333,10 @@ static void card_setup(const struct qmi_uim_slot_info *slot,
 	data->app_type = info1->app_type;
 
 	switch (info1->app_state) {
-	case 0x01:	/* PIN1 or UPIN is required */
+	case 0x02:	/* PIN1 or UPIN is required */
 		data->passwd_state = OFONO_SIM_PASSWORD_SIM_PIN;
 		break;
-	case 0x02:	/* PUK1 or PUK for UPIN is required */
+	case 0x03:	/* PUK1 or PUK for UPIN is required */
 		data->passwd_state = OFONO_SIM_PASSWORD_SIM_PUK;
 		break;
 	case 0x07:	/* Ready */
