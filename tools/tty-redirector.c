@@ -266,6 +266,7 @@ static gboolean accept_handler(GIOChannel *channel, GIOCondition cond,
 		write_file(IFX_RESET_PATH, "1");
 		sleep(1);
 		write_file(IFX_RESET_PATH, "0");
+		sleep(1);
 	}
 
 	device_fd = open_device(option_device);
