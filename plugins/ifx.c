@@ -454,7 +454,7 @@ static void setup_internal_mux(struct ofono_modem *modem)
 	}
 
 	/* wait for DLC creation to settle */
-	data->dlc_init_source = g_timeout_add(10, dlc_setup, modem);
+	data->dlc_init_source = g_timeout_add(500, dlc_setup, modem);
 
 	return;
 
