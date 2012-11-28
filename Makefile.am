@@ -705,7 +705,7 @@ TESTS = $(unit_tests)
 if TOOLS
 noinst_PROGRAMS += tools/huawei-audio tools/auto-enable \
 			tools/get-location tools/lookup-apn \
-			tools/lookup-provider-name
+			tools/lookup-provider-name tools/tty-redirector
 
 tools_huawei_audio_SOURCES = $(gdbus_sources) tools/huawei-audio.c
 tools_huawei_audio_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
@@ -722,6 +722,9 @@ tools_lookup_apn_LDADD = @GLIB_LIBS@
 tools_lookup_provider_name_SOURCES = plugins/mbpi.c plugins/mbpi.h \
 				tools/lookup-provider-name.c
 tools_lookup_provider_name_LDADD = @GLIB_LIBS@
+
+tools_tty_redirector_SOURCES = tools/tty-redirector.c
+tools_tty_redirector_LDADD = @GLIB_LIBS@
 
 if QMIMODEM
 noinst_PROGRAMS += tools/qmi

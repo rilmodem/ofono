@@ -48,6 +48,7 @@ tools/auto-enable
 tools/get-location
 tools/lookup-apn
 tools/lookup-provider-name
+tools/tty-redirector
 tools/qmi
 tools/stktest
 
