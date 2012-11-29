@@ -795,6 +795,9 @@ static void netreg_status_watch(int status, int lac, int ci, int tech,
 	if (sms->tx_source > 0)
 		return;
 
+	if (sms->flags & MESSAGE_MANAGER_FLAG_TXQ_ACTIVE)
+		return;
+
 	if (g_queue_get_length(sms->txq))
 		sms->tx_source = g_timeout_add(0, tx_next, sms);
 }
