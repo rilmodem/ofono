@@ -1049,8 +1049,12 @@ static void discover_callback(uint16_t message, uint16_t length,
 
 		count++;
 
-		__debug_device(device, "found service [%s %d.%d]",
-						name, major, minor);
+		if (name)
+			__debug_device(device, "found service [%s %d.%d]",
+							name, major, minor);
+		else
+			__debug_device(device, "found service [%d %d.%d]",
+							type, major, minor);
 	}
 
 	ptr = tlv_get(buffer, length, 0x10, &len);
