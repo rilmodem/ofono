@@ -42,6 +42,7 @@
 #define QMI_SERVICE_EFS		21	/* Embedded file system service */
 #define QMI_SERVICE_TS		23	/* Thermal sensors service */
 #define QMI_SERVICE_TMD		24	/* Thermal mitigation device service */
+#define QMI_SERVICE_PDC		36	/* Persistent device configuration service */
 #define QMI_SERVICE_CAT_OLD	224	/* Card application toolkit service */
 #define QMI_SERVICE_RMS		225	/* Remote management service */
 #define QMI_SERVICE_OMA		226	/* OMA device management service */
