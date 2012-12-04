@@ -259,6 +259,7 @@ static void at_ccfc_remove(struct ofono_call_forwarding *cf)
 {
 	GAtChat *chat = ofono_call_forwarding_get_data(cf);
 
+	g_idle_remove_by_data(cf);
 	g_at_chat_unref(chat);
 	ofono_call_forwarding_set_data(cf, NULL);
 }

@@ -393,6 +393,7 @@ static void at_call_settings_remove(struct ofono_call_settings *cs)
 {
 	GAtChat *chat = ofono_call_settings_get_data(cs);
 
+	g_idle_remove_by_data(cs);
 	g_at_chat_unref(chat);
 	ofono_call_settings_set_data(cs, NULL);
 }

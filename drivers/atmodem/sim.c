@@ -1493,6 +1493,7 @@ static void at_sim_remove(struct ofono_sim *sim)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 
+	g_idle_remove_by_data(sim);
 	/* Cleanup potential SIM state polling */
 	at_util_sim_state_query_free(sd->sim_state_query);
 

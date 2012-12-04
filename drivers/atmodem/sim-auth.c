@@ -139,6 +139,7 @@ static void at_sim_auth_remove(struct ofono_sim_auth *sa)
 {
 	struct sim_auth_data *sad = ofono_sim_auth_get_data(sa);
 
+	g_idle_remove_by_data(sa);
 	ofono_sim_auth_set_data(sa, NULL);
 
 	g_at_chat_unref(sad->chat);

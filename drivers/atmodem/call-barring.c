@@ -207,6 +207,7 @@ static void at_call_barring_remove(struct ofono_call_barring *cb)
 {
 	GAtChat *chat = ofono_call_barring_get_data(cb);
 
+	g_idle_remove_by_data(cb);
 	g_at_chat_unref(chat);
 	ofono_call_barring_set_data(cb, NULL);
 }

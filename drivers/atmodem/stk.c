@@ -216,6 +216,7 @@ static void at_stk_remove(struct ofono_stk *stk)
 {
 	struct stk_data *sd = ofono_stk_get_data(stk);
 
+	g_idle_remove_by_data(stk);
 	ofono_stk_set_data(stk, NULL);
 
 	g_at_chat_unref(sd->chat);
