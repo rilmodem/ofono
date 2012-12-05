@@ -45,7 +45,6 @@ static const char *cscb_prefix[] = { "+CSCB:", NULL };
 
 struct cbs_data {
 	GAtChat *chat;
-	gboolean cscb_mode_1;
 	unsigned int vendor;
 };
 
@@ -118,14 +117,11 @@ static void at_cbs_set_topics(struct ofono_cbs *cbs, const char *topics,
 	/* For the Qualcomm based devices it is required to clear
 	 * the list of topics first.  Otherwise setting the new
 	 * topic ranges will fail.
-	 *
-	 * In addition only AT+CSCB=1 seems to work.  Providing
-	 * a topic range for clearing makes AT+CSBC=0,... fail.
 	 */
 	switch (data->vendor) {
 	case OFONO_VENDOR_GOBI:
 	case OFONO_VENDOR_QUALCOMM_MSM:
-		g_at_chat_send(data->chat, "AT+CSCB=1", none_prefix,
+		g_at_chat_send(data->chat, "AT+CSCB=0", none_prefix,
 				NULL, NULL, NULL);
 		break;
 	default:
@@ -152,16 +148,10 @@ static void at_cbs_clear_topics(struct ofono_cbs *cbs,
 {
 	struct cbs_data *data = ofono_cbs_get_data(cbs);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
-	char buf[256];
 
 	DBG("");
 
-	if (data->cscb_mode_1)
-		snprintf(buf, sizeof(buf), "AT+CSCB=1,\"0-65535\"");
-	else
-		snprintf(buf, sizeof(buf), "AT+CSCB=0,\"\"");
-
-	if (g_at_chat_send(data->chat, buf, none_prefix,
+	if (g_at_chat_send(data->chat, "AT+CSCB=0", none_prefix,
 				at_cscb_set_cb, cbd, g_free) > 0)
 		return;
 
@@ -194,7 +184,6 @@ static void at_cscb_support_cb(gboolean ok, GAtResult *result, gpointer user)
 	struct cbs_data *data = ofono_cbs_get_data(cbs);
 	gint range[2];
 	GAtResultIter iter;
-	char buf[256];
 
 	if (!ok)
 		goto error;
@@ -208,21 +197,12 @@ static void at_cscb_support_cb(gboolean ok, GAtResult *result, gpointer user)
 		goto error;
 
 	while (g_at_result_iter_next_range(&iter, &range[0], &range[1]))
-		if (1 >= range[0] && 1 <= range[1])
-			data->cscb_mode_1 = TRUE;
+		;
 
-	g_at_result_iter_close_list(&iter);
+	if (!g_at_result_iter_close_list(&iter))
+		goto error;
 
-	/* Assume that if CSCB mode 1 is supported, then we need to use
-	 * it to remove topics, otherwise we need to set the entire list
-	 * of new topics using CSCB mode 0.
-	 */
-	if (data->cscb_mode_1)
-		snprintf(buf, sizeof(buf), "AT+CSCB=1,\"0-65535\"");
-	else
-		snprintf(buf, sizeof(buf), "AT+CSCB=0,\"\"");
-
-	if (g_at_chat_send(data->chat, buf, none_prefix,
+	if (g_at_chat_send(data->chat, "AT+CSCB=0", none_prefix,
 				at_cbs_register, cbs, NULL) > 0)
 		return;
 
