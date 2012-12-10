@@ -7,11 +7,11 @@ fi
 ./bootstrap && \
     ./configure --enable-maintainer-mode \
 		--enable-debug \
-		--enable-test \
 		--prefix=/usr \
 		--mandir=/usr/share/man \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
-		--enable-dundee \
+		--enable-test \
 		--enable-tools \
+		--enable-dundee \
 		--disable-datafiles $*
