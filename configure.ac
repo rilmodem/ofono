@@ -45,10 +45,6 @@ AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug],
 	fi
 ])
 
-AC_ARG_ENABLE(test, AC_HELP_STRING([--enable-test],
-		[enable test/example scripts]), [enable_test=${enableval}])
-AM_CONDITIONAL(TEST, test "${enable_test}" = "yes")
-
 AC_ARG_ENABLE(pie, AC_HELP_STRING([--enable-pie],
 			[enable position independent executables flag]), [
 	if (test "${enableval}" = "yes" &&
@@ -114,8 +110,26 @@ if (test -n "${path_systemdunit}"); then
 fi
 AM_CONDITIONAL(SYSTEMD, test -n "${path_systemdunit}")
 
+AC_ARG_ENABLE(test, AC_HELP_STRING([--enable-test],
+		[enable test/example scripts]), [enable_test=${enableval}])
+AM_CONDITIONAL(TEST, test "${enable_test}" = "yes")
+
+AC_ARG_ENABLE(tools, AC_HELP_STRING([--enable-tools],
+		[enable testing tools]), [enable_tools=${enableval}])
+if (test "${enable_tools}" = "yes"); then
+	PKG_CHECK_MODULES(USB, libusb-1.0, dummy=yes,
+				AC_MSG_ERROR(USB library is required))
+	AC_SUBST(USB_CFLAGS)
+	AC_SUBST(USB_LIBS)
+fi
+AM_CONDITIONAL(TOOLS, test "${enable_tools}" = "yes")
+
+AC_ARG_ENABLE(dundee, AC_HELP_STRING([--enable-dundee],
+		[enable dialup deamon support]), [enable_dundee=${enableval}])
+AM_CONDITIONAL(DUNDEE, test "${enable_dundee}" = "yes")
+
 AC_ARG_ENABLE(udev, AC_HELP_STRING([--disable-udev],
-			[don't use udev support even if available]),
+			[disable udev modem detection support]),
 						[enable_udev=${enableval}])
 if (test "${enable_udev}" != "no"); then
 	PKG_CHECK_MODULES(UDEV, libudev >= 143, [enable_udev="yes"],
@@ -131,20 +145,6 @@ fi
 AC_SUBST(UDEV_CFLAGS)
 AC_SUBST(UDEV_LIBS)
 AM_CONDITIONAL(UDEV, test "${enable_udev}" = "yes")
-
-AC_ARG_ENABLE(tools, AC_HELP_STRING([--enable-tools],
-		[enable testing tools]), [enable_tools=${enableval}])
-if (test "${enable_tools}" = "yes"); then
-	PKG_CHECK_MODULES(USB, libusb-1.0, dummy=yes,
-				AC_MSG_ERROR(USB library is required))
-	AC_SUBST(USB_CFLAGS)
-	AC_SUBST(USB_LIBS)
-fi
-AM_CONDITIONAL(TOOLS, test "${enable_tools}" = "yes")
-
-AC_ARG_ENABLE(dundee, AC_HELP_STRING([--enable-dundee],
-		[enable DUN deamon support]), [enable_dundee=${enableval}])
-AM_CONDITIONAL(DUNDEE, test "${enable_dundee}" = "yes")
 
 AC_ARG_ENABLE(atmodem, AC_HELP_STRING([--disable-atmodem],
 				[disable ETSI AT modem support]),
