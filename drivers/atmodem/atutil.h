@@ -112,11 +112,6 @@ static inline int at_util_convert_signal_strength(int strength)
 	return result;
 }
 
-#define DECLARE_FAILURE(e) 			\
-	struct ofono_error e;			\
-	e.type = OFONO_ERROR_TYPE_FAILURE;	\
-	e.error = 0				\
-
 #define CALLBACK_WITH_FAILURE(cb, args...)		\
 	do {						\
 		struct ofono_error cb_e;		\
