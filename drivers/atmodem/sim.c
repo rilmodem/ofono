@@ -1178,7 +1178,7 @@ static void at_qss_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	switch (state) {
-	case 2:	/* PIN unlocked */
+	case 3:	/* SIM inserted and READY. */
 		break;
 	default:
 		return;
