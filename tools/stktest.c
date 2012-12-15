@@ -115,8 +115,8 @@ static GAtServer *emulator;
 /* Emulated modem state variables */
 static int modem_mode = 0;
 
-void __stktest_test_next();
-void __stktest_test_finish(gboolean successful);
+static void __stktest_test_next();
+static void __stktest_test_finish(gboolean successful);
 static gboolean create_tcp(void);
 
 #define STKTEST_AGENT_ASSERT(expr)					\
@@ -3366,7 +3366,7 @@ static void power_down_reply(DBusPendingCall *call, void *user_data)
 	__stktest_test_next();
 }
 
-void __stktest_test_finish(gboolean successful)
+static void __stktest_test_finish(gboolean successful)
 {
 	struct test *test = cur_test->data;
 	dbus_bool_t powered = FALSE;
@@ -3379,7 +3379,7 @@ void __stktest_test_finish(gboolean successful)
 			power_down_reply, NULL, NULL);
 }
 
-void __stktest_test_next()
+static void __stktest_test_next()
 {
 	if (cur_test == NULL)
 		cur_test = tests;
