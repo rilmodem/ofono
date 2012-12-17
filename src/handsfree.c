@@ -48,6 +48,7 @@ struct ofono_handsfree {
 	ofono_bool_t voice_recognition;
 	ofono_bool_t voice_recognition_pending;
 	unsigned int ag_features;
+	unsigned char battchg;
 
 	const struct ofono_handsfree_driver *driver;
 	void *driver_data;
@@ -119,6 +120,29 @@ void ofono_handsfree_set_ag_features(struct ofono_handsfree *hf,
 	hf->ag_features = ag_features;
 }
 
+void ofono_handsfree_battchg_notify(struct ofono_handsfree *hf,
+					unsigned char level)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(hf->atom);
+
+	if (hf == NULL)
+		return;
+
+	if (hf->battchg == level)
+		return;
+
+	hf->battchg = level;
+
+	if (__ofono_atom_get_registered(hf->atom) == FALSE)
+		return;
+
+	ofono_dbus_signal_property_changed(conn, path,
+					OFONO_HANDSFREE_INTERFACE,
+					"BatteryChargeLevel", DBUS_TYPE_BYTE,
+					&level);
+}
+
 static DBusMessage *handsfree_get_properties(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
@@ -151,6 +175,9 @@ static DBusMessage *handsfree_get_properties(DBusConnection *conn,
 	features = ag_features_list(hf->ag_features);
 	ofono_dbus_dict_append_array(&dict, "Features", DBUS_TYPE_STRING,
 					&features);
+
+	ofono_dbus_dict_append(&dict, "BatteryChargeLevel", DBUS_TYPE_BYTE,
+				&hf->battchg);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
