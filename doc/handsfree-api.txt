@@ -55,3 +55,8 @@ Properties	array{string} Features [readonly]
 			currently active in the AG. This property may be written
 			to activate or deactivate the function from the HF, or
 			the AG could autonomously initiate it.
+
+		byte BatteryChargeLevel [readonly]
+
+			The current charge level of the battery.  The value
+			can be between 0 and 5 respectively.
