@@ -57,6 +57,9 @@ void ofono_handsfree_set_inband_ringing(struct ofono_handsfree *hf,
 void ofono_handsfree_voice_recognition_notify(struct ofono_handsfree *hf,
 						ofono_bool_t enabled);
 
+void ofono_handsfree_battchg_notify(struct ofono_handsfree *hf,
+					unsigned char level);
+
 int ofono_handsfree_driver_register(const struct ofono_handsfree_driver *d);
 void ofono_handsfree_driver_unregister(
 			const struct ofono_handsfree_driver *d);
