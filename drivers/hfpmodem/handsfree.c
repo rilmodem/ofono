@@ -48,6 +48,7 @@ static const char *bvra_prefix[] = { "+BVRA:", NULL };
 struct hf_data {
 	GAtChat *chat;
 	unsigned int ag_features;
+	int battchg_index;
 	guint register_source;
 };
 
@@ -97,6 +98,31 @@ static void bvra_notify(GAtResult *result, gpointer user_data)
 	ofono_handsfree_voice_recognition_notify(hf, (ofono_bool_t) value);
 }
 
+static void ciev_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_handsfree *hf = user_data;
+	struct hf_data *hd = ofono_handsfree_get_data(hf);
+	int index;
+	int value;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CIEV:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &index))
+		return;
+
+	if (index != hd->battchg_index)
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &value))
+		return;
+
+	ofono_handsfree_battchg_notify(hf, value);
+}
+
 static gboolean hfp_handsfree_register(gpointer user_data)
 {
 	struct ofono_handsfree *hf = user_data;
@@ -106,6 +132,7 @@ static gboolean hfp_handsfree_register(gpointer user_data)
 
 	g_at_chat_register(hd->chat, "+BSIR:", bsir_notify, FALSE, hf, NULL);
 	g_at_chat_register(hd->chat, "+BVRA:", bvra_notify, FALSE, hf, NULL);
+	g_at_chat_register(hd->chat, "+CIEV:", ciev_notify, FALSE, hf, NULL);
 
 	if (hd->ag_features & HFP_AG_FEATURE_IN_BAND_RING_TONE)
 		ofono_handsfree_set_inband_ringing(hf, TRUE);
@@ -128,6 +155,10 @@ static int hfp_handsfree_probe(struct ofono_handsfree *hf,
 	hd->ag_features = info->ag_features;
 
 	ofono_handsfree_set_data(hf, hd);
+
+	hd->battchg_index = info->cind_pos[HFP_INDICATOR_BATTCHG];
+	ofono_handsfree_battchg_notify(hf,
+					info->cind_val[HFP_INDICATOR_BATTCHG]);
 
 	hd->register_source = g_idle_add(hfp_handsfree_register, hf);
 
