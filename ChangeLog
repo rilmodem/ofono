@@ -1,3 +1,15 @@
+ver 1.12:
+	Fix issue with alpha ID and self explanatory icons.
+	Fix issue with SIM Refresh handling and resetting state.
+	Fix issue with SMS initiated by STK proactive command.
+	Fix issue with CBS treating carriage return as padding.
+	Fix issue with USSD terminated by network notification.
+	Add support for battery charge level with Handsfree devices.
+	Add support for technology and band changes with IFX modems.
+	Add support for SIM file handling with Qualcomm QMI modems.
+	Add support for SIM file system 2G and 3G path handling.
+	Add support for SIM Toolkit end-to-end testing.
+
 ver 1.11:
 	Fix issue with Bluetooth disconnect handling.
 	Fix issue with handling EFspn with filler characters.
