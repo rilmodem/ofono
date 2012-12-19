@@ -1,0 +1,437 @@
+This document describes the status of the latest GCF test results for USIM
+Application Toolkit.  The tests are described in 3GPP 31.124 and ETSI 102.384.
+
+All tests were performed using the test-stk-menu script and any additional
+test scripts on as needed basis.
+
+The modem used is an Intel Mobile Communications XMM6260
+
+27.22.4.1 Display Text (30/30 pass, 4 not applicable)
+27.22.4.1.1_1		PASS
+27.22.4.1.1_2		PASS
+27.22.4.1.1_3		PASS
+27.22.4.1.1_4		PASS
+27.22.4.1.1_5		PASS
+27.22.4.1.1_6		PASS
+27.22.4.1.1_7		PASS
+27.22.4.1.1_8		PASS
+27.22.4.1.1_9		PASS
+27.22.4.1.2_1		PASS
+27.22.4.1.3_1		PASS
+27.22.4.1.4_1		PASS
+27.22.4.1.4_2		PASS
+27.22.4.1.4_3		PASS
+27.22.4.1.5_1A		PASS
+28.22.4.1.5_1B		N/A *
+27.22.4.1.5_2A		PASS
+27.22.4.1.5_2B		N/A *
+27.22.4.1.5_3A		PASS
+27.22.4.1.5_3B		N/A *
+27.22.4.1.6.1_1		PASS
+27.22.4.1.5_1A		N/A **
+27.22.4.1.8.1_1		PASS
+27.22.4.1.8.1_2		PASS
+27.22.4.1.8.1_3		PASS
+27.22.4.1.8.1_4		PASS
+27.22.4.1.8.1_5		PASS
+27.22.4.1.8.1_6		PASS
+27.22.4.1.8.1_7		PASS
+27.22.4.1.8.1_8		PASS
+27.22.4.1.8.1_9		PASS
+27.22.4.1.8.1_10	PASS
+27.22.4.1.9.1_1		PASS
+27.22.4.1.10.1_1	PASS
+
+* Icon always displayed
+** Variable timeout not supported by the modem firmware
+
+27.22.4.2 Get Inkey (31/31 pass, 6 not applicable)
+27.22.4.2.1_1		PASS
+27.22.4.2.1_2		PASS
+27.22.4.2.1_3		PASS
+27.22.4.2.1_4		PASS
+27.22.4.2.1_5		PASS
+27.22.4.2.1_6		PASS
+27.22.4.2.2_1		PASS
+27.22.4.2.3_1		PASS
+27.22.4.2.3_2		PASS
+27.22.4.2.4_1		PASS
+27.22.4.2.5_1		PASS
+27.22.4.2.6_1A		PASS
+27.22.4.2.6_1B		N/A *
+27.22.4.2.6_2A		PASS
+27.22.4.2.6_2B		N/A *
+27.22.4.2.6_3A		PASS
+27.22.4.2.6_3B		N/A *
+27.22.4.2.6_4A		PASS
+27.22.4.2.6_4B		N/A *
+27.22.4.2.7_1		N/A **
+27.22.4.2.8_1		N/A ***
+27.22.4.2.9_1		PASS
+27.22.4.2.9_2		PASS
+27.22.4.2.9_3		PASS
+27.22.4.2.9_4		PASS
+27.22.4.2.9_5		PASS
+27.22.4.2.9_6		PASS
+27.22.4.2.9_7		PASS
+27.22.4.2.9_8		PASS
+27.22.4.2.9_9		PASS
+27.22.4.2.9_10		PASS
+27.22.4.2.10_1		PASS
+27.22.4.2.10_2		PASS
+27.22.4.2.11_1		PASS
+27.22.4.2.12_1		PASS
+27.22.4.2.12_2		PASS
+27.22.4.2.13_1		PASS
+
+* Icon always displayed
+** Help information not supported by oFono
+*** Variable timeout not supported by the modem firmware
+
+27.22.4.3 Get Input (39/39 pass, 5 not applicable)
+27.22.4.3.1_1		PASS
+27.22.4.3.1_2		PASS
+27.22.4.3.1_3		PASS
+27.22.4.3.1_4		PASS
+27.22.4.3.1_5		PASS
+27.22.4.3.1_6		PASS
+27.22.4.3.1_7		PASS
+27.22.4.3.1_8		PASS
+27.22.4.3.1_9		PASS
+27.22.4.3.1_10		PASS
+27.22.4.3.2_1		PASS
+27.22.4.3.3_1		PASS
+27.22.4.3.3_2		PASS
+27.22.4.3.4_1		PASS
+27.22.4.3.4_2		PASS
+27.22.4.3.5_1		PASS
+27.22.4.3.5_2		PASS
+27.22.4.3.6_1A		PASS
+27.22.4.3.6_1B		N/A *
+27.22.4.3.6_2A		PASS
+27.22.4.3.6_2B		N/A *
+27.22.4.3.6_3A		PASS
+27.22.4.3.6_3B		N/A *
+27.22.4.3.6_4A		PASS
+27.22.4.3.6_4B		N/A *
+27.22.4.3.7_1		N/A **
+27.22.4.3.8_1		PASS
+27.22.4.3.8_2		PASS
+27.22.4.3.8_3		PASS
+27.22.4.3.8_4		PASS
+27.22.4.3.8_5		PASS
+27.22.4.3.8_6		PASS
+27.22.4.3.8_7		PASS
+27.22.4.3.8_8		PASS
+27.22.4.3.8_9		PASS
+27.22.4.3.8_10		PASS
+27.22.4.3.9_1		PASS
+27.22.4.3.9_2		PASS
+27.22.4.3.10_1		PASS
+27.22.4.3.10_2		PASS
+27.22.4.3.11_1		PASS
+27.22.4.3.11_2		PASS
+27.22.4.3.12_1		PASS
+27.22.4.3.12_2		PASS
+
+* Icon always displayed
+** Help information not supported by oFono
+
+27.22.4.5 Play Tone (18/18 pass, 4 not applicable)
+27.22.4.5.1_1		PASS
+27.22.4.5.2_1		PASS
+27.22.4.5.3_1A		PASS
+27.22.4.5.3_1B		N/A *
+27.22.4.5.3_2A		PASS
+27.22.4.5.3_2B		N/A *
+27.22.4.5.3_3A		PASS
+27.22.4.5.3_3B		N/A *
+27.22.4.5.3_4A		PASS
+27.22.4.5.3_4B		N/A *
+27.22.4.5.4_1		PASS
+27.22.4.5.4_2		PASS
+27.22.4.5.4_3		PASS
+27.22.4.5.4_4		PASS
+27.22.4.5.4_5		PASS
+27.22.4.5.4_6		PASS
+27.22.4.5.4_7		PASS
+27.22.4.5.4_8		PASS
+27.22.4.5.4_9		PASS
+27.22.4.5.4_10		PASS
+27.22.4.5.5_1		PASS
+27.22.4.5.6_1		PASS
+
+* Icon always displayed
+
+27.22.4.7 SIM Refresh (2/2 pass, 3 not applicable)
+27.22.4.7.1_1		PASS *
+27.22.4.7.1_2		N/A *
+27.22.4.7.1_3		PASS **
+27.22.4.7.1_4		N/A *
+27.22.4.7.1_6		N/A *
+
+* FDN not supported by oFono
+** Modem sends wrong terminal response
+
+27.22.4.8 Set Up Menu (18/18 pass, 4 not applicable)
+27.22.4.8.1_1		PASS
+27.22.4.8.1_2		PASS
+27.22.4.8.2_1		N/A *
+27.22.4.8.3_1		PASS
+27.22.4.8.4_1A		PASS
+27.22.4.8.4_1B		N/A **
+27.22.4.8.4_2A		PASS
+27.22.4.8.4_2B		N/A **
+27.22.4.8.5_1		N/A ***
+27.22.4.8.6_1		PASS
+27.22.4.8.6_2		PASS
+27.22.4.8.6_3		PASS
+27.22.4.8.6_4		PASS
+27.22.4.8.6_5		PASS
+27.22.4.8.6_6		PASS
+27.22.4.8.6_7		PASS
+27.22.4.8.6_8		PASS
+27.22.4.8.6_9		PASS
+27.22.4.8.6_10		PASS
+27.22.4.8.7_1		PASS
+27.22.4.8.8_1		PASS
+27.22.4.8.9_1		PASS
+
+* Help information not supported by oFono
+** Icon always displayed
+*** Soft keys not supported by oFono
+
+27.22.4.9 Select Item (30/30 pass, 4 not applicable)
+27.22.4.9.1_1		PASS
+27.22.4.9.1_2		PASS
+27.22.4.9.1_3		PASS
+27.22.4.9.1_4		PASS
+27.22.4.9.1_5		PASS
+27.22.4.9.1_6		PASS
+27.22.4.9.2_1		PASS
+27.22.4.9.3_1		PASS
+27.22.4.9.4_1		N/A *
+27.22.4.9.5_1A		PASS
+27.22.4.9.5_1B		N/A **
+27.22.4.9.5_2A		PASS
+27.22.4.9.5_2B		N/A **
+27.22.4.9.6_1		PASS
+27.22.4.9.6_2		PASS
+27.22.4.9.7_1		N/A ***
+27.22.4.9.8_1		PASS
+27.22.4.9.9_1		PASS
+27.22.4.9.9_2		PASS
+27.22.4.9.9_3		PASS
+27.22.4.9.9_4		PASS
+27.22.4.9.9_5		PASS
+27.22.4.9.9_6		PASS
+27.22.4.9.9_7		PASS
+27.22.4.9.9_8		PASS
+27.22.4.9.9_9		PASS
+27.22.4.9.9_10		PASS
+27.22.4.9.10_1		PASS
+27.22.4.9.10_2		PASS
+27.22.4.9.10_3		PASS
+27.22.4.9.11_1		PASS
+27.22.4.9.12_1		PASS
+27.22.4.9.12_2		PASS
+27.22.4.9.12_3		PASS
+
+* Help information not supported by oFono
+** Icon always displayed
+*** Soft keys not supported by oFono
+
+27.22.4.10 Send SMS (1/1 pass)
+27.22.4.10.1_9		PASS
+
+27.22.4.11 Send SS (10/10 pass, 6 not applicable)
+27.22.4.11.1_1a		N/A *
+27.22.4.11.1_1b		PASS
+27.22.4.11.1_2		PASS
+27.22.4.11.1_3		PASS
+27.22.4.11.1_4a		N/A *
+27.22.4.11.1_4b		PASS
+27.22.4.11.1/5		PASS
+27.22.4.11.1/6a		N/A *
+27.22.4.11.1/6b		PASS
+27.22.4.11.2/1a		PASS **
+27.22.4.11.2/1b		N/A ***
+27.22.4.11.2/2a		PASS **
+27.22.4.11.2/2b		N/A ***
+27.22.4.11.2/3a		PASS **
+27.22.4.11.2/3b		N/A ***
+27.22.4.11.2/4		PASS **
+
+* UE does not support A.1/63 O_FTN
+** Register B, A.1/63 O_FTN not supported
+*** Icon always displayed
+
+27.22.4.12 Send USSD (8/8 pass)
+27.22.4.12.1_1		PASS
+27.22.4.12.1_2		PASS
+27.22.4.12.1_3		PASS
+27.22.4.12.1_4		PASS
+27.22.4.12.1_5		PASS
+27.22.4.12.1_6		PASS
+27.22.4.12.1_7		PASS
+27.22.4.12.1_8		PASS
+
+27.22.4.13 Set Up Call (11/11 pass, 1 not applicable)
+27.22.4.13.1_1		PASS
+27.22.4.13.1_2		PASS
+27.22.4.13.1_4		PASS
+27.22.4.13.1_5		PASS
+27.22.4.13.1_6		PASS
+27.22.4.13.1_7		PASS
+27.22.4.13.1_8		PASS
+27.22.4.13.1_9		PASS
+27.22.4.13.1_10		PASS
+27.22.4.13.1_11a	PASS
+27.22.4.13.1_11b	N/A *
+27.22.4.13.1_12		PASS
+
+* Subaddress not support
+
+27.22.4.15 Provide Local Information (2/2 pass, 3 not applicable)
+27.22.4.15.1_1		N/A *
+27.22.4.15.1_2		N/A *
+27.22.4.15.1_3		N/A *,**
+27.22.4.15.1_4		PASS
+27.22.4.15.1_5		PASS
+
+* Handled by modem firmware
+** Invalid terminal response sent
+
+27.22.4.22 Set Up Idle Mode Text (24/24 pass, 3 not applicable)
+27.22.4.22.1_1		PASS
+27.22.4.22.1_2		PASS
+27.22.4.22.1_3		PASS
+27.22.4.22.1_4		PASS
+27.22.4.22.1_5		PASS
+27.22.4.22.1_6		PASS
+27.22.4.22.1_7		PASS
+27.22.4.22.2_1A		PASS
+27.22.4.22.2_1B		N/A *
+27.22.4.22.2_2A		PASS
+27.22.4.22.2_2B		N/A *
+27.22.4.22.2_3A		PASS
+27.22.4.22.2_3B		N/A *
+27.22.4.22.2_4		PASS
+27.22.4.22.3_1		PASS
+27.22.4.22.4_1		PASS
+27.22.4.22.4_2		PASS
+27.22.4.22.4_3		PASS
+27.22.4.22.4_4		PASS
+27.22.4.22.4_5		PASS
+27.22.4.22.4_6		PASS
+27.22.4.22.4_7		PASS
+27.22.4.22.4_8		PASS
+27.22.4.22.4_9		PASS
+27.22.4.22.4_10		PASS
+27.22.4.22.5_1		PASS
+27.22.4.22.6_1		PASS
+
+* Icon always displayed
+
+27.22.4.24 Send DTMF (2/2 pass)
+27.22.4.24.1_1		PASS
+27.22.4.24.1_4		PASS
+
+27.22.4.26 Launch Browser (6/6 pass, 1 not applicable)
+27.22.4.26.1_1		PASS
+27.22.4.26.1_2		PASS
+27.22.4.26.1_3		PASS
+27.22.4.26.1_4		N/A *
+27.22.4.26.2_1		PASS
+27.22.4.26.2_2		PASS
+27.22.4.26.2_3		PASS
+
+* Overriding Proxy information is not supported by oFono
+
+27.22.6 Call Control by USIM (14/16 pass, 2 fail, 1 not applicable)
+27.22.6.1_1		PASS
+27.22.6.1_2		PASS
+27.22.6.1_3a		PASS
+27.22.6.1_3b		PASS
+27.22.6.1_4		PASS
+27.22.6.1_5a		N/A
+27.22.6.1_5b		PASS
+27.22.6.1_6		PASS
+27.22.6.1_7a		PASS
+27.22.6.1_7b		PASS
+27.22.6.1_8		FAIL *
+27.22.6.1_9		FAIL **
+27.22.6.1_10		PASS
+27.22.6.1_11		PASS
+27.22.6.1_12		PASS
+27.22.6.1_13		PASS
+27.22.6.1_14		PASS
+
+* Not recognized as an emergency call
+Nov 29 22:41:50 localhost ofonod[8435]: Voice: > ATD+01234567890123456789;\r
+Nov 29 22:41:51 localhost ofonod[8435]: Aux: < \r\n+STKCTRLIND: 0,2,,"112",129\r\n
+Nov 29 22:41:51 localhost ofonod[8435]: Voice: < \r\nOK\r\n
+Nov 29 22:41:51 localhost ofonod[8435]: src/voicecall.c:dial_handle_result() Registering new call: 1
+Nov 29 22:41:51 localhost ofonod[8435]: Voice: < \r\n+XCALLSTAT: 1,2\r\n
+Nov 29 22:41:51 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Got a voicecall event, status: 2, id: 1, number:  called_number: , called_name 
+Nov 29 22:41:51 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Found call with id: 1
+Nov 29 22:41:51 localhost ofonod[8435]: Voice: < \r\n+XEMC:1\r\n
+Nov 29 22:41:52 localhost ofonod[8435]: Voice: < \r\n+XPROGRESS: 1, 1\r\n
+Nov 29 22:41:52 localhost ofonod[8435]: Voice: < \r\n+XCALLSTAT: 1,3\r\n
+Nov 29 22:41:52 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Got a voicecall event, status: 3, id: 1, number:  called_number: , called_name 
+Nov 29 22:41:52 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Found call with id: 1
+Nov 29 22:41:55 localhost ofonod[8435]: Voice: < \r\n+XCOLP: 1,"112",129\r\n
+Nov 29 22:41:55 localhost ofonod[8435]: drivers/ifxmodem/voicecall.c:xcolp_notify() xcolp_notify: 1 112 129
+Nov 29 22:41:55 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Got a voicecall event, status: 3, id: 1, number: 112 called_number: , called_name 
+Nov 29 22:41:55 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Found call with id: 1
+Nov 29 22:41:55 localhost ofonod[8435]: Voice: < \r\n+XCALLSTAT: 1,7\r\n\r\n+XCALLSTAT: 1,0\r\n
+Nov 29 22:41:55 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Got a voicecall event, status: 0, id: 1, number: 112 called_number: , called_name 
+Nov 29 22:41:55 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Found call with id: 1
+Nov 29 22:41:55 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Got a voicecall event, status: 0, id: 1, number: 112 called_number: , called_name 
+Nov 29 22:41:55 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Found call with id: 1
+Nov 29 22:42:02 localhost ofonod[8435]: Voice: < \r\n+XPROGRESS: 1, 11\r\n
+Nov 29 22:42:02 localhost ofonod[8435]: src/audio-settings.c:ofono_audio_settings_active_notify() active 0
+Nov 29 22:42:02 localhost ofonod[8435]: Voice: < \r\n+XEMC:0\r\n\r\nNO CARRIER\r\n\r\n+XCALLSTAT: 1,6\r\n
+Nov 29 22:42:02 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_disconnected() Got disconnection event for id: 1, reason: 2
+Nov 29 22:42:02 localhost ofonod[8435]: emergency mode is already deactivated!!!
+Nov 29 22:42:02 localhost ofonod[8435]: Call Ended on modem: 0x768340
+Nov 29 22:42:02 localhost ofonod[8435]: Voice Call, Outgoing
+Nov 29 22:42:02 localhost ofonod[8435]: To: 112
+Nov 29 22:42:02 localhost ofonod[8435]: Name from Network: 
+Nov 29 22:42:02 localhost ofonod[8435]: StartTime: 2012-11-29T22:41:51-0600
+Nov 29 22:42:02 localhost ofonod[8435]: EndTime: 2012-11-29T22:42:02-0600
+
+** Emergency mode should not be toggled at call end
+Nov 29 22:46:22 localhost ofonod[8435]: Voice: > ATD+01234567890123456789;\r
+Nov 29 22:46:23 localhost ofonod[8435]: Aux: < \r\n+STKCTRLIND: 0,2,,"1020",129\r\n
+Nov 29 22:46:23 localhost ofonod[8435]: Voice: < \r\nOK\r\n
+Nov 29 22:46:23 localhost ofonod[8435]: src/voicecall.c:dial_handle_result() Registering new call: 1
+Nov 29 22:46:23 localhost ofonod[8435]: Voice: < \r\n+XCALLSTAT: 1,2\r\n
+Nov 29 22:46:23 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Got a voicecall event, status: 2, id: 1, number:  called_number: , called_name 
+Nov 29 22:46:23 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Found call with id: 1
+Nov 29 22:46:24 localhost ofonod[8435]: Voice: < \r\n+XPROGRESS: 1, 1\r\n
+Nov 29 22:46:24 localhost ofonod[8435]: Voice: < \r\n+XCALLSTAT: 1,3\r\n
+Nov 29 22:46:24 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Got a voicecall event, status: 3, id: 1, number:  called_number: , called_name 
+Nov 29 22:46:24 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Found call with id: 1
+Nov 29 22:46:27 localhost ofonod[8435]: Voice: < \r\n+XPROGRESS: 1, 7\r\n
+Nov 29 22:46:27 localhost ofonod[8435]: src/audio-settings.c:ofono_audio_settings_active_notify() active 1
+Nov 29 22:46:27 localhost ofonod[8435]: Voice: < \r\n+XCOLP: 1,"1020",129\r\n
+Nov 29 22:46:27 localhost ofonod[8435]: drivers/ifxmodem/voicecall.c:xcolp_notify() xcolp_notify: 1 1020 129
+Nov 29 22:46:27 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Got a voicecall event, status: 3, id: 1, number: 1020 called_number: , called_name 
+Nov 29 22:46:27 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Found call with id: 1
+Nov 29 22:46:27 localhost ofonod[8435]: Voice: < \r\n+XCALLSTAT: 1,7\r\n\r\n+XCALLSTAT: 1,0\r\n
+Nov 29 22:46:27 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Got a voicecall event, status: 0, id: 1, number: 1020 called_number: , called_name 
+Nov 29 22:46:27 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Found call with id: 1
+Nov 29 22:46:27 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Got a voicecall event, status: 0, id: 1, number: 1020 called_number: , called_name 
+Nov 29 22:46:27 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_notify() Found call with id: 1
+Nov 29 22:46:32 localhost ofonod[8435]: Voice: < \r\n+XPROGRESS: 1, 11\r\n
+Nov 29 22:46:32 localhost ofonod[8435]: src/audio-settings.c:ofono_audio_settings_active_notify() active 0
+Nov 29 22:46:33 localhost ofonod[8435]: Voice: < \r\nNO CARRIER\r\n\r\n+XCALLSTAT: 1,6\r\n
+Nov 29 22:46:33 localhost ofonod[8435]: src/voicecall.c:ofono_voicecall_disconnected() Got disconnection event for id: 1, reason: 2
+Nov 29 22:46:33 localhost ofonod[8435]: emergency mode is already deactivated!!!
+Nov 29 22:46:33 localhost ofonod[8435]: Call Ended on modem: 0x768340
+Nov 29 22:46:33 localhost ofonod[8435]: Voice Call, Outgoing
+Nov 29 22:46:33 localhost ofonod[8435]: To: 1020
+Nov 29 22:46:33 localhost ofonod[8435]: Name from Network: 
+Nov 29 22:46:33 localhost ofonod[8435]: StartTime: 2012-11-29T22:46:23-0600
+Nov 29 22:46:33 localhost ofonod[8435]: EndTime: 2012-11-29T22:46:33-0600
