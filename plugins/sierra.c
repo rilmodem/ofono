@@ -228,27 +228,27 @@ static void sierra_pre_sim(struct ofono_modem *modem)
 static void sierra_post_sim(struct ofono_modem *modem)
 {
 	struct sierra_data *data = ofono_modem_get_data(modem);
-
-	DBG("%p", modem);
-
-	ofono_phonebook_create(modem, 0, "atmodem", data->modem);
-}
-
-static void sierra_post_online(struct ofono_modem *modem)
-{
-	struct sierra_data *data = ofono_modem_get_data(modem);
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
 
-	ofono_netreg_create(modem, 0, "atmodem", data->modem);
+	ofono_phonebook_create(modem, 0, "atmodem", data->modem);
 
 	gprs = ofono_gprs_create(modem, 0, "atmodem", data->modem);
 	gc = ofono_gprs_context_create(modem, 0, "swmodem", data->modem);
 
 	if (gprs && gc)
 		ofono_gprs_add_context(gprs, gc);
+}
+
+static void sierra_post_online(struct ofono_modem *modem)
+{
+	struct sierra_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	ofono_netreg_create(modem, 0, "atmodem", data->modem);
 }
 
 static struct ofono_modem_driver sierra_driver = {
