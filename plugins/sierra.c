@@ -144,8 +144,9 @@ static int sierra_enable(struct ofono_modem *modem)
 	if (data->modem == NULL)
 		return -EINVAL;
 
-	g_at_chat_send(data->modem, "ATE0 &C0 +CMEE=1", NULL,
-						NULL, NULL, NULL);
+	g_at_chat_send(data->modem, "ATE0 &C0", NULL, NULL, NULL, NULL);
+	/* This is separate because it is not supported by all modems. */
+	g_at_chat_send(data->modem, "AT+CMEE=1", NULL, NULL, NULL, NULL);
 
 	g_at_chat_send(data->modem, "AT+CFUN=4", none_prefix,
 					cfun_enable, modem, NULL);
