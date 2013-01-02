@@ -3095,8 +3095,14 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 		break;
 
 	case STK_COMMAND_TYPE_REFRESH:
+		/*
+		 * On a refresh we should not try to free the pending command,
+		 * as the stk atom itself likely disappeared as a result.
+		 * If it has not, then any subsequent proactive command, or
+		 * session end notification will free it anyway
+		 */
 		handle_command_refresh(stk->pending_cmd, NULL, stk);
-		break;
+		return;
 	}
 
 out:
