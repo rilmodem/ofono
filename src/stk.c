@@ -2318,7 +2318,7 @@ static gboolean handle_command_refresh(const struct stk_command *cmd,
 		g_slist_foreach(file_list, (GFunc) g_free, NULL);
 		g_slist_free(file_list);
 
-		return TRUE;
+		return FALSE;
 	}
 
 	rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
@@ -3095,7 +3095,7 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 		break;
 
 	case STK_COMMAND_TYPE_REFRESH:
-		ok = handle_command_refresh(stk->pending_cmd, NULL, stk);
+		handle_command_refresh(stk->pending_cmd, NULL, stk);
 		break;
 	}
 
