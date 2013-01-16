@@ -33,7 +33,7 @@
 #include <ofono/modem.h>
 #include <gdbus.h>
 
-#include "bluetooth.h"
+#include "bluez4.h"
 
 #define HFP_AG_CHANNEL	13
 

@@ -37,7 +37,7 @@
 #include <ofono/log.h>
 #include <ofono/modem.h>
 
-#include "bluetooth.h"
+#include "bluez4.h"
 #include "util.h"
 
 #ifndef DBUS_TYPE_UNIX_FD

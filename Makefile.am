@@ -483,23 +483,23 @@ builtin_sources += plugins/sim900.c
 
 if BLUETOOTH
 if BLUEZ4
-builtin_modules += bluetooth
-builtin_sources += plugins/bluetooth.c plugins/bluetooth.h
+builtin_modules += bluez4
+builtin_sources += plugins/bluez4.c plugins/bluez4.h
 
 builtin_modules += telit
-builtin_sources += plugins/telit.c plugins/bluetooth.h
+builtin_sources += plugins/telit.c plugins/bluez4.h
 
 builtin_modules += sap
-builtin_sources += plugins/sap.c plugins/bluetooth.h
+builtin_sources += plugins/sap.c plugins/bluez4.h
 
-builtin_modules += hfp
-builtin_sources += plugins/hfp_hf.c plugins/bluetooth.h
+builtin_modules += hfp_bluez4
+builtin_sources += plugins/hfp_hf_bluez4.c plugins/bluez4.h
 
 builtin_modules += hfp_ag
-builtin_sources += plugins/hfp_ag.c plugins/bluetooth.h
+builtin_sources += plugins/hfp_ag.c plugins/bluez4.h
 
 builtin_modules += dun_gw
-builtin_sources += plugins/dun_gw.c plugins/bluetooth.h
+builtin_sources += plugins/dun_gw.c plugins/bluez4.h
 
 builtin_modules += connman
 builtin_sources += plugins/connman.c
@@ -904,7 +904,7 @@ if DUNDEE
 sbin_PROGRAMS += dundee/dundee
 
 dundee_dundee_SOURCES = $(gdbus_sources) $(gatchat_sources) $(btio_sources) \
-			src/log.c src/dbus.c plugins/bluetooth.c \
+			src/log.c src/dbus.c plugins/bluez4.c \
 			dundee/dundee.h dundee/main.c dundee/dbus.c \
 			dundee/manager.c dundee/device.c dundee/bluetooth.c
 
