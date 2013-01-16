@@ -507,6 +507,9 @@ builtin_sources += plugins/connman.c
 builtin_sources += $(btio_sources)
 builtin_cflags += @BLUEZ_CFLAGS@
 builtin_libadd += @BLUEZ_LIBS@
+else
+builtin_modules += bluez5
+builtin_sources += plugins/bluez5.c
 endif
 endif
 endif
