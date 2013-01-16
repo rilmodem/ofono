@@ -26,6 +26,7 @@
 #endif
 
 #include <fcntl.h>
+#include <sys/types.h>
 
 int create_dirs(const char *filename, const mode_t mode);
 
