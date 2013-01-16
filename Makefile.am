@@ -512,7 +512,7 @@ builtin_modules += bluez5
 builtin_sources += plugins/bluez5.c plugins/bluez5.h
 
 builtin_modules += hfp_bluez5
-builtin_sources += plugins/hfp_hf_bluez5.c
+builtin_sources += plugins/hfp_hf_bluez5.c plugins/bluez5.h
 endif
 endif
 endif
