@@ -58,7 +58,7 @@
 #include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
 
-#include "bluetooth.h"
+#include "bluez4.h"
 
 static const char *none_prefix[] = { NULL };
 static const char *rsen_prefix[]= { "#RSEN:", NULL };

@@ -32,7 +32,7 @@
 
 #include <glib.h>
 
-#include "plugins/bluetooth.h"
+#include "plugins/bluez4.h"
 
 #include "dundee.h"
 

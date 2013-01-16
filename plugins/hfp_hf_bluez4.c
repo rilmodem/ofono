@@ -47,7 +47,7 @@
 
 #include <drivers/hfpmodem/slc.h>
 
-#include "bluetooth.h"
+#include "bluez4.h"
 
 #define	BLUEZ_GATEWAY_INTERFACE		BLUEZ_SERVICE ".HandsfreeGateway"
 
@@ -548,5 +548,5 @@ static void hfp_exit(void)
 	g_hash_table_destroy(modem_hash);
 }
 
-OFONO_PLUGIN_DEFINE(hfp, "Hands-Free Profile Plugins", VERSION,
+OFONO_PLUGIN_DEFINE(hfp_bluez4, "Hands-Free Profile Plugins", VERSION,
 			OFONO_PLUGIN_PRIORITY_DEFAULT, hfp_init, hfp_exit)

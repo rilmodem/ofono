@@ -33,7 +33,7 @@
 #include <ofono/modem.h>
 #include <gdbus.h>
 
-#include "bluetooth.h"
+#include "bluez4.h"
 
 #define DUN_GW_CHANNEL	1
 
