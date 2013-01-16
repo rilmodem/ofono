@@ -23,11 +23,123 @@
 #include <config.h>
 #endif
 
+#include <errno.h>
 #include <glib.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
+#include <ofono/dbus.h>
 #include <ofono/plugin.h>
 #include <ofono/log.h>
+
+#include <gdbus/gdbus.h>
+#include "bluez5.h"
+
+#define BLUEZ_PROFILE_MGMT_INTERFACE   BLUEZ_SERVICE ".ProfileManager1"
+
+static void profile_register_cb(DBusPendingCall *call, gpointer user_data)
+{
+	DBusMessage *reply;
+	DBusError derr;
+
+	reply = dbus_pending_call_steal_reply(call);
+
+	dbus_error_init(&derr);
+
+	if (dbus_set_error_from_message(&derr, reply)) {
+		ofono_error("RegisterProfile() replied an error: %s, %s",
+						derr.name, derr.message);
+		dbus_error_free(&derr);
+		goto done;
+	}
+
+	DBG("");
+
+done:
+	dbus_message_unref(reply);
+}
+
+static void unregister_profile_cb(DBusPendingCall *call, gpointer user_data)
+{
+	DBusMessage *reply;
+	DBusError derr;
+
+	reply = dbus_pending_call_steal_reply(call);
+
+	dbus_error_init(&derr);
+
+	if (dbus_set_error_from_message(&derr, reply)) {
+		ofono_error("UnregisterProfile() replied an error: %s, %s",
+						derr.name, derr.message);
+		dbus_error_free(&derr);
+		goto done;
+	}
+
+	DBG("");
+
+done:
+	dbus_message_unref(reply);
+}
+
+int bluetooth_register_profile(DBusConnection *conn, const char *uuid,
+					const char *name, const char *object)
+{
+	DBusMessageIter iter, dict;
+	DBusPendingCall *c;
+	DBusMessage *msg;
+
+	DBG("Bluetooth: Registering %s (%s) profile", uuid, name);
+
+	msg = dbus_message_new_method_call(BLUEZ_SERVICE, "/org/bluez",
+			BLUEZ_PROFILE_MGMT_INTERFACE, "RegisterProfile");
+
+	dbus_message_iter_init_append(msg, &iter);
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_OBJECT_PATH, &object);
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &uuid);
+
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, "{sv}", &dict);
+	ofono_dbus_dict_append(&dict, "Name", DBUS_TYPE_STRING, &name);
+
+	dbus_message_iter_close_container(&iter, &dict);
+
+	if (!dbus_connection_send_with_reply(conn, msg, &c, -1)) {
+		ofono_error("Sending RegisterProfile failed");
+		dbus_message_unref(msg);
+		return -EIO;
+	}
+
+	dbus_pending_call_set_notify(c, profile_register_cb, NULL, NULL);
+	dbus_pending_call_unref(c);
+
+	dbus_message_unref(msg);
+
+	return 0;
+}
+
+void bluetooth_unregister_profile(DBusConnection *conn, const char *object)
+{
+	DBusMessageIter iter;
+	DBusPendingCall *c;
+	DBusMessage *msg;
+
+	DBG("Bluetooth: Unregistering profile %s", object);
+
+	msg = dbus_message_new_method_call(BLUEZ_SERVICE, "/org/bluez",
+			BLUEZ_PROFILE_MGMT_INTERFACE, "UnregisterProfile");
+
+	dbus_message_iter_init_append(msg, &iter);
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_OBJECT_PATH, &object);
+
+	if (!dbus_connection_send_with_reply(conn, msg, &c, -1)) {
+		ofono_error("Sending RegisterProfile failed");
+		dbus_message_unref(msg);
+		return;
+	}
+
+	dbus_pending_call_set_notify(c, unregister_profile_cb, NULL, NULL);
+	dbus_pending_call_unref(c);
+
+	dbus_message_unref(msg);
+}
 
 OFONO_PLUGIN_DEFINE(bluez5, "BlueZ 5 Utils Plugin", VERSION,
 			OFONO_PLUGIN_PRIORITY_DEFAULT, NULL, NULL)
