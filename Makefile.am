@@ -482,6 +482,7 @@ builtin_modules += sim900
 builtin_sources += plugins/sim900.c
 
 if BLUETOOTH
+if BLUEZ4
 builtin_modules += bluetooth
 builtin_sources += plugins/bluetooth.c plugins/bluetooth.h
 
@@ -506,6 +507,7 @@ builtin_sources += plugins/connman.c
 builtin_sources += $(btio_sources)
 builtin_cflags += @BLUEZ_CFLAGS@
 builtin_libadd += @BLUEZ_LIBS@
+endif
 endif
 endif
 
@@ -896,6 +898,8 @@ tools_stktest_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
 endif
 endif
 
+if BLUETOOTH
+if BLUEZ4
 if DUNDEE
 sbin_PROGRAMS += dundee/dundee
 
@@ -913,7 +917,8 @@ if SYSTEMD
 systemdunit_DATA += dundee/dundee.service
 endif
 endif
-
+endif
+endif
 endif
 
 noinst_PROGRAMS += gatchat/gsmdial gatchat/test-server gatchat/test-qcdm

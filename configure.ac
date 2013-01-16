@@ -178,14 +178,22 @@ AC_ARG_ENABLE(qmimodem, AC_HELP_STRING([--disable-qmimodem],
 AM_CONDITIONAL(QMIMODEM, test "${enable_qmimodem}" != "no")
 
 AC_ARG_ENABLE(bluetooth, AC_HELP_STRING([--disable-bluetooth],
-				[disable Bluetooth modem support]),
+				[disable BlueZ 4 and BlueZ 5 plugins support]),
 					[enable_bluetooth=${enableval}])
-if (test "${enable_bluetooth}" != "no"); then
-	PKG_CHECK_MODULES(BLUEZ, bluez >= 4.99, dummy=yes,
-			AC_MSG_ERROR(Bluetooth library >= 4.99 is required))
+
+AC_ARG_ENABLE(bluez4, AC_HELP_STRING([--enable-bluez4],
+				[enable BlueZ 4 plugins support prior to BlueZ 5]),
+					[enable_bluez4=${enableval}])
+
+if (test "${enable_bluez4}" = "yes"); then
+	PKG_CHECK_MODULES(BLUEZ, bluez >= 4.99 bluez < 5,
+			  enable_bluez4=yes,
+			  AC_MSG_ERROR(Bluetooth library >= 4.99 and < 5 is required))
+	AC_SUBST(BLUEZ_CFLAGS)
+	AC_SUBST(BLUEZ_LIBS)
 fi
-AC_SUBST(BLUEZ_CFLAGS)
-AC_SUBST(BLUEZ_LIBS)
+
+AM_CONDITIONAL(BLUEZ4, test "${enable_bluetooth}" != "no" && test "${enable_bluez4}" = "yes")
 AM_CONDITIONAL(BLUETOOTH, test "${enable_bluetooth}" != "no")
 
 AC_ARG_ENABLE(cares, AC_HELP_STRING([--disable-cares],
