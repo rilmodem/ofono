@@ -67,6 +67,11 @@ void hfp_slc_info_init(struct hfp_slc_info *info, guint16 version)
 	info->hf_features |= HFP_HF_FEATURE_ENHANCED_CALL_STATUS;
 	info->hf_features |= HFP_HF_FEATURE_ENHANCED_CALL_CONTROL;
 
+	if (version < HFP_VERSION_1_6)
+		goto done;
+
+	info->hf_features |= HFP_HF_FEATURE_CODEC_NEGOTIATION;
+
 done:
 	memset(info->cind_val, 0, sizeof(info->cind_val));
 	memset(info->cind_pos, 0, sizeof(info->cind_pos));
@@ -266,6 +271,21 @@ error:
 	slc_failed(sed);
 }
 
+static void bac_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct slc_establish_data *sed = user_data;
+	struct hfp_slc_info *info = sed->info;
+
+	if (!ok) {
+		slc_failed(sed);
+		return;
+	}
+
+	slc_establish_data_ref(sed);
+	g_at_chat_send(info->chat, "AT+CIND=?", cind_prefix,
+				cind_cb, sed, slc_establish_data_unref);
+}
+
 static void brsf_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct slc_establish_data *sed = user_data;
@@ -281,6 +301,15 @@ static void brsf_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		goto error;
 
 	g_at_result_iter_next_number(&iter, (gint *)&info->ag_features);
+
+	if (info->ag_features & HFP_AG_FEATURE_CODEC_NEGOTIATION &&
+			info->hf_features & HFP_HF_FEATURE_CODEC_NEGOTIATION) {
+
+		slc_establish_data_ref(sed);
+		g_at_chat_send(info->chat, "AT+BAC=1", NULL, bac_cb, sed,
+						slc_establish_data_unref);
+		return;
+	}
 
 	slc_establish_data_ref(sed);
 	g_at_chat_send(info->chat, "AT+CIND=?", cind_prefix,
