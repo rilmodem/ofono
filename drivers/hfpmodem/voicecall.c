@@ -205,6 +205,7 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_call *nc, *oc;
 	unsigned int num_active = 0;
 	unsigned int num_held = 0;
+	GSList *notify_calls = NULL;
 
 	if (!ok)
 		return;
@@ -242,7 +243,7 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		} else if (nc && (oc == NULL || (nc->id < oc->id))) {
 			/* new call, signal it */
 			if (nc->type == 0)
-				ofono_voicecall_notify(vc, nc);
+				notify_calls = g_slist_append(notify_calls, nc);
 
 			n = n->next;
 		} else {
@@ -257,12 +258,21 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 			if (memcmp(nc, oc, sizeof(struct ofono_call)) &&
 					!nc->type)
-				ofono_voicecall_notify(vc, nc);
+				notify_calls = g_slist_prepend(notify_calls,
+									nc);
 
 			n = n->next;
 			o = o->next;
 		}
 	}
+
+	/*
+	 * Disconnections were already reported, so process the rest of the
+	 * notifications. Note that the new calls are placed at the end of the
+	 * list, after other state changes
+	 */
+	g_slist_foreach(notify_calls, voicecall_notify, vc);
+	g_slist_free(notify_calls);
 
 	g_slist_foreach(vd->calls, (GFunc) g_free, NULL);
 	g_slist_free(vd->calls);
