@@ -207,6 +207,14 @@ static void cfun_query(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_next_number(&iter, &status);
 
+	g_at_chat_send(data->modem_port, "AT&F E0 V1 X4 &C0 +CMEE=1", NULL,
+					NULL, NULL, NULL);
+	g_at_chat_send(data->data_port, "AT&F E0 V1 X4 &C0 +CMEE=1", NULL,
+					NULL, NULL, NULL);
+
+	g_at_chat_send(data->modem_port, "AT*E2CFUN=1", none_prefix,
+					NULL, NULL, NULL);
+
 	if (status != 4) {
 		g_at_chat_send(data->modem_port, "AT+CFUN=4", none_prefix,
 				cfun_enable, modem, NULL);
@@ -331,13 +339,6 @@ static int mbm_enable(struct ofono_modem *modem)
 	g_at_chat_register(data->modem_port, "*EMRDY:", emrdy_notifier,
 					FALSE, modem, NULL);
 
-	g_at_chat_send(data->modem_port, "AT&F E0 V1 X4 &C0 +CMEE=1", NULL,
-					NULL, NULL, NULL);
-	g_at_chat_send(data->data_port, "AT&F E0 V1 X4 &C0 +CMEE=1", NULL,
-					NULL, NULL, NULL);
-
-	g_at_chat_send(data->modem_port, "AT*E2CFUN=1", none_prefix,
-					NULL, NULL, NULL);
 	g_at_chat_send(data->modem_port, "AT*EMRDY?", none_prefix,
 				emrdy_query, modem, NULL);
 
