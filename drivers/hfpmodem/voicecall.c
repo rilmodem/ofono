@@ -503,6 +503,11 @@ static void release_all_active_cb(gboolean ok, GAtResult *result,
 	if (vd->expect_release_source)
 		g_source_remove(vd->expect_release_source);
 
+	/*
+	 * Some phones, like Nokia 500, do not send CIEV after accepting
+	 * the CHLD=1 command, even though the spec states that they should.
+	 * So simply poll to force the status update if the AG is misbehaving.
+	 */
 	vd->expect_release_source = g_timeout_add(EXPECT_RELEASE_DELAY,
 							expect_release,
 							req->vc);
