@@ -1715,8 +1715,21 @@ static void cind_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (nd->signal_index == 0)
 		goto error;
 
-	g_at_chat_send(nd->chat, "AT+CMER=?", cmer_prefix,
+	switch (nd->vendor) {
+	case OFONO_VENDOR_MBM:
+		/*
+		 * MBM devices report 'CMER: (0,3),(0,2),0,(0-1),0' when
+		 * +CMER=? is executed, which cannot be parsed.  Simply
+		 * send the desired settings in this case.
+		 */
+		g_at_chat_send(nd->chat, "AT+CMER=3,0,0,1", none_prefix,
+				at_cmer_set_cb, netreg, NULL);
+		break;
+	default:
+		g_at_chat_send(nd->chat, "AT+CMER=?", cmer_prefix,
 				at_cmer_query_cb, netreg, NULL);
+		break;
+	}
 
 	return;
 
