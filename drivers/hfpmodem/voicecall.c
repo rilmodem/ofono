@@ -91,6 +91,14 @@ static GSList *find_dialing(GSList *calls)
 	return c;
 }
 
+static void voicecall_notify(gpointer value, gpointer user)
+{
+	struct ofono_call *call = value;
+	struct ofono_voicecall *vc = user;
+
+	ofono_voicecall_notify(vc, call);
+}
+
 static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 					int direction, int status,
 					const char *num, int num_type, int clip)
@@ -1029,15 +1037,13 @@ static void hfp_clcc_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	GSList *l;
 
 	if (!ok)
 		return;
 
 	vd->calls = at_util_parse_clcc(result);
 
-	for (l = vd->calls; l; l = l->next)
-		ofono_voicecall_notify(vc, l->data);
+	g_slist_foreach(vd->calls, voicecall_notify, vc);
 }
 
 static void hfp_voicecall_initialized(gboolean ok, GAtResult *result,
