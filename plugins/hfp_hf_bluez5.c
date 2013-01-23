@@ -42,6 +42,7 @@
 
 #define HFP_EXT_PROFILE_PATH   "/bluetooth/profile/hfp_hf"
 
+static GHashTable *devices_proxies = NULL;
 static GDBusClient *bluez = NULL;
 
 static int hfp_probe(struct ofono_modem *modem)
@@ -155,20 +156,31 @@ static void connect_handler(DBusConnection *conn, void *user_data)
 
 static void proxy_added(GDBusProxy *proxy, void *user_data)
 {
-	const char *path;
+	const char *interface, *path;
 
+	interface = g_dbus_proxy_get_interface(proxy);
 	path = g_dbus_proxy_get_path(proxy);
 
+	if (g_str_equal(BLUEZ_DEVICE_INTERFACE, interface) == FALSE)
+		return;
+
+	g_hash_table_insert(devices_proxies, g_strdup(path),
+						g_dbus_proxy_ref(proxy));
 	DBG("Device proxy: %s(%p)", path, proxy);
 }
 
 static void proxy_removed(GDBusProxy *proxy, void *user_data)
 {
-	const char *path;
+	const char *interface, *path;
 
+	interface = g_dbus_proxy_get_interface(proxy);
 	path = g_dbus_proxy_get_path(proxy);
 
-	DBG("Device proxy: %s(%p)", path, proxy);
+	if (g_str_equal(BLUEZ_DEVICE_INTERFACE, interface)) {
+		g_hash_table_remove(devices_proxies, path);
+		DBG("Device proxy: %s(%p)", path, proxy);
+	}
+
 }
 
 static void property_changed(GDBusProxy *proxy, const char *name,
@@ -215,6 +227,9 @@ static int hfp_init(void)
 		return -ENOMEM;
 	}
 
+	devices_proxies = g_hash_table_new_full(g_str_hash, g_str_equal,
+				g_free, (GDestroyNotify) g_dbus_proxy_unref);
+
 	g_dbus_client_set_connect_watch(bluez, connect_handler, NULL);
 	g_dbus_client_set_proxy_handlers(bluez, proxy_added, proxy_removed,
 						property_changed, NULL);
@@ -231,6 +246,8 @@ static void hfp_exit(void)
 						BLUEZ_PROFILE_INTERFACE);
 	ofono_modem_driver_unregister(&hfp_driver);
 	g_dbus_client_unref(bluez);
+
+	g_hash_table_destroy(devices_proxies);
 }
 
 OFONO_PLUGIN_DEFINE(hfp_bluez5, "External Hands-Free Profile Plugin", VERSION,
