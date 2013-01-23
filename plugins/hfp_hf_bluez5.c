@@ -258,12 +258,28 @@ static void proxy_removed(GDBusProxy *proxy, void *user_data)
 static void property_changed(GDBusProxy *proxy, const char *name,
 					DBusMessageIter *iter, void *user_data)
 {
-	const char *interface, *path;
+	const char *interface, *path, *alias;
+	struct ofono_modem *modem;
+	DBusMessageIter alias_iter;
 
 	interface = g_dbus_proxy_get_interface(proxy);
 	path = g_dbus_proxy_get_path(proxy);
 
 	DBG("path: %s interface: %s", path, interface);
+
+	if (g_str_equal(BLUEZ_DEVICE_INTERFACE, interface) == FALSE)
+		return;
+
+	if (g_dbus_proxy_get_property(proxy, "Alias", &alias_iter) == FALSE)
+		return;
+
+	dbus_message_iter_get_basic(&alias_iter, &alias);
+
+	modem = g_hash_table_lookup(modem_hash, path);
+	if (modem == NULL)
+		return;
+
+	ofono_modem_set_name(modem, alias);
 }
 
 static int hfp_init(void)
