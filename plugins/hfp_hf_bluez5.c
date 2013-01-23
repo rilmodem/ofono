@@ -24,6 +24,8 @@
 #endif
 
 #include <errno.h>
+#include <unistd.h>
+
 #include <glib.h>
 
 #include <gdbus.h>
@@ -124,11 +126,54 @@ static struct ofono_modem_driver hfp_driver = {
 static DBusMessage *profile_new_connection(DBusConnection *conn,
 					DBusMessage *msg, void *user_data)
 {
+	struct ofono_modem *modem;
+	DBusMessageIter iter;
+	GDBusProxy *proxy;
+	DBusMessageIter entry;
+	const char *device, *alias;
+	int fd;
+
 	DBG("Profile handler NewConnection");
 
-	return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
-					".NotImplemented",
-					"Implementation not provided");
+	if (dbus_message_iter_init(msg, &entry) == FALSE)
+		goto invalid;
+
+	if (dbus_message_iter_get_arg_type(&entry) != DBUS_TYPE_OBJECT_PATH)
+		goto invalid;
+
+	dbus_message_iter_get_basic(&entry, &device);
+
+	proxy = g_hash_table_lookup(devices_proxies, device);
+	if (proxy == NULL)
+		return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
+					".Rejected",
+					"Unknown Bluetooth device");
+
+	g_dbus_proxy_get_property(proxy, "Alias", &iter);
+
+	dbus_message_iter_get_basic(&iter, &alias);
+
+	dbus_message_iter_next(&entry);
+	if (dbus_message_iter_get_arg_type(&entry) != DBUS_TYPE_UNIX_FD)
+		goto invalid;
+
+	dbus_message_iter_get_basic(&entry, &fd);
+	if (fd < 0)
+		goto invalid;
+
+	modem = modem_register(device, alias);
+	if (modem == NULL) {
+		close(fd);
+		return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
+					".Rejected",
+					"Could not register HFP modem");
+	}
+
+	return NULL;
+
+invalid:
+	return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE ".Rejected",
+					"Invalid arguments in method call");
 }
 
 static DBusMessage *profile_release(DBusConnection *conn,
