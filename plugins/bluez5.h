@@ -26,6 +26,7 @@
 #define BLUEZ_ERROR_INTERFACE		BLUEZ_SERVICE ".Error"
 
 #define HFP_HS_UUID	"0000111e-0000-1000-8000-00805f9b34fb"
+#define HFP_AG_UUID	"0000111f-0000-1000-8000-00805f9b34fb"
 
 int bluetooth_register_profile(DBusConnection *conn, const char *uuid,
 					const char *name, const char *object);
