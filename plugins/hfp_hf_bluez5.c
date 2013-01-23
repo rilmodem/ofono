@@ -42,8 +42,36 @@
 
 #define HFP_EXT_PROFILE_PATH   "/bluetooth/profile/hfp_hf"
 
+static GHashTable *modem_hash = NULL;
 static GHashTable *devices_proxies = NULL;
 static GDBusClient *bluez = NULL;
+
+static struct ofono_modem *modem_register(const char *device,
+						const char *alias)
+{
+	struct ofono_modem *modem;
+	char *path;
+
+	modem = g_hash_table_lookup(modem_hash, device);
+	if (modem != NULL)
+		return modem;
+
+	path = g_strconcat("hfp", device, NULL);
+
+	modem = ofono_modem_create(path, "hfp");
+
+	g_free(path);
+
+	if (modem == NULL)
+		return NULL;
+
+	ofono_modem_set_name(modem, alias);
+	ofono_modem_register(modem);
+
+	g_hash_table_insert(modem_hash, g_strdup(device), modem);
+
+	return modem;
+}
 
 static int hfp_probe(struct ofono_modem *modem)
 {
@@ -154,9 +182,33 @@ static void connect_handler(DBusConnection *conn, void *user_data)
 						HFP_EXT_PROFILE_PATH);
 }
 
+static gboolean has_hfp_ag_uuid(DBusMessageIter *array)
+{
+	DBusMessageIter value;
+
+	if (dbus_message_iter_get_arg_type(array) != DBUS_TYPE_ARRAY)
+		return FALSE;
+
+	dbus_message_iter_recurse(array, &value);
+
+	while (dbus_message_iter_get_arg_type(&value) == DBUS_TYPE_STRING) {
+		const char *uuid;
+
+		dbus_message_iter_get_basic(&value, &uuid);
+
+		if (g_str_equal(uuid, HFP_AG_UUID) == TRUE)
+			return TRUE;
+
+		dbus_message_iter_next(&value);
+	}
+
+	return FALSE;
+}
+
 static void proxy_added(GDBusProxy *proxy, void *user_data)
 {
-	const char *interface, *path;
+	const char *interface, *path, *alias;
+	DBusMessageIter iter;
 
 	interface = g_dbus_proxy_get_interface(proxy);
 	path = g_dbus_proxy_get_path(proxy);
@@ -167,11 +219,25 @@ static void proxy_added(GDBusProxy *proxy, void *user_data)
 	g_hash_table_insert(devices_proxies, g_strdup(path),
 						g_dbus_proxy_ref(proxy));
 	DBG("Device proxy: %s(%p)", path, proxy);
+
+	if (g_dbus_proxy_get_property(proxy, "UUIDs", &iter) == FALSE)
+		return;
+
+	if (has_hfp_ag_uuid(&iter) == FALSE)
+		return;
+
+	if (g_dbus_proxy_get_property(proxy, "Alias", &iter) == FALSE)
+		return;
+
+	dbus_message_iter_get_basic(&iter, &alias);
+
+	modem_register(path, alias);
 }
 
 static void proxy_removed(GDBusProxy *proxy, void *user_data)
 {
 	const char *interface, *path;
+	struct ofono_modem *modem;
 
 	interface = g_dbus_proxy_get_interface(proxy);
 	path = g_dbus_proxy_get_path(proxy);
@@ -181,6 +247,12 @@ static void proxy_removed(GDBusProxy *proxy, void *user_data)
 		DBG("Device proxy: %s(%p)", path, proxy);
 	}
 
+	modem = g_hash_table_lookup(modem_hash, path);
+	if (modem == NULL)
+		return;
+
+	g_hash_table_remove(modem_hash, path);
+	ofono_modem_remove(modem);
 }
 
 static void property_changed(GDBusProxy *proxy, const char *name,
@@ -227,6 +299,9 @@ static int hfp_init(void)
 		return -ENOMEM;
 	}
 
+	modem_hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
+								NULL);
+
 	devices_proxies = g_hash_table_new_full(g_str_hash, g_str_equal,
 				g_free, (GDestroyNotify) g_dbus_proxy_unref);
 
@@ -247,6 +322,7 @@ static void hfp_exit(void)
 	ofono_modem_driver_unregister(&hfp_driver);
 	g_dbus_client_unref(bluez);
 
+	g_hash_table_destroy(modem_hash);
 	g_hash_table_destroy(devices_proxies);
 }
 
