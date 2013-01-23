@@ -24,17 +24,27 @@
 #endif
 
 #include <errno.h>
+#include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 #include <glib.h>
 
 #include <gdbus.h>
+#include <gatchat.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/modem.h>
 #include <ofono/dbus.h>
 #include <ofono/plugin.h>
 #include <ofono/log.h>
+#include <ofono/devinfo.h>
+#include <ofono/netreg.h>
+#include <ofono/voicecall.h>
+#include <ofono/call-volume.h>
+#include <ofono/handsfree.h>
+
+#include <drivers/hfpmodem/slc.h>
 
 #include "bluez5.h"
 
@@ -44,12 +54,115 @@
 
 #define HFP_EXT_PROFILE_PATH   "/bluetooth/profile/hfp_hf"
 
+struct hfp {
+	struct hfp_slc_info info;
+	DBusMessage *msg;
+};
+
 static GHashTable *modem_hash = NULL;
 static GHashTable *devices_proxies = NULL;
 static GDBusClient *bluez = NULL;
 
+static void hfp_debug(const char *str, void *user_data)
+{
+	const char *prefix = user_data;
+
+	ofono_info("%s%s", prefix, str);
+}
+
+static void slc_established(gpointer userdata)
+{
+	struct ofono_modem *modem = userdata;
+	struct hfp *hfp = ofono_modem_get_data(modem);
+	DBusMessage *msg;
+
+	ofono_modem_set_powered(modem, TRUE);
+
+	msg = dbus_message_new_method_return(hfp->msg);
+	g_dbus_send_message(ofono_dbus_get_connection(), msg);
+	dbus_message_unref(hfp->msg);
+	hfp->msg = NULL;
+
+	ofono_info("Service level connection established");
+}
+
+static void slc_failed(gpointer userdata)
+{
+	struct ofono_modem *modem = userdata;
+	struct hfp *hfp = ofono_modem_get_data(modem);
+	struct hfp_slc_info *info = &hfp->info;
+	DBusMessage *msg;
+
+	msg = g_dbus_create_error(hfp->msg, BLUEZ_ERROR_INTERFACE
+						".Failed",
+						"HFP Handshake failed");
+
+	g_dbus_send_message(ofono_dbus_get_connection(), msg);
+	dbus_message_unref(hfp->msg);
+	hfp->msg = NULL;
+
+	ofono_error("Service level connection failed");
+	ofono_modem_set_powered(modem, FALSE);
+
+	g_at_chat_unref(info->chat);
+	info->chat = NULL;
+}
+
+static void hfp_disconnected_cb(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct hfp *hfp = ofono_modem_get_data(modem);
+	struct hfp_slc_info *info = &hfp->info;
+
+	DBG("HFP disconnected");
+
+	ofono_modem_set_powered(modem, FALSE);
+
+	g_at_chat_unref(info->chat);
+	info->chat = NULL;
+}
+
+static int service_level_connection(struct ofono_modem *modem,
+						int fd, guint16 version)
+{
+	struct hfp *hfp = ofono_modem_get_data(modem);
+	struct hfp_slc_info *info = &hfp->info;
+	GIOChannel *io;
+	GAtSyntax *syntax;
+	GAtChat *chat;
+
+	io = g_io_channel_unix_new(fd);
+	if (io == NULL) {
+		ofono_error("Service level connection failed: %s (%d)",
+						strerror(errno), errno);
+		return -EIO;
+	}
+
+	syntax = g_at_syntax_new_gsm_permissive();
+	chat = g_at_chat_new(io, syntax);
+	g_at_syntax_unref(syntax);
+
+	g_io_channel_set_close_on_unref(io, TRUE);
+	g_io_channel_unref(io);
+
+	if (chat == NULL)
+		return -ENOMEM;
+
+	g_at_chat_set_disconnect_function(chat, hfp_disconnected_cb, modem);
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(chat, hfp_debug, "");
+
+	hfp_slc_info_init(info, version);
+	info->chat = chat;
+
+	hfp_slc_establish(info, slc_established, slc_failed, modem);
+
+	return -EINPROGRESS;
+}
+
 static struct ofono_modem *modem_register(const char *device,
-						const char *alias)
+				const char *device_address, const char *alias)
 {
 	struct ofono_modem *modem;
 	char *path;
@@ -67,6 +180,8 @@ static struct ofono_modem *modem_register(const char *device,
 	if (modem == NULL)
 		return NULL;
 
+	ofono_modem_set_string(modem, "Address", device_address);
+
 	ofono_modem_set_name(modem, alias);
 	ofono_modem_register(modem);
 
@@ -77,14 +192,32 @@ static struct ofono_modem *modem_register(const char *device,
 
 static int hfp_probe(struct ofono_modem *modem)
 {
+	struct hfp *hfp;
+
 	DBG("modem: %p", modem);
+
+	hfp = g_new0(struct hfp, 1);
+
+	ofono_modem_set_data(modem, hfp);
 
 	return 0;
 }
 
 static void hfp_remove(struct ofono_modem *modem)
 {
+	struct hfp *hfp = ofono_modem_get_data(modem);
+	struct hfp_slc_info *info = &hfp->info;
+
 	DBG("modem: %p", modem);
+
+	if (hfp->msg)
+		dbus_message_unref(hfp->msg);
+
+	g_at_chat_unref(info->chat);
+
+	g_free(hfp);
+
+	ofono_modem_set_data(modem, NULL);
 }
 
 /* power up hardware */
@@ -104,7 +237,16 @@ static int hfp_disable(struct ofono_modem *modem)
 
 static void hfp_pre_sim(struct ofono_modem *modem)
 {
+	struct hfp *hfp = ofono_modem_get_data(modem);
+	char *address = (char *) ofono_modem_get_string(modem, "Address");
+
 	DBG("%p", modem);
+
+	ofono_devinfo_create(modem, 0, "hfpmodem", address);
+	ofono_voicecall_create(modem, 0, "hfpmodem", &hfp->info);
+	ofono_netreg_create(modem, 0, "hfpmodem", &hfp->info);
+	ofono_handsfree_create(modem, 0, "hfpmodem", &hfp->info);
+	ofono_call_volume_create(modem, 0, "hfpmodem", &hfp->info);
 }
 
 static void hfp_post_sim(struct ofono_modem *modem)
@@ -126,12 +268,13 @@ static struct ofono_modem_driver hfp_driver = {
 static DBusMessage *profile_new_connection(DBusConnection *conn,
 					DBusMessage *msg, void *user_data)
 {
+	struct hfp *hfp;
 	struct ofono_modem *modem;
 	DBusMessageIter iter;
 	GDBusProxy *proxy;
 	DBusMessageIter entry;
-	const char *device, *alias;
-	int fd;
+	const char *device, *alias, *address;
+	int fd, err;
 
 	DBG("Profile handler NewConnection");
 
@@ -153,6 +296,11 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 
 	dbus_message_iter_get_basic(&iter, &alias);
 
+	if (g_dbus_proxy_get_property(proxy, "Address", &iter) == FALSE)
+		goto invalid;
+
+	dbus_message_iter_get_basic(&iter, &address);
+
 	dbus_message_iter_next(&entry);
 	if (dbus_message_iter_get_arg_type(&entry) != DBUS_TYPE_UNIX_FD)
 		goto invalid;
@@ -161,13 +309,22 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 	if (fd < 0)
 		goto invalid;
 
-	modem = modem_register(device, alias);
+	modem = modem_register(device, address, alias);
 	if (modem == NULL) {
 		close(fd);
 		return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
 					".Rejected",
 					"Could not register HFP modem");
 	}
+
+	err = service_level_connection(modem, fd, HFP_VERSION_LATEST);
+	if (err < 0 && err != -EINPROGRESS)
+		return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
+					".Rejected",
+					"Not enough resources");
+
+	hfp = ofono_modem_get_data(modem);
+	hfp->msg = dbus_message_ref(msg);
 
 	return NULL;
 
@@ -252,7 +409,7 @@ static gboolean has_hfp_ag_uuid(DBusMessageIter *array)
 
 static void proxy_added(GDBusProxy *proxy, void *user_data)
 {
-	const char *interface, *path, *alias;
+	const char *interface, *path, *alias, *address;
 	DBusMessageIter iter;
 
 	interface = g_dbus_proxy_get_interface(proxy);
@@ -276,7 +433,13 @@ static void proxy_added(GDBusProxy *proxy, void *user_data)
 
 	dbus_message_iter_get_basic(&iter, &alias);
 
-	modem_register(path, alias);
+
+	if (g_dbus_proxy_get_property(proxy, "Address", &iter) == FALSE)
+		return;
+
+	dbus_message_iter_get_basic(&iter, &address);
+
+	modem_register(path, address, alias);
 }
 
 static void proxy_removed(GDBusProxy *proxy, void *user_data)
