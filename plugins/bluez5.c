@@ -130,7 +130,7 @@ void bluetooth_unregister_profile(DBusConnection *conn, const char *object)
 	dbus_message_iter_append_basic(&iter, DBUS_TYPE_OBJECT_PATH, &object);
 
 	if (!dbus_connection_send_with_reply(conn, msg, &c, -1)) {
-		ofono_error("Sending RegisterProfile failed");
+		ofono_error("Sending UnregisterProfile failed");
 		dbus_message_unref(msg);
 		return;
 	}
