@@ -56,6 +56,8 @@ struct sockaddr_sco {
 	bdaddr_t	sco_bdaddr;
 };
 
+void bt_bacpy(bdaddr_t *dst, const bdaddr_t *src);
+
 int bluetooth_register_profile(DBusConnection *conn, const char *uuid,
 					const char *name, const char *object);
 
