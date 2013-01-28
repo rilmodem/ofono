@@ -60,6 +60,8 @@ void bt_bacpy(bdaddr_t *dst, const bdaddr_t *src);
 
 int bt_ba2str(const bdaddr_t *ba, char *str);
 
+int bt_bacmp(const bdaddr_t *ba1, const bdaddr_t *ba2);
+
 int bluetooth_register_profile(DBusConnection *conn, const char *uuid,
 					const char *name, const char *object);
 
