@@ -24,6 +24,9 @@
 #endif
 
 #include <errno.h>
+#include <stdint.h>
+#include <sys/socket.h>
+
 #include <glib.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE

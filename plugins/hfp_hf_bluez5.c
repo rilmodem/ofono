@@ -24,9 +24,11 @@
 #endif
 
 #include <errno.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/socket.h>
 
 #include <glib.h>
 

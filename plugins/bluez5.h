@@ -28,6 +28,34 @@
 #define HFP_HS_UUID	"0000111e-0000-1000-8000-00805f9b34fb"
 #define HFP_AG_UUID	"0000111f-0000-1000-8000-00805f9b34fb"
 
+#ifndef AF_BLUETOOTH
+#define AF_BLUETOOTH		31
+#define PF_BLUETOOTH		AF_BLUETOOTH
+#endif
+
+#define BTPROTO_SCO		2
+
+#define SOL_SCO			17
+
+#ifndef SOL_BLUETOOTH
+#define SOL_BLUETOOTH		274
+#endif
+
+#define BT_DEFER_SETUP		7
+
+/* BD Address */
+typedef struct {
+	uint8_t b[6];
+} __attribute__((packed)) bdaddr_t;
+
+#define BDADDR_ANY   (&(bdaddr_t) {{0, 0, 0, 0, 0, 0}})
+
+/* SCO socket address */
+struct sockaddr_sco {
+	sa_family_t	sco_family;
+	bdaddr_t	sco_bdaddr;
+};
+
 int bluetooth_register_profile(DBusConnection *conn, const char *uuid,
 					const char *name, const char *object);
 
