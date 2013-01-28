@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <fcntl.h>
 #include <sys/socket.h>
 
 #include <glib.h>
@@ -64,6 +65,7 @@ struct hfp {
 static GHashTable *modem_hash = NULL;
 static GHashTable *devices_proxies = NULL;
 static GDBusClient *bluez = NULL;
+static guint sco_watch = 0;
 
 static void hfp_debug(const char *str, void *user_data)
 {
@@ -378,6 +380,71 @@ static const GDBusMethodTable profile_methods[] = {
 	{ }
 };
 
+static gboolean sco_accept(GIOChannel *io, GIOCondition cond,
+							gpointer user_data)
+{
+	struct sockaddr_sco saddr;
+	socklen_t alen;
+	int sk, nsk;
+
+	if (cond & (G_IO_ERR | G_IO_HUP | G_IO_NVAL))
+		return FALSE;
+
+	sk = g_io_channel_unix_get_fd(io);
+
+	memset(&saddr, 0, sizeof(saddr));
+	alen = sizeof(saddr);
+
+	nsk = accept(sk, (struct sockaddr *) &saddr, &alen);
+	if (nsk < 0)
+		return TRUE;
+
+	/* TODO: Verify if the device has a modem */
+
+	return TRUE;
+}
+
+static int sco_init(void)
+{
+	GIOChannel *sco_io;
+	struct sockaddr_sco saddr;
+	int sk, defer_setup = 1;
+
+	sk = socket(PF_BLUETOOTH, SOCK_SEQPACKET | O_NONBLOCK | SOCK_CLOEXEC,
+								BTPROTO_SCO);
+	if (sk < 0)
+		return -errno;
+
+	/* Bind to local address */
+	memset(&saddr, 0, sizeof(saddr));
+	saddr.sco_family = AF_BLUETOOTH;
+	bt_bacpy(&saddr.sco_bdaddr, BDADDR_ANY);
+
+	if (bind(sk, (struct sockaddr *) &saddr, sizeof(saddr)) < 0) {
+		close(sk);
+		return -errno;
+	}
+
+	if (setsockopt(sk, SOL_BLUETOOTH, BT_DEFER_SETUP,
+				&defer_setup, sizeof(defer_setup)) < 0)
+		ofono_warn("Can't enable deferred setup: %s (%d)",
+						strerror(errno), errno);
+
+	if (listen(sk, 5) < 0) {
+		close(sk);
+		return -errno;
+	}
+
+	sco_io = g_io_channel_unix_new(sk);
+	sco_watch = g_io_add_watch(sco_io,
+				G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_NVAL,
+				sco_accept, NULL);
+
+	g_io_channel_unref(sco_io);
+
+	return 0;
+}
+
 static void connect_handler(DBusConnection *conn, void *user_data)
 {
 	DBG("Registering External Profile handler ...");
@@ -500,6 +567,12 @@ static int hfp_init(void)
 	if (DBUS_TYPE_UNIX_FD < 0)
 		return -EBADF;
 
+	err = sco_init();
+	if (err < 0) {
+		ofono_error("SCO: %s(%d)", strerror(-err), -err);
+		return err;
+	}
+
 	/* Registers External Profile handler */
 	if (!g_dbus_register_interface(conn, HFP_EXT_PROFILE_PATH,
 					BLUEZ_PROFILE_INTERFACE,
@@ -550,6 +623,9 @@ static void hfp_exit(void)
 
 	g_hash_table_destroy(modem_hash);
 	g_hash_table_destroy(devices_proxies);
+
+	if (sco_watch > 0)
+		g_source_remove(sco_watch);
 }
 
 OFONO_PLUGIN_DEFINE(hfp_bluez5, "External Hands-Free Profile Plugin", VERSION,
