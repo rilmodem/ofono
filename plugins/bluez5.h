@@ -50,6 +50,13 @@ typedef struct {
 
 #define BDADDR_ANY   (&(bdaddr_t) {{0, 0, 0, 0, 0, 0}})
 
+/* RFCOMM socket address */
+struct sockaddr_rc {
+	sa_family_t	rc_family;
+	bdaddr_t	rc_bdaddr;
+	uint8_t		rc_channel;
+};
+
 /* SCO socket address */
 struct sockaddr_sco {
 	sa_family_t	sco_family;
