@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <sys/socket.h>
+#include <string.h>
 
 #include <glib.h>
 
@@ -38,6 +39,11 @@
 #include "bluez5.h"
 
 #define BLUEZ_PROFILE_MGMT_INTERFACE   BLUEZ_SERVICE ".ProfileManager1"
+
+void bt_bacpy(bdaddr_t *dst, const bdaddr_t *src)
+{
+	memcpy(dst, src, sizeof(bdaddr_t));
+}
 
 static void profile_register_cb(DBusPendingCall *call, gpointer user_data)
 {
