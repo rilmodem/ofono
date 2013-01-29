@@ -213,5 +213,6 @@ static void hfp_ag_exit(void)
 	}
 }
 
-OFONO_PLUGIN_DEFINE(hfp_ag, "Hands-Free Audio Gateway Profile Plugins", VERSION,
-			OFONO_PLUGIN_PRIORITY_DEFAULT, hfp_ag_init, hfp_ag_exit)
+OFONO_PLUGIN_DEFINE(hfp_ag_bluez4, "Hands-Free Audio Gateway Profile Plugins",
+				VERSION, OFONO_PLUGIN_PRIORITY_DEFAULT,
+				hfp_ag_init, hfp_ag_exit)
