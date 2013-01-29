@@ -185,7 +185,7 @@ static struct ofono_modem *modem_register(const char *device,
 	if (modem == NULL)
 		return NULL;
 
-	ofono_modem_set_string(modem, "Address", device_address);
+	ofono_modem_set_string(modem, "Remote", device_address);
 
 	ofono_modem_set_name(modem, alias);
 	ofono_modem_register(modem);
@@ -243,7 +243,7 @@ static int hfp_disable(struct ofono_modem *modem)
 static void hfp_pre_sim(struct ofono_modem *modem)
 {
 	struct hfp *hfp = ofono_modem_get_data(modem);
-	char *address = (char *) ofono_modem_get_string(modem, "Address");
+	char *address = (char *) ofono_modem_get_string(modem, "Remote");
 
 	DBG("%p", modem);
 
