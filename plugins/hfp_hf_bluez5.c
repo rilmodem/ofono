@@ -323,10 +323,12 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 	}
 
 	err = service_level_connection(modem, fd, HFP_VERSION_LATEST);
-	if (err < 0 && err != -EINPROGRESS)
+	if (err < 0 && err != -EINPROGRESS) {
+		close(fd);
 		return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
 					".Rejected",
 					"Not enough resources");
+	}
 
 	hfp = ofono_modem_get_data(modem);
 	hfp->msg = dbus_message_ref(msg);
