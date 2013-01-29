@@ -495,8 +495,8 @@ builtin_sources += plugins/sap.c plugins/bluez4.h
 builtin_modules += hfp_bluez4
 builtin_sources += plugins/hfp_hf_bluez4.c plugins/bluez4.h
 
-builtin_modules += hfp_ag
-builtin_sources += plugins/hfp_ag.c plugins/bluez4.h
+builtin_modules += hfp_ag_bluez4
+builtin_sources += plugins/hfp_ag_bluez4.c plugins/bluez4.h
 
 builtin_modules += dun_gw
 builtin_sources += plugins/dun_gw.c plugins/bluez4.h
