@@ -479,20 +479,18 @@ static gboolean has_hfp_ag_uuid(DBusMessageIter *array)
 	return FALSE;
 }
 
-static void proxy_added(GDBusProxy *proxy, void *user_data)
+static void modem_register_from_proxy(GDBusProxy *proxy, const char *path)
 {
-	const char *interface, *path, *alias, *address;
+	const char *alias, *remote;
 	DBusMessageIter iter;
+	dbus_bool_t paired;
 
-	interface = g_dbus_proxy_get_interface(proxy);
-	path = g_dbus_proxy_get_path(proxy);
-
-	if (g_str_equal(BLUEZ_DEVICE_INTERFACE, interface) == FALSE)
+	if (g_dbus_proxy_get_property(proxy, "Paired", &iter) == FALSE)
 		return;
 
-	g_hash_table_insert(devices_proxies, g_strdup(path),
-						g_dbus_proxy_ref(proxy));
-	DBG("Device proxy: %s(%p)", path, proxy);
+	dbus_message_iter_get_basic(&iter, &paired);
+	if (paired == FALSE)
+		return;
 
 	if (g_dbus_proxy_get_property(proxy, "UUIDs", &iter) == FALSE)
 		return;
@@ -509,9 +507,26 @@ static void proxy_added(GDBusProxy *proxy, void *user_data)
 	if (g_dbus_proxy_get_property(proxy, "Address", &iter) == FALSE)
 		return;
 
-	dbus_message_iter_get_basic(&iter, &address);
+	dbus_message_iter_get_basic(&iter, &remote);
 
-	modem_register(path, address, alias);
+	modem_register(path, remote, alias);
+}
+
+static void proxy_added(GDBusProxy *proxy, void *user_data)
+{
+	const char *interface, *path;
+
+	interface = g_dbus_proxy_get_interface(proxy);
+	path = g_dbus_proxy_get_path(proxy);
+
+	if (g_str_equal(BLUEZ_DEVICE_INTERFACE, interface) == FALSE)
+		return;
+
+	g_hash_table_insert(devices_proxies, g_strdup(path),
+						g_dbus_proxy_ref(proxy));
+	DBG("Device proxy: %s(%p)", path, proxy);
+
+	modem_register_from_proxy(proxy, path);
 }
 
 static void proxy_removed(GDBusProxy *proxy, void *user_data)
@@ -538,27 +553,33 @@ static void proxy_removed(GDBusProxy *proxy, void *user_data)
 static void property_changed(GDBusProxy *proxy, const char *name,
 					DBusMessageIter *iter, void *user_data)
 {
-	const char *interface, *path, *alias;
+	const char *interface, *path;
 	struct ofono_modem *modem;
 
 	interface = g_dbus_proxy_get_interface(proxy);
 	path = g_dbus_proxy_get_path(proxy);
 
-	DBG("path: %s interface: %s", path, interface);
-
 	if (g_str_equal(BLUEZ_DEVICE_INTERFACE, interface) == FALSE)
 		return;
 
-	if (g_str_equal("Alias", name) == FALSE)
+	if (g_str_equal("Paired", name) == TRUE) {
+		modem_register_from_proxy(proxy, path);
 		return;
+	}
 
-	dbus_message_iter_get_basic(iter, &alias);
+	if (g_str_equal("Alias", name) == TRUE) {
+		const char *alias;
 
-	modem = g_hash_table_lookup(modem_hash, path);
-	if (modem == NULL)
-		return;
+		dbus_message_iter_get_basic(iter, &alias);
 
-	ofono_modem_set_name(modem, alias);
+		modem = g_hash_table_lookup(modem_hash, path);
+		if (modem == NULL)
+			return;
+
+		DBG("path: %s Alias: %s", path, alias);
+
+		ofono_modem_set_name(modem, alias);
+	}
 }
 
 static int hfp_init(void)
