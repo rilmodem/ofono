@@ -540,7 +540,6 @@ static void property_changed(GDBusProxy *proxy, const char *name,
 {
 	const char *interface, *path, *alias;
 	struct ofono_modem *modem;
-	DBusMessageIter alias_iter;
 
 	interface = g_dbus_proxy_get_interface(proxy);
 	path = g_dbus_proxy_get_path(proxy);
@@ -550,10 +549,10 @@ static void property_changed(GDBusProxy *proxy, const char *name,
 	if (g_str_equal(BLUEZ_DEVICE_INTERFACE, interface) == FALSE)
 		return;
 
-	if (g_dbus_proxy_get_property(proxy, "Alias", &alias_iter) == FALSE)
+	if (g_str_equal("Alias", name) == FALSE)
 		return;
 
-	dbus_message_iter_get_basic(&alias_iter, &alias);
+	dbus_message_iter_get_basic(iter, &alias);
 
 	modem = g_hash_table_lookup(modem_hash, path);
 	if (modem == NULL)
