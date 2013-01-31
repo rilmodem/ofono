@@ -137,11 +137,6 @@ static int service_level_connection(struct ofono_modem *modem,
 	GAtChat *chat;
 
 	io = g_io_channel_unix_new(fd);
-	if (io == NULL) {
-		ofono_error("Service level connection failed: %s (%d)",
-						strerror(errno), errno);
-		return -EIO;
-	}
 
 	syntax = g_at_syntax_new_gsm_permissive();
 	chat = g_at_chat_new(io, syntax);
