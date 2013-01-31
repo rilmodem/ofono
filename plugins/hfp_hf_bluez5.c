@@ -64,7 +64,6 @@ struct hfp {
 };
 
 static GHashTable *modem_hash = NULL;
-static GHashTable *devices_proxies = NULL;
 static GDBusClient *bluez = NULL;
 static guint sco_watch = 0;
 
@@ -500,10 +499,6 @@ static void proxy_added(GDBusProxy *proxy, void *user_data)
 	if (g_str_equal(BLUEZ_DEVICE_INTERFACE, interface) == FALSE)
 		return;
 
-	g_hash_table_insert(devices_proxies, g_strdup(path),
-						g_dbus_proxy_ref(proxy));
-	DBG("Device proxy: %s(%p)", path, proxy);
-
 	modem_register_from_proxy(proxy, path);
 }
 
@@ -515,10 +510,8 @@ static void proxy_removed(GDBusProxy *proxy, void *user_data)
 	interface = g_dbus_proxy_get_interface(proxy);
 	path = g_dbus_proxy_get_path(proxy);
 
-	if (g_str_equal(BLUEZ_DEVICE_INTERFACE, interface)) {
-		g_hash_table_remove(devices_proxies, path);
-		DBG("Device proxy: %s(%p)", path, proxy);
-	}
+	if (g_str_equal(BLUEZ_DEVICE_INTERFACE, interface) == FALSE)
+		return;
 
 	modem = g_hash_table_lookup(modem_hash, path);
 	if (modem == NULL)
@@ -602,9 +595,6 @@ static int hfp_init(void)
 	modem_hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
 								NULL);
 
-	devices_proxies = g_hash_table_new_full(g_str_hash, g_str_equal,
-				g_free, (GDestroyNotify) g_dbus_proxy_unref);
-
 	g_dbus_client_set_connect_watch(bluez, connect_handler, NULL);
 	g_dbus_client_set_proxy_handlers(bluez, proxy_added, proxy_removed,
 						property_changed, NULL);
@@ -623,7 +613,6 @@ static void hfp_exit(void)
 	g_dbus_client_unref(bluez);
 
 	g_hash_table_destroy(modem_hash);
-	g_hash_table_destroy(devices_proxies);
 
 	if (sco_watch > 0)
 		g_source_remove(sco_watch);
