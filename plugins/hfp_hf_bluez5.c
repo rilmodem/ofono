@@ -270,10 +270,8 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 {
 	struct hfp *hfp;
 	struct ofono_modem *modem;
-	DBusMessageIter iter;
-	GDBusProxy *proxy;
 	DBusMessageIter entry;
-	const char *device, *alias, *address;
+	const char *device;
 	int fd, err;
 
 	DBG("Profile handler NewConnection");
@@ -286,21 +284,6 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 
 	dbus_message_iter_get_basic(&entry, &device);
 
-	proxy = g_hash_table_lookup(devices_proxies, device);
-	if (proxy == NULL)
-		return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
-					".Rejected",
-					"Unknown Bluetooth device");
-
-	g_dbus_proxy_get_property(proxy, "Alias", &iter);
-
-	dbus_message_iter_get_basic(&iter, &alias);
-
-	if (g_dbus_proxy_get_property(proxy, "Address", &iter) == FALSE)
-		goto invalid;
-
-	dbus_message_iter_get_basic(&iter, &address);
-
 	dbus_message_iter_next(&entry);
 	if (dbus_message_iter_get_arg_type(&entry) != DBUS_TYPE_UNIX_FD)
 		goto invalid;
@@ -309,12 +292,12 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 	if (fd < 0)
 		goto invalid;
 
-	modem = modem_register(device, address, alias);
+	modem = g_hash_table_lookup(modem_hash, device);
 	if (modem == NULL) {
 		close(fd);
 		return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
 					".Rejected",
-					"Could not register HFP modem");
+					"Unknown Bluetooth device");
 	}
 
 	err = service_level_connection(modem, fd, HFP_VERSION_LATEST);
