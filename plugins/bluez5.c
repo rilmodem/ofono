@@ -41,6 +41,12 @@
 
 #define BLUEZ_PROFILE_MGMT_INTERFACE   BLUEZ_SERVICE ".ProfileManager1"
 
+struct finish_callback {
+	bt_finish_cb cb;
+	gpointer user_data;
+	char *member;
+};
+
 void bt_bacpy(bdaddr_t *dst, const bdaddr_t *src)
 {
 	memcpy(dst, src, sizeof(bdaddr_t));
@@ -160,6 +166,92 @@ void bt_unregister_profile(DBusConnection *conn, const char *object)
 	dbus_pending_call_unref(c);
 
 	dbus_message_unref(msg);
+}
+
+static void finish_profile_cb(DBusPendingCall *call, gpointer user_data)
+{
+	struct finish_callback *callback = user_data;
+	DBusMessage *reply;
+	DBusError derr;
+	gboolean success;
+
+	reply = dbus_pending_call_steal_reply(call);
+
+	dbus_error_init(&derr);
+
+	success = TRUE;
+
+	if (dbus_set_error_from_message(&derr, reply)) {
+		success = FALSE;
+
+		ofono_error("%s() replied an error: %s, %s", callback->member,
+						derr.name, derr.message);
+		dbus_error_free(&derr);
+	}
+
+	if (callback->cb)
+		callback->cb(success, callback->user_data);
+
+	dbus_message_unref(reply);
+}
+
+static void finish_callback_free(void *data)
+{
+	struct finish_callback *callback = data;
+
+	g_free(callback->member);
+	g_free(callback);
+}
+
+static void device_send_message(DBusConnection *conn, const char *device,
+				const char *member, const char *uuid,
+				bt_finish_cb cb, gpointer user_data)
+{
+	struct finish_callback *callback;
+	DBusMessageIter iter;
+	DBusPendingCall *c;
+	DBusMessage *msg;
+
+	DBG("Bluetooth: sending %s for %s on %s", member, uuid, device);
+
+	msg = dbus_message_new_method_call(BLUEZ_SERVICE, device,
+				BLUEZ_DEVICE_INTERFACE, member);
+
+	dbus_message_iter_init_append(msg, &iter);
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &uuid);
+
+	if (!dbus_connection_send_with_reply(conn, msg, &c, -1)) {
+		ofono_error("Sending %s failed", member);
+		dbus_message_unref(msg);
+		return;
+	}
+
+	callback = g_new0(struct finish_callback, 1);
+	callback->cb = cb;
+	callback->user_data = user_data;
+	callback->member = g_strdup(dbus_message_get_member(msg));
+
+	dbus_pending_call_set_notify(c, finish_profile_cb, callback,
+							finish_callback_free);
+	dbus_pending_call_unref(c);
+
+	dbus_message_unref(msg);
+}
+
+void bt_connect_profile(DBusConnection *conn,
+				const char *device, const char *uuid,
+				bt_finish_cb cb, gpointer user_data)
+{
+	device_send_message(conn, device, "ConnectProfile", uuid,
+							cb, user_data);
+}
+
+void bt_disconnect_profile(DBusConnection *conn,
+				const char *device, const char *uuid,
+				bt_finish_cb cb, gpointer user_data)
+{
+	device_send_message(conn, device, "DisconnectProfile", uuid,
+							cb, user_data);
 }
 
 OFONO_PLUGIN_DEFINE(bluez5, "BlueZ 5 Utils Plugin", VERSION,

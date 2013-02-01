@@ -73,3 +73,13 @@ int bt_register_profile(DBusConnection *conn, const char *uuid,
 					const char *name, const char *object);
 
 void bt_unregister_profile(DBusConnection *conn, const char *object);
+
+typedef void (*bt_finish_cb)(gboolean success, gpointer user_data);
+
+void bt_connect_profile(DBusConnection *conn,
+				const char *device, const char *uuid,
+				bt_finish_cb cb, gpointer user_data);
+
+void bt_disconnect_profile(DBusConnection *conn,
+				const char *device, const char *uuid,
+				bt_finish_cb cb, gpointer user_data);
