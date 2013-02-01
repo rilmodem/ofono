@@ -166,10 +166,6 @@ static struct ofono_modem *modem_register(const char *device,
 	struct ofono_modem *modem;
 	char *path;
 
-	modem = g_hash_table_lookup(modem_hash, device);
-	if (modem != NULL)
-		return modem;
-
 	path = g_strconcat("hfp", device, NULL);
 
 	modem = ofono_modem_create(path, "hfp");
