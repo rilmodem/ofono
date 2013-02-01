@@ -180,6 +180,7 @@ static struct ofono_modem *modem_register(const char *device,
 		return NULL;
 
 	ofono_modem_set_string(modem, "Remote", device_address);
+	ofono_modem_set_string(modem, "DevicePath", device);
 
 	ofono_modem_set_name(modem, alias);
 	ofono_modem_register(modem);
@@ -219,19 +220,53 @@ static void hfp_remove(struct ofono_modem *modem)
 	ofono_modem_set_data(modem, NULL);
 }
 
+static void connect_cb(gboolean success, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+
+	if (success)
+		return;
+
+	ofono_modem_set_powered(modem, FALSE);
+}
+
 /* power up hardware */
 static int hfp_enable(struct ofono_modem *modem)
 {
+	const char *path;
+
 	DBG("%p", modem);
 
-	return 0;
+	path = ofono_modem_get_string(modem, "DevicePath");
+
+	/*
+	 * We call Device1.ConnectProfile() with our UUID, and we hope for the
+	 * NewConnection() method to be called, if ConnectProfile() fails we
+	 * force the modem to powered off
+	 */
+	bt_connect_profile(ofono_dbus_get_connection(), path, HFP_AG_UUID,
+							connect_cb, modem);
+
+	return -EINPROGRESS;
 }
 
 static int hfp_disable(struct ofono_modem *modem)
 {
+	const char *path;
+
 	DBG("%p", modem);
 
-	return 0;
+	path = ofono_modem_get_string(modem, "DevicePath");
+
+	/*
+	 * We call Device1.DisconnectProfile() for the connection to be
+	 * dropped, which will cause the profile RequestDisconnection() method
+	 * to be called which will bring the modem down
+	 */
+	bt_disconnect_profile(ofono_dbus_get_connection(), path, HFP_AG_UUID,
+							NULL, NULL);
+
+	return -EINPROGRESS;
 }
 
 static void hfp_pre_sim(struct ofono_modem *modem)
