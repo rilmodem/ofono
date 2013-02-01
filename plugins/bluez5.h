@@ -69,7 +69,7 @@ int bt_ba2str(const bdaddr_t *ba, char *str);
 
 int bt_bacmp(const bdaddr_t *ba1, const bdaddr_t *ba2);
 
-int bluetooth_register_profile(DBusConnection *conn, const char *uuid,
+int bt_register_profile(DBusConnection *conn, const char *uuid,
 					const char *name, const char *object);
 
-void bluetooth_unregister_profile(DBusConnection *conn, const char *object);
+void bt_unregister_profile(DBusConnection *conn, const char *object);

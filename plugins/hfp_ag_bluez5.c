@@ -163,7 +163,7 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 		if (modems != NULL)
 			return;
 
-		bluetooth_unregister_profile(conn, HFP_AG_EXT_PROFILE_PATH);
+		bt_unregister_profile(conn, HFP_AG_EXT_PROFILE_PATH);
 
 		return;
 	}
@@ -176,7 +176,7 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 	if (modems->next != NULL)
 		return;
 
-	bluetooth_register_profile(conn, HFP_AG_UUID, "hfp_ag",
+	bt_register_profile(conn, HFP_AG_UUID, "hfp_ag",
 						HFP_AG_EXT_PROFILE_PATH);
 }
 

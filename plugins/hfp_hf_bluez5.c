@@ -429,7 +429,7 @@ static void connect_handler(DBusConnection *conn, void *user_data)
 {
 	DBG("Registering External Profile handler ...");
 
-	bluetooth_register_profile(conn, HFP_HS_UUID, "hfp_hf",
+	bt_register_profile(conn, HFP_HS_UUID, "hfp_hf",
 						HFP_EXT_PROFILE_PATH);
 }
 
@@ -606,7 +606,7 @@ static void hfp_exit(void)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 
-	bluetooth_unregister_profile(conn, HFP_EXT_PROFILE_PATH);
+	bt_unregister_profile(conn, HFP_EXT_PROFILE_PATH);
 	g_dbus_unregister_interface(conn, HFP_EXT_PROFILE_PATH,
 						BLUEZ_PROFILE_INTERFACE);
 	ofono_modem_driver_unregister(&hfp_driver);
