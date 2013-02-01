@@ -101,7 +101,7 @@ done:
 	dbus_message_unref(reply);
 }
 
-int bluetooth_register_profile(DBusConnection *conn, const char *uuid,
+int bt_register_profile(DBusConnection *conn, const char *uuid,
 					const char *name, const char *object)
 {
 	DBusMessageIter iter, dict;
@@ -136,7 +136,7 @@ int bluetooth_register_profile(DBusConnection *conn, const char *uuid,
 	return 0;
 }
 
-void bluetooth_unregister_profile(DBusConnection *conn, const char *object)
+void bt_unregister_profile(DBusConnection *conn, const char *object)
 {
 	DBusMessageIter iter;
 	DBusPendingCall *c;
