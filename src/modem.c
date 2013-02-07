@@ -2216,6 +2216,22 @@ void __ofono_modem_foreach(ofono_modem_foreach_func func, void *userdata)
 	}
 }
 
+struct ofono_modem *ofono_modem_find(ofono_modem_compare_cb_t func,
+					void *user_data)
+{
+	struct ofono_modem *modem;
+	GSList *l;
+
+	for (l = g_modem_list; l; l = l->next) {
+		modem = l->data;
+
+		if (func(modem, user_data) == TRUE)
+			return modem;
+	}
+
+	return NULL;
+}
+
 ofono_bool_t ofono_modem_get_emergency_mode(struct ofono_modem *modem)
 {
 	return modem->emergency != 0;
