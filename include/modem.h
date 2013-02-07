@@ -40,6 +40,9 @@ enum ofono_modem_type {
 typedef void (*ofono_modem_online_cb_t)(const struct ofono_error *error,
 					void *data);
 
+typedef ofono_bool_t (*ofono_modem_compare_cb_t)(struct ofono_modem *modem,
+							void *user_data);
+
 struct ofono_modem_driver {
 	const char *name;
 	enum ofono_modem_type modem_type;
@@ -123,6 +126,9 @@ ofono_bool_t ofono_modem_is_standby(struct ofono_modem *modem);
 
 int ofono_modem_driver_register(const struct ofono_modem_driver *);
 void ofono_modem_driver_unregister(const struct ofono_modem_driver *);
+
+struct ofono_modem *ofono_modem_find(ofono_modem_compare_cb_t func,
+					void *user_data);
 
 #ifdef __cplusplus
 }
