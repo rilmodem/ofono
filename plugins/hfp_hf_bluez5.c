@@ -248,21 +248,26 @@ static int hfp_enable(struct ofono_modem *modem)
 
 static int hfp_disable(struct ofono_modem *modem)
 {
-	const char *path;
+	struct hfp *hfp = ofono_modem_get_data(modem);
+	struct hfp_slc_info *info = &hfp->info;
+	GIOChannel *channel;
+	int fd;
 
 	DBG("%p", modem);
 
-	path = ofono_modem_get_string(modem, "DevicePath");
-
 	/*
-	 * We call Device1.DisconnectProfile() for the connection to be
-	 * dropped, which will cause the profile RequestDisconnection() method
-	 * to be called which will bring the modem down
+	 * Instead of triggering two round trips to BlueZ (DisconnectProfile,
+	 * RequestDisconnection) simply kill the connection on the RFCOMM fd
+	 * we already have.  But for this we have to call shutdown().
 	 */
-	bt_disconnect_profile(ofono_dbus_get_connection(), path, HFP_AG_UUID,
-							NULL, NULL);
+	channel = g_at_chat_get_channel(info->chat);
+	fd = g_io_channel_unix_get_fd(channel);
+	shutdown(fd, SHUT_RDWR);
 
-	return -EINPROGRESS;
+	g_at_chat_unref(info->chat);
+	info->chat = NULL;
+
+	return 0;
 }
 
 static void hfp_pre_sim(struct ofono_modem *modem)
