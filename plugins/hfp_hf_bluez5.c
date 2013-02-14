@@ -434,12 +434,28 @@ static const GDBusMethodTable profile_methods[] = {
 	{ }
 };
 
+static ofono_bool_t slc_match(struct ofono_modem *modem, void *userdata)
+{
+	const char *remote = userdata;
+	const char *value = ofono_modem_get_string(modem, "Remote");
+
+	if (value == NULL)
+		return FALSE;
+
+	/* Make sure SLC has been established */
+	if (ofono_modem_get_powered(modem) != TRUE)
+		return FALSE;
+
+	return g_str_equal(remote, value);
+}
+
 static gboolean sco_accept(GIOChannel *io, GIOCondition cond,
 							gpointer user_data)
 {
 	struct sockaddr_sco saddr;
 	socklen_t alen;
 	int sk, nsk;
+	char remote[18];
 
 	if (cond & (G_IO_ERR | G_IO_HUP | G_IO_NVAL))
 		return FALSE;
@@ -453,7 +469,13 @@ static gboolean sco_accept(GIOChannel *io, GIOCondition cond,
 	if (nsk < 0)
 		return TRUE;
 
-	/* TODO: Verify if the device has a modem */
+	bt_ba2str(&saddr.sco_bdaddr, remote);
+
+	if (ofono_modem_find(slc_match, remote) == NULL) {
+		ofono_error("Rejecting SCO: No SLC connection found!");
+		close(nsk);
+		return TRUE;
+	}
 
 	return TRUE;
 }
