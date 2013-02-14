@@ -63,7 +63,6 @@ struct hfp {
 	DBusMessage *msg;
 };
 
-static GHashTable *modem_hash = NULL;
 static GDBusClient *bluez = NULL;
 static guint sco_watch = 0;
 
@@ -180,8 +179,6 @@ static struct ofono_modem *modem_register(const char *device,
 
 	ofono_modem_set_name(modem, alias);
 	ofono_modem_register(modem);
-
-	g_hash_table_insert(modem_hash, g_strdup(device), modem);
 
 	return modem;
 }
@@ -300,6 +297,18 @@ static struct ofono_modem_driver hfp_driver = {
 	.post_sim	= hfp_post_sim,
 };
 
+static ofono_bool_t device_path_compare(struct ofono_modem *modem,
+					void *userdata)
+{
+	const char *path = userdata;
+	const char *value = ofono_modem_get_string(modem, "DevicePath");
+
+	if (value == NULL)
+		return FALSE;
+
+	return g_str_equal(path, value);
+}
+
 static DBusMessage *profile_new_connection(DBusConnection *conn,
 					DBusMessage *msg, void *user_data)
 {
@@ -327,7 +336,7 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 	if (fd < 0)
 		goto invalid;
 
-	modem = g_hash_table_lookup(modem_hash, device);
+	modem = ofono_modem_find(device_path_compare, (void *) device);
 	if (modem == NULL) {
 		close(fd);
 		return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
@@ -392,7 +401,7 @@ static DBusMessage *profile_disconnection(DBusConnection *conn,
 
 	dbus_message_iter_get_basic(&entry, &device);
 
-	modem = g_hash_table_lookup(modem_hash, device);
+	modem = ofono_modem_find(device_path_compare, (void *) device);
 	if (modem == NULL)
 		goto error;
 
@@ -645,9 +654,6 @@ static int hfp_init(void)
 		return -ENOMEM;
 	}
 
-	modem_hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
-								NULL);
-
 	g_dbus_client_set_connect_watch(bluez, connect_handler, NULL);
 	g_dbus_client_set_proxy_handlers(bluez, proxy_added, NULL,
 						property_changed, NULL);
@@ -664,8 +670,6 @@ static void hfp_exit(void)
 						BLUEZ_PROFILE_INTERFACE);
 	ofono_modem_driver_unregister(&hfp_driver);
 	g_dbus_client_unref(bluez);
-
-	g_hash_table_destroy(modem_hash);
 
 	if (sco_watch > 0)
 		g_source_remove(sco_watch);
