@@ -1,0 +1,96 @@
+Handsfree Audio Manager hierarchy [experimental]
+=================================
+
+Service		org.ofono
+Interface	org.ofono.HandsfreeAudioManager
+Object path	/
+
+Methods		array{object,dict} GetCards()
+
+			Get an array of card objects and properties
+			that represent the currently attached devices.
+
+			This method call should only be used once when an
+			application starts up. Further device additions
+			and removal shall be monitored via CardAdded and
+			CardRemoved signals.
+
+		void Register(object path, array{byte})
+
+			Registers a Handsfree Audio agent with a specific
+			path (freely selectable by the audio subsystem) and
+			list of supported codecs.  Available codec
+			identifiers:
+
+				1	CVSD
+				2	mSBC
+
+		void Unregister(object path)
+
+			Unregisters a Handsfree Audio agent registered
+			through the Register method.
+
+Signals		CardAdded(object path, dict properties)
+
+			Signal that is sent when a new card is added.  It
+			contains the object path of new card and its
+			properties.
+
+		CardRemoved(object path)
+
+			Signal that is sent when a card has been removed.
+			The object path is no longer accessible after this
+			signal and only emitted for reference.
+
+
+Handsfree Audio Card hierarchy [experimental]
+==============================
+
+Service		org.ofono
+Interface	org.ofono.HandsfreeAudioCard
+Object path	/{device0,device1,...}
+
+Methods		dict GetProperties()
+
+			Returns properties for the device object. See
+			the properties section for available properties.
+
+		void Connect()
+
+			Attempts to establish the SCO audio connection.
+			The Agent NewConnection() method will be called
+			whenever the SCO audio link has been established.  If
+			the audio connection could not be established, this
+			method will return an error.
+
+Signals		PropertyChanged(string name, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+Properties	string RemoteAddress [readonly]
+
+			Bluetooth address of the remote peer.
+
+		string LocalAddress [readonly]
+
+			Bluetooth address of the local adapter.
+
+
+Handsfree Audio Agent hierarchy [experimental]
+===============================
+
+Service		<freely defined>
+Interface	org.ofono.HandsfreeAudioAgent
+Object		<freely defined>
+
+Methods		void NewConnection(object card, fd sco, byte codec)
+
+			Notifies the handler that a new SCO connection is
+			available. Returning an error will cause oFono to
+			disconnect the SCO connection.
+
+		void Release()
+
+			Notifies the Agent that it is no longer registered
+			to oFono.
