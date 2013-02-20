@@ -30,6 +30,9 @@ void __ofono_exit(void);
 int __ofono_manager_init(void);
 void __ofono_manager_cleanup(void);
 
+int __ofono_handsfree_audio_manager_init(void);
+void __ofono_handsfree_audio_manager_cleanup(void);
+
 void __ofono_modem_shutdown(void);
 
 #include <ofono/log.h>
