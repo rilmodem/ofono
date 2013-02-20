@@ -32,6 +32,15 @@
 
 #define HFP_AUDIO_MANAGER_INTERFACE		OFONO_SERVICE ".HandsfreeAudioManager"
 
+struct agent {
+	char *owner;
+	char *path;
+	unsigned char *codecs;
+	int codecs_len;
+};
+
+static struct agent *agent = NULL;
+
 static DBusMessage *am_get_cards(DBusConnection *conn,
 					DBusMessage *msg, void *user_data)
 {
@@ -41,7 +50,35 @@ static DBusMessage *am_get_cards(DBusConnection *conn,
 static DBusMessage *am_agent_register(DBusConnection *conn,
 					DBusMessage *msg, void *user_data)
 {
-	return __ofono_error_not_implemented(msg);
+	const char *sender, *path;
+	unsigned char *codecs;
+	DBusMessageIter iter, array;
+	int length;
+
+	if (agent)
+		return __ofono_error_in_use(msg);
+
+	sender = dbus_message_get_sender(msg);
+
+	if (dbus_message_iter_init(msg, &iter) == FALSE)
+		return __ofono_error_invalid_args(msg);
+
+	dbus_message_iter_get_basic(&iter, &path);
+
+	dbus_message_iter_next(&iter);
+	dbus_message_iter_recurse(&iter, &array);
+	dbus_message_iter_get_fixed_array(&array, &codecs, &length);
+
+	if (length == 0)
+		return __ofono_error_invalid_args(msg);
+
+	agent = g_new0(struct agent, 1);
+	agent->owner = g_strdup(sender);
+	agent->path = g_strdup(path);
+	agent->codecs = g_memdup(codecs, length);
+	agent->codecs_len = length;
+
+	return dbus_message_new_method_return(msg);
 }
 
 static DBusMessage *am_agent_unregister(DBusConnection *conn,
