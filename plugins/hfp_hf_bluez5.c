@@ -528,7 +528,7 @@ static void connect_handler(DBusConnection *conn, void *user_data)
 {
 	DBG("Registering External Profile handler ...");
 
-	bt_register_profile(conn, HFP_HS_UUID, "hfp_hf",
+	bt_register_profile(conn, HFP_HS_UUID, local_hfp_version, "hfp_hf",
 						HFP_EXT_PROFILE_PATH);
 }
 
