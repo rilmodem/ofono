@@ -25,6 +25,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <gdbus.h>
 
@@ -104,7 +105,29 @@ static DBusMessage *am_agent_register(DBusConnection *conn,
 static DBusMessage *am_agent_unregister(DBusConnection *conn,
 					DBusMessage *msg, void *user_data)
 {
-	return __ofono_error_not_implemented(msg);
+	const char *sender, *path;
+	DBusMessageIter iter;
+
+	if (agent == NULL)
+		return __ofono_error_not_found(msg);
+
+	sender = dbus_message_get_sender(msg);
+
+	if (dbus_message_iter_init(msg, &iter) == FALSE)
+		return __ofono_error_invalid_args(msg);
+
+	dbus_message_iter_get_basic(&iter, &path);
+
+	if (strcmp(sender, agent->owner) != 0)
+		return __ofono_error_not_allowed(msg);
+
+	if (strcmp(path, agent->path) != 0)
+		return __ofono_error_not_found(msg);
+
+	agent_free(agent);
+	agent = NULL;
+
+	return dbus_message_new_method_return(msg);
 }
 
 static const GDBusMethodTable am_methods[] = {
