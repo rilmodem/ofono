@@ -45,12 +45,16 @@ struct agent {
 	char *path;
 	unsigned char *codecs;
 	int codecs_len;
+	guint watch;
 };
 
 static struct agent *agent = NULL;
 
 static void agent_free(struct agent *agent)
 {
+	if (agent->watch > 0)
+		g_dbus_remove_watch(ofono_dbus_get_connection(), agent->watch);
+
 	g_free(agent->owner);
 	g_free(agent->path);
 	g_free(agent->codecs);
@@ -65,6 +69,14 @@ static void agent_release(struct agent *agent)
 					HFP_AUDIO_AGENT_INTERFACE, "Release");
 
 	g_dbus_send_message(ofono_dbus_get_connection(), msg);
+}
+
+static void agent_disconnect(DBusConnection *conn, void *user_data)
+{
+	DBG("Agent %s disconnected", agent->owner);
+
+	agent_free(agent);
+	agent = NULL;
 }
 
 static DBusMessage *am_get_cards(DBusConnection *conn,
@@ -109,6 +121,8 @@ static DBusMessage *am_agent_register(DBusConnection *conn,
 	agent->path = g_strdup(path);
 	agent->codecs = g_memdup(codecs, length);
 	agent->codecs_len = length;
+	agent->watch = g_dbus_add_disconnect_watch(conn, sender,
+						agent_disconnect, NULL, NULL);
 
 	return dbus_message_new_method_return(msg);
 }
