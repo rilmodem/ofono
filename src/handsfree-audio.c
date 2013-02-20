@@ -32,6 +32,12 @@
 
 #define HFP_AUDIO_MANAGER_INTERFACE		OFONO_SERVICE ".HandsfreeAudioManager"
 
+/* Supported agent codecs */
+enum hfp_codec {
+	HFP_CODEC_CVSD = 0x01,
+	HFP_CODEC_MSBC = 0x02,
+};
+
 struct agent {
 	char *owner;
 	char *path;
@@ -53,7 +59,7 @@ static DBusMessage *am_agent_register(DBusConnection *conn,
 	const char *sender, *path;
 	unsigned char *codecs;
 	DBusMessageIter iter, array;
-	int length;
+	int length, i;
 
 	if (agent)
 		return __ofono_error_in_use(msg);
@@ -71,6 +77,12 @@ static DBusMessage *am_agent_register(DBusConnection *conn,
 
 	if (length == 0)
 		return __ofono_error_invalid_args(msg);
+
+	for (i = 0; i < length; i++) {
+		if (codecs[i] != HFP_CODEC_CVSD &&
+				codecs[i] != HFP_CODEC_MSBC)
+			return __ofono_error_invalid_args(msg);
+	}
 
 	agent = g_new0(struct agent, 1);
 	agent->owner = g_strdup(sender);
