@@ -47,6 +47,14 @@ struct agent {
 
 static struct agent *agent = NULL;
 
+static void agent_free(struct agent *agent)
+{
+	g_free(agent->owner);
+	g_free(agent->path);
+	g_free(agent->codecs);
+	g_free(agent);
+}
+
 static DBusMessage *am_get_cards(DBusConnection *conn,
 					DBusMessage *msg, void *user_data)
 {
@@ -127,4 +135,7 @@ void __ofono_handsfree_audio_manager_cleanup(void)
 {
 	g_dbus_unregister_interface(ofono_dbus_get_connection(), "/",
 						HFP_AUDIO_MANAGER_INTERFACE);
+
+	if (agent)
+		agent_free(agent);
 }
