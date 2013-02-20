@@ -65,6 +65,7 @@ struct hfp {
 
 static GDBusClient *bluez = NULL;
 static guint sco_watch = 0;
+static uint16_t local_hfp_version = HFP_VERSION_1_6;
 
 static void hfp_debug(const char *str, void *user_data)
 {
@@ -502,9 +503,11 @@ static int sco_init(void)
 	}
 
 	if (setsockopt(sk, SOL_BLUETOOTH, BT_DEFER_SETUP,
-				&defer_setup, sizeof(defer_setup)) < 0)
+				&defer_setup, sizeof(defer_setup)) < 0) {
 		ofono_warn("Can't enable deferred setup: %s (%d)",
 						strerror(errno), errno);
+		local_hfp_version = HFP_VERSION_1_5;
+	}
 
 	if (listen(sk, 5) < 0) {
 		close(sk);
