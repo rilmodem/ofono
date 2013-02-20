@@ -32,6 +32,7 @@
 #include "ofono.h"
 
 #define HFP_AUDIO_MANAGER_INTERFACE		OFONO_SERVICE ".HandsfreeAudioManager"
+#define HFP_AUDIO_AGENT_INTERFACE		OFONO_SERVICE ".HandsfreeAudioAgent"
 
 /* Supported agent codecs */
 enum hfp_codec {
@@ -54,6 +55,16 @@ static void agent_free(struct agent *agent)
 	g_free(agent->path);
 	g_free(agent->codecs);
 	g_free(agent);
+}
+
+static void agent_release(struct agent *agent)
+{
+	DBusMessage *msg;
+
+	msg = dbus_message_new_method_call(agent->owner, agent->path,
+					HFP_AUDIO_AGENT_INTERFACE, "Release");
+
+	g_dbus_send_message(ofono_dbus_get_connection(), msg);
 }
 
 static DBusMessage *am_get_cards(DBusConnection *conn,
@@ -159,6 +170,8 @@ void __ofono_handsfree_audio_manager_cleanup(void)
 	g_dbus_unregister_interface(ofono_dbus_get_connection(), "/",
 						HFP_AUDIO_MANAGER_INTERFACE);
 
-	if (agent)
+	if (agent) {
+		agent_release(agent);
 		agent_free(agent);
+	}
 }
