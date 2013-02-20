@@ -108,7 +108,8 @@ done:
 }
 
 int bt_register_profile(DBusConnection *conn, const char *uuid,
-					const char *name, const char *object)
+					uint16_t version, const char *name,
+					const char *object)
 {
 	DBusMessageIter iter, dict;
 	DBusPendingCall *c;
@@ -125,6 +126,7 @@ int bt_register_profile(DBusConnection *conn, const char *uuid,
 
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, "{sv}", &dict);
 	ofono_dbus_dict_append(&dict, "Name", DBUS_TYPE_STRING, &name);
+	ofono_dbus_dict_append(&dict, "Version", DBUS_TYPE_UINT16, &version);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
