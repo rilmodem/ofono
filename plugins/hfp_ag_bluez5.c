@@ -30,11 +30,15 @@
 #include <glib.h>
 #include <ofono.h>
 
+#include <gdbus.h>
+#include <gatchat.h>
+
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
-#include <gdbus.h>
+
+#include <drivers/hfpmodem/slc.h>
 
 #include "bluez5.h"
 
@@ -176,7 +180,7 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 	if (modems->next != NULL)
 		return;
 
-	bt_register_profile(conn, HFP_AG_UUID, "hfp_ag",
+	bt_register_profile(conn, HFP_AG_UUID, HFP_VERSION_1_5, "hfp_ag",
 						HFP_AG_EXT_PROFILE_PATH);
 }
 
