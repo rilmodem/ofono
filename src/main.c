@@ -239,6 +239,8 @@ int main(int argc, char **argv)
 
 	__ofono_manager_init();
 
+	__ofono_handsfree_audio_manager_init();
+
 	__ofono_plugin_init(option_plugin, option_noplugin);
 
 	g_free(option_plugin);
@@ -247,6 +249,8 @@ int main(int argc, char **argv)
 	g_main_loop_run(event_loop);
 
 	__ofono_plugin_cleanup();
+
+	__ofono_handsfree_audio_manager_cleanup();
 
 	__ofono_manager_cleanup();
 
