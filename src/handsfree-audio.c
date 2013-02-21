@@ -29,6 +29,8 @@
 
 #include <gdbus.h>
 
+#include <ofono/handsfree-audio.h>
+
 #include "ofono.h"
 
 #define HFP_AUDIO_MANAGER_INTERFACE	OFONO_SERVICE ".HandsfreeAudioManager"
@@ -49,6 +51,7 @@ struct agent {
 };
 
 static struct agent *agent = NULL;
+static int ref_count = 0;
 
 static void agent_free(struct agent *agent)
 {
@@ -168,19 +171,31 @@ static const GDBusMethodTable am_methods[] = {
 	{ }
 };
 
-int __ofono_handsfree_audio_manager_init(void)
+void ofono_handsfree_audio_ref(void)
 {
+	ref_count += 1;
+
+	if (ref_count != 1)
+		return;
+
 	if (!g_dbus_register_interface(ofono_dbus_get_connection(),
 					"/", HFP_AUDIO_MANAGER_INTERFACE,
-					am_methods, NULL, NULL, NULL, NULL)) {
-		return -EIO;
-	}
-
-	return 0;
+					am_methods, NULL, NULL, NULL, NULL))
+		ofono_error("Unable to register Handsfree Audio Manager");
 }
 
-void __ofono_handsfree_audio_manager_cleanup(void)
+void ofono_handsfree_audio_unref(void)
 {
+	if (ref_count == 0) {
+		ofono_error("Error in handsfree audio manager ref counting");
+		return;
+	}
+
+	ref_count -= 1;
+
+	if (ref_count > 0)
+		return;
+
 	g_dbus_unregister_interface(ofono_dbus_get_connection(), "/",
 						HFP_AUDIO_MANAGER_INTERFACE);
 
@@ -188,4 +203,21 @@ void __ofono_handsfree_audio_manager_cleanup(void)
 		agent_release(agent);
 		agent_free(agent);
 	}
+}
+
+int __ofono_handsfree_audio_manager_init(void)
+{
+	return 0;
+}
+
+void __ofono_handsfree_audio_manager_cleanup(void)
+{
+	if (ref_count == 0)
+		return;
+
+	ofono_error("Handsfree Audio manager not cleaned up properly,"
+			"fixing...");
+
+	ref_count = 1;
+	ofono_handsfree_audio_unref();
 }
