@@ -31,8 +31,8 @@
 
 #include "ofono.h"
 
-#define HFP_AUDIO_MANAGER_INTERFACE		OFONO_SERVICE ".HandsfreeAudioManager"
-#define HFP_AUDIO_AGENT_INTERFACE		OFONO_SERVICE ".HandsfreeAudioAgent"
+#define HFP_AUDIO_MANAGER_INTERFACE	OFONO_SERVICE ".HandsfreeAudioManager"
+#define HFP_AUDIO_AGENT_INTERFACE	OFONO_SERVICE ".HandsfreeAudioAgent"
 
 /* Supported agent codecs */
 enum hfp_codec {
