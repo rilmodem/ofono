@@ -35,6 +35,7 @@
 #include <ofono/dbus.h>
 #include <ofono/plugin.h>
 #include <ofono/log.h>
+#include <ofono/handsfree-audio.h>
 
 #include <gdbus/gdbus.h>
 #include "bluez5.h"
@@ -256,5 +257,17 @@ void bt_disconnect_profile(DBusConnection *conn,
 							cb, user_data);
 }
 
+static int bluez5_init(void)
+{
+	ofono_handsfree_audio_ref();
+
+	return 0;
+}
+
+static void bluez5_exit(void)
+{
+	ofono_handsfree_audio_unref();
+}
+
 OFONO_PLUGIN_DEFINE(bluez5, "BlueZ 5 Utils Plugin", VERSION,
-			OFONO_PLUGIN_PRIORITY_DEFAULT, NULL, NULL)
+			OFONO_PLUGIN_PRIORITY_DEFAULT, bluez5_init, bluez5_exit)
