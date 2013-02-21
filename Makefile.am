@@ -18,7 +18,8 @@ pkginclude_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/location-reporting.h \
 			include/cdma-connman.h include/gnss.h \
 			include/private-network.h include/cdma-netreg.h \
-			include/cdma-provision.h include/handsfree.h
+			include/cdma-provision.h include/handsfree.h \
+			include/handsfree-audio.h
 
 nodist_pkginclude_HEADERS = include/version.h
 
