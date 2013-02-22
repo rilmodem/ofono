@@ -90,7 +90,7 @@ static const GDBusMethodTable manager_methods[] = {
 };
 
 static const GDBusSignalTable manager_signals[] = {
-	{ GDBUS_SIGNAL("DevicesAdded",
+	{ GDBUS_SIGNAL("DeviceAdded",
 		GDBUS_ARGS({ "path", "o"},{ "properties", "a{sv}" })) },
 	{ GDBUS_SIGNAL("DeviceRemoved",
 		GDBUS_ARGS({ "path", "o"})) },
