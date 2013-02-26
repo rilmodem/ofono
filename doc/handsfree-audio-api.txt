@@ -25,10 +25,17 @@ Methods		array{object,dict} GetCards()
 				1	CVSD
 				2	mSBC
 
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.InUse
+
 		void Unregister(object path)
 
 			Unregisters a Handsfree Audio agent registered
 			through the Register method.
+
+			Possible Errors: [service].Error.NotFound
+					 [service].Error.InvalidArguments
+					 [service].Error.NotAllowed
 
 Signals		CardAdded(object path, dict properties)
 
