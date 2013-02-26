@@ -123,6 +123,16 @@ int ofono_handsfree_card_register(struct ofono_handsfree_card *card)
 	return 0;
 }
 
+static void card_unregister(struct ofono_handsfree_card *card)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+
+	g_dbus_unregister_interface(conn, card->path, HFP_AUDIO_CARD_INTERFACE);
+
+	g_free(card->path);
+	card->path = NULL;
+}
+
 void ofono_handsfree_card_remove(struct ofono_handsfree_card *card)
 {
 	DBG("%p", card);
@@ -130,11 +140,13 @@ void ofono_handsfree_card_remove(struct ofono_handsfree_card *card)
 	if (card == NULL)
 		return;
 
+	if (card->path)
+		card_unregister(card);
+
 	card_list = g_slist_remove(card_list, card);
 
 	g_free(card->remote);
 	g_free(card->local);
-	g_free(card->path);
 
 	g_free(card);
 }
