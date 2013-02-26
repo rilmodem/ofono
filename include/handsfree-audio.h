@@ -28,6 +28,12 @@ extern "C" {
 
 #include <ofono/types.h>
 
+struct ofono_handsfree_card;
+
+struct ofono_handsfree_card *ofono_handsfree_card_create(const char *remote,
+							const char *local);
+void ofono_handsfree_card_remove(struct ofono_handsfree_card *card);
+
 void ofono_handsfree_audio_ref(void);
 void ofono_handsfree_audio_unref(void);
 
