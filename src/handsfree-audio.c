@@ -130,6 +130,33 @@ struct ofono_handsfree_card *ofono_handsfree_card_create(const char *remote,
 	return card;
 }
 
+static void emit_card_added(struct ofono_handsfree_card *card)
+{
+	DBusMessage *signal;
+	DBusMessageIter iter;
+	DBusMessageIter dict;
+	const char *path;
+
+	signal = dbus_message_new_signal(OFONO_MANAGER_PATH,
+						HFP_AUDIO_MANAGER_INTERFACE,
+						"CardAdded");
+
+	if (signal == NULL)
+		return;
+
+	dbus_message_iter_init_append(signal, &iter);
+
+	path = card->path;
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_OBJECT_PATH, &path);
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
+	card_append_properties(card, &dict);
+	dbus_message_iter_close_container(&iter, &dict);
+
+	g_dbus_send_message(ofono_dbus_get_connection(), signal);
+}
+
 int ofono_handsfree_card_register(struct ofono_handsfree_card *card)
 {
 	static int next_card_id = 1;
@@ -147,6 +174,7 @@ int ofono_handsfree_card_register(struct ofono_handsfree_card *card)
 		return -EIO;
 
 	card->path = g_strdup(path);
+	emit_card_added(card);
 
 	return 0;
 }
@@ -340,6 +368,12 @@ static const GDBusMethodTable am_methods[] = {
 	{ }
 };
 
+static const GDBusSignalTable am_signals[] = {
+	{ GDBUS_SIGNAL("CardAdded",
+		GDBUS_ARGS({ "path", "o" }, { "properties", "a{sv}" })) },
+	{ }
+};
+
 void ofono_handsfree_audio_ref(void)
 {
 	ref_count += 1;
@@ -350,7 +384,8 @@ void ofono_handsfree_audio_ref(void)
 	if (!g_dbus_register_interface(ofono_dbus_get_connection(),
 					OFONO_MANAGER_PATH,
 					HFP_AUDIO_MANAGER_INTERFACE,
-					am_methods, NULL, NULL, NULL, NULL))
+					am_methods, am_signals, NULL,
+					NULL, NULL))
 		ofono_error("Unable to register Handsfree Audio Manager");
 }
 
