@@ -179,11 +179,24 @@ int ofono_handsfree_card_register(struct ofono_handsfree_card *card)
 	return 0;
 }
 
+static void emit_card_removed(struct ofono_handsfree_card *card)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = card->path;
+
+	g_dbus_emit_signal(conn, OFONO_MANAGER_PATH,
+				HFP_AUDIO_MANAGER_INTERFACE,
+				"CardRemoved", DBUS_TYPE_OBJECT_PATH, &path,
+				DBUS_TYPE_INVALID);
+}
+
 static void card_unregister(struct ofono_handsfree_card *card)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 
 	g_dbus_unregister_interface(conn, card->path, HFP_AUDIO_CARD_INTERFACE);
+
+	emit_card_removed(card);
 
 	g_free(card->path);
 	card->path = NULL;
@@ -371,6 +384,8 @@ static const GDBusMethodTable am_methods[] = {
 static const GDBusSignalTable am_signals[] = {
 	{ GDBUS_SIGNAL("CardAdded",
 		GDBUS_ARGS({ "path", "o" }, { "properties", "a{sv}" })) },
+	{ GDBUS_SIGNAL("CardRemoved",
+		GDBUS_ARGS({ "path", "o" })) },
 	{ }
 };
 
