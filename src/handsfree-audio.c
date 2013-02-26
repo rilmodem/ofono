@@ -173,6 +173,8 @@ int ofono_handsfree_card_register(struct ofono_handsfree_card *card)
 					card, NULL))
 		return -EIO;
 
+	next_card_id += 1;
+
 	card->path = g_strdup(path);
 	emit_card_added(card);
 
