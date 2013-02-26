@@ -42,6 +42,11 @@ enum hfp_codec {
 	HFP_CODEC_MSBC = 0x02,
 };
 
+struct ofono_handsfree_card {
+	char *remote;
+	char *local;
+};
+
 struct agent {
 	char *owner;
 	char *path;
@@ -52,6 +57,37 @@ struct agent {
 
 static struct agent *agent = NULL;
 static int ref_count = 0;
+static GSList *card_list = 0;
+
+struct ofono_handsfree_card *ofono_handsfree_card_create(const char *remote,
+							const char *local)
+{
+	struct ofono_handsfree_card *card;
+
+	card = g_new0(struct ofono_handsfree_card, 1);
+
+	card->remote = g_strdup(remote);
+	card->local = g_strdup(local);
+
+	card_list = g_slist_prepend(card_list, card);
+
+	return card;
+}
+
+void ofono_handsfree_card_remove(struct ofono_handsfree_card *card)
+{
+	DBG("%p", card);
+
+	if (card == NULL)
+		return;
+
+	card_list = g_slist_remove(card_list, card);
+
+	g_free(card->remote);
+	g_free(card->local);
+
+	g_free(card);
+}
 
 static void agent_free(struct agent *agent)
 {
