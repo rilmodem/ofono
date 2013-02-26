@@ -215,7 +215,8 @@ void ofono_handsfree_audio_ref(void)
 		return;
 
 	if (!g_dbus_register_interface(ofono_dbus_get_connection(),
-					"/", HFP_AUDIO_MANAGER_INTERFACE,
+					OFONO_MANAGER_PATH,
+					HFP_AUDIO_MANAGER_INTERFACE,
 					am_methods, NULL, NULL, NULL, NULL))
 		ofono_error("Unable to register Handsfree Audio Manager");
 }
@@ -232,8 +233,9 @@ void ofono_handsfree_audio_unref(void)
 	if (ref_count > 0)
 		return;
 
-	g_dbus_unregister_interface(ofono_dbus_get_connection(), "/",
-						HFP_AUDIO_MANAGER_INTERFACE);
+	g_dbus_unregister_interface(ofono_dbus_get_connection(),
+					OFONO_MANAGER_PATH,
+					HFP_AUDIO_MANAGER_INTERFACE);
 
 	if (agent) {
 		agent_release(agent);
