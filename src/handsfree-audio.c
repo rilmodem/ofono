@@ -35,6 +35,7 @@
 
 #define HFP_AUDIO_MANAGER_INTERFACE	OFONO_SERVICE ".HandsfreeAudioManager"
 #define HFP_AUDIO_AGENT_INTERFACE	OFONO_SERVICE ".HandsfreeAudioAgent"
+#define HFP_AUDIO_CARD_INTERFACE	OFONO_SERVICE ".HandsfreeAudioCard"
 
 /* Supported agent codecs */
 enum hfp_codec {
@@ -45,6 +46,7 @@ enum hfp_codec {
 struct ofono_handsfree_card {
 	char *remote;
 	char *local;
+	char *path;
 };
 
 struct agent {
@@ -58,6 +60,32 @@ struct agent {
 static struct agent *agent = NULL;
 static int ref_count = 0;
 static GSList *card_list = 0;
+
+static DBusMessage *card_get_properties(DBusConnection *conn,
+						DBusMessage *msg, void *data)
+{
+	return __ofono_error_not_implemented(msg);
+}
+
+static DBusMessage *card_connect(DBusConnection *conn,
+						DBusMessage *msg, void *data)
+{
+	return __ofono_error_not_implemented(msg);
+}
+
+static const GDBusMethodTable card_methods[] = {
+	{ GDBUS_METHOD("GetProperties",
+			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			card_get_properties) },
+	{ GDBUS_ASYNC_METHOD("Connect", NULL, NULL, card_connect) },
+	{ }
+};
+
+static const GDBusSignalTable card_signals[] = {
+	{ GDBUS_SIGNAL("PropertyChanged",
+			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
+	{ }
+};
 
 struct ofono_handsfree_card *ofono_handsfree_card_create(const char *remote,
 							const char *local)
@@ -74,6 +102,27 @@ struct ofono_handsfree_card *ofono_handsfree_card_create(const char *remote,
 	return card;
 }
 
+int ofono_handsfree_card_register(struct ofono_handsfree_card *card)
+{
+	static int next_card_id = 1;
+	char path[64];
+
+	if (card == NULL)
+		return -EINVAL;
+
+	snprintf(path, sizeof(path), "/card_%d", next_card_id);
+
+	if (!g_dbus_register_interface(ofono_dbus_get_connection(), path,
+					HFP_AUDIO_CARD_INTERFACE,
+					card_methods, card_signals, NULL,
+					card, NULL))
+		return -EIO;
+
+	card->path = g_strdup(path);
+
+	return 0;
+}
+
 void ofono_handsfree_card_remove(struct ofono_handsfree_card *card)
 {
 	DBG("%p", card);
@@ -85,6 +134,7 @@ void ofono_handsfree_card_remove(struct ofono_handsfree_card *card)
 
 	g_free(card->remote);
 	g_free(card->local);
+	g_free(card->path);
 
 	g_free(card);
 }
