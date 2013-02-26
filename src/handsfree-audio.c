@@ -61,10 +61,38 @@ static struct agent *agent = NULL;
 static int ref_count = 0;
 static GSList *card_list = 0;
 
+static void card_append_properties(struct ofono_handsfree_card *card,
+					DBusMessageIter *dict)
+{
+	ofono_dbus_dict_append(dict, "RemoteAddress",
+				DBUS_TYPE_STRING, &card->remote);
+
+	ofono_dbus_dict_append(dict, "LocalAddress",
+				DBUS_TYPE_STRING, &card->local);
+}
+
 static DBusMessage *card_get_properties(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
-	return __ofono_error_not_implemented(msg);
+	struct ofono_handsfree_card *card = data;
+	DBusMessage *reply;
+	DBusMessageIter iter;
+	DBusMessageIter dict;
+
+	reply = dbus_message_new_method_return(msg);
+	if (reply == NULL)
+		return NULL;
+
+	dbus_message_iter_init_append(reply, &iter);
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
+
+	card_append_properties(card, &dict);
+
+	dbus_message_iter_close_container(&iter, &dict);
+
+	return reply;
 }
 
 static DBusMessage *card_connect(DBusConnection *conn,
