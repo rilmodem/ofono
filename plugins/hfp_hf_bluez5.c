@@ -48,6 +48,7 @@
 #include <ofono/call-volume.h>
 #include <ofono/handsfree-audio.h>
 #include <ofono/handsfree.h>
+#include <ofono/handsfree-audio.h>
 
 #include <drivers/hfpmodem/slc.h>
 
@@ -729,6 +730,8 @@ static int hfp_init(void)
 	g_dbus_client_set_proxy_handlers(bluez, proxy_added, NULL,
 						property_changed, NULL);
 
+	ofono_handsfree_audio_ref();
+
 	return 0;
 }
 
@@ -744,6 +747,8 @@ static void hfp_exit(void)
 
 	if (sco_watch > 0)
 		g_source_remove(sco_watch);
+
+	ofono_handsfree_audio_unref();
 }
 
 OFONO_PLUGIN_DEFINE(hfp_bluez5, "External Hands-Free Profile Plugin", VERSION,
