@@ -454,6 +454,9 @@ static DBusMessage *profile_disconnection(DBusConnection *conn,
 	hfp = ofono_modem_get_data(modem);
 	info = &hfp->info;
 
+	ofono_handsfree_card_remove(hfp->card);
+	hfp->card = NULL;
+
 	g_at_chat_unref(info->chat);
 	info->chat = NULL;
 
