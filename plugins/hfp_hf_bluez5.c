@@ -46,6 +46,7 @@
 #include <ofono/netreg.h>
 #include <ofono/voicecall.h>
 #include <ofono/call-volume.h>
+#include <ofono/handsfree-audio.h>
 #include <ofono/handsfree.h>
 
 #include <drivers/hfpmodem/slc.h>
@@ -61,6 +62,7 @@
 struct hfp {
 	struct hfp_slc_info info;
 	DBusMessage *msg;
+	struct ofono_handsfree_card *card;
 };
 
 static GDBusClient *bluez = NULL;
@@ -88,6 +90,8 @@ static void slc_established(gpointer userdata)
 	hfp->msg = NULL;
 
 	ofono_info("Service level connection established");
+
+	ofono_handsfree_card_register(hfp->card);
 }
 
 static void slc_failed(gpointer userdata)
@@ -315,8 +319,11 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 {
 	struct hfp *hfp;
 	struct ofono_modem *modem;
+	struct sockaddr_rc saddr;
+	socklen_t optlen;
 	DBusMessageIter entry;
 	const char *device;
+	char remote[18];
 	int fd, err;
 
 	DBG("Profile handler NewConnection");
@@ -353,8 +360,22 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 					"Not enough resources");
 	}
 
+	memset(&saddr, 0, sizeof(saddr));
+	optlen = sizeof(saddr);
+
+	if (getpeername(fd, (struct sockaddr *) &saddr, &optlen) < 0) {
+		err = errno;
+		ofono_error("RFCOMM getpeername(): %s (%d)", strerror(err),
+									err);
+		close(fd);
+		goto invalid;
+	}
+
+	bt_ba2str(&saddr.rc_bdaddr, remote);
+
 	hfp = ofono_modem_get_data(modem);
 	hfp->msg = dbus_message_ref(msg);
+	hfp->card = ofono_handsfree_card_create(remote, NULL);
 
 	return NULL;
 
