@@ -323,7 +323,7 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 	socklen_t optlen;
 	DBusMessageIter entry;
 	const char *device;
-	char remote[18];
+	char local[18], remote[18];
 	int fd, err;
 
 	DBG("Profile handler NewConnection");
@@ -363,6 +363,19 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 	memset(&saddr, 0, sizeof(saddr));
 	optlen = sizeof(saddr);
 
+	if (getsockname(fd, (struct sockaddr *) &saddr, &optlen) < 0) {
+		err = errno;
+		ofono_error("RFCOMM getsockname(): %s (%d)", strerror(err),
+									err);
+		close(fd);
+		goto invalid;
+	}
+
+	bt_ba2str(&saddr.rc_bdaddr, local);
+
+	memset(&saddr, 0, sizeof(saddr));
+	optlen = sizeof(saddr);
+
 	if (getpeername(fd, (struct sockaddr *) &saddr, &optlen) < 0) {
 		err = errno;
 		ofono_error("RFCOMM getpeername(): %s (%d)", strerror(err),
@@ -375,7 +388,7 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 
 	hfp = ofono_modem_get_data(modem);
 	hfp->msg = dbus_message_ref(msg);
-	hfp->card = ofono_handsfree_card_create(remote, NULL);
+	hfp->card = ofono_handsfree_card_create(remote, local);
 
 	return NULL;
 
