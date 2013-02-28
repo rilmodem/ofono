@@ -129,6 +129,9 @@ static void hfp_disconnected_cb(gpointer user_data)
 
 	ofono_modem_set_powered(modem, FALSE);
 
+	ofono_handsfree_card_remove(hfp->card);
+	hfp->card = NULL;
+
 	g_at_chat_unref(info->chat);
 	info->chat = NULL;
 }
