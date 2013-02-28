@@ -272,6 +272,9 @@ static int hfp_disable(struct ofono_modem *modem)
 	fd = g_io_channel_unix_get_fd(channel);
 	shutdown(fd, SHUT_RDWR);
 
+	ofono_handsfree_card_remove(hfp->card);
+	hfp->card = NULL;
+
 	g_at_chat_unref(info->chat);
 	info->chat = NULL;
 
