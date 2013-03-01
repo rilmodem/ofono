@@ -69,6 +69,10 @@ int bt_ba2str(const bdaddr_t *ba, char *str);
 
 int bt_bacmp(const bdaddr_t *ba1, const bdaddr_t *ba2);
 
+int bt_register_profile_with_role(DBusConnection *conn, const char *uuid,
+					uint16_t version, const char *name,
+					const char *object, const char *role);
+
 int bt_register_profile(DBusConnection *conn, const char *uuid,
 					uint16_t version, const char *name,
 					const char *object);

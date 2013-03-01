@@ -107,9 +107,9 @@ done:
 	dbus_message_unref(reply);
 }
 
-int bt_register_profile(DBusConnection *conn, const char *uuid,
+int bt_register_profile_with_role(DBusConnection *conn, const char *uuid,
 					uint16_t version, const char *name,
-					const char *object)
+					const char *object, const char *role)
 {
 	DBusMessageIter iter, dict;
 	DBusPendingCall *c;
@@ -128,6 +128,9 @@ int bt_register_profile(DBusConnection *conn, const char *uuid,
 	ofono_dbus_dict_append(&dict, "Name", DBUS_TYPE_STRING, &name);
 	ofono_dbus_dict_append(&dict, "Version", DBUS_TYPE_UINT16, &version);
 
+	if (role)
+		ofono_dbus_dict_append(&dict, "Role", DBUS_TYPE_STRING, &role);
+
 	dbus_message_iter_close_container(&iter, &dict);
 
 	if (!dbus_connection_send_with_reply(conn, msg, &c, -1)) {
@@ -142,6 +145,14 @@ int bt_register_profile(DBusConnection *conn, const char *uuid,
 	dbus_message_unref(msg);
 
 	return 0;
+}
+
+int bt_register_profile(DBusConnection *conn, const char *uuid,
+					uint16_t version, const char *name,
+							const char *object)
+{
+	return bt_register_profile_with_role(conn, uuid, version, name, object,
+									NULL);
 }
 
 void bt_unregister_profile(DBusConnection *conn, const char *object)
