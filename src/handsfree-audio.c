@@ -67,14 +67,6 @@ static int ref_count = 0;
 static GSList *card_list = 0;
 static guint sco_watch = 0;
 
-static int card_cmp(gconstpointer a, gconstpointer b)
-{
-	const struct ofono_handsfree_card *card = a;
-	const char *remote = b;
-
-	return g_strcmp0(card->remote, remote);
-}
-
 static void send_new_connection(const char *card, int fd)
 {
 	DBusMessage *msg;
@@ -94,15 +86,30 @@ static void send_new_connection(const char *card, int fd)
 	g_dbus_send_message(ofono_dbus_get_connection(), msg);
 }
 
+static struct ofono_handsfree_card *card_find(const char *remote,
+							const char *local)
+{
+	GSList *list;
+
+	for (list = card_list; list; list = g_slist_next(list)) {
+		struct ofono_handsfree_card *card = list->data;
+
+		if (g_str_equal(card->remote, remote) &&
+				g_str_equal(card->local, local))
+			return card;
+	}
+
+	return NULL;
+}
+
 static gboolean sco_accept(GIOChannel *io, GIOCondition cond,
 							gpointer user_data)
 {
 	struct ofono_handsfree_card *card;
 	struct sockaddr_sco saddr;
-	GSList *list;
 	socklen_t alen;
 	int sk, nsk;
-	char remote[18];
+	char local[18], remote[18];
 
 	if (cond & (G_IO_ERR | G_IO_HUP | G_IO_NVAL))
 		return FALSE;
@@ -118,14 +125,25 @@ static gboolean sco_accept(GIOChannel *io, GIOCondition cond,
 
 	bt_ba2str(&saddr.sco_bdaddr, remote);
 
-	list = g_slist_find_custom(card_list, remote, card_cmp);
-	if (list == NULL) {
+	memset(&saddr, 0, sizeof(saddr));
+	alen = sizeof(saddr);
+
+	if (getsockname(nsk, (struct sockaddr *) &saddr, &alen) < 0) {
+		ofono_error("SCO getsockname(): %s (%d)",
+						strerror(errno), errno);
+		close(nsk);
+		return TRUE;
+	}
+
+	bt_ba2str(&saddr.sco_bdaddr, local);
+
+	card = card_find(remote, local);
+	if (card == NULL) {
 		ofono_error("Rejecting SCO: Audio Card not found!");
 		close(nsk);
 		return TRUE;
 	}
 
-	card = list->data;
 	send_new_connection(card->path, nsk);
 	close(nsk);
 
