@@ -26,7 +26,6 @@
 #include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <sys/socket.h>
 #include <string.h>
 
 #include <glib.h>
@@ -46,22 +45,6 @@ struct finish_callback {
 	gpointer user_data;
 	char *member;
 };
-
-void bt_bacpy(bdaddr_t *dst, const bdaddr_t *src)
-{
-	memcpy(dst, src, sizeof(bdaddr_t));
-}
-
-int bt_ba2str(const bdaddr_t *ba, char *str)
-{
-	return sprintf(str, "%2.2X:%2.2X:%2.2X:%2.2X:%2.2X:%2.2X",
-		ba->b[5], ba->b[4], ba->b[3], ba->b[2], ba->b[1], ba->b[0]);
-}
-
-int bt_bacmp(const bdaddr_t *ba1, const bdaddr_t *ba2)
-{
-	return memcmp(ba1, ba2, sizeof(bdaddr_t));
-}
 
 static void profile_register_cb(DBusPendingCall *call, gpointer user_data)
 {
