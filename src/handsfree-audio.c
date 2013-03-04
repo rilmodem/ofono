@@ -123,6 +123,12 @@ static gboolean sco_accept(GIOChannel *io, GIOCondition cond,
 	if (nsk < 0)
 		return TRUE;
 
+	if (agent == NULL) {
+		ofono_error("Reject SCO: Agent not registered");
+		close(nsk);
+		return TRUE;
+	}
+
 	bt_ba2str(&saddr.sco_bdaddr, remote);
 
 	memset(&saddr, 0, sizeof(saddr));
