@@ -52,6 +52,7 @@
 
 #include <drivers/hfpmodem/slc.h>
 
+#include "bluetooth.h"
 #include "bluez5.h"
 
 #ifndef DBUS_TYPE_UNIX_FD
