@@ -75,10 +75,31 @@ static int card_cmp(gconstpointer a, gconstpointer b)
 	return g_strcmp0(card->remote, remote);
 }
 
+static void send_new_connection(const char *card, int fd)
+{
+	DBusMessage *msg;
+	DBusMessageIter iter;
+	uint8_t codec = HFP_CODEC_CVSD;
+
+	msg = dbus_message_new_method_call(agent->owner, agent->path,
+				HFP_AUDIO_AGENT_INTERFACE, "NewConnection");
+	if (msg == NULL)
+		return;
+
+	dbus_message_iter_init_append(msg, &iter);
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_OBJECT_PATH, &card);
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_UNIX_FD, &fd);
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_BYTE, &codec);
+
+	g_dbus_send_message(ofono_dbus_get_connection(), msg);
+}
+
 static gboolean sco_accept(GIOChannel *io, GIOCondition cond,
 							gpointer user_data)
 {
+	struct ofono_handsfree_card *card;
 	struct sockaddr_sco saddr;
+	GSList *list;
 	socklen_t alen;
 	int sk, nsk;
 	char remote[18];
@@ -97,11 +118,16 @@ static gboolean sco_accept(GIOChannel *io, GIOCondition cond,
 
 	bt_ba2str(&saddr.sco_bdaddr, remote);
 
-	if (g_slist_find_custom(card_list, remote, card_cmp) == NULL) {
+	list = g_slist_find_custom(card_list, remote, card_cmp);
+	if (list == NULL) {
 		ofono_error("Rejecting SCO: Audio Card not found!");
 		close(nsk);
 		return TRUE;
 	}
+
+	card = list->data;
+	send_new_connection(card->path, nsk);
+	close(nsk);
 
 	return TRUE;
 }
