@@ -138,7 +138,7 @@ static gboolean sco_accept(GIOChannel *io, GIOCondition cond,
 	bt_ba2str(&saddr.sco_bdaddr, local);
 
 	card = card_find(remote, local);
-	if (card == NULL) {
+	if (card == NULL || card->path == NULL) {
 		ofono_error("Rejecting SCO: Audio Card not found!");
 		close(nsk);
 		return TRUE;
