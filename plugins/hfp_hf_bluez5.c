@@ -68,8 +68,6 @@ struct hfp {
 };
 
 static GDBusClient *bluez = NULL;
-static guint sco_watch = 0;
-static uint16_t local_hfp_version = HFP_VERSION_1_6;
 
 static void hfp_debug(const char *str, void *user_data)
 {
@@ -483,100 +481,11 @@ static const GDBusMethodTable profile_methods[] = {
 	{ }
 };
 
-static ofono_bool_t slc_match(struct ofono_modem *modem, void *userdata)
-{
-	const char *remote = userdata;
-	const char *value = ofono_modem_get_string(modem, "Remote");
-
-	if (value == NULL)
-		return FALSE;
-
-	/* Make sure SLC has been established */
-	if (ofono_modem_get_powered(modem) != TRUE)
-		return FALSE;
-
-	return g_str_equal(remote, value);
-}
-
-static gboolean sco_accept(GIOChannel *io, GIOCondition cond,
-							gpointer user_data)
-{
-	struct sockaddr_sco saddr;
-	socklen_t alen;
-	int sk, nsk;
-	char remote[18];
-
-	if (cond & (G_IO_ERR | G_IO_HUP | G_IO_NVAL))
-		return FALSE;
-
-	sk = g_io_channel_unix_get_fd(io);
-
-	memset(&saddr, 0, sizeof(saddr));
-	alen = sizeof(saddr);
-
-	nsk = accept(sk, (struct sockaddr *) &saddr, &alen);
-	if (nsk < 0)
-		return TRUE;
-
-	bt_ba2str(&saddr.sco_bdaddr, remote);
-
-	if (ofono_modem_find(slc_match, remote) == NULL) {
-		ofono_error("Rejecting SCO: No SLC connection found!");
-		close(nsk);
-		return TRUE;
-	}
-
-	return TRUE;
-}
-
-static int sco_init(void)
-{
-	GIOChannel *sco_io;
-	struct sockaddr_sco saddr;
-	int sk, defer_setup = 1;
-
-	sk = socket(PF_BLUETOOTH, SOCK_SEQPACKET | O_NONBLOCK | SOCK_CLOEXEC,
-								BTPROTO_SCO);
-	if (sk < 0)
-		return -errno;
-
-	/* Bind to local address */
-	memset(&saddr, 0, sizeof(saddr));
-	saddr.sco_family = AF_BLUETOOTH;
-	bt_bacpy(&saddr.sco_bdaddr, BDADDR_ANY);
-
-	if (bind(sk, (struct sockaddr *) &saddr, sizeof(saddr)) < 0) {
-		close(sk);
-		return -errno;
-	}
-
-	if (setsockopt(sk, SOL_BLUETOOTH, BT_DEFER_SETUP,
-				&defer_setup, sizeof(defer_setup)) < 0) {
-		ofono_warn("Can't enable deferred setup: %s (%d)",
-						strerror(errno), errno);
-		local_hfp_version = HFP_VERSION_1_5;
-	}
-
-	if (listen(sk, 5) < 0) {
-		close(sk);
-		return -errno;
-	}
-
-	sco_io = g_io_channel_unix_new(sk);
-	sco_watch = g_io_add_watch(sco_io,
-				G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_NVAL,
-				sco_accept, NULL);
-
-	g_io_channel_unref(sco_io);
-
-	return 0;
-}
-
 static void connect_handler(DBusConnection *conn, void *user_data)
 {
 	DBG("Registering External Profile handler ...");
 
-	bt_register_profile(conn, HFP_HS_UUID, local_hfp_version, "hfp_hf",
+	bt_register_profile(conn, HFP_HS_UUID, HFP_VERSION_1_6, "hfp_hf",
 						HFP_EXT_PROFILE_PATH);
 }
 
@@ -696,12 +605,6 @@ static int hfp_init(void)
 	if (DBUS_TYPE_UNIX_FD < 0)
 		return -EBADF;
 
-	err = sco_init();
-	if (err < 0) {
-		ofono_error("SCO: %s(%d)", strerror(-err), -err);
-		return err;
-	}
-
 	/* Registers External Profile handler */
 	if (!g_dbus_register_interface(conn, HFP_EXT_PROFILE_PATH,
 					BLUEZ_PROFILE_INTERFACE,
@@ -745,9 +648,6 @@ static void hfp_exit(void)
 						BLUEZ_PROFILE_INTERFACE);
 	ofono_modem_driver_unregister(&hfp_driver);
 	g_dbus_client_unref(bluez);
-
-	if (sco_watch > 0)
-		g_source_remove(sco_watch);
 
 	ofono_handsfree_audio_unref();
 }
