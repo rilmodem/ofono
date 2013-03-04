@@ -25,12 +25,17 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/socket.h>
 
 #include <gdbus.h>
 
 #include <ofono/handsfree-audio.h>
 
+#include "bluetooth.h"
 #include "ofono.h"
 
 #define HFP_AUDIO_MANAGER_INTERFACE	OFONO_SERVICE ".HandsfreeAudioManager"
@@ -60,6 +65,87 @@ struct agent {
 static struct agent *agent = NULL;
 static int ref_count = 0;
 static GSList *card_list = 0;
+static guint sco_watch = 0;
+
+static int card_cmp(gconstpointer a, gconstpointer b)
+{
+	const struct ofono_handsfree_card *card = a;
+	const char *remote = b;
+
+	return g_strcmp0(card->remote, remote);
+}
+
+static gboolean sco_accept(GIOChannel *io, GIOCondition cond,
+							gpointer user_data)
+{
+	struct sockaddr_sco saddr;
+	socklen_t alen;
+	int sk, nsk;
+	char remote[18];
+
+	if (cond & (G_IO_ERR | G_IO_HUP | G_IO_NVAL))
+		return FALSE;
+
+	sk = g_io_channel_unix_get_fd(io);
+
+	memset(&saddr, 0, sizeof(saddr));
+	alen = sizeof(saddr);
+
+	nsk = accept(sk, (struct sockaddr *) &saddr, &alen);
+	if (nsk < 0)
+		return TRUE;
+
+	bt_ba2str(&saddr.sco_bdaddr, remote);
+
+	if (g_slist_find_custom(card_list, remote, card_cmp) == NULL) {
+		ofono_error("Rejecting SCO: Audio Card not found!");
+		close(nsk);
+		return TRUE;
+	}
+
+	return TRUE;
+}
+
+static int sco_init(void)
+{
+	GIOChannel *sco_io;
+	struct sockaddr_sco saddr;
+	int sk, defer_setup = 1;
+
+	sk = socket(PF_BLUETOOTH, SOCK_SEQPACKET | O_NONBLOCK | SOCK_CLOEXEC,
+								BTPROTO_SCO);
+	if (sk < 0)
+		return -errno;
+
+	/* Bind to local address */
+	memset(&saddr, 0, sizeof(saddr));
+	saddr.sco_family = AF_BLUETOOTH;
+	bt_bacpy(&saddr.sco_bdaddr, BDADDR_ANY);
+
+	if (bind(sk, (struct sockaddr *) &saddr, sizeof(saddr)) < 0) {
+		close(sk);
+		return -errno;
+	}
+
+	if (setsockopt(sk, SOL_BLUETOOTH, BT_DEFER_SETUP,
+				&defer_setup, sizeof(defer_setup)) < 0)
+		ofono_warn("Can't enable deferred setup: %s (%d)",
+						strerror(errno), errno);
+
+	if (listen(sk, 5) < 0) {
+		close(sk);
+		return -errno;
+	}
+
+	sco_io = g_io_channel_unix_new(sk);
+	sco_watch = g_io_add_watch(sco_io,
+				G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_NVAL,
+				sco_accept, NULL);
+
+	g_io_channel_unref(sco_io);
+
+	return 0;
+}
 
 static void card_append_properties(struct ofono_handsfree_card *card,
 					DBusMessageIter *dict)
@@ -437,7 +523,7 @@ void ofono_handsfree_audio_unref(void)
 
 int __ofono_handsfree_audio_manager_init(void)
 {
-	return 0;
+	return sco_init();
 }
 
 void __ofono_handsfree_audio_manager_cleanup(void)
@@ -450,4 +536,7 @@ void __ofono_handsfree_audio_manager_cleanup(void)
 
 	ref_count = 1;
 	ofono_handsfree_audio_unref();
+
+	if (sco_watch > 0)
+		g_source_remove(sco_watch);
 }
