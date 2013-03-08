@@ -46,7 +46,6 @@
 #include <ofono/netreg.h>
 #include <ofono/voicecall.h>
 #include <ofono/call-volume.h>
-#include <ofono/handsfree-audio.h>
 #include <ofono/handsfree.h>
 #include <ofono/handsfree-audio.h>
 
