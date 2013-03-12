@@ -69,3 +69,11 @@ static inline int bt_bacmp(const bdaddr_t *ba1, const bdaddr_t *ba2)
 {
 	return memcmp(ba1, ba2, sizeof(bdaddr_t));
 }
+
+static inline void bt_str2ba(const char *str, bdaddr_t *ba)
+{
+	int i;
+
+	for (i = 5; i >= 0; i--, str += 3)
+		ba->b[i] = strtol(str, NULL, 16);
+}
