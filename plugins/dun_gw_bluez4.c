@@ -167,5 +167,6 @@ static void dun_gw_exit(void)
 	}
 }
 
-OFONO_PLUGIN_DEFINE(dun_gw, "Dial-up Networking Profile Plugins", VERSION,
-			OFONO_PLUGIN_PRIORITY_DEFAULT, dun_gw_init, dun_gw_exit)
+OFONO_PLUGIN_DEFINE(dun_gw_bluez4, "Dial-up Networking Profile Plugins",
+				VERSION, OFONO_PLUGIN_PRIORITY_DEFAULT,
+				dun_gw_init, dun_gw_exit)
