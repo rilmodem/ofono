@@ -52,6 +52,7 @@ struct ofono_handsfree_card {
 	char *remote;
 	char *local;
 	char *path;
+	void *driver_data;
 };
 
 struct agent {
@@ -265,6 +266,17 @@ struct ofono_handsfree_card *ofono_handsfree_card_create(const char *remote,
 	card_list = g_slist_prepend(card_list, card);
 
 	return card;
+}
+
+void ofono_handsfree_card_set_data(struct ofono_handsfree_card *card,
+					void *data)
+{
+	card->driver_data = data;
+}
+
+void *ofono_handsfree_card_get_data(struct ofono_handsfree_card *card)
+{
+	return card->driver_data;
 }
 
 static void emit_card_added(struct ofono_handsfree_card *card)
