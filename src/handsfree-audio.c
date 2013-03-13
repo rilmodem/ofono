@@ -66,6 +66,7 @@ static struct agent *agent = NULL;
 static int ref_count = 0;
 static GSList *card_list = 0;
 static guint sco_watch = 0;
+static GSList *drivers = 0;
 
 static void send_new_connection(const char *card, int fd)
 {
@@ -533,6 +534,27 @@ static const GDBusSignalTable am_signals[] = {
 		GDBUS_ARGS({ "path", "o" })) },
 	{ }
 };
+
+int ofono_handsfree_card_driver_register(
+				const struct ofono_handsfree_card_driver *d)
+{
+	DBG("driver: %p", d);
+
+	if (d->probe == NULL)
+		return -EINVAL;
+
+	drivers = g_slist_prepend(drivers, (void *) d);
+
+	return 0;
+}
+
+void ofono_handsfree_card_driver_unregister(
+				const struct ofono_handsfree_card_driver *d)
+{
+	DBG("driver: %p", d);
+
+	drivers = g_slist_remove(drivers, (void *) d);
+}
 
 void ofono_handsfree_audio_ref(void)
 {
