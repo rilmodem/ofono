@@ -30,6 +30,19 @@ extern "C" {
 
 struct ofono_handsfree_card;
 
+typedef void (*ofono_handsfree_card_connect_cb_t)(
+				const struct ofono_error *error, void *data);
+
+struct ofono_handsfree_card_driver {
+	const char *name;
+	int (*probe)(struct ofono_handsfree_card *card, unsigned int vendor,
+			void *data);
+	void (*remove)(struct ofono_handsfree_card *card);
+	int (*connect)(struct ofono_handsfree_card *card,
+				ofono_handsfree_card_connect_cb_t cb,
+				void *data);
+};
+
 struct ofono_handsfree_card *ofono_handsfree_card_create(const char *remote,
 							const char *local);
 int ofono_handsfree_card_register(struct ofono_handsfree_card *card);
@@ -37,6 +50,11 @@ void ofono_handsfree_card_remove(struct ofono_handsfree_card *card);
 
 void ofono_handsfree_audio_ref(void);
 void ofono_handsfree_audio_unref(void);
+
+int ofono_handsfree_card_driver_register(
+				const struct ofono_handsfree_card_driver *d);
+void ofono_handsfree_card_driver_unregister(
+				const struct ofono_handsfree_card_driver *d);
 
 #ifdef __cplusplus
 }
