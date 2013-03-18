@@ -396,7 +396,7 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 
 	hfp = ofono_modem_get_data(modem);
 	hfp->msg = dbus_message_ref(msg);
-	hfp->card = ofono_handsfree_card_create(remote, local);
+	hfp->card = ofono_handsfree_card_create(0, NULL, NULL);
 
 	return NULL;
 
