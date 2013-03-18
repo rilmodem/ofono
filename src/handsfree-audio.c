@@ -52,6 +52,7 @@ struct ofono_handsfree_card {
 	char *remote;
 	char *local;
 	char *path;
+	const struct ofono_handsfree_card_driver *driver;
 	void *driver_data;
 };
 
@@ -253,17 +254,29 @@ static const GDBusSignalTable card_signals[] = {
 	{ }
 };
 
-struct ofono_handsfree_card *ofono_handsfree_card_create(const char *remote,
-							const char *local)
+struct ofono_handsfree_card *ofono_handsfree_card_create(unsigned int vendor,
+							const char *driver,
+							void *data)
 {
 	struct ofono_handsfree_card *card;
+	GSList *l;
 
 	card = g_new0(struct ofono_handsfree_card, 1);
 
-	card->remote = g_strdup(remote);
-	card->local = g_strdup(local);
-
 	card_list = g_slist_prepend(card_list, card);
+
+	for (l = drivers; l; l = l->next) {
+		const struct ofono_handsfree_card_driver *drv = l->data;
+
+		if (g_strcmp0(drv->name, driver))
+			continue;
+
+		if (drv->probe(card, vendor, data) < 0)
+			continue;
+
+		card->driver = drv;
+		break;
+	}
 
 	return card;
 }
@@ -277,6 +290,34 @@ void ofono_handsfree_card_set_data(struct ofono_handsfree_card *card,
 void *ofono_handsfree_card_get_data(struct ofono_handsfree_card *card)
 {
 	return card->driver_data;
+}
+
+void ofono_handsfree_card_set_remote(struct ofono_handsfree_card *card,
+					const char *remote)
+{
+	if (card->remote)
+		g_free(card->remote);
+
+	card->remote = g_strdup(remote);
+}
+
+const char *ofono_handsfree_card_get_remote(struct ofono_handsfree_card *card)
+{
+	return card->remote;
+}
+
+void ofono_handsfree_card_set_local(struct ofono_handsfree_card *card,
+					const char *local)
+{
+	if (card->local)
+		g_free(card->local);
+
+	card->local = g_strdup(local);
+}
+
+const char *ofono_handsfree_card_get_local(struct ofono_handsfree_card *card)
+{
+	return card->local;
 }
 
 static void emit_card_added(struct ofono_handsfree_card *card)
