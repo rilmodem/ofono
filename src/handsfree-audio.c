@@ -410,6 +410,9 @@ void ofono_handsfree_card_remove(struct ofono_handsfree_card *card)
 	g_free(card->remote);
 	g_free(card->local);
 
+	if (card->driver && card->driver->remove)
+		card->driver->remove(card);
+
 	g_free(card);
 }
 
