@@ -52,6 +52,24 @@ static void bluetooth_device_destroy(gpointer user_data)
 	g_free(bt_device);
 }
 
+static void bluetooth_device_connect(struct dundee_device *device,
+			dundee_device_connect_cb_t cb, void *data)
+{
+	DBG("");
+}
+
+static void bluetooth_device_disconnect(struct dundee_device *device,
+				dundee_device_disconnect_cb_t cb, void *data)
+{
+	DBG("");
+}
+
+struct dundee_device_driver bluetooth_driver = {
+	.name = "bluetooth",
+	.connect = bluetooth_device_connect,
+	.disconnect = bluetooth_device_disconnect,
+};
+
 static struct bluetooth_device *bluetooth_device_create(const char *path,
 					const char *address, const char *alias)
 {
