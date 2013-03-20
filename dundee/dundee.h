@@ -130,6 +130,9 @@ struct dundee_device *dundee_device_create(struct dundee_device_driver *d);
 int dundee_device_register(struct dundee_device *device);
 void dundee_device_unregister(struct dundee_device *device);
 
+void dundee_device_disconnect(const struct dundee_error *error,
+						struct dundee_device *device);
+
 void dundee_device_set_data(struct dundee_device *device, void *data);
 void *dundee_device_get_data(struct dundee_device *device);
 
