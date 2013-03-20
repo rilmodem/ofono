@@ -35,6 +35,8 @@ static GDBusClient *bluez;
 static GHashTable *registered_devices;
 
 struct bluetooth_device {
+	struct dundee_device *device;
+
 	char *path;
 	char *address;
 	char *name;
@@ -45,6 +47,9 @@ static void bluetooth_device_destroy(gpointer user_data)
 	struct bluetooth_device *bt_device = user_data;
 
 	DBG("%s", bt_device->path);
+
+	if (bt_device->device != NULL)
+		dundee_device_unregister(bt_device->device);
 
 	g_free(bt_device->path);
 	g_free(bt_device->address);
@@ -93,6 +98,7 @@ static struct bluetooth_device *bluetooth_device_register(GDBusProxy *proxy)
 	const char *path = g_dbus_proxy_get_path(proxy);
 	const char *alias, *address;
 	struct bluetooth_device *bt_device;
+	struct dundee_device *device;
 	DBusMessageIter iter;
 
 	DBG("%s", path);
@@ -116,9 +122,26 @@ static struct bluetooth_device *bluetooth_device_register(GDBusProxy *proxy)
 		return NULL;
 	}
 
+	device = dundee_device_create(&bluetooth_driver);
+	if (device == NULL)
+		goto free;
+
+	dundee_device_set_data(device, bt_device);
+	dundee_device_set_name(device, bt_device->name);
+
+	if (dundee_device_register(device) < 0) {
+		g_free(device);
+		goto free;
+	}
+
+	bt_device->device = device;
 	g_hash_table_insert(registered_devices, g_strdup(path), bt_device);
 
 	return bt_device;
+
+free:
+	bluetooth_device_destroy(bt_device);
+	return NULL;
 }
 
 static void bluetooth_device_unregister(const char *path)
