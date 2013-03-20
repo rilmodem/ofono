@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <sys/socket.h>
 #include <gdbus.h>
+#include <errno.h>
 
 #include "dundee.h"
 #include "plugins/bluez5.h"
@@ -40,6 +41,59 @@ struct bluetooth_device {
 	char *path;
 	char *address;
 	char *name;
+};
+
+static DBusMessage *profile_new_connection(DBusConnection *conn,
+					DBusMessage *msg, void *user_data)
+{
+	DBG("");
+
+	return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
+						".NotImplemented",
+						"Implementation not provided");
+}
+
+static DBusMessage *profile_release(DBusConnection *conn,
+					DBusMessage *msg, void *user_data)
+{
+	DBG("");
+
+	return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
+						".NotImplemented",
+						"Implementation not provided");
+}
+
+static DBusMessage *profile_cancel(DBusConnection *conn,
+					DBusMessage *msg, void *user_data)
+{
+	DBG("");
+
+	return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
+						".NotImplemented",
+						"Implementation not provided");
+}
+
+static DBusMessage *profile_disconnection(DBusConnection *conn,
+					DBusMessage *msg, void *user_data)
+{
+	DBG("");
+
+	return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
+						".NotImplemented",
+						"Implementation not provided");
+}
+
+static const GDBusMethodTable profile_methods[] = {
+	{ GDBUS_ASYNC_METHOD("NewConnection",
+				GDBUS_ARGS({ "device", "o"}, { "fd", "h"},
+						{ "fd_properties", "a{sv}" }),
+				NULL, profile_new_connection) },
+	{ GDBUS_METHOD("Release", NULL, NULL, profile_release) },
+	{ GDBUS_METHOD("Cancel", NULL, NULL, profile_cancel) },
+	{ GDBUS_METHOD("RequestDisconnection",
+				GDBUS_ARGS({"device", "o"}), NULL,
+				profile_disconnection) },
+	{ }
 };
 
 static void bluetooth_device_destroy(gpointer user_data)
@@ -235,6 +289,15 @@ int __dundee_bluetooth_init(void)
 
 	DBG("");
 
+	if (!g_dbus_register_interface(conn, DUN_DT_PROFILE_PATH,
+					BLUEZ_PROFILE_INTERFACE,
+					profile_methods, NULL,
+					NULL, NULL, NULL)) {
+		ofono_error("Register Profile interface failed: %s",
+						DUN_DT_PROFILE_PATH);
+		return -EIO;
+	}
+
 	bluez = g_dbus_client_new(conn, BLUEZ_SERVICE, BLUEZ_MANAGER_PATH);
 	g_dbus_client_set_connect_watch(bluez, connect_handler, NULL);
 	g_dbus_client_set_proxy_handlers(bluez, proxy_added, NULL, NULL, NULL);
@@ -247,7 +310,12 @@ int __dundee_bluetooth_init(void)
 
 void __dundee_bluetooth_cleanup(void)
 {
+	DBusConnection *conn = ofono_dbus_get_connection();
+
 	DBG("");
+
+	g_dbus_unregister_interface(conn, DUN_DT_PROFILE_PATH,
+						BLUEZ_PROFILE_INTERFACE);
 
 	g_dbus_client_unref(bluez);
 	g_hash_table_destroy(registered_devices);
