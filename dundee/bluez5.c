@@ -114,7 +114,12 @@ static void bluetooth_device_destroy(gpointer user_data)
 static void bluetooth_device_connect(struct dundee_device *device,
 			dundee_device_connect_cb_t cb, void *data)
 {
-	DBG("");
+	struct bluetooth_device *bt_device = dundee_device_get_data(device);
+
+	DBG("%s", bt_device->path);
+
+	bt_connect_profile(ofono_dbus_get_connection(), bt_device->path,
+						DUN_GW_UUID, NULL, NULL);
 }
 
 static void bluetooth_device_disconnect(struct dundee_device *device,
