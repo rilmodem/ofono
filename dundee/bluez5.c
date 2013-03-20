@@ -22,11 +22,45 @@
 #include <config.h>
 #endif
 
+#include <stdint.h>
+#include <sys/socket.h>
+#include <gdbus.h>
+
 #include "dundee.h"
+#include "plugins/bluez5.h"
+
+#define DUN_DT_PROFILE_PATH   "/bluetooth/profile/dun_dt"
+
+static GDBusClient *bluez;
+
+static void proxy_added(GDBusProxy *proxy, void *user_data)
+{
+	const char *path = g_dbus_proxy_get_path(proxy);
+	const char *interface = g_dbus_proxy_get_interface(proxy);
+
+	if (!g_str_equal(BLUEZ_DEVICE_INTERFACE, interface))
+		return;
+
+	DBG("%s %s", path, interface);
+}
+
+static void connect_handler(DBusConnection *conn, void *user_data)
+{
+	DBG("");
+
+	bt_register_profile_with_role(conn, DUN_GW_UUID, DUN_VERSION_1_2,
+				"dun_dt", DUN_DT_PROFILE_PATH, "client");
+}
 
 int __dundee_bluetooth_init(void)
 {
+	DBusConnection *conn = ofono_dbus_get_connection();
+
 	DBG("");
+
+	bluez = g_dbus_client_new(conn, BLUEZ_SERVICE, BLUEZ_MANAGER_PATH);
+	g_dbus_client_set_connect_watch(bluez, connect_handler, NULL);
+	g_dbus_client_set_proxy_handlers(bluez, proxy_added, NULL, NULL, NULL);
 
 	return 0;
 }
@@ -34,4 +68,6 @@ int __dundee_bluetooth_init(void)
 void __dundee_bluetooth_cleanup(void)
 {
 	DBG("");
+
+	g_dbus_client_unref(bluez);
 }

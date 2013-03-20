@@ -26,6 +26,8 @@
 
 #include <ofono/types.h>
 
+#define DUN_VERSION_1_2 0x0102
+
 void __dundee_exit(void);
 
 enum dundee_error_type {
