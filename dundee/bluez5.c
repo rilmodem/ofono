@@ -133,6 +133,20 @@ static gboolean has_dun_uuid(DBusMessageIter *array)
 	return FALSE;
 }
 
+static void alias_changed(GDBusProxy *proxy, const char *name,
+					DBusMessageIter *iter, void *user_data)
+{
+	const char *alias;
+	struct bluetooth_device *bt_device = user_data;
+
+	if (!g_str_equal("Alias", name))
+		return;
+
+	dbus_message_iter_get_basic(iter, &alias);
+
+	bt_device->name = g_strdup(alias);
+}
+
 static void bluetooth_device_removed(GDBusProxy *proxy, void *user_data)
 {
 	struct bluetooth_device *bt_device = user_data;
@@ -161,6 +175,7 @@ static void proxy_added(GDBusProxy *proxy, void *user_data)
 		return;
 
 	bt_device = bluetooth_device_register(proxy);
+	g_dbus_proxy_set_property_watch(proxy, alias_changed, bt_device);
 	g_dbus_proxy_set_removed_watch(proxy, bluetooth_device_removed,
 								bt_device);
 }
