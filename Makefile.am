@@ -913,14 +913,12 @@ endif
 endif
 
 if BLUETOOTH
-if BLUEZ4
 if DUNDEE
 sbin_PROGRAMS += dundee/dundee
 
-dundee_dundee_SOURCES = $(gdbus_sources) $(gatchat_sources) $(btio_sources) \
-			src/log.c src/dbus.c plugins/bluez4.c \
-			dundee/dundee.h dundee/main.c dundee/dbus.c \
-			dundee/manager.c dundee/device.c dundee/bluez4.c
+dundee_common_sources = $(gdbus_sources) $(gatchat_sources) \
+			src/log.c src/dbus.c dundee/dundee.h dundee/main.c \
+			dundee/dbus.c dundee/manager.c dundee/device.c
 
 dundee_dundee_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ -ldl
 
@@ -931,6 +929,13 @@ if SYSTEMD
 systemdunit_DATA += dundee/dundee.service
 endif
 endif
+
+if BLUEZ4
+dundee_dundee_SOURCES = $(dundee_common_sources) $(btio_sources) \
+			plugins/bluez4.c dundee/bluez4.c
+else
+dundee_dundee_SOURCES = $(dundee_common_sources) plugins/bluez5.c \
+			dundee/bluez5.c
 endif
 endif
 endif
