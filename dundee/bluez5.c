@@ -32,6 +32,25 @@
 #define DUN_DT_PROFILE_PATH   "/bluetooth/profile/dun_dt"
 
 static GDBusClient *bluez;
+static GHashTable *registered_devices;
+
+struct bluetooth_device {
+	char *path;
+	char *address;
+	char *name;
+};
+
+static void bluetooth_device_destroy(gpointer user_data)
+{
+	struct bluetooth_device *bt_device = user_data;
+
+	DBG("%s", bt_device->path);
+
+	g_free(bt_device->path);
+	g_free(bt_device->address);
+	g_free(bt_device->name);
+	g_free(bt_device);
+}
 
 static void proxy_added(GDBusProxy *proxy, void *user_data)
 {
@@ -62,6 +81,9 @@ int __dundee_bluetooth_init(void)
 	g_dbus_client_set_connect_watch(bluez, connect_handler, NULL);
 	g_dbus_client_set_proxy_handlers(bluez, proxy_added, NULL, NULL, NULL);
 
+	registered_devices = g_hash_table_new_full(g_str_hash, g_str_equal,
+					g_free, bluetooth_device_destroy);
+
 	return 0;
 }
 
@@ -70,4 +92,5 @@ void __dundee_bluetooth_cleanup(void)
 	DBG("");
 
 	g_dbus_client_unref(bluez);
+	g_hash_table_destroy(registered_devices);
 }
