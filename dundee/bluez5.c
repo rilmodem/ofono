@@ -52,15 +52,117 @@ static void bluetooth_device_destroy(gpointer user_data)
 	g_free(bt_device);
 }
 
+static struct bluetooth_device *bluetooth_device_create(const char *path,
+					const char *address, const char *alias)
+{
+	struct bluetooth_device *bt_device;
+
+	DBG("%s %s %s", path, address, alias);
+
+	bt_device = g_try_new0(struct bluetooth_device, 1);
+	if (bt_device == NULL)
+		return NULL;
+
+	bt_device->path = g_strdup(path);
+	bt_device->address = g_strdup(address);
+	bt_device->name = g_strdup(alias);
+
+	return bt_device;
+}
+
+static struct bluetooth_device *bluetooth_device_register(GDBusProxy *proxy)
+{
+	const char *path = g_dbus_proxy_get_path(proxy);
+	const char *alias, *address;
+	struct bluetooth_device *bt_device;
+	DBusMessageIter iter;
+
+	DBG("%s", path);
+
+	if (g_hash_table_lookup(registered_devices, path) != NULL)
+		return NULL;
+
+	if (!g_dbus_proxy_get_property(proxy, "Address", &iter))
+		return NULL;
+
+	dbus_message_iter_get_basic(&iter, &address);
+
+	if (!g_dbus_proxy_get_property(proxy, "Alias", &iter))
+		return NULL;
+
+	dbus_message_iter_get_basic(&iter, &alias);
+
+	bt_device = bluetooth_device_create(path, address, alias);
+	if (bt_device == NULL) {
+		ofono_error("Register bluetooth device failed");
+		return NULL;
+	}
+
+	g_hash_table_insert(registered_devices, g_strdup(path), bt_device);
+
+	return bt_device;
+}
+
+static void bluetooth_device_unregister(const char *path)
+{
+	DBG("");
+
+	g_hash_table_remove(registered_devices, path);
+}
+
+static gboolean has_dun_uuid(DBusMessageIter *array)
+{
+	DBusMessageIter value;
+
+	if (dbus_message_iter_get_arg_type(array) != DBUS_TYPE_ARRAY)
+		return FALSE;
+
+	dbus_message_iter_recurse(array, &value);
+
+	while (dbus_message_iter_get_arg_type(&value) == DBUS_TYPE_STRING) {
+		const char *uuid;
+
+		dbus_message_iter_get_basic(&value, &uuid);
+
+		if (g_str_equal(uuid, DUN_GW_UUID))
+			return TRUE;
+
+		dbus_message_iter_next(&value);
+	}
+
+	return FALSE;
+}
+
+static void bluetooth_device_removed(GDBusProxy *proxy, void *user_data)
+{
+	struct bluetooth_device *bt_device = user_data;
+
+	DBG("%s", bt_device->path);
+
+	bluetooth_device_unregister(bt_device->path);
+}
+
 static void proxy_added(GDBusProxy *proxy, void *user_data)
 {
 	const char *path = g_dbus_proxy_get_path(proxy);
 	const char *interface = g_dbus_proxy_get_interface(proxy);
+	struct bluetooth_device *bt_device;
+	DBusMessageIter iter;
 
 	if (!g_str_equal(BLUEZ_DEVICE_INTERFACE, interface))
 		return;
 
+	if (!g_dbus_proxy_get_property(proxy, "UUIDs", &iter))
+		return;
+
 	DBG("%s %s", path, interface);
+
+	if (!has_dun_uuid(&iter))
+		return;
+
+	bt_device = bluetooth_device_register(proxy);
+	g_dbus_proxy_set_removed_watch(proxy, bluetooth_device_removed,
+								bt_device);
 }
 
 static void connect_handler(DBusConnection *conn, void *user_data)
