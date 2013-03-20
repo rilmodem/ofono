@@ -920,7 +920,7 @@ sbin_PROGRAMS += dundee/dundee
 dundee_dundee_SOURCES = $(gdbus_sources) $(gatchat_sources) $(btio_sources) \
 			src/log.c src/dbus.c plugins/bluez4.c \
 			dundee/dundee.h dundee/main.c dundee/dbus.c \
-			dundee/manager.c dundee/device.c dundee/bluetooth.c
+			dundee/manager.c dundee/device.c dundee/bluez4.c
 
 dundee_dundee_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ -ldl
 
