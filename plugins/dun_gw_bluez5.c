@@ -86,7 +86,7 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 		close(fd);
 		return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
 						".Rejected",
-						"No voice call capable modem");
+						"No GPRS capable modem");
 	}
 
 	DBG("Picked modem %p for emulator", modem);
