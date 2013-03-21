@@ -81,14 +81,14 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 	DBG("%s", device);
 
 	/* Pick the first powered modem */
-	modem = modems->data;
-	if (modem == NULL) {
+	if (modems == NULL) {
 		close(fd);
 		return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
 						".Rejected",
 						"No GPRS capable modem");
 	}
 
+	modem = modems->data;
 	DBG("Picked modem %p for emulator", modem);
 
 	em = ofono_emulator_create(modem, OFONO_EMULATOR_TYPE_DUN);
