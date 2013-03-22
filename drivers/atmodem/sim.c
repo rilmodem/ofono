@@ -1252,10 +1252,17 @@ static void at_pin_send_cb(gboolean ok, GAtResult *result,
 	case OFONO_VENDOR_ZTE:
 	case OFONO_VENDOR_ALCATEL:
 	case OFONO_VENDOR_HUAWEI:
+	case OFONO_VENDOR_SIMCOM:
 		/*
 		 * On ZTE modems, after pin is entered, SIM state is checked
 		 * by polling CPIN as their modem doesn't provide unsolicited
 		 * notification of SIM readiness.
+		 *
+		 * On SIMCOM modems, SIM is busy after pin is entered (we
+		 * got a "+CME ERROR: 14" for the "AT+CPIN?" request) and
+		 * ofono don't catch the "+CPIN: READY" message sent by the
+		 * modem when SIM is ready. So, use extra CPIN to check the
+		 * state.
 		 */
 		sd->sim_state_query = at_util_sim_state_query_new(sd->chat,
 						2, 20, sim_state_cb, cbd,
