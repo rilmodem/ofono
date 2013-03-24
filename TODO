@@ -159,15 +159,6 @@ Modem Emulator
   Priority: Medium
   Depends: HFP AG emulator as BlueZ service
 
-- Add support for BlueZ 5 Profile1 API to dundee
-  BlueZ 5 introduced a new API for registration of external profiles, which
-  obsoletes the Serial API currently in use by dundee. The BlueZ 4 related
-  code will be kept around for some time still.
-
-  Complexity: C2
-  Priority: Medium
-  Owner: Paulo Borges <paulo.borges@openbossa.org>
-
 PPP
 ===
 
