@@ -312,10 +312,16 @@ static DBusMessage *card_connect(DBusConnection *conn,
 {
 	struct ofono_handsfree_card *card = data;
 	GIOChannel *io;
+	const char *sender;
 	int sk;
 
 	if (agent == NULL)
 		return __ofono_error_not_available(msg);
+
+	sender = dbus_message_get_sender(msg);
+
+	if (!g_str_equal(sender, agent->owner))
+		return __ofono_error_not_allowed(msg);
 
 	if (card->msg)
 		return __ofono_error_busy(msg);
