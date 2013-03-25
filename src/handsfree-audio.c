@@ -53,6 +53,7 @@ struct ofono_handsfree_card {
 	char *remote;
 	char *local;
 	char *path;
+	DBusMessage *msg;
 	const struct ofono_handsfree_card_driver *driver;
 	void *driver_data;
 };
@@ -235,10 +236,100 @@ static DBusMessage *card_get_properties(DBusConnection *conn,
 	return reply;
 }
 
+static int card_connect_sco(struct ofono_handsfree_card *card)
+{
+	struct sockaddr_sco addr;
+	int sk, ret;
+
+	sk = socket(PF_BLUETOOTH, SOCK_SEQPACKET | O_NONBLOCK | SOCK_CLOEXEC,
+								BTPROTO_SCO);
+	if (sk < 0)
+		return -1;
+
+	/* Bind to local address */
+	memset(&addr, 0, sizeof(addr));
+	addr.sco_family = AF_BLUETOOTH;
+	bt_str2ba(card->local, &addr.sco_bdaddr);
+
+	if (bind(sk, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+		close(sk);
+		return -1;
+	}
+
+	/* Connect to remote device */
+	memset(&addr, 0, sizeof(addr));
+	addr.sco_family = AF_BLUETOOTH;
+	bt_str2ba(card->remote, &addr.sco_bdaddr);
+
+	ret = connect(sk, (struct sockaddr *) &addr, sizeof(addr));
+	if (ret < 0 && errno != EINPROGRESS) {
+		close(sk);
+		return -1;
+	}
+
+	return sk;
+}
+
+static gboolean sco_connect_cb(GIOChannel *io, GIOCondition cond,
+							gpointer user_data)
+
+{
+	struct ofono_handsfree_card *card = user_data;
+	DBusMessage *reply;
+	int sk;
+
+	if (agent == NULL) {
+		/* There's no agent, so there's no one to reply to */
+		reply = NULL;
+		goto done;
+	}
+
+	if (cond & (G_IO_ERR | G_IO_HUP | G_IO_NVAL)) {
+		reply = __ofono_error_failed(card->msg);
+		goto done;
+	}
+
+	sk = g_io_channel_unix_get_fd(io);
+
+	close(sk);
+
+	reply = dbus_message_new_method_return(card->msg);
+
+done:
+	if (reply)
+		g_dbus_send_message(ofono_dbus_get_connection(), reply);
+
+	dbus_message_unref(card->msg);
+	card->msg = NULL;
+
+	return FALSE;
+}
+
 static DBusMessage *card_connect(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
-	return __ofono_error_not_implemented(msg);
+	struct ofono_handsfree_card *card = data;
+	GIOChannel *io;
+	int sk;
+
+	if (agent == NULL)
+		return __ofono_error_not_available(msg);
+
+	if (card->msg)
+		return __ofono_error_busy(msg);
+
+	sk = card_connect_sco(card);
+	if (sk < 0)
+		return __ofono_error_failed(msg);
+
+	io = g_io_channel_unix_new(sk);
+	g_io_add_watch(io, G_IO_OUT | G_IO_ERR | G_IO_HUP | G_IO_NVAL,
+						sco_connect_cb, card);
+	g_io_channel_unref(io);
+
+	card->msg = dbus_message_ref(msg);
+
+	return NULL;
 }
 
 static const GDBusMethodTable card_methods[] = {
