@@ -291,6 +291,8 @@ static gboolean sco_connect_cb(GIOChannel *io, GIOCondition cond,
 
 	sk = g_io_channel_unix_get_fd(io);
 
+	send_new_connection(card->path, sk);
+
 	close(sk);
 
 	reply = dbus_message_new_method_return(card->msg);
