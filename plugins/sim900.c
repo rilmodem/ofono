@@ -311,11 +311,7 @@ static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
-	g_at_mux_shutdown(data->mux);
-	g_at_mux_unref(data->mux);
-
-	g_at_chat_unref(data->dlcs[SETUP_DLC]);
-	data->dlcs[SETUP_DLC] = NULL;
+	shutdown_device(data);
 
 	if (ok)
 		ofono_modem_set_powered(modem, FALSE);
@@ -329,8 +325,6 @@ static int sim900_disable(struct ofono_modem *modem)
 
 	g_at_chat_send(data->dlcs[SETUP_DLC], "AT+CFUN=4", none_prefix,
 					cfun_disable, modem, NULL);
-
-	shutdown_device(data);
 
 	return -EINPROGRESS;
 }
