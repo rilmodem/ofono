@@ -139,8 +139,12 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	chat = g_at_chat_new(channel, syntax);
 	g_at_syntax_unref(syntax);
 
-	if (chat == NULL)
+	if (chat == NULL) {
+		g_io_channel_unref(data->device);
+		data->device = NULL;
+
 		return NULL;
+	}
 
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(chat, sim900_debug, debug);
