@@ -193,10 +193,8 @@ static void shutdown_device(struct sim900_data *data)
 		g_at_mux_shutdown(data->mux);
 		g_at_mux_unref(data->mux);
 		data->mux = NULL;
-		goto done;
 	}
 
-done:
 	g_io_channel_unref(data->device);
 	data->device = NULL;
 }
