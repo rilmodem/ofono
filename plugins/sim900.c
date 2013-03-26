@@ -177,7 +177,7 @@ static GAtChat *create_chat(GIOChannel *channel, struct ofono_modem *modem,
 
 static void shutdown_device(struct sim900_data *data)
 {
-	int i, fd;
+	int i;
 
 	DBG("");
 
