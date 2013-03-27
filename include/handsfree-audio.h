@@ -38,7 +38,7 @@ struct ofono_handsfree_card_driver {
 	int (*probe)(struct ofono_handsfree_card *card, unsigned int vendor,
 			void *data);
 	void (*remove)(struct ofono_handsfree_card *card);
-	int (*connect)(struct ofono_handsfree_card *card,
+	void (*connect)(struct ofono_handsfree_card *card,
 				ofono_handsfree_card_connect_cb_t cb,
 				void *data);
 };
