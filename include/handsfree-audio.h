@@ -61,6 +61,8 @@ void ofono_handsfree_card_set_local(struct ofono_handsfree_card *card,
 					const char *local);
 const char *ofono_handsfree_card_get_local(struct ofono_handsfree_card *card);
 
+int ofono_handsfree_card_connect_sco(struct ofono_handsfree_card *card);
+
 void ofono_handsfree_audio_ref(void);
 void ofono_handsfree_audio_unref(void);
 
