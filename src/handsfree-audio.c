@@ -273,10 +273,24 @@ done:
 	return FALSE;
 }
 
+static void card_connect_reply_cb(const struct ofono_error *error, void *data)
+{
+	struct ofono_handsfree_card *card = data;
+	DBusMessage *reply;
+
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
+		reply = dbus_message_new_method_return(card->msg);
+	else
+		reply = __ofono_error_failed(card->msg);
+
+	__ofono_dbus_pending_reply(&card->msg, reply);
+}
+
 static DBusMessage *card_connect(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
 	struct ofono_handsfree_card *card = data;
+	const struct ofono_handsfree_card_driver *driver = card->driver;
 	const char *sender;
 	int err;
 
@@ -291,6 +305,17 @@ static DBusMessage *card_connect(DBusConnection *conn,
 	if (card->msg)
 		return __ofono_error_busy(msg);
 
+	if (!driver || !driver->connect)
+		goto fallback;
+
+	card->msg = dbus_message_ref(msg);
+
+	driver->connect(card, card_connect_reply_cb, card);
+
+	return NULL;
+
+fallback:
+	/* There's no driver, fallback to direct SCO connection */
 	err = ofono_handsfree_card_connect_sco(card);
 	if (err < 0)
 		return __ofono_error_failed(msg);
