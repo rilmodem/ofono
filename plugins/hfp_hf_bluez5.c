@@ -49,6 +49,7 @@
 #include <ofono/handsfree.h>
 #include <ofono/handsfree-audio.h>
 
+#include <drivers/atmodem/atutil.h>
 #include <drivers/hfpmodem/slc.h>
 
 #include "bluetooth.h"
@@ -327,7 +328,7 @@ static void hfp16_card_connect(struct ofono_handsfree_card *card,
 					ofono_handsfree_card_connect_cb_t cb,
 					void *data)
 {
-
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static struct ofono_handsfree_card_driver hfp16_hf_driver = {
