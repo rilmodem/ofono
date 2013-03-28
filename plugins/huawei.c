@@ -447,6 +447,13 @@ static void sysinfo_enable_cb(gboolean ok, GAtResult *result,
 	g_at_chat_send(data->pcui, "AT^CVOICE=?", cvoice_prefix,
 					cvoice_support_cb, modem, NULL);
 
+	/* For CDMA we use AlwaysOnline so we leave the modem online. */
+	if (data->have_gsm == FALSE && data->have_cdma == TRUE) {
+		ofono_modem_set_boolean(modem, "AlwaysOnline", TRUE);
+		ofono_modem_set_powered(modem, TRUE);
+		return;
+	}
+
 	if (g_at_chat_send(data->pcui, data->offline_command, none_prefix,
 					cfun_offline, modem, NULL) > 0)
 		return;
