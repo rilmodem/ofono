@@ -236,40 +236,6 @@ static DBusMessage *card_get_properties(DBusConnection *conn,
 	return reply;
 }
 
-static int card_connect_sco(struct ofono_handsfree_card *card)
-{
-	struct sockaddr_sco addr;
-	int sk, ret;
-
-	sk = socket(PF_BLUETOOTH, SOCK_SEQPACKET | O_NONBLOCK | SOCK_CLOEXEC,
-								BTPROTO_SCO);
-	if (sk < 0)
-		return -1;
-
-	/* Bind to local address */
-	memset(&addr, 0, sizeof(addr));
-	addr.sco_family = AF_BLUETOOTH;
-	bt_str2ba(card->local, &addr.sco_bdaddr);
-
-	if (bind(sk, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-		close(sk);
-		return -1;
-	}
-
-	/* Connect to remote device */
-	memset(&addr, 0, sizeof(addr));
-	addr.sco_family = AF_BLUETOOTH;
-	bt_str2ba(card->remote, &addr.sco_bdaddr);
-
-	ret = connect(sk, (struct sockaddr *) &addr, sizeof(addr));
-	if (ret < 0 && errno != EINPROGRESS) {
-		close(sk);
-		return -1;
-	}
-
-	return sk;
-}
-
 static gboolean sco_connect_cb(GIOChannel *io, GIOCondition cond,
 							gpointer user_data)
 
@@ -311,9 +277,8 @@ static DBusMessage *card_connect(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
 	struct ofono_handsfree_card *card = data;
-	GIOChannel *io;
 	const char *sender;
-	int sk;
+	int err;
 
 	if (agent == NULL)
 		return __ofono_error_not_available(msg);
@@ -326,14 +291,9 @@ static DBusMessage *card_connect(DBusConnection *conn,
 	if (card->msg)
 		return __ofono_error_busy(msg);
 
-	sk = card_connect_sco(card);
-	if (sk < 0)
+	err = ofono_handsfree_card_connect_sco(card);
+	if (err < 0)
 		return __ofono_error_failed(msg);
-
-	io = g_io_channel_unix_new(sk);
-	g_io_add_watch(io, G_IO_OUT | G_IO_ERR | G_IO_HUP | G_IO_NVAL,
-						sco_connect_cb, card);
-	g_io_channel_unref(io);
 
 	card->msg = dbus_message_ref(msg);
 
@@ -418,6 +378,47 @@ void ofono_handsfree_card_set_local(struct ofono_handsfree_card *card,
 const char *ofono_handsfree_card_get_local(struct ofono_handsfree_card *card)
 {
 	return card->local;
+}
+
+int ofono_handsfree_card_connect_sco(struct ofono_handsfree_card *card)
+{
+	GIOChannel *io;
+	struct sockaddr_sco addr;
+	int sk, ret;
+
+	sk = socket(PF_BLUETOOTH, SOCK_SEQPACKET | O_NONBLOCK | SOCK_CLOEXEC,
+								BTPROTO_SCO);
+	if (sk < 0)
+		return -1;
+
+	/* Bind to local address */
+	memset(&addr, 0, sizeof(addr));
+	addr.sco_family = AF_BLUETOOTH;
+	bt_str2ba(card->local, &addr.sco_bdaddr);
+
+	if (bind(sk, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+		ofono_error("Could not bind SCO socket");
+		close(sk);
+		return -1;
+	}
+
+	/* Connect to remote device */
+	memset(&addr, 0, sizeof(addr));
+	addr.sco_family = AF_BLUETOOTH;
+	bt_str2ba(card->remote, &addr.sco_bdaddr);
+
+	ret = connect(sk, (struct sockaddr *) &addr, sizeof(addr));
+	if (ret < 0 && errno != EINPROGRESS) {
+		close(sk);
+		return -1;
+	}
+
+	io = g_io_channel_unix_new(sk);
+	g_io_add_watch(io, G_IO_OUT | G_IO_ERR | G_IO_HUP | G_IO_NVAL,
+						sco_connect_cb, card);
+	g_io_channel_unref(io);
+
+	return 0;
 }
 
 static void emit_card_added(struct ofono_handsfree_card *card)
