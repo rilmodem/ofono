@@ -60,6 +60,8 @@
 
 #define HFP_EXT_PROFILE_PATH   "/bluetooth/profile/hfp_hf"
 
+#define HFP16_HF_DRIVER		"hfp16-hf-driver"
+
 struct hfp {
 	struct hfp_slc_info info;
 	DBusMessage *msg;
@@ -308,6 +310,31 @@ static struct ofono_modem_driver hfp_driver = {
 	.disable	= hfp_disable,
 	.pre_sim	= hfp_pre_sim,
 	.post_sim	= hfp_post_sim,
+};
+
+static int hfp16_card_probe(struct ofono_handsfree_card *card,
+					unsigned int vendor, void *data)
+{
+	return 0;
+}
+
+static void hfp16_card_remove(struct ofono_handsfree_card *card)
+{
+
+}
+
+static void hfp16_card_connect(struct ofono_handsfree_card *card,
+					ofono_handsfree_card_connect_cb_t cb,
+					void *data)
+{
+
+}
+
+static struct ofono_handsfree_card_driver hfp16_hf_driver = {
+	.name		= HFP16_HF_DRIVER,
+	.probe		= hfp16_card_probe,
+	.remove		= hfp16_card_remove,
+	.connect	= hfp16_card_connect,
 };
 
 static ofono_bool_t device_path_compare(struct ofono_modem *modem,
@@ -616,6 +643,13 @@ static int hfp_init(void)
 		return -EIO;
 	}
 
+	err = ofono_handsfree_card_driver_register(&hfp16_hf_driver);
+	if (err < 0) {
+		g_dbus_unregister_interface(conn, HFP_EXT_PROFILE_PATH,
+						BLUEZ_PROFILE_INTERFACE);
+		return err;
+	}
+
 	err = ofono_modem_driver_register(&hfp_driver);
 	if (err < 0) {
 		g_dbus_unregister_interface(conn, HFP_EXT_PROFILE_PATH,
@@ -647,6 +681,9 @@ static void hfp_exit(void)
 	bt_unregister_profile(conn, HFP_EXT_PROFILE_PATH);
 	g_dbus_unregister_interface(conn, HFP_EXT_PROFILE_PATH,
 						BLUEZ_PROFILE_INTERFACE);
+
+	ofono_handsfree_card_driver_unregister(&hfp16_hf_driver);
+
 	ofono_modem_driver_unregister(&hfp_driver);
 	g_dbus_client_unref(bluez);
 
