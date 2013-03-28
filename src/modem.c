@@ -596,6 +596,17 @@ static gboolean modem_has_sim(struct ofono_modem *modem)
 	return FALSE;
 }
 
+static gboolean modem_is_always_online(struct ofono_modem *modem)
+{
+	if (modem->driver->set_online == NULL)
+		return TRUE;
+
+	if (ofono_modem_get_boolean(modem, "AlwaysOnline") == TRUE)
+		return TRUE;
+
+	return FALSE;
+}
+
 static void common_online_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_modem *modem = data;
@@ -706,11 +717,8 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 		if (modem->modem_state != MODEM_STATE_ONLINE) {
 			modem_change_state(modem, MODEM_STATE_OFFLINE);
 
-			/*
-			 * If we don't have the set_online method, also proceed
-			 * straight to the online state
-			 */
-			if (modem->driver->set_online == NULL)
+			/* Modem is always online, proceed to online state. */
+			if (modem_is_always_online(modem) == TRUE)
 				set_online(modem, TRUE);
 
 			if (modem->online == TRUE)
@@ -750,7 +758,7 @@ static DBusMessage *set_property_online(struct ofono_modem *modem,
 	if (ofono_modem_get_emergency_mode(modem) == TRUE)
 		return __ofono_error_emergency_active(msg);
 
-	if (driver->set_online == NULL)
+	if (modem_is_always_online(modem) == TRUE)
 		return __ofono_error_not_implemented(msg);
 
 	modem->pending = dbus_message_ref(msg);
