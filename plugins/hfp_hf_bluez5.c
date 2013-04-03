@@ -397,7 +397,7 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 	struct sockaddr_rc saddr;
 	socklen_t optlen;
 	DBusMessageIter entry;
-	const char *device;
+	const char *device, *driver;
 	char local[18], remote[18];
 	uint16_t version = HFP_VERSION_1_5;
 	int fd, err;
@@ -471,7 +471,15 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 
 	hfp = ofono_modem_get_data(modem);
 	hfp->msg = dbus_message_ref(msg);
-	hfp->card = ofono_handsfree_card_create(0, NULL, NULL);
+
+	driver = NULL;
+
+	if (version >= HFP_VERSION_1_6)
+		driver = HFP16_HF_DRIVER;
+
+	hfp->card = ofono_handsfree_card_create(0, driver, hfp);
+	ofono_handsfree_card_set_data(hfp->card, hfp);
+
 	ofono_handsfree_card_set_local(hfp->card, local);
 	ofono_handsfree_card_set_remote(hfp->card, remote);
 
