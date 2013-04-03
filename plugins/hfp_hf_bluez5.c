@@ -350,6 +350,45 @@ static ofono_bool_t device_path_compare(struct ofono_modem *modem,
 	return g_str_equal(path, value);
 }
 
+static int get_version(DBusMessageIter *iter, uint16_t *version)
+{
+	DBusMessageIter dict, entry, valiter;
+	const char *key;
+	uint16_t value;
+
+	/* Points to dict */
+	dbus_message_iter_recurse(iter, &dict);
+
+	/* For each entry in this dict */
+	while (dbus_message_iter_get_arg_type(&dict) != DBUS_TYPE_INVALID) {
+		/* I want to access the entry's contents */
+		dbus_message_iter_recurse(&dict, &entry);
+
+		if (dbus_message_iter_get_arg_type(&entry) != DBUS_TYPE_STRING)
+			return -EINVAL;
+
+		/* If the current key isn't "Version", keep looking */
+		dbus_message_iter_get_basic(&entry, &key);
+		if (!g_str_equal("Version", key)) {
+			dbus_message_iter_next(&dict);
+			continue;
+		}
+
+		dbus_message_iter_next(&entry);
+		if (dbus_message_iter_get_arg_type(&entry) != DBUS_TYPE_VARIANT)
+			return -EINVAL;
+
+		dbus_message_iter_recurse(&entry, &valiter);
+		dbus_message_iter_get_basic(&valiter, &value);
+		break;
+	}
+
+	if (version)
+		*version = value;
+
+	return 0;
+}
+
 static DBusMessage *profile_new_connection(DBusConnection *conn,
 					DBusMessage *msg, void *user_data)
 {
@@ -360,6 +399,7 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 	DBusMessageIter entry;
 	const char *device;
 	char local[18], remote[18];
+	uint16_t version = HFP_VERSION_1_5;
 	int fd, err;
 
 	DBG("Profile handler NewConnection");
@@ -380,6 +420,13 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 	if (fd < 0)
 		goto invalid;
 
+	dbus_message_iter_next(&entry);
+	if (dbus_message_iter_get_arg_type(&entry) != DBUS_TYPE_ARRAY)
+		goto invalid;
+
+	if (get_version(&entry, &version) < 0)
+		goto invalid;
+
 	modem = ofono_modem_find(device_path_compare, (void *) device);
 	if (modem == NULL) {
 		close(fd);
@@ -388,7 +435,7 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 					"Unknown Bluetooth device");
 	}
 
-	err = service_level_connection(modem, fd, HFP_VERSION_LATEST);
+	err = service_level_connection(modem, fd, version);
 	if (err < 0 && err != -EINPROGRESS) {
 		close(fd);
 		return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
