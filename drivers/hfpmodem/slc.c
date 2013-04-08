@@ -34,6 +34,7 @@
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/emulator.h>
+#include <ofono/handsfree-audio.h>
 
 #include <drivers/atmodem/atutil.h>
 
@@ -305,9 +306,18 @@ static void brsf_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	if (info->ag_features & HFP_AG_FEATURE_CODEC_NEGOTIATION &&
 			info->hf_features & HFP_HF_FEATURE_CODEC_NEGOTIATION) {
+		char str[32];
+
+		memset(str, 0, sizeof(str));
+
+		if (ofono_handsfree_audio_has_wideband())
+			sprintf(str, "AT+BAC=%d,%d", HFP_CODEC_CVSD,
+							HFP_CODEC_MSBC);
+		else
+			sprintf(str, "AT+BAC=%d", HFP_CODEC_CVSD);
 
 		slc_establish_data_ref(sed);
-		g_at_chat_send(info->chat, "AT+BAC=1", NULL, bac_cb, sed,
+		g_at_chat_send(info->chat, str, NULL, bac_cb, sed,
 						slc_establish_data_unref);
 		return;
 	}
