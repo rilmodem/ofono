@@ -71,6 +71,7 @@ static int ref_count = 0;
 static GSList *card_list = 0;
 static guint sco_watch = 0;
 static GSList *drivers = 0;
+static ofono_bool_t has_wideband = FALSE;
 
 static void send_new_connection(const char *card, int fd)
 {
@@ -539,6 +540,11 @@ void ofono_handsfree_card_remove(struct ofono_handsfree_card *card)
 		card->driver->remove(card);
 
 	g_free(card);
+}
+
+ofono_bool_t ofono_handsfree_audio_has_wideband(void)
+{
+	return has_wideband;
 }
 
 static void agent_free(struct agent *agent)
