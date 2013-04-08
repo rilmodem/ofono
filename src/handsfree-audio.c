@@ -61,8 +61,6 @@ struct ofono_handsfree_card {
 struct agent {
 	char *owner;
 	char *path;
-	unsigned char *codecs;
-	int codecs_len;
 	guint watch;
 };
 
@@ -554,7 +552,6 @@ static void agent_free(struct agent *agent)
 
 	g_free(agent->owner);
 	g_free(agent->path);
-	g_free(agent->codecs);
 	g_free(agent);
 }
 
@@ -666,8 +663,6 @@ static DBusMessage *am_agent_register(DBusConnection *conn,
 	agent = g_new0(struct agent, 1);
 	agent->owner = g_strdup(sender);
 	agent->path = g_strdup(path);
-	agent->codecs = g_memdup(codecs, length);
-	agent->codecs_len = length;
 	agent->watch = g_dbus_add_disconnect_watch(conn, sender,
 						agent_disconnect, NULL, NULL);
 
