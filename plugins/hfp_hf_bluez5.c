@@ -324,11 +324,39 @@ static void hfp16_card_remove(struct ofono_handsfree_card *card)
 
 }
 
+static void bcc_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_handsfree_card_connect_cb_t cb = cbd->cb;
+	struct ofono_error error;
+
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	cb(&error, cbd->data);
+}
+
 static void hfp16_card_connect(struct ofono_handsfree_card *card,
 					ofono_handsfree_card_connect_cb_t cb,
 					void *data)
 {
-	CALLBACK_WITH_FAILURE(cb, data);
+	struct hfp *hfp = ofono_handsfree_card_get_data(card);
+	struct hfp_slc_info *info = &hfp->info;
+
+	if ((info->hf_features & HFP_HF_FEATURE_CODEC_NEGOTIATION &&
+			info->ag_features & HFP_AG_FEATURE_CODEC_NEGOTIATION)) {
+		struct cb_data *cbd = cb_data_new(cb, data);
+
+		g_at_chat_send(info->chat, "AT+BCC", NULL, bcc_cb, cbd, g_free);
+		return;
+	}
+
+	/*
+	 * If any side (remote or local) doesn't support codec negotiation,
+	 * fallback to direct SCO connection. Calling connect_sco()
+	 * hands the connection responsibility to the core, so no need
+	 * to call the callback
+	 */
+	ofono_handsfree_card_connect_sco(card);
 }
 
 static struct ofono_handsfree_card_driver hfp16_hf_driver = {
