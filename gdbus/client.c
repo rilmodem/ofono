@@ -33,7 +33,7 @@
 #define METHOD_CALL_TIMEOUT (300 * 1000)
 
 struct GDBusClient {
-	gint ref_count;
+	int ref_count;
 	DBusConnection *dbus_conn;
 	char *service_name;
 	char *unique_name;
@@ -54,7 +54,7 @@ struct GDBusClient {
 };
 
 struct GDBusProxy {
-	gint ref_count;
+	int ref_count;
 	GDBusClient *client;
 	char *obj_path;
 	char *interface;
@@ -447,7 +447,7 @@ GDBusProxy *g_dbus_proxy_ref(GDBusProxy *proxy)
 	if (proxy == NULL)
 		return NULL;
 
-	g_atomic_int_inc(&proxy->ref_count);
+	__sync_fetch_and_add(&proxy->ref_count, 1);
 
 	return proxy;
 }
@@ -457,7 +457,7 @@ void g_dbus_proxy_unref(GDBusProxy *proxy)
 	if (proxy == NULL)
 		return;
 
-	if (g_atomic_int_dec_and_test(&proxy->ref_count) == FALSE)
+	if (__sync_sub_and_fetch(&proxy->ref_count, 1) > 0)
 		return;
 
 	g_hash_table_destroy(proxy->prop_list);
@@ -1268,7 +1268,7 @@ GDBusClient *g_dbus_client_ref(GDBusClient *client)
 	if (client == NULL)
 		return NULL;
 
-	g_atomic_int_inc(&client->ref_count);
+	__sync_fetch_and_add(&client->ref_count, 1);
 
 	return client;
 }
@@ -1280,7 +1280,7 @@ void g_dbus_client_unref(GDBusClient *client)
 	if (client == NULL)
 		return;
 
-	if (g_atomic_int_dec_and_test(&client->ref_count) == FALSE)
+	if (__sync_sub_and_fetch(&client->ref_count, 1) > 0)
 		return;
 
 	if (client->pending_call != NULL) {
