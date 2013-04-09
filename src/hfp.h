@@ -44,3 +44,9 @@ enum hfp_hf_feature {
 	HFP_HF_FEATURE_ENHANCED_CALL_CONTROL =	0x40,
 	HFP_HF_FEATURE_CODEC_NEGOTIATION =	0x80,
 };
+
+/* Supported agent codecs */
+enum hfp_codec {
+	HFP_CODEC_CVSD = 0x01,
+	HFP_CODEC_MSBC = 0x02,
+};

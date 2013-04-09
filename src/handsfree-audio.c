@@ -37,17 +37,12 @@
 #include <ofono/handsfree-audio.h>
 
 #include "bluetooth.h"
+#include "hfp.h"
 #include "ofono.h"
 
 #define HFP_AUDIO_MANAGER_INTERFACE	OFONO_SERVICE ".HandsfreeAudioManager"
 #define HFP_AUDIO_AGENT_INTERFACE	OFONO_SERVICE ".HandsfreeAudioAgent"
 #define HFP_AUDIO_CARD_INTERFACE	OFONO_SERVICE ".HandsfreeAudioCard"
-
-/* Supported agent codecs */
-enum hfp_codec {
-	HFP_CODEC_CVSD = 0x01,
-	HFP_CODEC_MSBC = 0x02,
-};
 
 struct ofono_handsfree_card {
 	char *remote;
