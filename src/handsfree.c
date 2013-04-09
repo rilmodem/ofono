@@ -40,6 +40,7 @@
 #include <gdbus.h>
 #include "ofono.h"
 #include "common.h"
+#include "hfp.h"
 
 static GSList *g_drivers = NULL;
 

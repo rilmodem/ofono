@@ -31,6 +31,7 @@
 
 #include "ofono.h"
 #include "common.h"
+#include "hfp.h"
 #include "gatserver.h"
 #include "gatppp.h"
 
