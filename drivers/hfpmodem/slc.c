@@ -37,6 +37,7 @@
 
 #include <drivers/atmodem/atutil.h>
 
+#include "hfp.h"
 #include "slc.h"
 
 static const char *brsf_prefix[] = { "+BRSF:", NULL };

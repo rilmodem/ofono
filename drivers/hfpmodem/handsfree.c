@@ -40,6 +40,7 @@
 #include <ofono/handsfree.h>
 
 #include "hfpmodem.h"
+#include "hfp.h"
 #include "slc.h"
 
 static const char *binp_prefix[] = { "+BINP:", NULL };
