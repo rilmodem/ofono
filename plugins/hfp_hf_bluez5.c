@@ -342,8 +342,8 @@ static void hfp16_card_connect(struct ofono_handsfree_card *card,
 	struct hfp *hfp = ofono_handsfree_card_get_data(card);
 	struct hfp_slc_info *info = &hfp->info;
 
-	if ((info->hf_features & HFP_HF_FEATURE_CODEC_NEGOTIATION &&
-			info->ag_features & HFP_AG_FEATURE_CODEC_NEGOTIATION)) {
+	if (info->hf_features & HFP_HF_FEATURE_CODEC_NEGOTIATION &&
+			info->ag_features & HFP_AG_FEATURE_CODEC_NEGOTIATION) {
 		struct cb_data *cbd = cb_data_new(cb, data);
 
 		g_at_chat_send(info->chat, "AT+BCC", NULL, bcc_cb, cbd, g_free);
