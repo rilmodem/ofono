@@ -453,7 +453,7 @@ static void brsf_cb(GAtServer *server, GAtServerRequestType type,
 		if (g_at_result_iter_next_number(&iter, &val) == FALSE)
 			goto fail;
 
-		if (val < 0 || val > 127)
+		if (val < 0 || val > 255)
 			goto fail;
 
 		em->r_features = val;
