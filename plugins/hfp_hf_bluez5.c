@@ -314,9 +314,49 @@ static struct ofono_modem_driver hfp_driver = {
 	.post_sim	= hfp_post_sim,
 };
 
+static void bcs_notify(GAtResult *result, gpointer user_data)
+{
+	struct hfp *hfp = user_data;
+	struct hfp_slc_info *info = &hfp->info;
+	GAtResultIter iter;
+	char str[32];
+	int value;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+BCS:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &value))
+		return;
+
+	if (ofono_handsfree_card_set_codec(hfp->card, value) == FALSE) {
+		/* Unsupported codec, re-send our codecs */
+		if (ofono_handsfree_audio_has_wideband())
+			sprintf(str, "AT+BAC=%d,%d", HFP_CODEC_CVSD,
+							HFP_CODEC_MSBC);
+		else
+			sprintf(str, "AT+BAC=%d", HFP_CODEC_CVSD);
+
+		goto done;
+	}
+
+	/* Confirm the codec */
+	sprintf(str, "AT+BCS=%d", value);
+
+done:
+	g_at_chat_send(info->chat, str, NULL, NULL, NULL, NULL);
+}
+
 static int hfp16_card_probe(struct ofono_handsfree_card *card,
 					unsigned int vendor, void *data)
 {
+	struct hfp *hfp = data;
+	struct hfp_slc_info *info = &hfp->info;
+
+	g_at_chat_register(info->chat, "+BCS:", bcs_notify, FALSE,
+								hfp, NULL);
+
 	return 0;
 }
 
