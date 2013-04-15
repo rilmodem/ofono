@@ -67,11 +67,10 @@ static guint sco_watch = 0;
 static GSList *drivers = 0;
 static ofono_bool_t has_wideband = FALSE;
 
-static void send_new_connection(const char *card, int fd)
+static void send_new_connection(const char *card, int fd, uint8_t codec)
 {
 	DBusMessage *msg;
 	DBusMessageIter iter;
-	uint8_t codec = HFP_CODEC_CVSD;
 
 	msg = dbus_message_new_method_call(agent->owner, agent->path,
 				HFP_AUDIO_AGENT_INTERFACE, "NewConnection");
@@ -150,7 +149,7 @@ static gboolean sco_accept(GIOChannel *io, GIOCondition cond,
 		return TRUE;
 	}
 
-	send_new_connection(card->path, nsk);
+	send_new_connection(card->path, nsk, card->selected_codec);
 	close(nsk);
 
 	return TRUE;
@@ -252,7 +251,7 @@ static gboolean sco_connect_cb(GIOChannel *io, GIOCondition cond,
 
 	sk = g_io_channel_unix_get_fd(io);
 
-	send_new_connection(card->path, sk);
+	send_new_connection(card->path, sk, card->selected_codec);
 
 	close(sk);
 
