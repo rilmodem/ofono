@@ -49,6 +49,7 @@ struct ofono_handsfree_card {
 	char *local;
 	char *path;
 	DBusMessage *msg;
+	unsigned char selected_codec;
 	const struct ofono_handsfree_card_driver *driver;
 	void *driver_data;
 };
@@ -342,6 +343,8 @@ struct ofono_handsfree_card *ofono_handsfree_card_create(unsigned int vendor,
 
 	card = g_new0(struct ofono_handsfree_card, 1);
 
+	card->selected_codec = HFP_CODEC_CVSD;
+
 	card_list = g_slist_prepend(card_list, card);
 
 	for (l = drivers; l; l = l->next) {
@@ -533,6 +536,23 @@ void ofono_handsfree_card_remove(struct ofono_handsfree_card *card)
 		card->driver->remove(card);
 
 	g_free(card);
+}
+
+ofono_bool_t ofono_handsfree_card_set_codec(struct ofono_handsfree_card *card,
+							unsigned char codec)
+{
+	if (codec == HFP_CODEC_CVSD)
+		goto done;
+
+	if (codec == HFP_CODEC_MSBC && has_wideband)
+		goto done;
+
+	return FALSE;
+
+done:
+	card->selected_codec = codec;
+
+	return TRUE;
 }
 
 ofono_bool_t ofono_handsfree_audio_has_wideband(void)
