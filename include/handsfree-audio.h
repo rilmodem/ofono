@@ -48,6 +48,8 @@ struct ofono_handsfree_card *ofono_handsfree_card_create(unsigned int vendor,
 							void *data);
 int ofono_handsfree_card_register(struct ofono_handsfree_card *card);
 void ofono_handsfree_card_remove(struct ofono_handsfree_card *card);
+ofono_bool_t ofono_handsfree_card_set_codec(struct ofono_handsfree_card *card,
+							unsigned char codec);
 
 ofono_bool_t ofono_handsfree_audio_has_wideband(void);
 
