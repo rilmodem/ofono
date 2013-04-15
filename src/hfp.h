@@ -50,3 +50,9 @@ enum hfp_codec {
 	HFP_CODEC_CVSD = 0x01,
 	HFP_CODEC_MSBC = 0x02,
 };
+
+enum hfp_version {
+	HFP_VERSION_1_5 =	0x0105,
+	HFP_VERSION_1_6 =	0x0106,
+	HFP_VERSION_LATEST =	HFP_VERSION_1_6,
+};
