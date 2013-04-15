@@ -65,6 +65,7 @@
 #include <drivers/atmodem/atutil.h>
 #include <drivers/hfpmodem/slc.h>
 
+#include "hfp.h"
 #include "ofono.h"
 
 static const char *none_prefix[] = { NULL };
