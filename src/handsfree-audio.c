@@ -646,7 +646,7 @@ static DBusMessage *am_agent_register(DBusConnection *conn,
 	unsigned char *codecs;
 	DBusMessageIter iter, array;
 	int length, i;
-	gboolean has_cvsd = FALSE;
+	gboolean has_cvsd = FALSE, has_msbc = FALSE;
 
 	if (agent)
 		return __ofono_error_in_use(msg);
@@ -668,9 +668,16 @@ static DBusMessage *am_agent_register(DBusConnection *conn,
 	for (i = 0; i < length; i++) {
 		if (codecs[i] == HFP_CODEC_CVSD)
 			has_cvsd = TRUE;
-		else if (codecs[i] != HFP_CODEC_MSBC)
+		else if (codecs[i] == HFP_CODEC_MSBC)
+			has_msbc = TRUE;
+		else
 			return __ofono_error_invalid_args(msg);
 	}
+
+	if (has_msbc && defer_setup == 1)
+		has_wideband = TRUE;
+	else
+		has_wideband = FALSE;
 
 	if (has_cvsd == FALSE) {
 		ofono_error("CVSD codec is mandatory");
