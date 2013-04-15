@@ -66,6 +66,7 @@ static GSList *card_list = 0;
 static guint sco_watch = 0;
 static GSList *drivers = 0;
 static ofono_bool_t has_wideband = FALSE;
+static int defer_setup = 1;
 
 static void send_new_connection(const char *card, int fd, uint8_t codec)
 {
@@ -159,7 +160,7 @@ static int sco_init(void)
 {
 	GIOChannel *sco_io;
 	struct sockaddr_sco saddr;
-	int sk, defer_setup = 1;
+	int sk;
 
 	sk = socket(PF_BLUETOOTH, SOCK_SEQPACKET | O_NONBLOCK | SOCK_CLOEXEC,
 								BTPROTO_SCO);
@@ -177,9 +178,11 @@ static int sco_init(void)
 	}
 
 	if (setsockopt(sk, SOL_BLUETOOTH, BT_DEFER_SETUP,
-				&defer_setup, sizeof(defer_setup)) < 0)
+				&defer_setup, sizeof(defer_setup)) < 0) {
+		defer_setup = 0;
 		ofono_warn("Can't enable deferred setup: %s (%d)",
 						strerror(errno), errno);
+	}
 
 	if (listen(sk, 5) < 0) {
 		close(sk);
