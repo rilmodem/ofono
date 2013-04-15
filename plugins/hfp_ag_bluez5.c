@@ -29,16 +29,12 @@
 #include <sys/socket.h>
 #include <glib.h>
 #include <ofono.h>
-
 #include <gdbus.h>
-#include <gatchat.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
-
-#include <drivers/hfpmodem/slc.h>
 
 #include "hfp.h"
 #include "bluez5.h"
