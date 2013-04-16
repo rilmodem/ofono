@@ -674,10 +674,16 @@ static DBusMessage *am_agent_register(DBusConnection *conn,
 			return __ofono_error_invalid_args(msg);
 	}
 
+	DBG("Agent %s registered with the CODECs:%s%s", sender,
+		has_cvsd ? " CVSD" : "", has_msbc ? " mSBC" : "");
+
 	if (has_msbc && defer_setup == 1)
 		has_wideband = TRUE;
-	else
+	else {
 		has_wideband = FALSE;
+		DBG("Wideband speech disabled: %s", has_msbc ?
+			"no SCO defer setup support" : "no mSBC support");
+	}
 
 	if (has_cvsd == FALSE) {
 		ofono_error("CVSD codec is mandatory");
@@ -717,6 +723,8 @@ static DBusMessage *am_agent_unregister(DBusConnection *conn,
 
 	agent_free(agent);
 	agent = NULL;
+
+	DBG("Agent %s unregistered", sender);
 
 	return dbus_message_new_method_return(msg);
 }
