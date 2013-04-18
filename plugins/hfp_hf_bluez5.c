@@ -744,7 +744,8 @@ static void property_changed(GDBusProxy *proxy, const char *name,
 	if (g_str_equal(BLUEZ_DEVICE_INTERFACE, interface) == FALSE)
 		return;
 
-	if (g_str_equal("Paired", name) != TRUE)
+	if (g_str_equal("Paired", name) != TRUE &&
+					g_str_equal("UUIDs", name) != TRUE)
 		return;
 
 	modem_register_from_proxy(proxy, path);
