@@ -48,6 +48,16 @@
 static guint modemwatch_id;
 static GList *modems;
 static GHashTable *sim_hash = NULL;
+static GHashTable *connection_hash;
+
+static void connection_destroy(gpointer data)
+{
+	int fd = GPOINTER_TO_INT(data);
+
+	DBG("fd %d", fd);
+
+	close(fd);
+}
 
 static DBusMessage *profile_new_connection(DBusConnection *conn,
 						DBusMessage *msg, void *data)
@@ -251,6 +261,9 @@ static int hfp_ag_init(void)
 	modemwatch_id = __ofono_modemwatch_add(modem_watch, NULL, NULL);
 	__ofono_modem_foreach(call_modemwatch, NULL);
 
+	connection_hash = g_hash_table_new_full(g_str_hash, g_str_equal,
+					g_free, connection_destroy);
+
 	return 0;
 }
 
@@ -261,6 +274,8 @@ static void hfp_ag_exit(void)
 	__ofono_modemwatch_remove(modemwatch_id);
 	g_dbus_unregister_interface(conn, HFP_AG_EXT_PROFILE_PATH,
 						BLUEZ_PROFILE_INTERFACE);
+
+	g_hash_table_destroy(connection_hash);
 
 	g_list_free(modems);
 	g_hash_table_foreach_remove(sim_hash, sim_watch_remove, NULL);
