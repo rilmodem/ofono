@@ -59,12 +59,24 @@ static void connection_destroy(gpointer data)
 	close(fd);
 }
 
+static gboolean io_hup_cb(GIOChannel *io, GIOCondition cond, gpointer data)
+{
+	char *device = data;
+
+	DBG("Remove %s", device);
+
+	g_hash_table_remove(connection_hash, device);
+
+	return FALSE;
+}
+
 static DBusMessage *profile_new_connection(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
 	DBusMessageIter entry;
 	const char *device;
-	int fd;
+	GIOChannel *io;
+	int fd, fd_dup;
 	struct ofono_emulator *em;
 	struct ofono_modem *modem;
 
@@ -110,6 +122,15 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 	}
 
 	ofono_emulator_register(em, fd);
+
+	fd_dup = dup(fd);
+	io = g_io_channel_unix_new(fd_dup);
+	g_io_add_watch_full(io, G_PRIORITY_DEFAULT, G_IO_HUP, io_hup_cb,
+						g_strdup(device), g_free);
+	g_io_channel_unref(io);
+
+	g_hash_table_insert(connection_hash, g_strdup(device),
+						GINT_TO_POINTER(fd_dup));
 
 	return dbus_message_new_method_return(msg);
 
