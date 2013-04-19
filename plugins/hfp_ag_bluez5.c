@@ -162,11 +162,35 @@ static DBusMessage *profile_cancel(DBusConnection *conn,
 static DBusMessage *profile_disconnection(DBusConnection *conn,
 					DBusMessage *msg, void *user_data)
 {
+	DBusMessageIter iter;
+	const char *device;
+	gpointer fd;
+
 	DBG("Profile handler RequestDisconnection");
 
-	return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
-					".NotImplemented",
-					"Implementation not provided");
+	if (!dbus_message_iter_init(msg, &iter))
+		goto invalid;
+
+	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_OBJECT_PATH)
+		goto invalid;
+
+	dbus_message_iter_get_basic(&iter, &device);
+
+	DBG("%s", device);
+
+	fd = g_hash_table_lookup(connection_hash, device);
+	if (fd == NULL)
+		goto invalid;
+
+	shutdown(GPOINTER_TO_INT(fd), SHUT_RDWR);
+
+	g_hash_table_remove(connection_hash, device);
+
+	return dbus_message_new_method_return(msg);
+
+invalid:
+	return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE ".Rejected",
+					"Invalid arguments in method call");
 }
 
 static const GDBusMethodTable profile_methods[] = {
