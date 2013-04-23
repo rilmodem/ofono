@@ -48,6 +48,8 @@ struct ofono_handsfree_driver {
 	void (*voice_recognition)(struct ofono_handsfree *hf,
 					ofono_bool_t enabled,
 					ofono_handsfree_cb_t cb, void *data);
+	void (*disable_nrec)(struct ofono_handsfree *hf,
+					ofono_handsfree_cb_t cb, void *data);
 };
 
 void ofono_handsfree_set_ag_features(struct ofono_handsfree *hf,
