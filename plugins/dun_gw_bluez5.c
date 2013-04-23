@@ -172,7 +172,7 @@ static void gprs_watch(struct ofono_atom *atom,
 
 	if (modems->next == NULL)
 		bt_register_profile(conn, DUN_GW_UUID, DUN_GW_VERSION_1_0,
-					"dun_gw", DUN_GW_EXT_PROFILE_PATH);
+				"dun_gw", DUN_GW_EXT_PROFILE_PATH, NULL, 0);
 }
 
 static void modem_watch(struct ofono_modem *modem, gboolean added, void *user)

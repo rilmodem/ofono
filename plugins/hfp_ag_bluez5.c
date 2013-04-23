@@ -233,7 +233,7 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 		return;
 
 	bt_register_profile(conn, HFP_AG_UUID, HFP_VERSION_1_5, "hfp_ag",
-						HFP_AG_EXT_PROFILE_PATH);
+					HFP_AG_EXT_PROFILE_PATH, NULL, 0);
 }
 
 static gboolean sim_watch_remove(gpointer key, gpointer value,
