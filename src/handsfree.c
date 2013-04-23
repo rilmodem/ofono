@@ -45,6 +45,7 @@
 static GSList *g_drivers = NULL;
 
 struct ofono_handsfree {
+	ofono_bool_t nrec;
 	ofono_bool_t inband_ringing;
 	ofono_bool_t voice_recognition;
 	ofono_bool_t voice_recognition_pending;
@@ -171,6 +172,10 @@ static DBusMessage *handsfree_get_properties(DBusConnection *conn,
 	inband_ringing = hf->inband_ringing;
 	ofono_dbus_dict_append(&dict, "InbandRinging", DBUS_TYPE_BOOLEAN,
 				&inband_ringing);
+
+	if (hf->ag_features & HFP_AG_FEATURE_ECNR)
+		ofono_dbus_dict_append(&dict, "EchoCancelingNoiseReduction",
+						DBUS_TYPE_BOOLEAN, &hf->nrec);
 
 	voice_recognition = hf->voice_recognition;
 	ofono_dbus_dict_append(&dict, "VoiceRecognition", DBUS_TYPE_BOOLEAN,
