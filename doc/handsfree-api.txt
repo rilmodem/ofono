@@ -44,6 +44,7 @@ Properties	array{string} Features [readonly]
 			supported values are:
 				"voice-recognition"
 				"attach-voice-tag"
+				"echo-canceling-and-noise-reduction"
 
 		boolean InbandRinging [readonly]
 
@@ -55,6 +56,15 @@ Properties	array{string} Features [readonly]
 			currently active in the AG. This property may be written
 			to activate or deactivate the function from the HF, or
 			the AG could autonomously initiate it.
+
+		boolean EchoCancelingNoiseReduction [readwrite]
+
+			Non-persistent Boolean property representing whether
+			echo canceling and noise reduction is enabled in the
+			AG. This feature can only be disabled once from the
+			HF unit; the current specification does not allow the
+			HF unit from enabling this feature on the AG once
+			it has been disabled.
 
 		byte BatteryChargeLevel [readonly]
 
