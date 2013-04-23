@@ -379,8 +379,8 @@ static void connect_handler(DBusConnection *conn, void *user_data)
 {
 	DBG("");
 
-	bt_register_profile_with_role(conn, DUN_GW_UUID, DUN_VERSION_1_2,
-				"dun_dt", DUN_DT_PROFILE_PATH, "client");
+	bt_register_profile(conn, DUN_GW_UUID, DUN_VERSION_1_2, "dun_dt",
+					DUN_DT_PROFILE_PATH, "client", 0);
 }
 
 int __dundee_bluetooth_init(void)
