@@ -636,10 +636,15 @@ static const GDBusMethodTable profile_methods[] = {
 
 static void connect_handler(DBusConnection *conn, void *user_data)
 {
+	uint16_t features = HFP_SDP_HF_FEATURE_3WAY |
+				HFP_SDP_HF_FEATURE_CLIP |
+				HFP_SDP_HF_FEATURE_REMOTE_VOLUME_CONTROL |
+				HFP_SDP_HF_FEATURE_WIDEBAND_SPEECH;
+
 	DBG("Registering External Profile handler ...");
 
 	bt_register_profile(conn, HFP_HS_UUID, HFP_VERSION_1_6, "hfp_hf",
-					HFP_EXT_PROFILE_PATH, NULL, 0);
+					HFP_EXT_PROFILE_PATH, NULL, features);
 }
 
 static gboolean has_hfp_ag_uuid(DBusMessageIter *array)
