@@ -260,12 +260,29 @@ static void hfp_voice_recognition(struct ofono_handsfree *hf,
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
+static void hfp_disable_nrec(struct ofono_handsfree *hf,
+				ofono_handsfree_cb_t cb, void *data)
+{
+	struct hf_data *hd = ofono_handsfree_get_data(hf);
+	struct cb_data *cbd = cb_data_new(cb, data);
+	const char *buf = "AT+NREC=0";
+
+	if (g_at_chat_send(hd->chat, buf, NULL, hf_generic_set_cb,
+							cbd, g_free) > 0)
+		return;
+
+	g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, data);
+}
+
 static struct ofono_handsfree_driver driver = {
 	.name			= "hfpmodem",
 	.probe			= hfp_handsfree_probe,
 	.remove			= hfp_handsfree_remove,
 	.request_phone_number	= hfp_request_phone_number,
 	.voice_recognition	= hfp_voice_recognition,
+	.disable_nrec		= hfp_disable_nrec,
 };
 
 void hfp_handsfree_init(void)
