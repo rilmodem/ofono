@@ -358,6 +358,7 @@ struct ofono_handsfree *ofono_handsfree_create(struct ofono_modem *modem,
 	hf->atom = __ofono_modem_add_atom(modem,
 					OFONO_ATOM_TYPE_HANDSFREE,
 					handsfree_remove, hf);
+	hf->nrec = TRUE;
 
 	for (l = g_drivers; l; l = l->next) {
 		const struct ofono_handsfree_driver *drv = l->data;
