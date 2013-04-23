@@ -217,11 +217,36 @@ static void voicerec_set_cb(const struct ofono_error *error, void *data)
 					&hf->voice_recognition);
 }
 
+static void nrec_set_cb(const struct ofono_error *error, void *data)
+{
+	struct ofono_handsfree *hf = data;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(hf->atom);
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		__ofono_dbus_pending_reply(&hf->pending,
+					__ofono_error_failed(hf->pending));
+		return;
+	}
+
+	hf->nrec = FALSE;
+
+	__ofono_dbus_pending_reply(&hf->pending,
+				dbus_message_new_method_return(hf->pending));
+
+	ofono_dbus_signal_property_changed(conn, path,
+					OFONO_HANDSFREE_INTERFACE,
+					"EchoCancelingNoiseReduction",
+					DBUS_TYPE_BOOLEAN,
+					&hf->nrec);
+}
+
 static DBusMessage *handsfree_set_property(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
 	struct ofono_handsfree *hf = data;
 	DBusMessageIter iter, var;
+	ofono_bool_t enabled;
 	const char *name;
 
 	if (hf->pending)
@@ -241,16 +266,15 @@ static DBusMessage *handsfree_set_property(DBusConnection *conn,
 
 	dbus_message_iter_recurse(&iter, &var);
 
+	if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BOOLEAN)
+		return __ofono_error_invalid_args(msg);
+
+	dbus_message_iter_get_basic(&var, &enabled);
+
 	if (g_str_equal(name, "VoiceRecognition") == TRUE) {
-		ofono_bool_t enabled;
 
 		if (!hf->driver->voice_recognition)
 			return __ofono_error_not_implemented(msg);
-
-		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BOOLEAN)
-			return __ofono_error_invalid_args(msg);
-
-		dbus_message_iter_get_basic(&var, &enabled);
 
 		if (hf->voice_recognition == enabled)
 			return dbus_message_new_method_return(msg);
@@ -258,11 +282,23 @@ static DBusMessage *handsfree_set_property(DBusConnection *conn,
 		hf->voice_recognition_pending = enabled;
 		hf->pending = dbus_message_ref(msg);
 		hf->driver->voice_recognition(hf, enabled, voicerec_set_cb, hf);
+	} else if (g_str_equal(name, "EchoCancelingNoiseReduction") == TRUE) {
 
-		return NULL;
-	}
+		if (!(hf->ag_features & HFP_AG_FEATURE_ECNR))
+			return __ofono_error_not_supported(msg);
 
-	return __ofono_error_invalid_args(msg);
+		if (!hf->driver->disable_nrec || enabled == TRUE)
+			return __ofono_error_not_implemented(msg);
+
+		if (hf->nrec == FALSE)
+			return dbus_message_new_method_return(msg);
+
+		hf->pending = dbus_message_ref(msg);
+		hf->driver->disable_nrec(hf, nrec_set_cb, hf);
+	} else
+		return __ofono_error_invalid_args(msg);
+
+	return NULL;
 }
 
 static void request_phone_number_cb(const struct ofono_error *error,
