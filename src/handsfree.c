@@ -62,6 +62,9 @@ static const char **ag_features_list(unsigned int features)
 	static const char *list[33];
 	unsigned int i = 0;
 
+	if (features & HFP_AG_FEATURE_ECNR)
+		list[i++] = "echo-canceling-and-noise-reduction";
+
 	if (features & HFP_AG_FEATURE_VOICE_RECOG)
 		list[i++] = "voice-recognition";
 
