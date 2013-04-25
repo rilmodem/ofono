@@ -562,6 +562,11 @@ ofono_bool_t ofono_handsfree_audio_has_wideband(void)
 	return has_wideband;
 }
 
+ofono_bool_t ofono_handsfree_audio_has_defer_setup(void)
+{
+	return defer_setup == 1;
+}
+
 static void agent_free(struct agent *agent)
 {
 	if (agent->watch > 0)
