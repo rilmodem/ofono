@@ -248,7 +248,8 @@ static gboolean sco_connect_cb(GIOChannel *io, GIOCondition cond,
 	}
 
 	if (cond & (G_IO_ERR | G_IO_HUP | G_IO_NVAL)) {
-		reply = __ofono_error_failed(card->msg);
+		if (card->msg)
+			reply = __ofono_error_failed(card->msg);
 		goto done;
 	}
 
@@ -258,9 +259,13 @@ static gboolean sco_connect_cb(GIOChannel *io, GIOCondition cond,
 
 	close(sk);
 
-	reply = dbus_message_new_method_return(card->msg);
+	if (card->msg)
+		reply = dbus_message_new_method_return(card->msg);
 
 done:
+	if (card->msg == NULL)
+		return FALSE;
+
 	if (reply)
 		g_dbus_send_message(ofono_dbus_get_connection(), reply);
 
