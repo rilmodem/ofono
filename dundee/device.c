@@ -456,6 +456,9 @@ static DBusMessage *set_property_active(struct dundee_device *device,
 	if (dbus_message_iter_get_arg_type(var) != DBUS_TYPE_BOOLEAN)
 		return __dundee_error_invalid_args(msg);
 
+	if (device->pending)
+		return __dundee_error_in_progress(msg);
+
 	dbus_message_iter_get_basic(var, &active);
 
 	device->pending = dbus_message_ref(msg);
