@@ -44,6 +44,13 @@ DBusMessage *__dundee_error_failed(DBusMessage *msg)
 					"Operation failed");
 }
 
+DBusMessage *__dundee_error_in_progress(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DUNDEE_ERROR_INTERFACE
+					".InProgress",
+					"Operation already in progress");
+}
+
 DBusMessage *__dundee_error_timed_out(DBusMessage *msg)
 {
 	return g_dbus_create_error(msg, DUNDEE_ERROR_INTERFACE ".Timedout",
