@@ -636,7 +636,8 @@ static const GDBusMethodTable profile_methods[] = {
 
 static void connect_handler(DBusConnection *conn, void *user_data)
 {
-	uint16_t features = HFP_SDP_HF_FEATURE_3WAY |
+	uint16_t features = HFP_SDP_HF_FEATURE_ECNR |
+				HFP_SDP_HF_FEATURE_3WAY |
 				HFP_SDP_HF_FEATURE_CLIP |
 				HFP_SDP_HF_FEATURE_REMOTE_VOLUME_CONTROL;
 
