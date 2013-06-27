@@ -59,7 +59,8 @@ void hfp_slc_info_init(struct hfp_slc_info *info, guint16 version)
 	info->ag_features = 0;
 	info->ag_mpty_features = 0;
 
-	info->hf_features = HFP_HF_FEATURE_3WAY;
+	info->hf_features = HFP_HF_FEATURE_ECNR;
+	info->hf_features |= HFP_HF_FEATURE_3WAY;
 	info->hf_features |= HFP_HF_FEATURE_CLIP;
 	info->hf_features |= HFP_HF_FEATURE_REMOTE_VOLUME_CONTROL;
 
