@@ -1,6 +1,8 @@
 
 AM_MAKEFLAGS = --no-print-directory
 
+noinst_LTLIBRARIES =
+
 pkginclude_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/dbus.h include/modem.h include/types.h \
 			include/call-barring.h include/call-forwarding.h \
@@ -583,9 +585,14 @@ builtin_sources += plugins/push-notification.c
 builtin_modules += smshistory
 builtin_sources += plugins/smshistory.c
 
+noinst_LTLIBRARIES += gdbus/libgdbus-internal.la
+gdbus_libgdbus_internal_la_SOURCES = $(gdbus_sources)
+gdbus_libgdbus_internal_la_LDFLAGS = $(AM_LDFLAGS) @DBUS_LIBS@ @GLIB_LIBS@
+gdbus_libgdbus_internal_la_CFLAGS = $(AM_CFLAGS) @DBUS_CFLAGS@ @GLIB_CFLAGS@
+
 sbin_PROGRAMS = src/ofonod
 
-src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
+src_ofonod_SOURCES = $(builtin_sources) src/ofono.ver \
 			src/main.c src/ofono.h src/log.c src/plugin.c \
 			src/modem.c src/common.h src/common.c \
 			src/manager.c src/dbus.c src/util.h src/util.c \
@@ -614,7 +621,8 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
 			src/sim-mnclength.c src/spn-table.c \
 			src/dns-client.c
 
-src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ -ldl
+src_ofonod_LDADD = gdbus/libgdbus-internal.la $(builtin_libadd) \
+			@GLIB_LIBS@ @DBUS_LIBS@ -ldl
 
 src_ofonod_LDFLAGS = -Wl,--export-dynamic \
 				-Wl,--version-script=$(srcdir)/src/ofono.ver
@@ -878,11 +886,11 @@ noinst_PROGRAMS += tools/huawei-audio tools/auto-enable \
 			tools/get-location tools/lookup-apn \
 			tools/lookup-provider-name tools/tty-redirector
 
-tools_huawei_audio_SOURCES = $(gdbus_sources) tools/huawei-audio.c
-tools_huawei_audio_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
+tools_huawei_audio_SOURCES = tools/huawei-audio.c
+tools_huawei_audio_LDADD = gdbus/libgdbus-internal.la @GLIB_LIBS@ @DBUS_LIBS@
 
-tools_auto_enable_SOURCES = $(gdbus_sources) tools/auto-enable.c
-tools_auto_enable_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
+tools_auto_enable_SOURCES = tools/auto-enable.c
+tools_auto_enable_LDADD = gdbus/libgdbus-internal.la @GLIB_LIBS@ @DBUS_LIBS@
 
 tools_get_location_SOURCES = tools/get-location.c
 tools_get_location_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
@@ -907,9 +915,9 @@ endif
 if MAINTAINER_MODE
 noinst_PROGRAMS += tools/stktest
 
-tools_stktest_SOURCES = $(gatchat_sources) $(gdbus_sources) tools/stktest.c \
+tools_stktest_SOURCES = $(gatchat_sources) tools/stktest.c \
 				unit/stk-test-data.h
-tools_stktest_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
+tools_stktest_LDADD = gdbus/libgdbus-internal.la @GLIB_LIBS@ @DBUS_LIBS@
 endif
 endif
 
@@ -917,11 +925,12 @@ if BLUETOOTH
 if DUNDEE
 sbin_PROGRAMS += dundee/dundee
 
-dundee_common_sources = $(gdbus_sources) $(gatchat_sources) \
+dundee_common_sources = $(gatchat_sources) \
 			src/log.c src/dbus.c dundee/dundee.h dundee/main.c \
 			dundee/dbus.c dundee/manager.c dundee/device.c
 
-dundee_dundee_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ -ldl
+dundee_dundee_LDADD = $(builtin_libadd) gdbus/libgdbus-internal.la \
+			@GLIB_LIBS@ @DBUS_LIBS@ -ldl
 
 if DATAFILES
 dist_dbusconf_DATA += dundee/dundee.conf
