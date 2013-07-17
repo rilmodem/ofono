@@ -49,11 +49,11 @@
 
 #define NUM_DLC 5
 
-#define SETUP_DLC   0
-#define VOICE_DLC   1
-#define NETREG_DLC  2
-#define SMS_DLC     3
-#define GPRS_DLC    4
+#define VOICE_DLC   0
+#define NETREG_DLC  1
+#define SMS_DLC     2
+#define GPRS_DLC    3
+#define SETUP_DLC   4
 
 static char *dlc_prefixes[NUM_DLC] = { "Voice: ", "Net: ", "SMS: ",
 					"GPRS: " , "Setup: "};
