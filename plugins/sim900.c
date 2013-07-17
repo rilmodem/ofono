@@ -127,6 +127,7 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	g_hash_table_insert(options, "XonXoff", "off");
 	g_hash_table_insert(options, "Local", "off");
 	g_hash_table_insert(options, "RtsCts", "off");
+	g_hash_table_insert(options, "Read", "on");
 
 	channel = g_at_tty_open(device, options);
 	g_hash_table_destroy(options);
