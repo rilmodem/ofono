@@ -58,7 +58,10 @@ builtin_sources =
 builtin_libadd =
 builtin_cflags =
 
-gdbus_sources = gdbus/gdbus.h gdbus/mainloop.c gdbus/watch.c \
+noinst_LTLIBRARIES += gdbus/libgdbus-internal.la
+
+gdbus_libgdbus_internal_la_SOURCES = gdbus/gdbus.h \
+				gdbus/mainloop.c gdbus/watch.c \
 				gdbus/object.c gdbus/client.c gdbus/polkit.c
 
 gatchat_sources = gatchat/gatchat.h gatchat/gatchat.c \
@@ -487,11 +490,6 @@ builtin_sources += plugins/smart-messaging.c
 
 builtin_modules += push_notification
 builtin_sources += plugins/push-notification.c
-
-noinst_LTLIBRARIES += gdbus/libgdbus-internal.la
-gdbus_libgdbus_internal_la_SOURCES = $(gdbus_sources)
-gdbus_libgdbus_internal_la_LDFLAGS = $(AM_LDFLAGS) @DBUS_LIBS@ @GLIB_LIBS@
-gdbus_libgdbus_internal_la_CFLAGS = $(AM_CFLAGS) @DBUS_CFLAGS@ @GLIB_CFLAGS@
 
 sbin_PROGRAMS = src/ofonod
 
