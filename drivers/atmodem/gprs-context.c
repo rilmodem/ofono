@@ -208,7 +208,11 @@ static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	sprintf(buf, "AT+CGDATA=\"PPP\",%u", gcd->active_context);
+	if (gcd->vendor == OFONO_VENDOR_SIMCOM_SIM900)
+		sprintf(buf, "ATD*99***%u#", gcd->active_context);
+	else
+		sprintf(buf, "AT+CGDATA=\"PPP\",%u", gcd->active_context);
+
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				at_cgdata_cb, gc, NULL) > 0)
 		return;
