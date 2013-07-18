@@ -361,7 +361,7 @@ static void sim900_post_sim(struct ofono_modem *modem)
 	if (gprs == NULL)
 		return;
 
-	gc = ofono_gprs_context_create(modem, OFONO_VENDOR_SIMCOM,
+	gc = ofono_gprs_context_create(modem, OFONO_VENDOR_SIMCOM_SIM900,
 					"atmodem", data->dlcs[GPRS_DLC]);
 	if (gc)
 		ofono_gprs_add_context(gprs, gc);
