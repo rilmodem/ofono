@@ -167,6 +167,7 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 	case OFONO_VENDOR_SIERRA:
 	case OFONO_VENDOR_SPEEDUP:
 	case OFONO_VENDOR_QUALCOMM_MSM:
+	case OFONO_VENDOR_SIMCOM:
 		/* Maximum possible length */
 		len += sprintf(buf + len, ",0,0,255");
 		break;
