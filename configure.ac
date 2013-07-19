@@ -186,8 +186,7 @@ AC_ARG_ENABLE(bluez4, AC_HELP_STRING([--enable-bluez4],
 					[enable_bluez4=${enableval}])
 
 if (test "${enable_bluez4}" = "yes"); then
-	PKG_CHECK_MODULES(BLUEZ, bluez >= 4.99 bluez < 5,
-			  enable_bluez4=yes,
+	PKG_CHECK_MODULES(BLUEZ, bluez >= 4.99 bluez < 5, dummy=yes,
 			  AC_MSG_ERROR(Bluetooth library >= 4.99 and < 5 is required))
 	AC_SUBST(BLUEZ_CFLAGS)
 	AC_SUBST(BLUEZ_LIBS)
