@@ -1759,7 +1759,7 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				NULL, NULL, NULL);
 
 		g_at_chat_register(nd->chat, "+CSQ:",
-				   csq_notify, FALSE, netreg, NULL);
+					csq_notify, FALSE, netreg, NULL);
 		break;
 	case OFONO_VENDOR_PHONESIM:
 		g_at_chat_register(nd->chat, "+CSQ:",
