@@ -598,6 +598,8 @@ static void agent_disconnect(DBusConnection *conn, void *user_data)
 
 	agent_free(agent);
 	agent = NULL;
+
+	has_wideband = FALSE;
 }
 
 static void append_card(void *data, void *userdata)
@@ -733,6 +735,8 @@ static DBusMessage *am_agent_unregister(DBusConnection *conn,
 
 	agent_free(agent);
 	agent = NULL;
+
+	has_wideband = FALSE;
 
 	DBG("Agent %s unregistered", sender);
 
