@@ -34,6 +34,15 @@
 
 #define BT_DEFER_SETUP		7
 
+
+#define BT_VOICE		11
+struct bt_voice {
+	uint16_t setting;
+};
+
+#define BT_VOICE_TRANSPARENT			0x0003
+#define BT_VOICE_CVSD_16BIT			0x0060
+
 /* BD Address */
 typedef struct {
 	uint8_t b[6];
