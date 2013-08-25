@@ -430,8 +430,13 @@ static void hfp_answer(struct ofono_voicecall *vc,
 static void hfp_hangup(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data)
 {
+	unsigned int affected = (1 << CALL_STATUS_INCOMING) |
+				(1 << CALL_STATUS_DIALING) |
+				(1 << CALL_STATUS_ALERTING) |
+				(1 << CALL_STATUS_ACTIVE);
+
 	/* Hangup current active call */
-	hfp_template("AT+CHUP", vc, generic_cb, 0x1, cb, data);
+	hfp_template("AT+CHUP", vc, generic_cb, affected, cb, data);
 }
 
 static void hfp_hold_all_active(struct ofono_voicecall *vc,
