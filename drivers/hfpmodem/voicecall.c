@@ -471,8 +471,7 @@ static void hfp_set_udub(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	unsigned int incoming_or_waiting =
-		(1 << CALL_STATUS_INCOMING) | (1 << CALL_STATUS_WAITING);
+	unsigned int incoming_or_waiting = 1 << CALL_STATUS_WAITING;
 
 	if (vd->ag_mpty_features & AG_CHLD_0) {
 		hfp_template("AT+CHLD=0", vc, generic_cb, incoming_or_waiting,
