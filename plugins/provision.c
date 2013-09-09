@@ -50,7 +50,12 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 
 	DBG("Provisioning for MCC %s, MNC %s, SPN '%s'", mcc, mnc, spn);
 
-	apns = mbpi_lookup_apn(mcc, mnc, FALSE, &error);
+	/*
+	 * TODO: review with upstream.  Default behavior was to
+	 * disallow duplicate APN entries, which unfortunately exist
+	 * in the mobile-broadband-provider-info db.
+	 */
+	apns = mbpi_lookup_apn(mcc, mnc, TRUE, &error);
 	if (apns == NULL) {
 		if (error != NULL) {
 			ofono_error("%s", error->message);
@@ -62,7 +67,18 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 
 	ap_count = g_slist_length(apns);
 
-	DBG("Found %d APs", ap_count);
+	ofono_info("GPRS Provisioning found %d matching APNs for "
+		   "SPN: %s MCC: %s MNC: %s",
+		   ap_count, spn, mcc, mnc);
+	/*
+	 * Only keep the first APN found.
+	 *
+	 * This allows auto-provisioning to work most of the time vs.
+	 * passing FALSE to mbpi_lookup_apn() which would return an
+	 * an empty list if duplicates are found.
+	 */
+	if (ap_count > 1)
+		ap_count = 1;
 
 	*settings = g_try_new0(struct ofono_gprs_provision_data, ap_count);
 	if (*settings == NULL) {
@@ -81,14 +97,20 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 	for (l = apns, i = 0; l; l = l->next, i++) {
 		struct ofono_gprs_provision_data *ap = l->data;
 
-		DBG("Name: '%s'", ap->name);
-		DBG("APN: '%s'", ap->apn);
-		DBG("Type: %s", mbpi_ap_type(ap->type));
-		DBG("Username: '%s'", ap->username);
-		DBG("Password: '%s'", ap->password);
+		/*
+		 * Only create a data context for the first matching APN.
+		 * See comment above that restricts restricts apn_count.
+		 */
+		if (i == 0) {
+			ofono_info("Name: '%s'", ap->name);
+			ofono_info("APN: '%s'", ap->apn);
+			ofono_info("Type: %s", mbpi_ap_type(ap->type));
+			ofono_info("Username: '%s'", ap->username);
+			ofono_info("Password: '%s'", ap->password);
 
-		memcpy(*settings + i, ap,
-			sizeof(struct ofono_gprs_provision_data));
+			memcpy(*settings + i, ap,
+				sizeof(struct ofono_gprs_provision_data));
+		}
 
 		g_free(ap);
 	}

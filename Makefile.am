@@ -89,6 +89,15 @@ gisi_sources = gisi/client.c gisi/client.h gisi/common.h \
 				gisi/server.c gisi/server.h \
 				gisi/socket.c gisi/socket.h
 
+gril_sources = gril/gril.h gril/gril.c gril/grilio.h \
+				gril/grilio.c gril/grilutil.h \
+				gril/grilutil.c gril/ringbuffer.h \
+				gril/gfunc.h gril/ril.h \
+				gril/parcel.c gril/parcel.h \
+				gril/grilreply.c gril/grilreply.h \
+				gril/grilrequest.c gril/grilrequest.h \
+				gril/grilunsol.c gril/grilunsol.h
+
 btio_sources = btio/btio.h btio/btio.c
 
 if UDEV
@@ -99,6 +108,28 @@ builtin_libadd += @UDEV_LIBS@
 
 builtin_modules += udevng
 builtin_sources += plugins/udevng.c
+endif
+
+if RILMODEM
+builtin_sources += $(gril_sources)
+
+builtin_modules += ril
+builtin_sources += plugins/ril.c
+
+builtin_modules += rilmodem
+builtin_sources += drivers/rilmodem/rilmodem.h \
+			drivers/rilmodem/rilmodem.c \
+			drivers/rilmodem/devinfo.c \
+			drivers/rilmodem/network-registration.c \
+			drivers/rilmodem/voicecall.c \
+			drivers/rilmodem/call-volume.c \
+			drivers/rilmodem/gprs.c \
+			drivers/rilmodem/gprs-context.c \
+			drivers/rilmodem/sim.c \
+			drivers/rilmodem/sms.c \
+			drivers/rilmodem/rilutil.c \
+			drivers/rilmodem/rilutil.h
+
 endif
 
 if ISIMODEM
@@ -522,7 +553,7 @@ AM_CFLAGS = @DBUS_CFLAGS@ @GLIB_CFLAGS@ @USB_CFLAGS@ \
 
 INCLUDES = -I$(builddir)/include -I$(builddir)/src -I$(srcdir)/src \
 			-I$(srcdir)/gdbus -I$(srcdir)/gisi -I$(srcdir)/gatchat \
-			-I$(srcdir)/btio
+			-I$(srcdir)/btio -I$(srcdir)/gril
 
 doc_files = doc/overview.txt doc/ofono-paper.txt doc/release-faq.txt \
 		doc/manager-api.txt doc/modem-api.txt doc/network-api.txt \
@@ -648,7 +679,10 @@ unit_objects =
 
 unit_tests = unit/test-common unit/test-util unit/test-idmap \
 				unit/test-simutil unit/test-stkutil \
-				unit/test-sms unit/test-cdmasms
+				unit/test-sms unit/test-cdmasms \
+				unit/test-grilrequest \
+				unit/test-grilreply \
+				unit/test-grilunsol
 
 noinst_PROGRAMS = $(unit_tests) \
 			unit/test-sms-root unit/test-mux unit/test-caif
@@ -699,6 +733,21 @@ unit_test_caif_SOURCES = unit/test-caif.c $(gatchat_sources) \
 					drivers/stemodem/if_caif.h
 unit_test_caif_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_caif_OBJECTS)
+
+unit_test_grilrequest_SOURCES = unit/test-grilrequest.c $(gril_sources) \
+				src/log.c gatchat/ringbuffer.c
+unit_test_grilrequest_LDADD = @GLIB_LIBS@
+unit_objects += $(unit_test_grilrequest_OBJECTS)
+
+unit_test_grilreply_SOURCES = unit/test-grilreply.c $(gril_sources) \
+				src/log.c gatchat/ringbuffer.c
+unit_test_grilreply_LDADD = @GLIB_LIBS@
+unit_objects += $(unit_test_grilreply_OBJECTS)
+
+unit_test_grilunsol_SOURCES = unit/test-grilunsol.c $(gril_sources) \
+				src/log.c gatchat/ringbuffer.c
+unit_test_grilunsol_LDADD = @GLIB_LIBS@
+unit_objects += $(unit_test_grilunsol_OBJECTS)
 
 TESTS = $(unit_tests)
 

@@ -167,6 +167,11 @@ AC_ARG_ENABLE(isimodem, AC_HELP_STRING([--disable-isimodem],
 					[enable_isimodem=${enableval}])
 AM_CONDITIONAL(ISIMODEM, test "${enable_isimodem}" != "no")
 
+AC_ARG_ENABLE(rilmodem, AC_HELP_STRING([--disable-rilmodem],
+                                [disable RIL modem support]),
+                                        [enable_rilmodem=${enableval}])
+AM_CONDITIONAL(RILMODEM, test "${enable_rilmodem}" != "no")
+
 AC_ARG_ENABLE(qmimodem, AC_HELP_STRING([--disable-qmimodem],
 				[disable Qualcomm QMI modem support]),
 					[enable_qmimodem=${enableval}])
