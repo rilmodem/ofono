@@ -1,38 +1,16 @@
-oFono - Open Source Telephony
-*****************************
+rilmodem
+********
 
-Copyright (C) 2008-2011  Intel Corporation. All rights reserved.
+This git repository is a temporary fork of ofono 1.12 meant as a staging
+area for work on rilmodem, an ofono driver and associated plugins used 
+to provide a telephony stack based upon an Android RILD instance ( vs. a
+native modem driver ).
 
+It's the intention of the developers of this code to work with the
+ofono developers to eventually upstream this code, however as there is
+still work to be done ( missing core features, code cleanup, unit tests,
+... ), this repository has been created to make cross-distro colloboration
+on rilmodem easier.
 
-Compilation and installation
-============================
-
-In order to compile telephony stack you need following software packages:
-	- GCC compiler
-	- GLib library
-	- D-Bus library
-
-To configure run:
-	./configure --prefix=/usr --mandir=/usr/share/man \
-				--sysconfdir=/etc --localstatedir=/var
-
-Configure automatically searches for all required components and packages.
-
-To compile and install run:
-	make && make install
-
-
-Kernel Dependencies
-===================
-
-In order to have the PPP stack working in oFono you need to enable CONFIG_TUN
-(Universal TUN/TAP device driver support) in your kernel .config.
-
-Information
-===========
-
-Mailing list:
-	ofono@ofono.org
-
-For additional information about the project visit oFono web site:
-	http://www.ofono.org
+Author: Tony Espy <espy@canonical.com>
+Author: Ricardo Salveti de Araujo <ricardo.salveti@canonical.com>
