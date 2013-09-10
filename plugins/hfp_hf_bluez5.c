@@ -564,9 +564,7 @@ static DBusMessage *profile_release(DBusConnection *conn,
 {
 	DBG("Profile handler Release");
 
-	return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
-						".NotImplemented",
-						"Implementation not provided");
+	return NULL;
 }
 
 static DBusMessage *profile_cancel(DBusConnection *conn,
@@ -626,7 +624,7 @@ static const GDBusMethodTable profile_methods[] = {
 				GDBUS_ARGS({ "device", "o"}, { "fd", "h"},
 						{ "fd_properties", "a{sv}" }),
 				NULL, profile_new_connection) },
-	{ GDBUS_METHOD("Release", NULL, NULL, profile_release) },
+	{ GDBUS_NOREPLY_METHOD("Release", NULL, NULL, profile_release) },
 	{ GDBUS_METHOD("Cancel", NULL, NULL, profile_cancel) },
 	{ GDBUS_METHOD("RequestDisconnection",
 				GDBUS_ARGS({"device", "o"}), NULL,
