@@ -167,7 +167,7 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	calls = at_util_parse_clcc(result);
+	calls = at_util_parse_clcc(result, NULL);
 
 	n = calls;
 	o = vd->calls;
@@ -477,7 +477,7 @@ static void clcc_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!ok)
 		return;
 
-	vd->calls = at_util_parse_clcc(result);
+	vd->calls = at_util_parse_clcc(result, NULL);
 
 	for (l = vd->calls; l; l = l->next)
 		ofono_voicecall_notify(vc, l->data);
