@@ -754,6 +754,7 @@ test_scripts = test/backtrace \
 		test/hold-and-answer \
 		test/hangup-multiparty \
 		test/hangup-call \
+		test/display-icon \
 		test/rilmodem/test-hangup \
 		test/rilmodem/test-modem-offline \
 		test/rilmodem/test-sim-online
