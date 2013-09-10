@@ -655,7 +655,8 @@ test_scripts = test/backtrace \
 		test/hold-and-answer \
 		test/hangup-multiparty \
 		test/hangup-call \
-		test/display-icon
+		test/display-icon \
+		test/set-msisdn
 
 if TEST
 testdir = $(pkglibdir)/test
