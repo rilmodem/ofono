@@ -213,11 +213,12 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	unsigned int num_active = 0;
 	unsigned int num_held = 0;
 	GSList *notify_calls = NULL;
+	unsigned int mpty_ids;
 
 	if (!ok)
 		return;
 
-	calls = at_util_parse_clcc(result);
+	calls = at_util_parse_clcc(result, &mpty_ids);
 
 	n = calls;
 	o = vd->calls;
@@ -280,6 +281,8 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	 */
 	g_slist_foreach(notify_calls, voicecall_notify, vc);
 	g_slist_free(notify_calls);
+
+	ofono_voicecall_mpty_hint(vc, mpty_ids);
 
 	g_slist_foreach(vd->calls, (GFunc) g_free, NULL);
 	g_slist_free(vd->calls);
@@ -1097,13 +1100,15 @@ static void hfp_clcc_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	unsigned int mpty_ids;
 
 	if (!ok)
 		return;
 
-	vd->calls = at_util_parse_clcc(result);
+	vd->calls = at_util_parse_clcc(result, &mpty_ids);
 
 	g_slist_foreach(vd->calls, voicecall_notify, vc);
+	ofono_voicecall_mpty_hint(vc, mpty_ids);
 }
 
 static void hfp_voicecall_initialized(gboolean ok, GAtResult *result,
