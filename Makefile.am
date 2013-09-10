@@ -755,10 +755,10 @@ test_scripts = test/backtrace \
 		test/hangup-multiparty \
 		test/hangup-call \
 		test/display-icon \
+		test/set-msisdn \
 		test/rilmodem/test-hangup \
 		test/rilmodem/test-modem-offline \
 		test/rilmodem/test-sim-online
-
 
 if TEST
 testdir = $(pkglibdir)/test
