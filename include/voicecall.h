@@ -144,6 +144,13 @@ void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 				enum ofono_disconnect_reason reason,
 				const struct ofono_error *error);
 
+/*
+ * For those protocols where MPTY creation happens outside of oFono's control,
+ * e.g. Bluetooth Handsfree, set the hint of the MPTY call list by passing
+ * in a bitmask of ids participating in the MPTY call
+ */
+void ofono_voicecall_mpty_hint(struct ofono_voicecall *vc, unsigned int ids);
+
 int ofono_voicecall_driver_register(const struct ofono_voicecall_driver *d);
 void ofono_voicecall_driver_unregister(const struct ofono_voicecall_driver *d);
 
