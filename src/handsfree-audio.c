@@ -214,9 +214,12 @@ static int sco_init(void)
 
 	if (setsockopt(sk, SOL_BLUETOOTH, BT_DEFER_SETUP,
 				&defer_setup, sizeof(defer_setup)) < 0) {
+		int err = -errno;
 		defer_setup = 0;
 		ofono_warn("Can't enable deferred setup: %s (%d)",
 						strerror(errno), errno);
+		close(sk);
+		return err;
 	}
 
 	memset(&voice, 0, sizeof(voice));
