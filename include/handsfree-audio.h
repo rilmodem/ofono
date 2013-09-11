@@ -53,7 +53,7 @@ ofono_bool_t ofono_handsfree_card_set_codec(struct ofono_handsfree_card *card,
 
 ofono_bool_t ofono_handsfree_audio_has_wideband(void);
 
-ofono_bool_t ofono_handsfree_audio_has_defer_setup(void);
+ofono_bool_t ofono_handsfree_audio_has_transparent_sco(void);
 
 void ofono_handsfree_card_set_data(struct ofono_handsfree_card *card,
 					void *data);
