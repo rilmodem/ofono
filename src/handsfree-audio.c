@@ -68,6 +68,33 @@ static GSList *drivers = 0;
 static ofono_bool_t has_wideband = FALSE;
 static int defer_setup = 1;
 
+static uint16_t codec2setting(uint8_t codec)
+{
+	switch (codec) {
+		case HFP_CODEC_CVSD:
+			return BT_VOICE_CVSD_16BIT;
+		default:
+			return BT_VOICE_TRANSPARENT;
+	}
+}
+
+static ofono_bool_t apply_settings_from_codec(int fd, uint8_t codec)
+{
+	struct bt_voice voice;
+
+	/* CVSD is the default, no need to set BT_VOICE. */
+	if (codec == HFP_CODEC_CVSD)
+		return TRUE;
+
+	memset(&voice, 0, sizeof(voice));
+	voice.setting = codec2setting(codec);
+
+	if (setsockopt(fd, SOL_BLUETOOTH, BT_VOICE, &voice, sizeof(voice)) < 0)
+		return FALSE;
+
+	return TRUE;
+}
+
 static void send_new_connection(const char *card, int fd, uint8_t codec)
 {
 	DBusMessage *msg;
@@ -146,6 +173,11 @@ static gboolean sco_accept(GIOChannel *io, GIOCondition cond,
 	card = card_find(remote, local);
 	if (card == NULL || card->path == NULL) {
 		ofono_error("Rejecting SCO: Audio Card not found!");
+		close(nsk);
+		return TRUE;
+	}
+
+	if (apply_settings_from_codec(nsk, card->selected_codec) == FALSE) {
 		close(nsk);
 		return TRUE;
 	}
