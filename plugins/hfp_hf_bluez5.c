@@ -632,7 +632,7 @@ static void connect_handler(DBusConnection *conn, void *user_data)
 	 * Assuming that if defer_setup is supported, then SCO transparent
 	 * mode is also supported
 	*/
-	if (ofono_handsfree_audio_has_defer_setup())
+	if (ofono_handsfree_audio_has_transparent_sco())
 		features |= HFP_SDP_HF_FEATURE_WIDEBAND_SPEECH;
 
 	DBG("Registering External Profile handler ...");
