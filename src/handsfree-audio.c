@@ -478,6 +478,11 @@ int ofono_handsfree_card_connect_sco(struct ofono_handsfree_card *card)
 	addr.sco_family = AF_BLUETOOTH;
 	bt_str2ba(card->remote, &addr.sco_bdaddr);
 
+	if (apply_settings_from_codec(sk, card->selected_codec) == FALSE) {
+		close(sk);
+		return -1;
+	}
+
 	ret = connect(sk, (struct sockaddr *) &addr, sizeof(addr));
 	if (ret < 0 && errno != EINPROGRESS) {
 		close(sk);
