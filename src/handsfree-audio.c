@@ -816,6 +816,9 @@ int ofono_handsfree_card_driver_register(
 {
 	DBG("driver: %p", d);
 
+	if (defer_setup == 0)
+		return -ENOSYS;
+
 	if (d->probe == NULL)
 		return -EINVAL;
 
