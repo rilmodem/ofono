@@ -82,12 +82,12 @@ static ofono_bool_t apply_settings_from_codec(int fd, uint8_t codec)
 {
 	struct bt_voice voice;
 
-	/* CVSD is the default, no need to set BT_VOICE. */
-	if (codec == HFP_CODEC_CVSD)
-		return TRUE;
-
 	memset(&voice, 0, sizeof(voice));
 	voice.setting = codec2setting(codec);
+
+	/* CVSD is the default, no need to set BT_VOICE. */
+	if (voice.setting == BT_VOICE_CVSD_16BIT)
+		return TRUE;
 
 	if (setsockopt(fd, SOL_BLUETOOTH, BT_VOICE, &voice, sizeof(voice)) < 0)
 		return FALSE;
