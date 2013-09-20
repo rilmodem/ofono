@@ -165,6 +165,37 @@ static const struct req_setup_data_call req_setup_data_call_valid_4 = {
 	.protocol = OFONO_GPRS_PROTO_IPV6,
 };
 
+/*
+ * The following hexadecimal data represents a serialized Binder parcel
+ * instance containing a valid RIL_REQUEST_RADIO_POWER 'OFF' message.
+ */
+static const guchar req_power_off_valid_parcel1[8] = {
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+/*
+ * The following hexadecimal data represents a serialized Binder parcel
+ * instance containing a valid RIL_REQUEST_RADIO_POWER 'ON' message.
+ */
+static const guchar req_power_on_valid_parcel2[8] = {
+	0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
+};
+
+static const gboolean power_off = FALSE;
+static const gboolean power_on = TRUE;
+
+static const struct request_test_data power_valid_test_1 = {
+	.request = &power_off,
+	.parcel_data = (guchar *) &req_power_off_valid_parcel1,
+	.parcel_size = 8,
+};
+
+static const struct request_test_data power_valid_test_2 = {
+	.request = &power_on,
+	.parcel_data = (guchar *) &req_power_on_valid_parcel2,
+	.parcel_size = 8,
+};
+
 static void test_deactivate_data_call_invalid(gconstpointer data)
 {
 	const struct req_deactivate_data_call *request = data;
@@ -232,6 +263,19 @@ static void test_request_setup_data_call_valid(gconstpointer data)
 	parcel_free(&rilp);
 
 	/* TODO: add unit 3 tests to validate binary parcel result */
+}
+
+static void test_request_power_valid(gconstpointer data)
+{
+	const struct request_test_data *test_data = data;
+	const gboolean *online = test_data->request;
+	struct parcel rilp;
+
+	g_ril_request_power(NULL, *online, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data, test_data->parcel_size));
+
+	parcel_free(&rilp);
 }
 
 int main(int argc, char **argv)
@@ -315,6 +359,16 @@ int main(int argc, char **argv)
 				"valid SETUP_DATA_CALL Test 4",
 				&req_setup_data_call_valid_4,
 				test_request_setup_data_call_valid);
+
+	g_test_add_data_func("/testgrilrequest/power: "
+				"valid POWER Test 1",
+				&power_valid_test_1,
+				test_request_power_valid);
+
+	g_test_add_data_func("/testgrilrequest/power: "
+				"valid POWER Test 1",
+				&power_valid_test_2,
+				test_request_power_valid);
 
 #endif
 	return g_test_run();
