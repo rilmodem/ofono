@@ -496,6 +496,8 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 	if (get_version(&entry, &version) < 0)
 		goto invalid;
 
+	DBG("version: %hd", version);
+
 	modem = ofono_modem_find(device_path_compare, (void *) device);
 	if (modem == NULL) {
 		close(fd);
