@@ -449,13 +449,14 @@ static int get_version(DBusMessageIter *iter, uint16_t *version)
 
 		dbus_message_iter_recurse(&entry, &valiter);
 		dbus_message_iter_get_basic(&valiter, &value);
-		break;
+
+		if (version)
+			*version = value;
+
+		return 0;
 	}
 
-	if (version)
-		*version = value;
-
-	return 0;
+	return -ENOENT;
 }
 
 static DBusMessage *profile_new_connection(DBusConnection *conn,
