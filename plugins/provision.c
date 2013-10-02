@@ -48,7 +48,7 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 	int ap_count;
 	int i;
 
-	DBG("Provisioning for MCC %s, MNC %s, SPN '%s'", mcc, mnc, spn);
+	ofono_info("Provisioning for MCC %s, MNC %s, SPN '%s'", mcc, mnc, spn);
 
 	/*
 	 * TODO: review with upstream.  Default behavior was to
