@@ -51,6 +51,10 @@ gboolean g_ril_request_deactivate_data_call(GRil *gril,
 				struct parcel *rilp,
 				struct ofono_error *error);
 
+void g_ril_request_power(GRil *gril,
+				gboolean power,
+				struct parcel *rilp);
+
 gboolean g_ril_request_setup_data_call(GRil *gril,
 					const struct req_setup_data_call *req,
 					struct parcel *rilp,
