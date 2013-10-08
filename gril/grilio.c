@@ -280,15 +280,6 @@ gboolean g_ril_io_set_write_handler(GRilIO *io, GRilIOWriteFunc write_handler,
 	if (io == NULL)
 		return FALSE;
 
-	if (io->write_watch > 0) {
-		if (write_handler == NULL) {
-			g_source_remove(io->write_watch);
-			return TRUE;
-		}
-
-		return FALSE;
-	}
-
 	if (write_handler == NULL)
 		return FALSE;
 
