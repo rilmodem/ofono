@@ -384,6 +384,8 @@ static void ril_register_auto(struct ofono_netreg *netreg,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	int request = RIL_REQUEST_SET_NETWORK_SELECTION_AUTOMATIC;
 	int ret;
+
+	/* add *netreg_data to callback */
 	cbd->user = nd;
 
 	ret = g_ril_send(nd->ril, request,
@@ -407,6 +409,9 @@ static void ril_register_manual(struct ofono_netreg *netreg,
 	struct parcel rilp;
 	int request = RIL_REQUEST_SET_NETWORK_SELECTION_MANUAL;
 	int ret;
+
+	/* add *netreg_data to callback */
+	cbd->user = nd;
 
 	parcel_init(&rilp);
 
