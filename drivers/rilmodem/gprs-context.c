@@ -54,7 +54,7 @@ enum state {
 struct gprs_context_data {
 	GRil *ril;
 	guint active_ctx_cid;
-	gint active_rild_cid;
+	guint active_rild_cid;
 	enum state state;
 };
 
@@ -289,6 +289,7 @@ static void ril_deactivate_data_call_cb(struct ril_msg *message, gpointer user_d
 	ofono_gprs_context_cb_t cb = cbd->cb;
 	struct ofono_gprs_context *gc = cbd->user;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+	guint active_ctx_cid = -1;
 
 	DBG("");
 
@@ -297,6 +298,7 @@ static void ril_deactivate_data_call_cb(struct ril_msg *message, gpointer user_d
 
 		g_ril_print_response_no_args(gcd->ril, message);
 
+		active_ctx_cid = gcd->active_ctx_cid;
 		set_context_disconnected(gcd);
 
 		/* If the deactivate was a result of a shutdown,
@@ -306,7 +308,7 @@ static void ril_deactivate_data_call_cb(struct ril_msg *message, gpointer user_d
 		if (cb)
 			CALLBACK_WITH_SUCCESS(cb, cbd->data);
 		else
-			ofono_gprs_context_deactivated(gc, gcd->active_ctx_cid);
+			ofono_gprs_context_deactivated(gc, active_ctx_cid);
 
 	} else {
 		ofono_error("%s: replay failure: %s",
@@ -330,7 +332,7 @@ static void ril_gprs_context_deactivate_primary(struct ofono_gprs_context *gc,
 	int reqid = RIL_REQUEST_DEACTIVATE_DATA_CALL;
 	int ret = 0;
 
-	DBG("");
+	DBG("cid: %d active_rild_cid: %d", id, gcd->active_rild_cid);
 
 	if (gcd->active_rild_cid == -1) {
 		set_context_disconnected(gcd);
