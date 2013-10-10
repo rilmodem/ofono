@@ -602,8 +602,8 @@ static void ril_query_passwd_state(struct ofono_sim *sim,
 
 	if (sd->passwd_state == OFONO_SIM_PASSWORD_INVALID)
 		CALLBACK_WITH_FAILURE(cb, -1, data);
-
-	CALLBACK_WITH_SUCCESS(cb, sd->passwd_state, data);
+	else
+		CALLBACK_WITH_SUCCESS(cb, sd->passwd_state, data);
 }
 
 static void ril_pin_change_state_cb(struct ril_msg *message, gpointer user_data)
