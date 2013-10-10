@@ -55,7 +55,8 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 	 * disallow duplicate APN entries, which unfortunately exist
 	 * in the mobile-broadband-provider-info db.
 	 */
-	apns = mbpi_lookup_apn(mcc, mnc, TRUE, &error);
+	apns = mbpi_lookup_apn(mcc, mnc, OFONO_GPRS_CONTEXT_TYPE_INTERNET,
+				TRUE, &error);
 	if (apns == NULL) {
 		if (error != NULL) {
 			ofono_error("%s", error->message);
