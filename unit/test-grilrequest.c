@@ -104,7 +104,6 @@ static const struct req_setup_data_call req_setup_data_call_invalid_5 = {
 static const struct req_setup_data_call req_setup_data_call_invalid_6 = {
 	.tech = RADIO_TECH_GPRS,
 	.data_profile = RIL_DATA_PROFILE_DEFAULT,
-	.apn = "",
 	.apn = "12345678901234567890123456789012345678901234567890"
 	"123456789012345678901234567890123456789012345678901",
 };
