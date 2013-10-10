@@ -1427,6 +1427,8 @@ static void sim_imsi_obtained(struct ofono_sim *sim, const char *imsi)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(sim->atom);
+	unsigned char aux_mnc_length;
+	const char *str;
 
 	sim->imsi = g_strdup(imsi);
 
@@ -1435,27 +1437,36 @@ static void sim_imsi_obtained(struct ofono_sim *sim, const char *imsi)
 						"SubscriberIdentity",
 						DBUS_TYPE_STRING, &sim->imsi);
 
-	if (sim->mnc_length) {
-		const char *str;
+	/*
+	 * sim->mnc_length = 0 means that EFad did not contain the MNC length
+	 * field. So we will copy 3 digits from the IMSI in the MNC. MNC can
+	 * have either 2 or 3 digits depending on the MCC: we will try with
+	 * those 2 lengths when searching in the database for this corner case
+	 * (this situation can happen for SIMs (non-USIM), as MNC lenght field
+	 * is not mandatory for them - see TS 51.011)
+	 */
+	if (sim->mnc_length)
+		aux_mnc_length = sim->mnc_length;
+	else
+		aux_mnc_length = OFONO_MAX_MNC_LENGTH;
 
-		strncpy(sim->mcc, sim->imsi, OFONO_MAX_MCC_LENGTH);
-		sim->mcc[OFONO_MAX_MCC_LENGTH] = '\0';
-		strncpy(sim->mnc, sim->imsi + OFONO_MAX_MCC_LENGTH,
-			sim->mnc_length);
-		sim->mnc[sim->mnc_length] = '\0';
+	strncpy(sim->mcc, sim->imsi, OFONO_MAX_MCC_LENGTH);
+	sim->mcc[OFONO_MAX_MCC_LENGTH] = '\0';
+	strncpy(sim->mnc, sim->imsi + OFONO_MAX_MCC_LENGTH,
+		aux_mnc_length);
+	sim->mnc[aux_mnc_length] = '\0';
 
-		str = sim->mcc;
-		ofono_dbus_signal_property_changed(conn, path,
-						OFONO_SIM_MANAGER_INTERFACE,
-						"MobileCountryCode",
-						DBUS_TYPE_STRING, &str);
+	str = sim->mcc;
+	ofono_dbus_signal_property_changed(conn, path,
+					OFONO_SIM_MANAGER_INTERFACE,
+					"MobileCountryCode",
+					DBUS_TYPE_STRING, &str);
 
-		str = sim->mnc;
-		ofono_dbus_signal_property_changed(conn, path,
-						OFONO_SIM_MANAGER_INTERFACE,
-						"MobileNetworkCode",
-						DBUS_TYPE_STRING, &str);
-	}
+	str = sim->mnc;
+	ofono_dbus_signal_property_changed(conn, path,
+					OFONO_SIM_MANAGER_INTERFACE,
+					"MobileNetworkCode",
+					DBUS_TYPE_STRING, &str);
 
 	sim_set_ready(sim);
 
@@ -1772,8 +1783,12 @@ static void sim_ad_read_cb(int ok, int length, int record,
 	if (!ok)
 		return;
 
+	if (length < 3) {
+		ofono_error("EFad should contain at least three bytes");
+		return;
+	}
 	if (length < 4) {
-		ofono_error("EFad should contain at least four bytes");
+		ofono_info("EFad does not contain MNC length");
 		return;
 	}
 
@@ -2232,6 +2247,14 @@ const char *ofono_sim_get_mnc(struct ofono_sim *sim)
 		return NULL;
 
 	return sim->mnc;
+}
+
+unsigned ofono_sim_get_mnc_length(struct ofono_sim *sim)
+{
+	if (sim == NULL)
+		return 0;
+
+	return sim->mnc_length;
 }
 
 const char *ofono_sim_get_spn(struct ofono_sim *sim)
