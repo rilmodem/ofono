@@ -132,9 +132,6 @@ int parcel_w_string(struct parcel *p, char *str)
 			p->size += padded;
 			if (padded != len) {
 
-				DBG("Writing %d bytes, padded to %d\n",
-				    (int) len, (int) padded);
-
 #if BYTE_ORDER == BIG_ENDIAN
 				static const uint32_t mask[4] = {
 					0x00000000, 0xffffff00,
@@ -147,6 +144,10 @@ int parcel_w_string(struct parcel *p, char *str)
 					0x0000ffff, 0x000000ff
 				};
 #endif
+
+				DBG("Writing %d bytes, padded to %d\n",
+				    (int) len, (int) padded);
+
 				*((uint32_t*)(p->data + p->offset - 4)) &=
 							mask[padded - len];
 			}
