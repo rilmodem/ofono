@@ -40,6 +40,7 @@
 
 /* Constants used by CALL_LIST, and SETUP_DATA_CALL RIL requests */
 #define PROTO_IP_STR "IP"
+#define PROTO_IPV4_STR "IPV4"
 #define PROTO_IPV6_STR "IPV6"
 #define PROTO_IPV4V6_STR "IPV4V6"
 
@@ -73,6 +74,8 @@ int ril_protocol_string_to_ofono_protocol(gchar *protocol_str)
 	else if (g_strcmp0(protocol_str, PROTO_IPV4V6_STR) == 0)
 		result = OFONO_GPRS_PROTO_IPV4V6;
 	else if (g_strcmp0(protocol_str, PROTO_IP_STR) == 0)
+		result = OFONO_GPRS_PROTO_IP;
+	else if (g_strcmp0(protocol_str, PROTO_IPV4_STR) == 0)
 		result = OFONO_GPRS_PROTO_IP;
 	else
 		result = -1;
