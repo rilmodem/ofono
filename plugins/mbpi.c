@@ -53,6 +53,7 @@ enum MBPI_ERROR {
 struct gsm_data {
 	const char *match_mcc;
 	const char *match_mnc;
+	enum ofono_gprs_context_type match_type;
 	GSList *apns;
 	gboolean match_found;
 	gboolean allow_duplicates;
@@ -370,7 +371,9 @@ static void gsm_end(GMarkupParseContext *context, const gchar *element_name,
 		}
 	}
 
-	gsm->apns = g_slist_append(gsm->apns, ap);
+	if (gsm->match_type == OFONO_GPRS_CONTEXT_TYPE_ANY ||
+			gsm->match_type == ap->type)
+		gsm->apns = g_slist_append(gsm->apns, ap);
 }
 
 static const GMarkupParser gsm_parser = {
@@ -565,6 +568,7 @@ static gboolean mbpi_parse(const GMarkupParser *parser, gpointer userdata,
 }
 
 GSList *mbpi_lookup_apn(const char *mcc, const char *mnc,
+			enum ofono_gprs_context_type type,
 			gboolean allow_duplicates, GError **error)
 {
 	struct gsm_data gsm;
@@ -573,6 +577,7 @@ GSList *mbpi_lookup_apn(const char *mcc, const char *mnc,
 	memset(&gsm, 0, sizeof(gsm));
 	gsm.match_mcc = mcc;
 	gsm.match_mnc = mnc;
+	gsm.match_type = type;
 	gsm.allow_duplicates = allow_duplicates;
 
 	if (mbpi_parse(&toplevel_gsm_parser, &gsm, error) == FALSE) {

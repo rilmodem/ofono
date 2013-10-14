@@ -48,14 +48,15 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 	int ap_count;
 	int i;
 
-	DBG("Provisioning for MCC %s, MNC %s, SPN '%s'", mcc, mnc, spn);
+	ofono_info("Provisioning for MCC %s, MNC %s, SPN '%s'", mcc, mnc, spn);
 
 	/*
 	 * TODO: review with upstream.  Default behavior was to
 	 * disallow duplicate APN entries, which unfortunately exist
 	 * in the mobile-broadband-provider-info db.
 	 */
-	apns = mbpi_lookup_apn(mcc, mnc, TRUE, &error);
+	apns = mbpi_lookup_apn(mcc, mnc, OFONO_GPRS_CONTEXT_TYPE_INTERNET,
+				TRUE, &error);
 	if (apns == NULL) {
 		if (error != NULL) {
 			ofono_error("%s", error->message);

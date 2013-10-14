@@ -42,7 +42,8 @@ static void lookup_apn(const char *match_mcc, const char *match_mnc,
 
 	g_print("Searching for info for network: %s%s\n", match_mcc, match_mnc);
 
-	apns = mbpi_lookup_apn(match_mcc, match_mnc, allow_duplicates, &error);
+	apns = mbpi_lookup_apn(match_mcc, match_mnc, OFONO_GPRS_CONTEXT_TYPE_ANY,
+				allow_duplicates, &error);
 
 	if (apns == NULL) {
 		if (error != NULL) {
