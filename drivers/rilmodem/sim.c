@@ -96,6 +96,7 @@ struct sim_data {
 	gchar *app_str;
 	guint app_index;
 	gboolean sim_registered;
+	int retries[OFONO_SIM_PASSWORD_INVALID];
 	enum ofono_sim_password_type passwd_state;
 };
 
@@ -594,6 +595,14 @@ static void ril_sim_status_changed(struct ril_msg *message, gpointer user_data)
 	send_get_sim_status(sim);
 }
 
+static void ril_query_pin_retries(struct ofono_sim *sim,
+					ofono_sim_pin_retries_cb_t cb,
+					void *data)
+{
+	struct sim_data *sd = ofono_sim_get_data(sim);
+	CALLBACK_WITH_SUCCESS(cb, sd->retries, data);
+}
+
 static void ril_query_passwd_state(struct ofono_sim *sim,
 					ofono_sim_passwd_cb_t cb, void *data)
 {
@@ -610,6 +619,7 @@ static void ril_pin_change_state_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_sim_lock_unlock_cb_t cb = cbd->cb;
+	struct ofono_sim *sim = cbd->data;
 	struct sim_data *sd = cbd->user;
 
 	/* There is no reason to ask SIM status until
@@ -622,8 +632,14 @@ static void ril_pin_change_state_cb(struct ril_msg *message, gpointer user_data)
 		CALLBACK_WITH_SUCCESS(cb, cbd->data);
 		g_ril_print_response_no_args(sd->ril, message);
 
-	} else
+	} else {
 		CALLBACK_WITH_FAILURE(cb, cbd->data);
+		/*
+		 * Refresh passwd_state (not needed if the unlock is
+		 * successful, as an event will refresh the state in that case)
+		 */
+		send_get_sim_status(sim);
+	}
 
 }
 
@@ -849,6 +865,7 @@ static int ril_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 {
 	GRil *ril = data;
 	struct sim_data *sd;
+	int i;
 
 	sd = g_new0(struct sim_data, 1);
 	sd->ril = g_ril_clone(ril);
@@ -857,6 +874,15 @@ static int ril_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 	sd->app_type = RIL_APPTYPE_UNKNOWN;
 	sd->passwd_state = OFONO_SIM_PASSWORD_NONE;
 	sd->sim_registered = FALSE;
+
+	/*
+	 * The number of retries is unreliable in the current RIL
+	 * implementation of Google devices (Galaxy Nexus and Nexus 4 return
+	 * always 0 and 1 respectively in ENTER_SIM_PIN/PUK), so we never
+	 * refresh this value after calling those RIL requests.
+	 */
+	for (i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++)
+		sd->retries[i] = -1;
 
 	ofono_sim_set_data(sim, sd);
 
@@ -888,8 +914,8 @@ static void ril_sim_remove(struct ofono_sim *sim)
 
 static struct ofono_sim_driver driver = {
 	.name			= RILMODEM,
-	.probe                  = ril_sim_probe,
-	.remove                 = ril_sim_remove,
+	.probe			= ril_sim_probe,
+	.remove			= ril_sim_remove,
 	.read_file_info		= ril_sim_read_info,
 	.read_file_transparent	= ril_sim_read_binary,
 	.read_file_linear	= ril_sim_read_record,
@@ -900,6 +926,7 @@ static struct ofono_sim_driver driver = {
 	.lock			= ril_pin_change_state,
 	.reset_passwd		= ril_pin_send_puk,
 	.change_passwd		= ril_change_passwd,
+	.query_pin_retries	= ril_query_pin_retries,
 /*
  * TODO: Implmenting PIN/PUK support requires defining
  * the following driver methods.
@@ -909,7 +936,6 @@ static struct ofono_sim_driver driver = {
  * presence of query_passwd_state, and if null, then the
  * function sim_initialize_after_pin() is called.
  *
- *	.query_pin_retries	= ril_pin_retries_query,
  *	.query_locked		= ril_pin_query_enabled,
  *
  * TODO: Implementing SIM write file IO support requires
