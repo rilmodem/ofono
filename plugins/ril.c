@@ -32,6 +32,7 @@
 #include <glib.h>
 #include <gril.h>
 #include <parcel.h>
+#include <grilrequest.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
@@ -68,7 +69,6 @@ struct ril_data {
 };
 
 static void send_get_sim_status(struct ofono_modem *modem);
-static gboolean power_on(gpointer user_data);
 
 static void ril_debug(const char *str, void *user_data)
 {
@@ -228,7 +228,6 @@ static void ril_post_online(struct ofono_modem *modem)
 
 static void ril_set_online_cb(struct ril_msg *message, gpointer user_data)
 {
-	ofono_bool_t online_state;
 	struct cb_data *cbd = user_data;
 	ofono_modem_online_cb_t cb = cbd->cb;
 
@@ -270,9 +269,14 @@ static void ril_send_power(struct ril_data *ril, ofono_bool_t online,
 	if (ret <= 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(callback, data);
-	} else
-		g_ril_print_request(ril->modem, ret, request);
+	} else {
+		if (online)
+			current_online_state = RIL_ONLINE_PREF;
+		else
+			current_online_state = RIL_OFFLINE;
 
+		g_ril_print_request(ril->modem, ret, request);
+	}
 }
 
 static void ril_set_online(struct ofono_modem *modem, ofono_bool_t online,
@@ -417,6 +421,9 @@ static int ril_init(void)
 static void ril_exit(void)
 {
 	DBG("");
+	if (current_passwd)
+		g_free(current_passwd);
+
 	ofono_modem_driver_unregister(&ril_driver);
 }
 

@@ -834,6 +834,12 @@ static struct ril_s *create_ril()
 
         g_ril_io_set_read_handler(ril->io, new_bytes, ril);
 
+	current_passwd = g_try_malloc(16);
+	if (current_passwd)
+		g_stpcpy(current_passwd, defaultpasswd);
+
+	current_online_state = RIL_OFFLINE;
+
 	return ril;
 
 error:

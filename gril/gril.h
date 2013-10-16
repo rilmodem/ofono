@@ -138,6 +138,9 @@ guint g_ril_register(GRil *ril, const int req,
 gboolean g_ril_unregister(GRil *ril, guint id);
 gboolean g_ril_unregister_all(GRil *ril);
 
+gchar *current_passwd;
+guint current_online_state;
+
 #ifdef __cplusplus
 }
 #endif
