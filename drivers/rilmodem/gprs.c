@@ -121,9 +121,13 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 	struct ofono_gprs *gprs = cbd->user;
 	struct gprs_data *gd = ofono_gprs_get_data(gprs);
 	struct ofono_error error;
-	gboolean attached;
-	int status, lac, ci, tech;
+	gboolean attached = FALSE;
+	gboolean notify = FALSE;
+	int lac, ci, tech;
+	int old_status, status;
 	int max_cids = 1;
+
+	DBG("");
 
 	if (message->error == RIL_E_SUCCESS) {
 		decode_ril_error(&error, "OK");
@@ -136,6 +140,8 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
+	old_status = gd->rild_status;
+
 	if (ril_util_parse_reg(gd->ril, message, &status,
 				&lac, &ci, &tech, &max_cids) == FALSE) {
 		ofono_error("Failure parsing data registration response.");
@@ -144,26 +150,27 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	if (gd->rild_status == -1) {
-		ofono_gprs_register(gprs);
+	/*
+	 * There are three cases that can result in this callback
+	 * running:
+	 *
+	 * 1) The driver's probe() method was called, and thus an
+	 *    internal call to ril_gprs_registration_status() is
+	 *    generated.  No ofono cb exists.
+	 *
+	 * 2) ril_gprs_state_change() is called due to an unsolicited
+	 *    event from RILD.  No ofono cb exists.
+	 *
+	 * 3) The ofono code code calls the driver's attached_status()
+	 *    function.  A valid ofono cb exists.
+	 */
 
-		/* RILD tracks data network state together with voice */
-		g_ril_register(gd->ril, RIL_UNSOL_RESPONSE_VOICE_NETWORK_STATE_CHANGED,
-				ril_gprs_state_change, gprs);
+	if (gd->rild_status != status) {
+		gd->rild_status = status;
+
+		if (cb == NULL)
+			notify = TRUE;
 	}
-
-	if (max_cids > gd->max_cids) {
-		DBG("Setting max cids to %d", max_cids);
-		gd->max_cids = max_cids;
-		ofono_gprs_set_cid_range(gprs, 1, max_cids);
-	}
-
-	/* Just need to notify ofono if it's already attached */
-	if (gd->ofono_attached && (gd->rild_status != status)) {
-		ofono_gprs_status_notify(gprs, status);
-	}
-
-	gd->rild_status = status;
 
 	/*
 	 * Override the actual status based upon the desired
@@ -176,7 +183,41 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 	if (attached && gd->ofono_attached == FALSE) {
 		DBG("attached=true; ofono_attached=false; return !REGISTERED");
 		status = NETWORK_REGISTRATION_STATUS_NOT_REGISTERED;
+
+		/* Further optimization so that if ril_status == 
+		 * NOT_REGISTERED, ofono_attached == false, and status ==
+		 * ROAMING | REGISTERED, then notify gets cleared...
+		 *
+		 * As is, this results in unecessary status notify calls
+		 * when nothing has changed.
+		 */
+		if (status == old_status && notify)
+			notify = FALSE;
 	}
+
+	if (old_status == -1) {
+		ofono_gprs_register(gprs);
+
+		/* RILD tracks data network state together with voice */
+		g_ril_register(gd->ril, RIL_UNSOL_RESPONSE_VOICE_NETWORK_STATE_CHANGED,
+				ril_gprs_state_change, gprs);
+
+		if (max_cids > gd->max_cids) {
+			DBG("Setting max cids to %d", max_cids);
+			gd->max_cids = max_cids;
+			ofono_gprs_set_cid_range(gprs, 1, max_cids);
+		}
+
+		/* 
+		 * This callback is a result of the inital call
+		 * to probe(), so should return after registration.
+		 */
+		return;
+	}
+
+	/* Just need to notify ofono if it's already attached */
+	if (notify)
+		ofono_gprs_status_notify(gprs, status);
 
 error:
 	if (cb)
@@ -193,6 +234,14 @@ static void ril_gprs_registration_status(struct ofono_gprs *gprs,
 	guint ret;
 
 	cbd->user = gprs;
+
+	DBG("");
+
+	/* 
+	 * TODO (optimization): if gd->ofono_attached == FALSE, don't 
+	 * send REQ_DATA_REG; just invoke with the callback with
+	 * status == !REGISTERED!!! 
+	 */
 
 	ret = g_ril_send(gd->ril, request,
 				NULL, 0, ril_data_reg_cb, cbd, g_free);
