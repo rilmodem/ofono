@@ -196,18 +196,10 @@ static void ril_pre_sim(struct ofono_modem *modem)
 		ofono_sim_inserted_notify(sim, TRUE);
 }
 
-static void ril_post_sim(struct ofono_modem *modem)
+static void ril_setup_gprs(struct ofono_modem *modem, struct ril_data *ril)
 {
-	struct ril_data *ril = ofono_modem_get_data(modem);
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
-
-	/* TODO: this function should setup:
-	 *  - phonebook
-	 *  - stk ( SIM toolkit )
-	 *  - radio_settings
-	 */
-	ofono_sms_create(modem, 0, RILMODEM, ril->modem);
 
 	gprs = ofono_gprs_create(modem, 0, RILMODEM, ril->modem);
 	gc = ofono_gprs_context_create(modem, 0, RILMODEM, ril->modem);
@@ -218,9 +210,23 @@ static void ril_post_sim(struct ofono_modem *modem)
 	}
 }
 
+static void ril_post_sim(struct ofono_modem *modem)
+{
+	struct ril_data *ril = ofono_modem_get_data(modem);
+
+	/* TODO: this function should setup:
+	 *  - phonebook
+	 *  - stk ( SIM toolkit )
+	 *  - radio_settings
+	 */
+	ofono_sms_create(modem, 0, RILMODEM, ril->modem);
+}
+
 static void ril_post_online(struct ofono_modem *modem)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
+
+	ril_setup_gprs(modem, ril);
 
 	ofono_call_volume_create(modem, 0, RILMODEM, ril->modem);
 	ofono_netreg_create(modem, 0, RILMODEM, ril->modem);
