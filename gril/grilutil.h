@@ -37,8 +37,6 @@ enum online_states {
 	RIL_ONLINE,
 };
 
-static const char defaultpasswd[] = "NOTGIVEN";
-
 const char *ril_ofono_protocol_to_ril_string(guint protocol);
 int ril_protocol_string_to_ofono_protocol(gchar *protocol_str);
 const char *ril_appstate_to_string(int app_state);

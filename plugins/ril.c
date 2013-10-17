@@ -421,9 +421,6 @@ static int ril_init(void)
 static void ril_exit(void)
 {
 	DBG("");
-	if (current_passwd)
-		g_free(current_passwd);
-
 	ofono_modem_driver_unregister(&ril_driver);
 }
 

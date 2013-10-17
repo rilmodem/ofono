@@ -78,10 +78,8 @@
 #define RIL_FACILITY_UNLOCK "0"
 #define RIL_FACILITY_LOCK "1"
 
-/* Current SIM */
-static struct ofono_sim *current_sim;
-/* Current active app */
-static int current_active_app = RIL_APPTYPE_UNKNOWN;
+/* 15 digits maximum PIN. Can be less probably. */
+static const char defaultpasswd[] = "NOTGIVEN0000000";
 
 /*
  * TODO: CDMA/IMS
@@ -104,6 +102,7 @@ struct sim_data {
 	enum ofono_sim_password_type passwd_type;
 	int retries[OFONO_SIM_PASSWORD_INVALID];
 	enum ofono_sim_password_type passwd_state;
+	gchar current_passwd[sizeof(defaultpasswd)];
 };
 
 static void set_path(struct sim_data *sd, struct parcel *rilp,
@@ -621,7 +620,6 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 		for (i = 0; i < status.num_apps; i++) {
 			if (i == search_index &&
 				apps[i]->app_type != RIL_APPTYPE_UNKNOWN) {
-				current_active_app = apps[i]->app_type;
 				configure_active_app(sd, apps[i], i);
 				set_pin_lock_state(sim, apps[i]);
 				break;
@@ -631,7 +629,7 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 		if (sd->sim_registered == FALSE) {
 			ofono_sim_register(sim);
 			sd->sim_registered = TRUE;
-		} else
+		} else {
 			/* TODO: There doesn't seem to be any other
 			 * way to force the core SIM code to
 			 * recheck the PIN.
@@ -640,35 +638,35 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 			 * __ofono_sim_refresh(sim, NULL, TRUE, TRUE);
 			 */
 			ofono_sim_inserted_notify(sim, TRUE);
+		}
 
-		if (current_passwd) {
-			if (!strcmp(current_passwd, defaultpasswd)) {
-				__ofono_sim_recheck_pin(sim);
-			} else if (sd->passwd_state !=
-					OFONO_SIM_PASSWORD_SIM_PIN) {
-				__ofono_sim_recheck_pin(sim);
-			} else if (sd->passwd_state ==
-					OFONO_SIM_PASSWORD_SIM_PIN) {
-				parcel_init(&rilp);
-
-				parcel_w_int32(&rilp,
-					ENTER_SIM_PIN_PARAMS);
-				parcel_w_string(&rilp, current_passwd);
-				parcel_w_string(&rilp, sd->aid_str);
-
-				g_ril_send(sd->ril,
-						RIL_REQUEST_ENTER_SIM_PIN,
-						rilp.data, rilp.size, NULL,
-						NULL, g_free);
-
-				parcel_free(&rilp);
-			}
-		} else {
+		if (!strcmp(sd->current_passwd, defaultpasswd)) {
 			__ofono_sim_recheck_pin(sim);
+		} else if (sd->passwd_state !=
+				OFONO_SIM_PASSWORD_SIM_PIN) {
+			__ofono_sim_recheck_pin(sim);
+		} else if (sd->passwd_state ==
+				OFONO_SIM_PASSWORD_SIM_PIN) {
+
+			DBG("%s sending PIN", __FUNCTION__);
+			parcel_init(&rilp);
+
+			parcel_w_int32(&rilp,
+				ENTER_SIM_PIN_PARAMS);
+			parcel_w_string(&rilp, sd->current_passwd);
+			parcel_w_string(&rilp, sd->aid_str);
+
+			g_ril_send(sd->ril,
+					RIL_REQUEST_ENTER_SIM_PIN,
+					rilp.data, rilp.size, NULL,
+					NULL, g_free);
+
+			parcel_free(&rilp);
 		}
 
 		if (current_online_state == RIL_ONLINE_PREF) {
 
+			DBG("%s sending power on RADIO", __FUNCTION__);
 			parcel_init(&rilp);
 
 			parcel_w_int32(&rilp, 1);
@@ -749,23 +747,14 @@ static void ril_pin_change_state_cb(struct ril_msg *message, gpointer user_data)
 	ofono_sim_lock_unlock_cb_t cb = cbd->cb;
 	struct ofono_sim *sim = cbd->data;
 	struct sim_data *sd = cbd->user;
-	struct parcel rilp;
-	int retry_count;
-	int passwd_type;
-	/* There is no reason to ask SIM status until
+	/*
+	 * There is no reason to ask SIM status until
 	 * unsolicited sim status change indication
 	 * Looks like state does not change before that.
 	 */
 
-	passwd_type = sd->passwd_type;
-	ril_util_init_parcel(message, &rilp);
-
-	retry_count = parcel_r_int32(&rilp);
-
-	sd->retries[passwd_type] = retry_count;
-
-	DBG("Enter password: type %d, result %d, retry count %d",
-		passwd_type, message->error, retry_count);
+	DBG("Enter password: type %d, result %d",
+		sd->passwd_type, message->error);
 
 	/* TODO: re-bfactor to not use macro for FAILURE;
 	   doesn't return error! */
@@ -774,8 +763,7 @@ static void ril_pin_change_state_cb(struct ril_msg *message, gpointer user_data)
 		g_ril_print_response_no_args(sd->ril, message);
 
 	} else {
-		if (current_passwd)
-			g_stpcpy(current_passwd, defaultpasswd);
+		g_stpcpy(sd->current_passwd, defaultpasswd);
 
 		CALLBACK_WITH_FAILURE(cb, cbd->data);
 		/*
@@ -798,8 +786,7 @@ static void ril_pin_send(struct ofono_sim *sim, const char *passwd,
 	sd->passwd_type = OFONO_SIM_PASSWORD_SIM_PIN;
 	cbd->user = sd;
 
-	if (current_passwd)
-		g_stpcpy(current_passwd, passwd);
+	g_stpcpy(sd->current_passwd, passwd);
 
 	parcel_init(&rilp);
 
@@ -846,8 +833,7 @@ static void ril_pin_change_state(struct ofono_sim *sim,
 	 */
 	switch (passwd_type) {
 	case OFONO_SIM_PASSWORD_SIM_PIN:
-		if (current_passwd)
-			g_stpcpy(current_passwd, passwd);
+		g_stpcpy(sd->current_passwd, passwd);
 		g_ril_append_print_buf(sd->ril, "(SC,");
 		parcel_w_string(&rilp, "SC");
 		break;
@@ -929,8 +915,7 @@ static void ril_pin_send_puk(struct ofono_sim *sim,
 	sd->passwd_type = OFONO_SIM_PASSWORD_SIM_PUK;
 	cbd->user = sd;
 
-	if (current_passwd)
-		g_stpcpy(current_passwd, passwd);
+	g_stpcpy(sd->current_passwd, passwd);
 
 	parcel_init(&rilp);
 
@@ -980,8 +965,8 @@ static void ril_change_passwd(struct ofono_sim *sim,
 
 	if (passwd_type == OFONO_SIM_PASSWORD_SIM_PIN2)
 		request = RIL_REQUEST_CHANGE_SIM_PIN2;
-	else if (current_passwd)
-		g_stpcpy(current_passwd, new_passwd);
+	else
+		g_stpcpy(sd->current_passwd, new_passwd);
 
 	ret = g_ril_send(sd->ril, request, rilp.data, rilp.size,
 			ril_pin_change_state_cb, cbd, g_free);
@@ -1032,11 +1017,16 @@ static int ril_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 	sd->passwd_state = OFONO_SIM_PASSWORD_NONE;
 	sd->passwd_type = OFONO_SIM_PASSWORD_NONE;
 	sd->sim_registered = FALSE;
+	strcpy(sd->current_passwd, defaultpasswd);
 
+	/*
+	 * The number of retries is unreliable in the current RIL
+	 * implementation of Google devices (Galaxy Nexus and Nexus 4 return
+	 * always 0 and 1 respectively in ENTER_SIM_PIN/PUK), so we never
+	 * refresh this value after calling those RIL requests.
+	 */
 	for (i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++)
 		sd->retries[i] = -1;
-
-	current_sim = sim;
 
 	ofono_sim_set_data(sim, sd);
 
@@ -1105,26 +1095,10 @@ static struct ofono_sim_driver driver = {
 void ril_sim_init(void)
 {
 	DBG("");
-	current_sim = NULL;
 	ofono_sim_driver_register(&driver);
 }
 
 void ril_sim_exit(void)
 {
 	ofono_sim_driver_unregister(&driver);
-}
-
-struct ofono_sim_driver *get_sim_driver()
-{
-	return &driver;
-}
-
-struct ofono_sim *get_sim()
-{
-	return current_sim;
-}
-
-gint ril_get_app_type()
-{
-	return current_active_app;
 }
