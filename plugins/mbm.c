@@ -262,6 +262,10 @@ static void emrdy_query(gboolean ok, GAtResult *result, gpointer user_data)
 	if (ok)
 		return;
 
+	/* Sometimes we query EMRDY just as the EMRDY notifier is fired */
+	if (data->flags & MBM_FLAG_SAW_EMRDY)
+		return;
+
 	/* On some MBM hardware the EMRDY cannot be queried, so if this fails
 	 * we try to run CFUN? to check the state.  CFUN? will fail unless
 	 * EMRDY: 1 has been sent, in which case the emrdy_notifier should be
