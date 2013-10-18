@@ -92,11 +92,11 @@ static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
 	struct sim_data *sd = cbd->user;
 	struct ofono_error error;
 	gboolean ok = FALSE;
-	int sw1 = 0, sw2 = 0, response_len = 0;
+	int sw1, sw2;
 	int flen = 0, rlen = 0, str = 0;
-	guchar *response = NULL;
 	guchar access[3] = { 0x00, 0x00, 0x00 };
 	guchar file_status = EF_STATUS_VALID;
+	struct reply_sim_io *reply;
 
 	if (message->error == RIL_E_SUCCESS) {
 		decode_ril_error(&error, "OK");
@@ -106,17 +106,14 @@ static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	if ((response = (guchar *)
-		ril_util_parse_sim_io_rsp(sd->ril,
-						message,
-						&sw1,
-						&sw2,
-						&response_len)) == NULL) {
+	if ((reply = g_ril_reply_parse_sim_io(sd->ril, message, &error))
+			== NULL) {
 		DBG("Can't parse SIM IO response from RILD");
-		decode_ril_error(&error, "FAIL");
 		goto error;
 	}
 
+	sw1 = reply->sw1;
+	sw2 = reply->sw2;
 	if ((sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92 && sw1 != 0x9f) ||
 		(sw1 == 0x90 && sw2 != 0x00)) {
 		DBG("Error reply, invalid values: sw1: %02x sw2: %02x", sw1, sw2);
@@ -130,13 +127,18 @@ static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	if (response_len) {
-		if (response[0] == 0x62) {
-			ok = sim_parse_3g_get_response(response, response_len,
-							&flen, &rlen, &str, access, NULL);
-		} else
-			ok = sim_parse_2g_get_response(response, response_len,
-							&flen, &rlen, &str, access, &file_status);
+	if (reply->hex_len) {
+		if (reply->hex_response[0] == 0x62) {
+			ok = sim_parse_3g_get_response(reply->hex_response,
+							reply->hex_len,
+							&flen, &rlen, &str,
+							access, NULL);
+		} else {
+			ok = sim_parse_2g_get_response(reply->hex_response,
+							reply->hex_len,
+							&flen, &rlen, &str,
+							access, &file_status);
+		}
 	}
 
 	if (!ok) {
@@ -146,12 +148,13 @@ static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
 	}
 
 	cb(&error, flen, str, rlen, access, file_status, cbd->data);
-	g_free(response);
+
+	g_ril_reply_free_sim_io(reply);
+
 	return;
 
 error:
 	cb(&error, -1, -1, -1, NULL, EF_STATUS_INVALIDATED, cbd->data);
-	g_free(response);
 }
 
 static void ril_sim_read_info(struct ofono_sim *sim, int fileid,
@@ -210,8 +213,7 @@ static void ril_file_io_cb(struct ril_msg *message, gpointer user_data)
 	ofono_sim_read_cb_t cb = cbd->cb;
 	struct sim_data *sd = cbd->user;
 	struct ofono_error error;
-	int sw1 = 0, sw2 = 0, response_len = 0;
-	guchar *response = NULL;
+	struct reply_sim_io *reply;
 
 	if (message->error == RIL_E_SUCCESS) {
 		decode_ril_error(&error, "OK");
@@ -220,18 +222,16 @@ static void ril_file_io_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	if ((response = (guchar *)
-		ril_util_parse_sim_io_rsp(sd->ril,
-						message,
-						&sw1,
-						&sw2,
-						&response_len)) == NULL) {
-		DBG("Error parsing IO response");
+	if ((reply = g_ril_reply_parse_sim_io(sd->ril, message, &error))
+			== NULL) {
+		DBG("Can't parse SIM IO response from RILD");
 		goto error;
 	}
 
-	cb(&error, response, response_len, cbd->data);
-	g_free(response);
+	cb(&error, reply->hex_response, reply->hex_len, cbd->data);
+
+	g_ril_reply_free_sim_io(reply);
+
 	return;
 
 error:
@@ -353,7 +353,6 @@ static void ril_imsi_cb(struct ril_msg *message, gpointer user_data)
 	ofono_sim_imsi_cb_t cb = cbd->cb;
 	struct sim_data *sd = cbd->user;
 	struct ofono_error error;
-	struct parcel rilp;
 	gchar *imsi;
 
 	if (message->error == RIL_E_SUCCESS) {
@@ -366,15 +365,7 @@ static void ril_imsi_cb(struct ril_msg *message, gpointer user_data)
 		return;
 	}
 
-	ril_util_init_parcel(message, &rilp);
-
-	/* 15 is the max length of IMSI
-	 * add 4 bytes for string length */
-	/* FIXME: g_assert(message->buf_len <= 19); */
-	imsi = parcel_r_string(&rilp);
-
-	g_ril_append_print_buf(sd->ril, "{%s}", imsi);
-	g_ril_print_response(sd->ril, message);
+	imsi = g_ril_reply_parse_imsi(sd->ril, message);
 
 	cb(&error, imsi, cbd->data);
 	g_free(imsi);
@@ -407,7 +398,7 @@ static void ril_read_imsi(struct ofono_sim *sim, ofono_sim_imsi_cb_t cb,
 	}
 }
 
-static void set_pin_lock_state(struct ofono_sim *sim, struct sim_app *app)
+static void set_pin_lock_state(struct ofono_sim *sim, struct reply_sim_app *app)
 {
 	DBG("pin1: %u, pin2: %u", app->pin1_state, app->pin2_state);
 	/*
@@ -444,7 +435,7 @@ static void set_pin_lock_state(struct ofono_sim *sim, struct sim_app *app)
 }
 
 static void configure_active_app(struct sim_data *sd,
-					struct sim_app *app,
+					struct reply_sim_app *app,
 					guint index)
 {
 	sd->app_type = app->app_type;
@@ -512,28 +503,31 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_sim *sim = user_data;
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct sim_app *apps[MAX_UICC_APPS];
-	struct sim_status status;
+	struct reply_sim_status *status;
 	guint i = 0;
 	guint search_index = -1;
 	struct parcel rilp;
+	struct ofono_error error;
 
-	if (ril_util_parse_sim_status(sd->ril, message,	&status, apps) &&
-		status.num_apps) {
+	if ((status = g_ril_reply_parse_sim_status(sd->ril, message, &error))
+			!= NULL
+			&& status->card_state == RIL_CARDSTATE_PRESENT
+			&& status->num_apps) {
 
-		DBG("num_apps: %d gsm_umts_index: %d", status.num_apps,
-			status.gsm_umts_index);
+		DBG("num_apps: %d gsm_umts_index: %d", status->num_apps,
+			status->gsm_umts_index);
 
 		/* TODO(CDMA): need some kind of logic to
 		 * set the correct app_index,
 		 */
-		search_index = status.gsm_umts_index;
+		search_index = status->gsm_umts_index;
 
-		for (i = 0; i < status.num_apps; i++) {
+		for (i = 0; i < status->num_apps; i++) {
+			struct reply_sim_app *app = status->apps[i];
 			if (i == search_index &&
-				apps[i]->app_type != RIL_APPTYPE_UNKNOWN) {
-				configure_active_app(sd, apps[i], i);
-				set_pin_lock_state(sim, apps[i]);
+					app->app_type != RIL_APPTYPE_UNKNOWN) {
+				configure_active_app(sd, app, i);
+				set_pin_lock_state(sim, app);
 				break;
 			}
 		}
@@ -594,12 +588,14 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 			current_online_state = RIL_ONLINE;
 		}
 
-		ril_util_free_sim_apps(apps, status.num_apps);
-	} else {
+		g_ril_reply_free_sim_status(status);
+	} else if (status) {
 		if (current_online_state == RIL_ONLINE)
 			current_online_state = RIL_ONLINE_PREF;
 
 		ofono_sim_inserted_notify(sim, FALSE);
+
+		g_ril_reply_free_sim_status(status);
 	}
 
 	/* TODO: if no SIM present, handle emergency calling. */
