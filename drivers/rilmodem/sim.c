@@ -47,36 +47,16 @@
 #include "ril_constants.h"
 #include "rilmodem.h"
 
+#include "grilreply.h"
+#include "grilrequest.h"
+#include "grilunsol.h"
+
 /* Based on ../drivers/atmodem/sim.c.
  *
  * TODO:
  * 1. Defines constants for hex literals
  * 2. Document P1-P3 usage (+CSRM)
  */
-
-/* Commands defined for TS 27.007 +CRSM */
-#define CMD_READ_BINARY   176 /* 0xB0   */
-#define CMD_READ_RECORD   178 /* 0xB2   */
-#define CMD_GET_RESPONSE  192 /* 0xC0   */
-#define CMD_UPDATE_BINARY 214 /* 0xD6   */
-#define CMD_UPDATE_RECORD 220 /* 0xDC   */
-#define CMD_STATUS        242 /* 0xF2   */
-#define CMD_RETRIEVE_DATA 203 /* 0xCB   */
-#define CMD_SET_DATA      219 /* 0xDB   */
-
-/* FID/path of SIM/USIM root directory */
-#define ROOTMF "3F00"
-
-/* RIL_Request* parameter counts */
-#define GET_IMSI_NUM_PARAMS 1
-#define ENTER_SIM_PIN_PARAMS 2
-#define SET_FACILITY_LOCK_PARAMS 5
-#define ENTER_SIM_PUK_PARAMS 3
-#define CHANGE_SIM_PIN_PARAMS 3
-
-/* RIL_FACILITY_LOCK parameters */
-#define RIL_FACILITY_UNLOCK "0"
-#define RIL_FACILITY_LOCK "1"
 
 /* 15 digits maximum PIN. Can be less probably. */
 static const char defaultpasswd[] = "NOTGIVEN0000000";
@@ -104,64 +84,6 @@ struct sim_data {
 	enum ofono_sim_password_type passwd_state;
 	gchar current_passwd[sizeof(defaultpasswd)];
 };
-
-static void set_path(struct sim_data *sd, struct parcel *rilp,
-			const int fileid, const guchar *path,
-			const guint path_len)
-{
-	guchar db_path[6] = { 0x00 };
-	char *hex_path = NULL;
-	int len = 0;
-
-	if (path_len > 0 && path_len < 7) {
-		memcpy(db_path, path, path_len);
-		len = path_len;
-	} else if (sd->app_type == RIL_APPTYPE_USIM) {
-		len = sim_ef_db_get_path_3g(fileid, db_path);
-	} else if (sd->app_type == RIL_APPTYPE_SIM) {
-		len = sim_ef_db_get_path_2g(fileid, db_path);
-	} else {
-		ofono_error("Unsupported app_type: 0%x", sd->app_type);
-	}
-
-	if (len > 0) {
-		hex_path = encode_hex(db_path, len, 0);
-		parcel_w_string(rilp, (char *) hex_path);
-
-		g_ril_append_print_buf(sd->ril,
-					"%spath=%s,",
-					print_buf,
-					hex_path);
-
-		g_free(hex_path);
-	} else if (fileid == SIM_EF_ICCID_FILEID || fileid == SIM_EFPL_FILEID) {
-		/*
-		 * Special catch-all for EF_ICCID (unique card ID)
-		 * and EF_PL files which exist in the root directory.
-		 * As the sim_info_cb function may not have yet
-		 * recorded the app_type for the SIM, and the path
-		 * for both files is the same for 2g|3g, just hard-code.
-		 *
-		 * See 'struct ef_db' in:
-		 * ../../src/simutil.c for more details.
-		 */
-		parcel_w_string(rilp, (char *) ROOTMF);
-
-		g_ril_append_print_buf(sd->ril,
-					"%spath=%s,",
-					print_buf,
-					ROOTMF);
-	} else {
-		/*
-		 * The only known case of this is EFPHASE_FILED (0x6FAE).
-		 * The ef_db table ( see /src/simutil.c ) entry for
-		 * EFPHASE contains a value of 0x0000 for it's
-		 * 'parent3g' member.  This causes a NULL path to
-		 * be returned.
-		 */
-		parcel_w_string(rilp, NULL);
-	}
-}
 
 static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
 {
@@ -240,37 +162,25 @@ static void ril_sim_read_info(struct ofono_sim *sim, int fileid,
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
 	struct parcel rilp;
+	struct req_sim_read_info req;
+	struct ofono_error error;
 	int request = RIL_REQUEST_SIM_IO;
-	guint ret;
+	guint ret = 0;
 	cbd->user = sd;
 
-	parcel_init(&rilp);
+	req.app_type = sd->app_type;
+	req.aid_str = sd->aid_str;
+	req.fileid = fileid;
+	req.path = path;
+	req.path_len = path_len;
 
-	parcel_w_int32(&rilp, CMD_GET_RESPONSE);
-	parcel_w_int32(&rilp, fileid);
-
-	g_ril_append_print_buf(sd->ril,
-				"(cmd=0x%.2X,efid=0x%.4X,",
-				CMD_GET_RESPONSE,
-				fileid);
-
-	set_path(sd, &rilp, fileid, path, path_len);
-
-	parcel_w_int32(&rilp, 0);           /* P1 */
-	parcel_w_int32(&rilp, 0);           /* P2 */
-
-	/*
-	 * TODO: review parameters values used by Android.
-	 * The values of P1-P3 in this code were based on
-	 * values used by the atmodem driver impl.
-	 *
-	 * NOTE:
-	 * GET_RESPONSE_EF_SIZE_BYTES == 15; !255
-	 */
-	parcel_w_int32(&rilp, 15);         /* P3 - max length */
-	parcel_w_string(&rilp, NULL);       /* data; only req'd for writes */
-	parcel_w_string(&rilp, NULL);       /* pin2; only req'd for writes */
-	parcel_w_string(&rilp, sd->aid_str); /* AID (Application ID) */
+	if (g_ril_request_sim_read_info(sd->ril,
+					&req,
+					&rilp,
+					&error) == FALSE) {
+		ofono_error("Couldn't build SIM read info request");
+		goto error;
+	}
 
 	ret = g_ril_send(sd->ril,
 				request,
@@ -282,10 +192,11 @@ static void ril_sim_read_info(struct ofono_sim *sim, int fileid,
 				"%s0,0,15,(null),pin2=(null),aid=%s)",
 				print_buf,
 				sd->aid_str);
-	g_ril_print_request(sd->ril, ret, RIL_REQUEST_SIM_IO);
+	g_ril_print_request(sd->ril, ret, request);
 
 	parcel_free(&rilp);
 
+error:
 	if (ret <= 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL,
@@ -336,27 +247,27 @@ static void ril_sim_read_binary(struct ofono_sim *sim, int fileid,
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
 	struct parcel rilp;
+	struct req_sim_read_binary req;
+	struct ofono_error error;
 	int request = RIL_REQUEST_SIM_IO;
-	guint ret;
+	guint ret = 0;
 	cbd->user = sd;
 
-	g_ril_append_print_buf(sd->ril,
-				"(cmd=0x%.2X,efid=0x%.4X,",
-				CMD_READ_BINARY,
-				fileid);
+	req.app_type = sd->app_type;
+	req.aid_str = sd->aid_str;
+	req.fileid = fileid;
+	req.path = path;
+	req.path_len = path_len;
+	req.start = start;
+	req.length = length;
 
-	parcel_init(&rilp);
-	parcel_w_int32(&rilp, CMD_READ_BINARY);
-	parcel_w_int32(&rilp, fileid);
-
-	set_path(sd, &rilp, fileid, path, path_len);
-
-	parcel_w_int32(&rilp, (start >> 8));   /* P1 */
-	parcel_w_int32(&rilp, (start & 0xff)); /* P2 */
-	parcel_w_int32(&rilp, length);         /* P3 */
-	parcel_w_string(&rilp, NULL);          /* data; only req'd for writes */
-	parcel_w_string(&rilp, NULL);          /* pin2; only req'd for writes */
-	parcel_w_string(&rilp, sd->aid_str);
+	if (g_ril_request_sim_read_binary(sd->ril,
+						&req,
+						&rilp,
+						&error) == FALSE) {
+		ofono_error("Couldn't build SIM read binary request");
+		goto error;
+	}
 
 	ret = g_ril_send(sd->ril,
 				request,
@@ -375,6 +286,7 @@ static void ril_sim_read_binary(struct ofono_sim *sim, int fileid,
 
 	parcel_free(&rilp);
 
+error:
 	if (ret <= 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
@@ -389,27 +301,27 @@ static void ril_sim_read_record(struct ofono_sim *sim, int fileid,
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
 	struct parcel rilp;
+	struct req_sim_read_record req;
+	struct ofono_error error;
 	int request = RIL_REQUEST_SIM_IO;
-	guint ret;
+	guint ret = 0;
 	cbd->user = sd;
 
-	parcel_init(&rilp);
-	parcel_w_int32(&rilp, CMD_READ_RECORD);
-	parcel_w_int32(&rilp, fileid);
+	req.app_type = sd->app_type;
+	req.aid_str = sd->aid_str;
+	req.fileid = fileid;
+	req.path = path;
+	req.path_len = path_len;
+	req.record = record;
+	req.length = length;
 
-	g_ril_append_print_buf(sd->ril,
-				"(cmd=0x%.2X,efid=0x%.4X,",
-				CMD_GET_RESPONSE,
-				fileid);
-
-	set_path(sd, &rilp, fileid, path, path_len);
-
-	parcel_w_int32(&rilp, record);      /* P1 */
-	parcel_w_int32(&rilp, 4);           /* P2 */
-	parcel_w_int32(&rilp, length);      /* P3 */
-	parcel_w_string(&rilp, NULL);       /* data; only req'd for writes */
-	parcel_w_string(&rilp, NULL);       /* pin2; only req'd for writes */
-	parcel_w_string(&rilp, sd->aid_str); /* AID (Application ID) */
+	if (g_ril_request_sim_read_record(sd->ril,
+						&req,
+						&rilp,
+						&error) == FALSE) {
+		ofono_error("Couldn't build SIM read record request");
+		goto error;
+	}
 
 	ret = g_ril_send(sd->ril,
 				request,
@@ -428,6 +340,7 @@ static void ril_sim_read_record(struct ofono_sim *sim, int fileid,
 
 	parcel_free(&rilp);
 
+error:
 	if (ret <= 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
@@ -477,14 +390,13 @@ static void ril_read_imsi(struct ofono_sim *sim, ofono_sim_imsi_cb_t cb,
 	guint ret;
 	cbd->user = sd;
 
-	parcel_init(&rilp);
-	parcel_w_int32(&rilp, GET_IMSI_NUM_PARAMS);
-	parcel_w_string(&rilp, sd->aid_str);
+	g_ril_request_read_imsi(sd->ril,
+				sd->aid_str,
+				&rilp);
 
 	ret = g_ril_send(sd->ril, request,
 				rilp.data, rilp.size, ril_imsi_cb, cbd, g_free);
 
-	g_ril_append_print_buf(sd->ril, "(%s)", sd->aid_str);
 	g_ril_print_request(sd->ril, ret, request);
 
 	parcel_free(&rilp);
@@ -649,12 +561,11 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 				OFONO_SIM_PASSWORD_SIM_PIN) {
 
 			DBG("%s sending PIN", __FUNCTION__);
-			parcel_init(&rilp);
 
-			parcel_w_int32(&rilp,
-				ENTER_SIM_PIN_PARAMS);
-			parcel_w_string(&rilp, sd->current_passwd);
-			parcel_w_string(&rilp, sd->aid_str);
+			g_ril_request_pin_send(sd->ril,
+						sd->current_passwd,
+						sd->aid_str,
+						&rilp);
 
 			g_ril_send(sd->ril,
 					RIL_REQUEST_ENTER_SIM_PIN,
@@ -667,10 +578,10 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 		if (current_online_state == RIL_ONLINE_PREF) {
 
 			DBG("%s sending power on RADIO", __FUNCTION__);
-			parcel_init(&rilp);
 
-			parcel_w_int32(&rilp, 1);
-			parcel_w_int32(&rilp, 1);
+			g_ril_request_power(sd->ril,
+						TRUE,
+						&rilp);
 
 			g_ril_send(sd->ril,
 					RIL_REQUEST_RADIO_POWER,
@@ -788,17 +699,15 @@ static void ril_pin_send(struct ofono_sim *sim, const char *passwd,
 
 	g_stpcpy(sd->current_passwd, passwd);
 
-	parcel_init(&rilp);
-
-	parcel_w_int32(&rilp, ENTER_SIM_PIN_PARAMS);
-	parcel_w_string(&rilp, (char *) passwd);
-	parcel_w_string(&rilp, sd->aid_str);
+	g_ril_request_pin_send(sd->ril,
+				passwd,
+				sd->aid_str,
+				&rilp);
 
 	ret = g_ril_send(sd->ril, request,
 				rilp.data, rilp.size, ril_pin_change_state_cb,
 				cbd, g_free);
 
-	g_ril_append_print_buf(sd->ril, "(%s,aid=%s)", passwd, sd->aid_str);
 	g_ril_print_request(sd->ril, ret, request);
 
 	parcel_free(&rilp);
@@ -817,85 +726,39 @@ static void ril_pin_change_state(struct ofono_sim *sim,
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
 	struct parcel rilp;
+	struct req_pin_change_state req;
+	struct ofono_error error;
 	int request = RIL_REQUEST_SET_FACILITY_LOCK;
 	int ret = 0;
 
 	sd->passwd_type = passwd_type;
 	cbd->user = sd;
 
-	parcel_init(&rilp);
-	parcel_w_int32(&rilp, SET_FACILITY_LOCK_PARAMS);
+	req.aid_str = sd->aid_str;
+	req.passwd_type = passwd_type;
+	req.enable = enable;
+	req.passwd = passwd;
 
-	/*
-	 * TODO: clean up the use of string literals &
-	 * the multiple g_ril_append_print_buf() calls
-	 * by using a table lookup as does the core sim code
-	 */
-	switch (passwd_type) {
-	case OFONO_SIM_PASSWORD_SIM_PIN:
-		g_stpcpy(sd->current_passwd, passwd);
-		g_ril_append_print_buf(sd->ril, "(SC,");
-		parcel_w_string(&rilp, "SC");
-		break;
-	case OFONO_SIM_PASSWORD_PHSIM_PIN:
-		g_ril_append_print_buf(sd->ril, "(PS,");
-		parcel_w_string(&rilp, "PS");
-		break;
-	case OFONO_SIM_PASSWORD_PHFSIM_PIN:
-		g_ril_append_print_buf(sd->ril, "(PF,");
-		parcel_w_string(&rilp, "PF");
-		break;
-	case OFONO_SIM_PASSWORD_SIM_PIN2:
-		g_ril_append_print_buf(sd->ril, "(P2,");
-		parcel_w_string(&rilp, "P2");
-		break;
-	case OFONO_SIM_PASSWORD_PHNET_PIN:
-		g_ril_append_print_buf(sd->ril, "(PN,");
-		parcel_w_string(&rilp, "PN");
-		break;
-	case OFONO_SIM_PASSWORD_PHNETSUB_PIN:
-		g_ril_append_print_buf(sd->ril, "(PU,");
-		parcel_w_string(&rilp, "PU");
-		break;
-	case OFONO_SIM_PASSWORD_PHSP_PIN:
-		g_ril_append_print_buf(sd->ril, "(PP,");
-		parcel_w_string(&rilp, "PP");
-		break;
-	case OFONO_SIM_PASSWORD_PHCORP_PIN:
-		g_ril_append_print_buf(sd->ril, "(PC,");
-		parcel_w_string(&rilp, "PC");
-		break;
-	default:
-		CALLBACK_WITH_FAILURE(cb, data);
-		return;
+	if (g_ril_request_pin_change_state(sd->ril,
+						&req,
+						&rilp,
+						&error) == FALSE) {
+		ofono_error("Couldn't build pin change state request");
+		goto error;
 	}
 
-	if (enable)
-		parcel_w_string(&rilp, RIL_FACILITY_LOCK);
-	else
-		parcel_w_string(&rilp, RIL_FACILITY_UNLOCK);
-
-	parcel_w_string(&rilp, (char *) passwd);
-
-	/* TODO: make this a constant... */
-	parcel_w_string(&rilp, "0");		/* class */
-
-	parcel_w_string(&rilp, sd->aid_str);
+	if (passwd_type == OFONO_SIM_PASSWORD_SIM_PIN)
+		g_stpcpy(sd->current_passwd, passwd);
 
 	ret = g_ril_send(sd->ril, request,
 				rilp.data, rilp.size, ril_pin_change_state_cb,
 				cbd, g_free);
 
-	g_ril_append_print_buf(sd->ril, "%s,%d,%s,0,aid=%s)",
-				print_buf,
-				enable,
-				passwd,
-				sd->aid_str);
-
 	g_ril_print_request(sd->ril, ret, request);
 
 	parcel_free(&rilp);
 
+error:
 	if (ret <= 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, data);
@@ -915,22 +778,17 @@ static void ril_pin_send_puk(struct ofono_sim *sim,
 	sd->passwd_type = OFONO_SIM_PASSWORD_SIM_PUK;
 	cbd->user = sd;
 
+	g_ril_request_pin_send_puk(sd->ril,
+					puk,
+					passwd,
+					sd->aid_str,
+					&rilp);
+
 	g_stpcpy(sd->current_passwd, passwd);
-
-	parcel_init(&rilp);
-
-	parcel_w_int32(&rilp, ENTER_SIM_PUK_PARAMS);
-	parcel_w_string(&rilp, (char *) puk);
-	parcel_w_string(&rilp, (char *) passwd);
-	parcel_w_string(&rilp, sd->aid_str);
 
 	ret = g_ril_send(sd->ril, request,
 			rilp.data, rilp.size, ril_pin_change_state_cb,
 			cbd, g_free);
-
-	g_ril_append_print_buf(sd->ril, "(puk=%s,pin=%s,aid=%s)",
-				puk, passwd,
-				sd->aid_str);
 
 	g_ril_print_request(sd->ril, ret, request);
 
@@ -956,12 +814,11 @@ static void ril_change_passwd(struct ofono_sim *sim,
 	sd->passwd_type = passwd_type;
 	cbd->user = sd;
 
-	parcel_init(&rilp);
-
-	parcel_w_int32(&rilp, CHANGE_SIM_PIN_PARAMS);
-	parcel_w_string(&rilp, (char *) old_passwd);
-	parcel_w_string(&rilp, (char *) new_passwd);
-	parcel_w_string(&rilp, sd->aid_str);
+	g_ril_request_change_passwd(sd->ril,
+					old_passwd,
+					new_passwd,
+					sd->aid_str,
+					&rilp);
 
 	if (passwd_type == OFONO_SIM_PASSWORD_SIM_PIN2)
 		request = RIL_REQUEST_CHANGE_SIM_PIN2;
@@ -970,10 +827,6 @@ static void ril_change_passwd(struct ofono_sim *sim,
 
 	ret = g_ril_send(sd->ril, request, rilp.data, rilp.size,
 			ril_pin_change_state_cb, cbd, g_free);
-
-	g_ril_append_print_buf(sd->ril, "(old=%s,new=%s,aid=%s)",
-				old_passwd, new_passwd,
-				sd->aid_str);
 
 	g_ril_print_request(sd->ril, ret, request);
 

@@ -36,6 +36,8 @@
 #include <ofono/gprs-context.h>
 
 #include "grilrequest.h"
+#include "simutil.h"
+#include "util.h"
 
 /* DEACTIVATE_DATA_CALL request parameters */
 #define DEACTIVATE_DATA_CALL_NUM_PARAMS 2
@@ -55,6 +57,30 @@
 /* SETUP_DATA_CALL_PARAMS reply parameters */
 #define MIN_DATA_CALL_REPLY_SIZE 36
 
+/* Commands defined for TS 27.007 +CRSM */
+#define CMD_READ_BINARY   176 /* 0xB0   */
+#define CMD_READ_RECORD   178 /* 0xB2   */
+#define CMD_GET_RESPONSE  192 /* 0xC0   */
+#define CMD_UPDATE_BINARY 214 /* 0xD6   */
+#define CMD_UPDATE_RECORD 220 /* 0xDC   */
+#define CMD_STATUS        242 /* 0xF2   */
+#define CMD_RETRIEVE_DATA 203 /* 0xCB   */
+#define CMD_SET_DATA      219 /* 0xDB   */
+
+/* FID/path of SIM/USIM root directory */
+#define ROOTMF "3F00"
+
+/* RIL_Request* parameter counts */
+#define GET_IMSI_NUM_PARAMS 1
+#define ENTER_SIM_PIN_PARAMS 2
+#define SET_FACILITY_LOCK_PARAMS 5
+#define ENTER_SIM_PUK_PARAMS 3
+#define CHANGE_SIM_PIN_PARAMS 3
+
+/* RIL_FACILITY_LOCK parameters */
+#define RIL_FACILITY_UNLOCK "0"
+#define RIL_FACILITY_LOCK "1"
+
 /*
  * TODO:
  *
@@ -69,6 +95,65 @@
  * };
  *
  */
+
+static void set_path(GRil *ril, guint app_type,
+			struct parcel *rilp,
+			const int fileid, const guchar *path,
+			const guint path_len)
+{
+	guchar db_path[6] = { 0x00 };
+	char *hex_path = NULL;
+	int len = 0;
+
+	if (path_len > 0 && path_len < 7) {
+		memcpy(db_path, path, path_len);
+		len = path_len;
+	} else if (app_type == RIL_APPTYPE_USIM) {
+		len = sim_ef_db_get_path_3g(fileid, db_path);
+	} else if (app_type == RIL_APPTYPE_SIM) {
+		len = sim_ef_db_get_path_2g(fileid, db_path);
+	} else {
+		ofono_error("Unsupported app_type: 0%x", app_type);
+	}
+
+	if (len > 0) {
+		hex_path = encode_hex(db_path, len, 0);
+		parcel_w_string(rilp, (char *) hex_path);
+
+		g_ril_append_print_buf(ril,
+					"%spath=%s,",
+					print_buf,
+					hex_path);
+
+		g_free(hex_path);
+	} else if (fileid == SIM_EF_ICCID_FILEID || fileid == SIM_EFPL_FILEID) {
+		/*
+		 * Special catch-all for EF_ICCID (unique card ID)
+		 * and EF_PL files which exist in the root directory.
+		 * As the sim_info_cb function may not have yet
+		 * recorded the app_type for the SIM, and the path
+		 * for both files is the same for 2g|3g, just hard-code.
+		 *
+		 * See 'struct ef_db' in:
+		 * ../../src/simutil.c for more details.
+		 */
+		parcel_w_string(rilp, (char *) ROOTMF);
+
+		g_ril_append_print_buf(ril,
+					"%spath=%s,",
+					print_buf,
+					ROOTMF);
+	} else {
+		/*
+		 * The only known case of this is EFPHASE_FILED (0x6FAE).
+		 * The ef_db table ( see /src/simutil.c ) entry for
+		 * EFPHASE contains a value of 0x0000 for it's
+		 * 'parent3g' member.  This causes a NULL path to
+		 * be returned.
+		 */
+		parcel_w_string(rilp, NULL);
+	}
+}
 
 gboolean g_ril_request_deactivate_data_call(GRil *gril,
 				const struct req_deactivate_data_call *req,
@@ -226,4 +311,239 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 error:
         OFONO_EINVAL(error);
 	return FALSE;
+}
+
+gboolean g_ril_request_sim_read_info(GRil *gril,
+					const struct req_sim_read_info *req,
+					struct parcel *rilp,
+					struct ofono_error *error)
+{
+	parcel_init(rilp);
+
+	parcel_w_int32(rilp, CMD_GET_RESPONSE);
+	parcel_w_int32(rilp, req->fileid);
+
+	g_ril_append_print_buf(gril,
+				"(cmd=0x%.2X,efid=0x%.4X,",
+				CMD_GET_RESPONSE,
+				req->fileid);
+
+	set_path(gril, req->app_type, rilp, req->fileid,
+			req->path, req->path_len);
+
+	parcel_w_int32(rilp, 0);           /* P1 */
+	parcel_w_int32(rilp, 0);           /* P2 */
+
+	/*
+	 * TODO: review parameters values used by Android.
+	 * The values of P1-P3 in this code were based on
+	 * values used by the atmodem driver impl.
+	 *
+	 * NOTE:
+	 * GET_RESPONSE_EF_SIZE_BYTES == 15; !255
+	 */
+	parcel_w_int32(rilp, 15);         /* P3 - max length */
+	parcel_w_string(rilp, NULL);       /* data; only req'd for writes */
+	parcel_w_string(rilp, NULL);       /* pin2; only req'd for writes */
+	parcel_w_string(rilp, req->aid_str); /* AID (Application ID) */
+
+	OFONO_NO_ERROR(error);
+	return TRUE;
+}
+
+gboolean g_ril_request_sim_read_binary(GRil *gril,
+					const struct req_sim_read_binary *req,
+					struct parcel *rilp,
+					struct ofono_error *error)
+{
+	g_ril_append_print_buf(gril,
+				"(cmd=0x%.2X,efid=0x%.4X,",
+				CMD_READ_BINARY,
+				req->fileid);
+
+	parcel_init(rilp);
+	parcel_w_int32(rilp, CMD_READ_BINARY);
+	parcel_w_int32(rilp, req->fileid);
+
+	set_path(gril, req->app_type, rilp, req->fileid,
+			req->path, req->path_len);
+
+	parcel_w_int32(rilp, (req->start >> 8));   /* P1 */
+	parcel_w_int32(rilp, (req->start & 0xff)); /* P2 */
+	parcel_w_int32(rilp, req->length);         /* P3 */
+	parcel_w_string(rilp, NULL);          /* data; only req'd for writes */
+	parcel_w_string(rilp, NULL);          /* pin2; only req'd for writes */
+	parcel_w_string(rilp, req->aid_str);
+
+	OFONO_NO_ERROR(error);
+	return TRUE;
+}
+
+gboolean g_ril_request_sim_read_record(GRil *gril,
+					const struct req_sim_read_record *req,
+					struct parcel *rilp,
+					struct ofono_error *error)
+{
+	parcel_init(rilp);
+	parcel_w_int32(rilp, CMD_READ_RECORD);
+	parcel_w_int32(rilp, req->fileid);
+
+	g_ril_append_print_buf(gril,
+				"(cmd=0x%.2X,efid=0x%.4X,",
+				CMD_GET_RESPONSE,
+				req->fileid);
+
+	set_path(gril, req->app_type, rilp, req->fileid,
+			req->path, req->path_len);
+
+	parcel_w_int32(rilp, req->record);      /* P1 */
+	parcel_w_int32(rilp, 4);           /* P2 */
+	parcel_w_int32(rilp, req->length);      /* P3 */
+	parcel_w_string(rilp, NULL);       /* data; only req'd for writes */
+	parcel_w_string(rilp, NULL);       /* pin2; only req'd for writes */
+	parcel_w_string(rilp, req->aid_str); /* AID (Application ID) */
+
+	OFONO_NO_ERROR(error);
+	return TRUE;
+}
+
+void g_ril_request_read_imsi(GRil *gril,
+				gchar *aid_str,
+				struct parcel *rilp)
+{
+	parcel_init(rilp);
+	parcel_w_int32(rilp, GET_IMSI_NUM_PARAMS);
+	parcel_w_string(rilp, aid_str);
+
+	g_ril_append_print_buf(gril, "(%d,%s)", GET_IMSI_NUM_PARAMS, aid_str);
+}
+
+void g_ril_request_pin_send(GRil *gril,
+				const char *passwd,
+				gchar *aid_str,
+				struct parcel *rilp)
+{
+	parcel_init(rilp);
+
+	parcel_w_int32(rilp, ENTER_SIM_PIN_PARAMS);
+	parcel_w_string(rilp, (char *) passwd);
+	parcel_w_string(rilp, aid_str);
+
+	g_ril_append_print_buf(gril, "(%s,aid=%s)", passwd, aid_str);
+}
+
+gboolean g_ril_request_pin_change_state(GRil *gril,
+					const struct req_pin_change_state *req,
+					struct parcel *rilp,
+					struct ofono_error *error)
+{
+	const char *lock_type;
+
+	/*
+	 * TODO: clean up the use of string literals &
+	 * the multiple g_ril_append_print_buf() calls
+	 * by using a table lookup as does the core sim code
+	 */
+	switch (req->passwd_type) {
+	case OFONO_SIM_PASSWORD_SIM_PIN:
+		g_ril_append_print_buf(gril, "(SC,");
+		lock_type = "SC";
+		break;
+	case OFONO_SIM_PASSWORD_PHSIM_PIN:
+		g_ril_append_print_buf(gril, "(PS,");
+		lock_type = "PS";
+		break;
+	case OFONO_SIM_PASSWORD_PHFSIM_PIN:
+		g_ril_append_print_buf(gril, "(PF,");
+		lock_type = "PF";
+		break;
+	case OFONO_SIM_PASSWORD_SIM_PIN2:
+		g_ril_append_print_buf(gril, "(P2,");
+		lock_type = "P2";
+		break;
+	case OFONO_SIM_PASSWORD_PHNET_PIN:
+		g_ril_append_print_buf(gril, "(PN,");
+		lock_type = "PN";
+		break;
+	case OFONO_SIM_PASSWORD_PHNETSUB_PIN:
+		g_ril_append_print_buf(gril, "(PU,");
+		lock_type = "PU";
+		break;
+	case OFONO_SIM_PASSWORD_PHSP_PIN:
+		g_ril_append_print_buf(gril, "(PP,");
+		lock_type = "PP";
+		break;
+	case OFONO_SIM_PASSWORD_PHCORP_PIN:
+		g_ril_append_print_buf(gril, "(PC,");
+		lock_type = "PC";
+		break;
+	default:
+		ofono_error("%s: Invalid password type: %d",
+				__func__, req->passwd_type);
+		goto error;
+	}
+
+	parcel_init(rilp);
+	parcel_w_int32(rilp, SET_FACILITY_LOCK_PARAMS);
+
+	parcel_w_string(rilp, (char *) lock_type);
+
+	if (req->enable)
+		parcel_w_string(rilp, RIL_FACILITY_LOCK);
+	else
+		parcel_w_string(rilp, RIL_FACILITY_UNLOCK);
+
+	parcel_w_string(rilp, (char *) req->passwd);
+
+	/* TODO: make this a constant... */
+	parcel_w_string(rilp, "0");		/* class */
+
+	parcel_w_string(rilp, req->aid_str);
+
+	g_ril_append_print_buf(gril, "(%s,%d,%s,0,aid=%s)",
+				print_buf,
+				req->enable,
+				req->passwd,
+				req->aid_str);
+
+	OFONO_NO_ERROR(error);
+	return TRUE;
+
+error:
+        OFONO_EINVAL(error);
+	return FALSE;
+}
+
+void g_ril_request_pin_send_puk(GRil *gril,
+				const char *puk,
+				const char *passwd,
+				gchar *aid_str,
+				struct parcel *rilp)
+{
+	parcel_init(rilp);
+
+	parcel_w_int32(rilp, ENTER_SIM_PUK_PARAMS);
+	parcel_w_string(rilp, (char *) puk);
+	parcel_w_string(rilp, (char *) passwd);
+	parcel_w_string(rilp, aid_str);
+
+	g_ril_append_print_buf(gril, "(puk=%s,pin=%s,aid=%s)",
+				puk, passwd, aid_str);
+}
+
+void g_ril_request_change_passwd(GRil *gril,
+					const char *old_passwd,
+					const char *new_passwd,
+					gchar *aid_str,
+					struct parcel *rilp)
+{
+	parcel_init(rilp);
+
+	parcel_w_int32(rilp, CHANGE_SIM_PIN_PARAMS);
+	parcel_w_string(rilp, (char *) old_passwd);
+	parcel_w_string(rilp, (char *) new_passwd);
+	parcel_w_string(rilp, aid_str);
+
+	g_ril_append_print_buf(gril, "(old=%s,new=%s,aid=%s)",
+				old_passwd, new_passwd, aid_str);
 }
