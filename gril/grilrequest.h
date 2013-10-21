@@ -80,7 +80,7 @@ struct req_sim_read_record {
 
 
 struct req_pin_change_state {
-	gchar *aid_str;
+	const gchar *aid_str;
 	enum ofono_sim_password_type passwd_type;
 	int enable;
 	const char *passwd;
@@ -116,12 +116,12 @@ gboolean g_ril_request_sim_read_record(GRil *gril,
 					struct ofono_error *error);
 
 void g_ril_request_read_imsi(GRil *gril,
-				gchar *aid_str,
+				const gchar *aid_str,
 				struct parcel *rilp);
 
 void g_ril_request_pin_send(GRil *gril,
 				const char *passwd,
-				gchar *aid_str,
+				const gchar *aid_str,
 				struct parcel *rilp);
 
 gboolean g_ril_request_pin_change_state(GRil *gril,
@@ -132,13 +132,13 @@ gboolean g_ril_request_pin_change_state(GRil *gril,
 void g_ril_request_pin_send_puk(GRil *gril,
 				const char *puk,
 				const char *passwd,
-				gchar *aid_str,
+				const gchar *aid_str,
 				struct parcel *rilp);
 
 void g_ril_request_change_passwd(GRil *gril,
 					const char *old_passwd,
 					const char *new_passwd,
-					gchar *aid_str,
+					const gchar *aid_str,
 					struct parcel *rilp);
 
 #ifdef __cplusplus

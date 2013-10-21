@@ -305,7 +305,7 @@ static void ril_dial(struct ofono_voicecall *vc,
 	parcel_init(&rilp);
 
 	/* Number to dial */
-        parcel_w_string(&rilp, (char *) phone_number_to_string(ph));
+        parcel_w_string(&rilp, phone_number_to_string(ph));
 	/* CLIR mode */
 	parcel_w_int32(&rilp, clir);
 	/* USS, need it twice for absent */

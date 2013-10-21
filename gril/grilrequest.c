@@ -96,10 +96,10 @@
  *
  */
 
-static void set_path(GRil *ril, guint app_type,
-			struct parcel *rilp,
-			const int fileid, const guchar *path,
-			const guint path_len)
+static gboolean set_path(GRil *ril, guint app_type,
+				struct parcel *rilp,
+				const int fileid, const guchar *path,
+				const guint path_len)
 {
 	guchar db_path[6] = { 0x00 };
 	char *hex_path = NULL;
@@ -114,11 +114,12 @@ static void set_path(GRil *ril, guint app_type,
 		len = sim_ef_db_get_path_2g(fileid, db_path);
 	} else {
 		ofono_error("Unsupported app_type: 0%x", app_type);
+		return FALSE;
 	}
 
 	if (len > 0) {
 		hex_path = encode_hex(db_path, len, 0);
-		parcel_w_string(rilp, (char *) hex_path);
+		parcel_w_string(rilp, hex_path);
 
 		g_ril_append_print_buf(ril,
 					"%spath=%s,",
@@ -137,7 +138,7 @@ static void set_path(GRil *ril, guint app_type,
 		 * See 'struct ef_db' in:
 		 * ../../src/simutil.c for more details.
 		 */
-		parcel_w_string(rilp, (char *) ROOTMF);
+		parcel_w_string(rilp, ROOTMF);
 
 		g_ril_append_print_buf(ril,
 					"%spath=%s,",
@@ -153,6 +154,8 @@ static void set_path(GRil *ril, guint app_type,
 		 */
 		parcel_w_string(rilp, NULL);
 	}
+
+	return TRUE;
 }
 
 gboolean g_ril_request_deactivate_data_call(GRil *gril,
@@ -282,15 +285,15 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 	parcel_w_int32(rilp, SETUP_DATA_CALL_PARAMS);
 
 	tech_str = g_strdup_printf("%d", req->tech);
-	parcel_w_string(rilp, (char *) tech_str);
-	parcel_w_string(rilp, (char *) profile_str);
-	parcel_w_string(rilp, (char *) req->apn);
-	parcel_w_string(rilp, (char *) req->username);
-	parcel_w_string(rilp, (char *) req->password);
+	parcel_w_string(rilp, tech_str);
+	parcel_w_string(rilp, profile_str);
+	parcel_w_string(rilp, req->apn);
+	parcel_w_string(rilp, req->username);
+	parcel_w_string(rilp, req->password);
 
 	auth_str = g_strdup_printf("%d", req->auth_type);
-	parcel_w_string(rilp, (char *) auth_str);
-	parcel_w_string(rilp, (char *) protocol_str);
+	parcel_w_string(rilp, auth_str);
+	parcel_w_string(rilp, protocol_str);
 
 	g_ril_append_print_buf(gril,
 				"(%s,%s,%s,%s,%s,%s,%s)",
@@ -328,8 +331,9 @@ gboolean g_ril_request_sim_read_info(GRil *gril,
 				CMD_GET_RESPONSE,
 				req->fileid);
 
-	set_path(gril, req->app_type, rilp, req->fileid,
-			req->path, req->path_len);
+	if (set_path(gril, req->app_type, rilp, req->fileid,
+			req->path, req->path_len) == FALSE)
+		goto error;
 
 	parcel_w_int32(rilp, 0);           /* P1 */
 	parcel_w_int32(rilp, 0);           /* P2 */
@@ -349,6 +353,10 @@ gboolean g_ril_request_sim_read_info(GRil *gril,
 
 	OFONO_NO_ERROR(error);
 	return TRUE;
+
+error:
+        OFONO_EINVAL(error);
+	return FALSE;
 }
 
 gboolean g_ril_request_sim_read_binary(GRil *gril,
@@ -365,8 +373,9 @@ gboolean g_ril_request_sim_read_binary(GRil *gril,
 	parcel_w_int32(rilp, CMD_READ_BINARY);
 	parcel_w_int32(rilp, req->fileid);
 
-	set_path(gril, req->app_type, rilp, req->fileid,
-			req->path, req->path_len);
+	if (set_path(gril, req->app_type, rilp, req->fileid,
+			req->path, req->path_len) == FALSE)
+		goto error;
 
 	parcel_w_int32(rilp, (req->start >> 8));   /* P1 */
 	parcel_w_int32(rilp, (req->start & 0xff)); /* P2 */
@@ -377,6 +386,11 @@ gboolean g_ril_request_sim_read_binary(GRil *gril,
 
 	OFONO_NO_ERROR(error);
 	return TRUE;
+
+
+error:
+        OFONO_EINVAL(error);
+	return FALSE;
 }
 
 gboolean g_ril_request_sim_read_record(GRil *gril,
@@ -393,8 +407,9 @@ gboolean g_ril_request_sim_read_record(GRil *gril,
 				CMD_GET_RESPONSE,
 				req->fileid);
 
-	set_path(gril, req->app_type, rilp, req->fileid,
-			req->path, req->path_len);
+	if (set_path(gril, req->app_type, rilp, req->fileid,
+			req->path, req->path_len) == FALSE)
+		goto error;
 
 	parcel_w_int32(rilp, req->record);      /* P1 */
 	parcel_w_int32(rilp, 4);           /* P2 */
@@ -405,10 +420,14 @@ gboolean g_ril_request_sim_read_record(GRil *gril,
 
 	OFONO_NO_ERROR(error);
 	return TRUE;
+
+error:
+        OFONO_EINVAL(error);
+	return FALSE;
 }
 
 void g_ril_request_read_imsi(GRil *gril,
-				gchar *aid_str,
+				const gchar *aid_str,
 				struct parcel *rilp)
 {
 	parcel_init(rilp);
@@ -420,13 +439,13 @@ void g_ril_request_read_imsi(GRil *gril,
 
 void g_ril_request_pin_send(GRil *gril,
 				const char *passwd,
-				gchar *aid_str,
+				const gchar *aid_str,
 				struct parcel *rilp)
 {
 	parcel_init(rilp);
 
 	parcel_w_int32(rilp, ENTER_SIM_PIN_PARAMS);
-	parcel_w_string(rilp, (char *) passwd);
+	parcel_w_string(rilp, passwd);
 	parcel_w_string(rilp, aid_str);
 
 	g_ril_append_print_buf(gril, "(%s,aid=%s)", passwd, aid_str);
@@ -486,14 +505,14 @@ gboolean g_ril_request_pin_change_state(GRil *gril,
 	parcel_init(rilp);
 	parcel_w_int32(rilp, SET_FACILITY_LOCK_PARAMS);
 
-	parcel_w_string(rilp, (char *) lock_type);
+	parcel_w_string(rilp, lock_type);
 
 	if (req->enable)
 		parcel_w_string(rilp, RIL_FACILITY_LOCK);
 	else
 		parcel_w_string(rilp, RIL_FACILITY_UNLOCK);
 
-	parcel_w_string(rilp, (char *) req->passwd);
+	parcel_w_string(rilp, req->passwd);
 
 	/* TODO: make this a constant... */
 	parcel_w_string(rilp, "0");		/* class */
@@ -517,14 +536,14 @@ error:
 void g_ril_request_pin_send_puk(GRil *gril,
 				const char *puk,
 				const char *passwd,
-				gchar *aid_str,
+				const gchar *aid_str,
 				struct parcel *rilp)
 {
 	parcel_init(rilp);
 
 	parcel_w_int32(rilp, ENTER_SIM_PUK_PARAMS);
-	parcel_w_string(rilp, (char *) puk);
-	parcel_w_string(rilp, (char *) passwd);
+	parcel_w_string(rilp, puk);
+	parcel_w_string(rilp, passwd);
 	parcel_w_string(rilp, aid_str);
 
 	g_ril_append_print_buf(gril, "(puk=%s,pin=%s,aid=%s)",
@@ -534,14 +553,14 @@ void g_ril_request_pin_send_puk(GRil *gril,
 void g_ril_request_change_passwd(GRil *gril,
 					const char *old_passwd,
 					const char *new_passwd,
-					gchar *aid_str,
+					const gchar *aid_str,
 					struct parcel *rilp)
 {
 	parcel_init(rilp);
 
 	parcel_w_int32(rilp, CHANGE_SIM_PIN_PARAMS);
-	parcel_w_string(rilp, (char *) old_passwd);
-	parcel_w_string(rilp, (char *) new_passwd);
+	parcel_w_string(rilp, old_passwd);
+	parcel_w_string(rilp, new_passwd);
 	parcel_w_string(rilp, aid_str);
 
 	g_ril_append_print_buf(gril, "(old=%s,new=%s,aid=%s)",
