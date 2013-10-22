@@ -472,16 +472,13 @@ static int ril_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	ofono_voicecall_set_data(vc, vd);
 
         /*
-	 * TODO: analyze if capability check is needed
-	 * and/or timer should be adjusted.
-	 *
 	 * ofono_voicecall_register() needs to be called after
 	 * the driver has been set in ofono_voicecall_create(),
 	 * which calls this function.  Most other drivers make
          * some kind of capabilities query to the modem, and then
-	 * call register in the callback; we use a timer instead.
+	 * call register in the callback; we use an idle event instead.
 	 */
-        g_timeout_add_seconds(2, ril_delayed_register, vc);
+        g_idle_add(ril_delayed_register, vc);
 
 	return 0;
 }
