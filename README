@@ -1,6 +1,14 @@
 rilmodem
 ********
 
+This README describes the upstream rilmodem/ofono git repository hosted on 
+github:
+
+https://github.com/rilmodem/ofono
+
+The original ofono README is still present, however it's been re-named 
+README.orig.
+
 This git repository is a temporary fork of ofono 1.12 meant as a staging
 area for work on rilmodem, an ofono driver and associated plugins used 
 to provide a telephony stack based upon an Android RILD instance ( vs. a
