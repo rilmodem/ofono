@@ -15,7 +15,8 @@ to provide a telephony stack based upon an Android RILD instance ( vs. a
 native modem driver ).  This repository is *also* the upstream for Ubuntu's
 version of ofono.  As such, changes to this repository must be tested 
 to ensure no regressions are introduced.  For rilmodem-related changes,
-testing on the currently supported Nexus-based phones is a requirement.
+it's recommended that they be tested on at least one of the Nexus-based
+phones currently supported by Ubuntu Touch.
 
 The 'master' branch is auto-imported to the following Launchpad bzr branch:
 
