@@ -1,10 +1,30 @@
 rilmodem
 ********
 
+This README describes the upstream rilmodem/ofono git repository hosted on 
+github:
+
+https://github.com/rilmodem/ofono
+
+The original ofono README is still present, however it's been re-named 
+README.orig.
+
 This git repository is a temporary fork of ofono 1.12 meant as a staging
 area for work on rilmodem, an ofono driver and associated plugins used 
 to provide a telephony stack based upon an Android RILD instance ( vs. a
-native modem driver ).
+native modem driver ).  This repository is *also* the upstream for Ubuntu's
+version of ofono.  As such, changes to this repository must be tested 
+to ensure no regressions are introduced.  For rilmodem-related changes,
+it's recommended that they be tested on at least one of the Nexus-based
+phones currently supported by Ubuntu Touch.
+
+The 'master' branch is auto-imported to the following Launchpad bzr branch:
+
+https://code.launchpad.net/~phablet-team/ofono/rilmodem
+
+The packaging branch is:
+
+https://code.launchpad.net/~phablet-team/ofono/ubuntu
 
 It's the intention of the developers of this code to work with the
 ofono developers to eventually upstream this code, however as there is
