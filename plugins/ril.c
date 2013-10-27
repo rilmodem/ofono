@@ -31,6 +31,7 @@
 #include <string.h>
 #include <glib.h>
 #include <gril.h>
+#include <grilrequest.h>
 #include <parcel.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
@@ -68,7 +69,6 @@ struct ril_data {
 };
 
 static void send_get_sim_status(struct ofono_modem *modem);
-static gboolean power_on(gpointer user_data);
 
 static void ril_debug(const char *str, void *user_data)
 {
@@ -138,7 +138,7 @@ static void send_get_sim_status(struct ofono_modem *modem)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
 	int request = RIL_REQUEST_GET_SIM_STATUS;
-	guint ret;
+	gint ret;
 
 	ret = g_ril_send(ril->modem, request,
 				NULL, 0, sim_status_cb, modem, NULL);
@@ -196,18 +196,10 @@ static void ril_pre_sim(struct ofono_modem *modem)
 		ofono_sim_inserted_notify(sim, TRUE);
 }
 
-static void ril_post_sim(struct ofono_modem *modem)
+static void ril_setup_gprs(struct ofono_modem *modem, struct ril_data *ril)
 {
-	struct ril_data *ril = ofono_modem_get_data(modem);
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
-
-	/* TODO: this function should setup:
-	 *  - phonebook
-	 *  - stk ( SIM toolkit )
-	 *  - radio_settings
-	 */
-	ofono_sms_create(modem, 0, RILMODEM, ril->modem);
 
 	gprs = ofono_gprs_create(modem, 0, RILMODEM, ril->modem);
 	gc = ofono_gprs_context_create(modem, 0, RILMODEM, ril->modem);
@@ -218,9 +210,23 @@ static void ril_post_sim(struct ofono_modem *modem)
 	}
 }
 
+static void ril_post_sim(struct ofono_modem *modem)
+{
+	struct ril_data *ril = ofono_modem_get_data(modem);
+
+	/* TODO: this function should setup:
+	 *  - phonebook
+	 *  - stk ( SIM toolkit )
+	 *  - radio_settings
+	 */
+	ofono_sms_create(modem, 0, RILMODEM, ril->modem);
+}
+
 static void ril_post_online(struct ofono_modem *modem)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
+
+	ril_setup_gprs(modem, ril);
 
 	ofono_call_volume_create(modem, 0, RILMODEM, ril->modem);
 	ofono_netreg_create(modem, 0, RILMODEM, ril->modem);
@@ -228,7 +234,6 @@ static void ril_post_online(struct ofono_modem *modem)
 
 static void ril_set_online_cb(struct ril_msg *message, gpointer user_data)
 {
-	ofono_bool_t online_state;
 	struct cb_data *cbd = user_data;
 	ofono_modem_online_cb_t cb = cbd->cb;
 

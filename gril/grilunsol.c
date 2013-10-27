@@ -85,7 +85,7 @@ struct unsol_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
 	struct parcel rilp;
 	struct unsol_data_call_list *reply =
 		g_new0(struct unsol_data_call_list, 1);
-	int i;
+	unsigned int i;
 
 	DBG("");
 
