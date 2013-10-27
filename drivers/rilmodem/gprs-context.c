@@ -54,7 +54,7 @@ enum state {
 struct gprs_context_data {
 	GRil *ril;
 	gint active_ctx_cid;
-	gint active_rild_cid;
+	guint active_rild_cid;
 	enum state state;
 };
 

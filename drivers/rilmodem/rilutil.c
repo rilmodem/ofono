@@ -320,7 +320,7 @@ gboolean ril_util_parse_sim_status(GRil *gril,
 {
 	struct parcel rilp;
 	gboolean result = FALSE;
-	int i;
+	unsigned int i;
 
 	g_ril_append_print_buf(gril, "[%04d]< %s",
 			message->serial_no,
