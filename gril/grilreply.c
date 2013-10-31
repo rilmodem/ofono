@@ -261,12 +261,14 @@ struct reply_sim_io *g_ril_reply_parse_sim_io(GRil *gril,
 	reply->sw2 = parcel_r_int32(&rilp);
 
 	response = parcel_r_string(&rilp);
-	if (response) {
-		reply->hex_response =
-			decode_hex((const char *) response,
-					strlen(response),
-					(long *) &reply->hex_len, -1);
-	}
+	if (response == NULL)
+		goto error;
+
+	reply->hex_response =
+		decode_hex((const char *) response, strlen(response),
+				(long *) &reply->hex_len, -1);
+	if (reply->hex_response == NULL)
+		goto error;
 
 	g_ril_append_print_buf(gril,
 				"(sw1=0x%.2X,sw2=0x%.2X,%s)",
@@ -280,6 +282,12 @@ struct reply_sim_io *g_ril_reply_parse_sim_io(GRil *gril,
 	OFONO_NO_ERROR(error);
 
 	return reply;
+
+error:
+	OFONO_EINVAL(error);
+	g_free(reply);
+
+	return NULL;
 }
 
 gchar *g_ril_reply_parse_imsi(GRil *gril, struct ril_msg *message)

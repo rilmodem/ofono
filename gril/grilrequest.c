@@ -387,7 +387,6 @@ gboolean g_ril_request_sim_read_binary(GRil *gril,
 	OFONO_NO_ERROR(error);
 	return TRUE;
 
-
 error:
         OFONO_EINVAL(error);
 	return FALSE;

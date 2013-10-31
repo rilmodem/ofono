@@ -124,7 +124,7 @@ static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
 		error.type = OFONO_ERROR_TYPE_SIM;
 		error.error = (sw1 << 8) | sw2;
 
-		goto error;
+		goto err_inv_val;
 	}
 
 	if (reply->hex_len) {
@@ -144,7 +144,7 @@ static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
 	if (!ok) {
 		DBG("parse response failed");
 		decode_ril_error(&error, "FAIL");
-		goto error;
+		goto err_parse;
 	}
 
 	cb(&error, flen, str, rlen, access, file_status, cbd->data);
@@ -153,6 +153,9 @@ static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
 
 	return;
 
+err_parse:
+err_inv_val:
+	g_ril_reply_free_sim_io(reply);
 error:
 	cb(&error, -1, -1, -1, NULL, EF_STATUS_INVALIDATED, cbd->data);
 }
@@ -177,10 +180,10 @@ static void ril_sim_read_info(struct ofono_sim *sim, int fileid,
 	req.path = path;
 	req.path_len = path_len;
 
-	if (g_ril_request_sim_read_info(sd->ril,
+	if (!g_ril_request_sim_read_info(sd->ril,
 					&req,
 					&rilp,
-					&error) == FALSE) {
+					&error)) {
 		ofono_error("Couldn't build SIM read info request");
 		goto error;
 	}
@@ -261,10 +264,10 @@ static void ril_sim_read_binary(struct ofono_sim *sim, int fileid,
 	req.start = start;
 	req.length = length;
 
-	if (g_ril_request_sim_read_binary(sd->ril,
+	if (!g_ril_request_sim_read_binary(sd->ril,
 						&req,
 						&rilp,
-						&error) == FALSE) {
+						&error)) {
 		ofono_error("Couldn't build SIM read binary request");
 		goto error;
 	}
@@ -315,10 +318,10 @@ static void ril_sim_read_record(struct ofono_sim *sim, int fileid,
 	req.record = record;
 	req.length = length;
 
-	if (g_ril_request_sim_read_record(sd->ril,
+	if (!g_ril_request_sim_read_record(sd->ril,
 						&req,
 						&rilp,
-						&error) == FALSE) {
+						&error)) {
 		ofono_error("Couldn't build SIM read record request");
 		goto error;
 	}
@@ -366,9 +369,17 @@ static void ril_imsi_cb(struct ril_msg *message, gpointer user_data)
 	}
 
 	imsi = g_ril_reply_parse_imsi(sd->ril, message);
+	if (imsi == NULL)
+		goto error;
 
 	cb(&error, imsi, cbd->data);
 	g_free(imsi);
+
+	return;
+
+error:
+	decode_ril_error(&error, "FAIL");
+	cb(&error, NULL, cbd->data);
 }
 
 static void ril_read_imsi(struct ofono_sim *sim, ofono_sim_imsi_cb_t cb,
@@ -735,10 +746,10 @@ static void ril_pin_change_state(struct ofono_sim *sim,
 	req.enable = enable;
 	req.passwd = passwd;
 
-	if (g_ril_request_pin_change_state(sd->ril,
+	if (!g_ril_request_pin_change_state(sd->ril,
 						&req,
 						&rilp,
-						&error) == FALSE) {
+						&error)) {
 		ofono_error("Couldn't build pin change state request");
 		goto error;
 	}
