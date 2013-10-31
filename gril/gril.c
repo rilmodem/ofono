@@ -57,8 +57,8 @@
 struct ril_request {
 	gchar *data;
 	guint data_len;
-	guint req;
-	guint id;
+	gint req;
+	gint id;
 	guint gid;
 	GRilResponseFunc callback;
 	gpointer user_data;
@@ -82,7 +82,7 @@ struct ril_notify {
 
 struct ril_s {
 	gint ref_count;				/* Ref count */
-	guint next_cmd_id;			/* Next command id */
+	gint next_cmd_id;			/* Next command id */
 	guint next_notify_id;			/* Next notify id */
 	guint next_gid;				/* Next group id */
 	GRilIO *io;				/* GRil IO */
@@ -108,16 +108,6 @@ struct _GRil {
 	gint ref_count;
 	struct ril_s *parent;
 	guint group;
-};
-
-/*
- * This struct represents the header of a RIL reply.
- * It does not include the Big Endian UINT32 length prefix.
- */
-struct ril_reply {
-	guint32 reply;                          /* LE: should be 0 */
-	guint32 serial_no;                      /* LE: used to match requests */
-	guint32 error_code;                     /* LE: */
 };
 
 #define RIL_PRINT_BUF_SIZE 8096
@@ -224,8 +214,8 @@ static gboolean ril_unregister_all(struct ril_s *ril,
  */
 static struct ril_request *ril_request_create(struct ril_s *ril,
 						guint gid,
-						const guint req,
-						const guint id,
+						const gint req,
+						const gint id,
 						const char *data,
 						const gsize data_len,
 						GRilResponseFunc func,
@@ -236,7 +226,8 @@ static struct ril_request *ril_request_create(struct ril_s *ril,
 	struct ril_request *r;
 	gsize len;
 	gchar *cur_bufp;
-	guint32 *net_length, *request, *serial_no;
+	guint32 *net_length;
+	gint32 *request, *serial_no;
 
 	r = g_try_new0(struct ril_request, 1);
 	if (r == NULL)
@@ -267,12 +258,12 @@ static struct ril_request *ril_request_create(struct ril_s *ril,
 	cur_bufp = r->data + 4;
 
 	/* write request code */
-	request = (guint32 *) cur_bufp;
+	request = (gint32 *) cur_bufp;
 	*request = req;
 	cur_bufp += 4;
 
 	/* write serial number */
-	serial_no = (guint32 *) cur_bufp;
+	serial_no = (gint32 *) cur_bufp;
 	*serial_no = id;
 	cur_bufp += 4;
 
@@ -336,7 +327,7 @@ static void handle_response(struct ril_s *p, struct ril_msg *message)
 	gsize count = g_queue_get_length(p->command_queue);
 	struct ril_request *req;
 	gboolean found = FALSE;
-	int i;
+	guint i;
 
 	g_assert(count > 0);
 
@@ -437,13 +428,13 @@ static void handle_unsol_req(struct ril_s *p, struct ril_msg *message)
 
 static void dispatch(struct ril_s *p, struct ril_msg *message)
 {
-	guint32 *unsolicited_field, *id_num_field;
+	gint32 *unsolicited_field, *id_num_field;
 	gchar *bufp = message->buf;
 	gchar *datap;
 	gsize data_len;
 
 	/* This could be done with a struct/union... */
-	unsolicited_field = (guint32 *) bufp;
+	unsolicited_field = (gint32 *) bufp;
 	if (*unsolicited_field)
 		message->unsolicited = TRUE;
 	else
@@ -451,7 +442,7 @@ static void dispatch(struct ril_s *p, struct ril_msg *message)
 
 	bufp += 4;
 
-	id_num_field = (guint32 *) bufp;
+	id_num_field = (gint32 *) bufp;
 	if (message->unsolicited) {
 		message->req = (int) *id_num_field;
 
@@ -1056,7 +1047,7 @@ GRil *g_ril_ref(GRil *ril)
 	return ril;
 }
 
-guint g_ril_send(GRil *ril, const guint reqid, const char *data,
+gint g_ril_send(GRil *ril, const gint reqid, const char *data,
 			const gsize data_len, GRilResponseFunc func,
 			gpointer user_data, GDestroyNotify notify)
 {

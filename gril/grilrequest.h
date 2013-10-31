@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 struct req_deactivate_data_call {
-	guint cid;
+	gint cid;
 	guint reason;
 };
 
