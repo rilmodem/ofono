@@ -40,7 +40,7 @@ struct unsol_data_call_list {
 struct data_call {
     guint status;
     guint retry;
-    guint cid;
+    gint cid;
     guint active;
     char *type;
     char *ifname;
