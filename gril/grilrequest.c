@@ -318,8 +318,7 @@ error:
 
 gboolean g_ril_request_sim_read_info(GRil *gril,
 					const struct req_sim_read_info *req,
-					struct parcel *rilp,
-					struct ofono_error *error)
+					struct parcel *rilp)
 {
 	parcel_init(rilp);
 
@@ -351,18 +350,15 @@ gboolean g_ril_request_sim_read_info(GRil *gril,
 	parcel_w_string(rilp, NULL);       /* pin2; only req'd for writes */
 	parcel_w_string(rilp, req->aid_str); /* AID (Application ID) */
 
-	OFONO_NO_ERROR(error);
 	return TRUE;
 
 error:
-        OFONO_EINVAL(error);
 	return FALSE;
 }
 
 gboolean g_ril_request_sim_read_binary(GRil *gril,
 					const struct req_sim_read_binary *req,
-					struct parcel *rilp,
-					struct ofono_error *error)
+					struct parcel *rilp)
 {
 	g_ril_append_print_buf(gril,
 				"(cmd=0x%.2X,efid=0x%.4X,",
@@ -384,18 +380,15 @@ gboolean g_ril_request_sim_read_binary(GRil *gril,
 	parcel_w_string(rilp, NULL);          /* pin2; only req'd for writes */
 	parcel_w_string(rilp, req->aid_str);
 
-	OFONO_NO_ERROR(error);
 	return TRUE;
 
 error:
-        OFONO_EINVAL(error);
 	return FALSE;
 }
 
 gboolean g_ril_request_sim_read_record(GRil *gril,
 					const struct req_sim_read_record *req,
-					struct parcel *rilp,
-					struct ofono_error *error)
+					struct parcel *rilp)
 {
 	parcel_init(rilp);
 	parcel_w_int32(rilp, CMD_READ_RECORD);
@@ -417,11 +410,9 @@ gboolean g_ril_request_sim_read_record(GRil *gril,
 	parcel_w_string(rilp, NULL);       /* pin2; only req'd for writes */
 	parcel_w_string(rilp, req->aid_str); /* AID (Application ID) */
 
-	OFONO_NO_ERROR(error);
 	return TRUE;
 
 error:
-        OFONO_EINVAL(error);
 	return FALSE;
 }
 
@@ -452,8 +443,7 @@ void g_ril_request_pin_send(GRil *gril,
 
 gboolean g_ril_request_pin_change_state(GRil *gril,
 					const struct req_pin_change_state *req,
-					struct parcel *rilp,
-					struct ofono_error *error)
+					struct parcel *rilp)
 {
 	const char *lock_type;
 
@@ -524,11 +514,9 @@ gboolean g_ril_request_pin_change_state(GRil *gril,
 				req->passwd,
 				req->aid_str);
 
-	OFONO_NO_ERROR(error);
 	return TRUE;
 
 error:
-        OFONO_EINVAL(error);
 	return FALSE;
 }
 

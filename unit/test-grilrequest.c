@@ -471,12 +471,9 @@ static void test_request_sim_read_info_valid(gconstpointer data)
 	const struct req_sim_read_info *req = data;
 	gboolean result;
 	struct parcel rilp;
-	struct ofono_error error;
 
-	result = g_ril_request_sim_read_info(NULL, req, &rilp, &error);
+	result = g_ril_request_sim_read_info(NULL, req, &rilp);
 	g_assert(result == TRUE);
-	g_assert(error.type == OFONO_ERROR_TYPE_NO_ERROR &&
-			error.error == 0);
 
 	parcel_free(&rilp);
 }
@@ -486,12 +483,9 @@ static void test_request_sim_read_info_invalid(gconstpointer data)
 	const struct req_sim_read_info *req = data;
 	gboolean result;
 	struct parcel rilp;
-	struct ofono_error error;
 
-	result = g_ril_request_sim_read_info(NULL, req, &rilp, &error);
+	result = g_ril_request_sim_read_info(NULL, req, &rilp);
 	g_assert(result == FALSE);
-	g_assert(error.type == OFONO_ERROR_TYPE_FAILURE &&
-			error.error == -EINVAL);
 
 	parcel_free(&rilp);
 }
@@ -502,13 +496,10 @@ static void test_request_sim_read_binary_valid(gconstpointer data)
 	const struct req_sim_read_binary *req = test_data->request;
 	struct parcel rilp;
 	gboolean result;
-	struct ofono_error error;
 
-	result = g_ril_request_sim_read_binary(NULL, req, &rilp, &error);
+	result = g_ril_request_sim_read_binary(NULL, req, &rilp);
 
 	g_assert(result == TRUE);
-	g_assert(error.type == OFONO_ERROR_TYPE_NO_ERROR &&
-			error.error == 0);
 	g_assert(!memcmp(rilp.data, test_data->parcel_data,
 			test_data->parcel_size));
 
@@ -521,13 +512,10 @@ static void test_request_sim_read_record_valid(gconstpointer data)
 	const struct req_sim_read_record *req = test_data->request;
 	struct parcel rilp;
 	gboolean result;
-	struct ofono_error error;
 
-	result = g_ril_request_sim_read_record(NULL, req, &rilp, &error);
+	result = g_ril_request_sim_read_record(NULL, req, &rilp);
 
 	g_assert(result == TRUE);
-	g_assert(error.type == OFONO_ERROR_TYPE_NO_ERROR &&
-			error.error == 0);
 	g_assert(!memcmp(rilp.data, test_data->parcel_data,
 			test_data->parcel_size));
 
@@ -569,13 +557,10 @@ static void test_request_pin_change_state(gconstpointer data)
 	const struct req_pin_change_state *req = test_data->request;
 	struct parcel rilp;
 	gboolean result;
-	struct ofono_error error;
 
-	result = g_ril_request_pin_change_state(NULL, req, &rilp, &error);
+	result = g_ril_request_pin_change_state(NULL, req, &rilp);
 
 	g_assert(result == TRUE);
-	g_assert(error.type == OFONO_ERROR_TYPE_NO_ERROR &&
-			error.error == 0);
 	g_assert(!memcmp(rilp.data, test_data->parcel_data,
 			test_data->parcel_size));
 

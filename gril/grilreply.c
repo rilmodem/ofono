@@ -234,8 +234,7 @@ void g_ril_reply_free_sim_io(struct reply_sim_io *reply)
 }
 
 struct reply_sim_io *g_ril_reply_parse_sim_io(GRil *gril,
-						struct ril_msg *message,
-						struct ofono_error *error)
+						struct ril_msg *message)
 {
 	struct parcel rilp;
 	char *response = NULL;
@@ -250,7 +249,6 @@ struct reply_sim_io *g_ril_reply_parse_sim_io(GRil *gril,
 	if (message->buf_len < 12) {
 		ofono_error("Invalid SIM IO reply: size too small (< 12): %d ",
 			    (int) message->buf_len);
-		OFONO_EINVAL(error);
 		return NULL;
 	}
 
@@ -279,12 +277,9 @@ struct reply_sim_io *g_ril_reply_parse_sim_io(GRil *gril,
 
 	g_free(response);
 
-	OFONO_NO_ERROR(error);
-
 	return reply;
 
 error:
-	OFONO_EINVAL(error);
 	g_free(reply);
 
 	return NULL;
@@ -326,8 +321,7 @@ void g_ril_reply_free_sim_status(struct reply_sim_status *status)
 }
 
 struct reply_sim_status *g_ril_reply_parse_sim_status(GRil *gril,
-						struct ril_msg *message,
-						struct ofono_error *error)
+						struct ril_msg *message)
 {
 	struct parcel rilp;
 	int i;
@@ -351,7 +345,6 @@ struct reply_sim_status *g_ril_reply_parse_sim_status(GRil *gril,
 	if (message->buf_len < 20) {
 		ofono_error("Size of SIM_STATUS reply too small: %d bytes",
 			    (int) message->buf_len);
-		OFONO_EINVAL(error);
 		return NULL;
 	}
 
@@ -443,13 +436,10 @@ done:
 	g_ril_append_print_buf(gril, "%s}", print_buf);
 	g_ril_print_response(gril, message);
 
-	OFONO_NO_ERROR(error);
-
 	return status;
 
 error:
 	g_ril_reply_free_sim_status(status);
-	OFONO_EINVAL(error);
 
 	return NULL;
 }

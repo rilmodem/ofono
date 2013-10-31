@@ -92,7 +92,6 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 	struct ofono_modem *modem = user_data;
 	struct ril_data *ril = ofono_modem_get_data(modem);
 	struct reply_sim_status *status;
-	struct ofono_error error;
 
 	DBG("");
 
@@ -115,8 +114,7 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 		else
 			ofono_error("Max retries for GET_SIM_STATUS exceeded!");
 	} else {
-		if ((status = g_ril_reply_parse_sim_status(ril->modem, message,
-								&error))
+		if ((status = g_ril_reply_parse_sim_status(ril->modem, message))
 				!= NULL) {
 			if (status->card_state == RIL_CARDSTATE_PRESENT) {
 				DBG("have_sim = TRUE; powering on modem; num_apps: %d",

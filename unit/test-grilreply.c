@@ -366,15 +366,11 @@ static void test_reply_sim_io_valid(gconstpointer data)
 {
 	/* TODO: fix de-const cast... */
 	struct ril_msg *message = (struct ril_msg *) data;
-	struct ofono_error error;
 	struct reply_sim_io *reply;
 
-	reply = g_ril_reply_parse_sim_io(NULL, message, &error);
+	reply = g_ril_reply_parse_sim_io(NULL, message);
 	g_assert(reply != NULL);
 	g_ril_reply_free_sim_io(reply);
-
-	g_assert(error.type == OFONO_ERROR_TYPE_NO_ERROR &&
-			error.error == 0);
 }
 
 static void test_reply_imsi_valid(gconstpointer data)
@@ -392,15 +388,11 @@ static void test_reply_sim_status_valid(gconstpointer data)
 {
 	/* TODO: fix de-const cast... */
 	struct ril_msg *message = (struct ril_msg *) data;
-	struct ofono_error error;
 	struct reply_sim_status *reply;
 
-	reply = g_ril_reply_parse_sim_status(NULL, message, &error);
+	reply = g_ril_reply_parse_sim_status(NULL, message);
 	g_assert(reply != NULL);
 	g_ril_reply_free_sim_status(reply);
-
-	g_assert(error.type == OFONO_ERROR_TYPE_NO_ERROR &&
-			error.error == 0);
 }
 
 int main(int argc, char **argv)

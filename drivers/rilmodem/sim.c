@@ -106,9 +106,10 @@ static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	if ((reply = g_ril_reply_parse_sim_io(sd->ril, message, &error))
+	if ((reply = g_ril_reply_parse_sim_io(sd->ril, message))
 			== NULL) {
-		DBG("Can't parse SIM IO response from RILD");
+		ofono_error("Can't parse SIM IO response from RILD");
+		decode_ril_error(&error, "FAIL");
 		goto error;
 	}
 
@@ -116,7 +117,7 @@ static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
 	sw2 = reply->sw2;
 	if ((sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92 && sw1 != 0x9f) ||
 		(sw1 == 0x90 && sw2 != 0x00)) {
-		DBG("Error reply, invalid values: sw1: %02x sw2: %02x", sw1, sw2);
+		ofono_error("Error reply, invalid values: sw1: %02x sw2: %02x", sw1, sw2);
 		memset(&error, 0, sizeof(error));
 
 		/* TODO: fix decode_ril_error to take type & error */
@@ -142,7 +143,7 @@ static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
 	}
 
 	if (!ok) {
-		DBG("parse response failed");
+		ofono_error("parse response failed");
 		decode_ril_error(&error, "FAIL");
 		goto err_parse;
 	}
@@ -169,7 +170,6 @@ static void ril_sim_read_info(struct ofono_sim *sim, int fileid,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	struct parcel rilp;
 	struct req_sim_read_info req;
-	struct ofono_error error;
 	int request = RIL_REQUEST_SIM_IO;
 	guint ret = 0;
 	cbd->user = sd;
@@ -182,8 +182,7 @@ static void ril_sim_read_info(struct ofono_sim *sim, int fileid,
 
 	if (!g_ril_request_sim_read_info(sd->ril,
 					&req,
-					&rilp,
-					&error)) {
+					&rilp)) {
 		ofono_error("Couldn't build SIM read info request");
 		goto error;
 	}
@@ -225,9 +224,10 @@ static void ril_file_io_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	if ((reply = g_ril_reply_parse_sim_io(sd->ril, message, &error))
+	if ((reply = g_ril_reply_parse_sim_io(sd->ril, message))
 			== NULL) {
-		DBG("Can't parse SIM IO response from RILD");
+		ofono_error("Can't parse SIM IO response from RILD");
+		decode_ril_error(&error, "FAIL");
 		goto error;
 	}
 
@@ -251,7 +251,6 @@ static void ril_sim_read_binary(struct ofono_sim *sim, int fileid,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	struct parcel rilp;
 	struct req_sim_read_binary req;
-	struct ofono_error error;
 	int request = RIL_REQUEST_SIM_IO;
 	guint ret = 0;
 	cbd->user = sd;
@@ -266,8 +265,7 @@ static void ril_sim_read_binary(struct ofono_sim *sim, int fileid,
 
 	if (!g_ril_request_sim_read_binary(sd->ril,
 						&req,
-						&rilp,
-						&error)) {
+						&rilp)) {
 		ofono_error("Couldn't build SIM read binary request");
 		goto error;
 	}
@@ -305,7 +303,6 @@ static void ril_sim_read_record(struct ofono_sim *sim, int fileid,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	struct parcel rilp;
 	struct req_sim_read_record req;
-	struct ofono_error error;
 	int request = RIL_REQUEST_SIM_IO;
 	guint ret = 0;
 	cbd->user = sd;
@@ -320,8 +317,7 @@ static void ril_sim_read_record(struct ofono_sim *sim, int fileid,
 
 	if (!g_ril_request_sim_read_record(sd->ril,
 						&req,
-						&rilp,
-						&error)) {
+						&rilp)) {
 		ofono_error("Couldn't build SIM read record request");
 		goto error;
 	}
@@ -369,8 +365,10 @@ static void ril_imsi_cb(struct ril_msg *message, gpointer user_data)
 	}
 
 	imsi = g_ril_reply_parse_imsi(sd->ril, message);
-	if (imsi == NULL)
+	if (imsi == NULL) {
+		ofono_error("Error empty IMSI");
 		goto error;
+	}
 
 	cb(&error, imsi, cbd->data);
 	g_free(imsi);
@@ -518,9 +516,8 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 	guint i = 0;
 	guint search_index = -1;
 	struct parcel rilp;
-	struct ofono_error error;
 
-	if ((status = g_ril_reply_parse_sim_status(sd->ril, message, &error))
+	if ((status = g_ril_reply_parse_sim_status(sd->ril, message))
 			!= NULL
 			&& status->card_state == RIL_CARDSTATE_PRESENT
 			&& status->num_apps) {
@@ -734,7 +731,6 @@ static void ril_pin_change_state(struct ofono_sim *sim,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	struct parcel rilp;
 	struct req_pin_change_state req;
-	struct ofono_error error;
 	int request = RIL_REQUEST_SET_FACILITY_LOCK;
 	int ret = 0;
 
@@ -748,8 +744,7 @@ static void ril_pin_change_state(struct ofono_sim *sim,
 
 	if (!g_ril_request_pin_change_state(sd->ril,
 						&req,
-						&rilp,
-						&error)) {
+						&rilp)) {
 		ofono_error("Couldn't build pin change state request");
 		goto error;
 	}

@@ -83,16 +83,14 @@ struct reply_setup_data_call *g_ril_reply_parse_data_call(GRil *gril,
 void g_ril_reply_free_sim_io(struct reply_sim_io *reply);
 
 struct reply_sim_io *g_ril_reply_parse_sim_io(GRil *gril,
-						struct ril_msg *message,
-						struct ofono_error *error);
+						struct ril_msg *message);
 
 gchar *g_ril_reply_parse_imsi(GRil *gril, struct ril_msg *message);
 
 void g_ril_reply_free_sim_status(struct reply_sim_status *status);
 
 struct reply_sim_status *g_ril_reply_parse_sim_status(GRil *gril,
-							struct ril_msg *message,
-							struct ofono_error *error);
+							struct ril_msg *message);
 
 #ifdef __cplusplus
 }

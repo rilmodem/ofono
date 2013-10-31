@@ -102,18 +102,15 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 
 gboolean g_ril_request_sim_read_info(GRil *gril,
 					const struct req_sim_read_info *req,
-					struct parcel *rilp,
-					struct ofono_error *error);
+					struct parcel *rilp);
 
 gboolean g_ril_request_sim_read_binary(GRil *gril,
 					const struct req_sim_read_binary *req,
-					struct parcel *rilp,
-					struct ofono_error *error);
+					struct parcel *rilp);
 
 gboolean g_ril_request_sim_read_record(GRil *gril,
 					const struct req_sim_read_record *req,
-					struct parcel *rilp,
-					struct ofono_error *error);
+					struct parcel *rilp);
 
 void g_ril_request_read_imsi(GRil *gril,
 				const gchar *aid_str,
@@ -126,8 +123,7 @@ void g_ril_request_pin_send(GRil *gril,
 
 gboolean g_ril_request_pin_change_state(GRil *gril,
 					const struct req_pin_change_state *req,
-					struct parcel *rilp,
-					struct ofono_error *error);
+					struct parcel *rilp);
 
 void g_ril_request_pin_send_puk(GRil *gril,
 				const char *puk,
