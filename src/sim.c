@@ -2289,6 +2289,13 @@ enum ofono_sim_password_type ofono_sim_get_password_type(struct ofono_sim *sim)
 	return sim->pin_type;
 }
 
+void ofono_set_pin_lock_state(struct ofono_sim *sim,
+				enum ofono_sim_password_type type,
+				ofono_bool_t state)
+{
+	sim->locked_pins[type] = state;
+}
+
 const unsigned char *ofono_sim_get_cphs_service_table(struct ofono_sim *sim)
 {
 	if (sim == NULL)

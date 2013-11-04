@@ -31,8 +31,9 @@
 #include <string.h>
 #include <glib.h>
 #include <gril.h>
-#include <grilrequest.h>
+#include <grilreply.h>
 #include <parcel.h>
+#include <grilrequest.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
@@ -90,8 +91,7 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct ril_data *ril = ofono_modem_get_data(modem);
-	struct sim_status status;
-	struct sim_app *apps[MAX_UICC_APPS];
+	struct reply_sim_status *status;
 
 	DBG("");
 
@@ -114,20 +114,17 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 		else
 			ofono_error("Max retries for GET_SIM_STATUS exceeded!");
 	} else {
-
-		/* Returns TRUE if cardstate == PRESENT */
-		if (ril_util_parse_sim_status(ril->modem, message,
-						&status, apps)) {
-			DBG("have_sim = TRUE; powering on modem; num_apps: %d",
-				status.num_apps);
-
-			if (status.num_apps)
-				ril_util_free_sim_apps(apps, status.num_apps);
-
-			ril->have_sim = TRUE;
-		} else
-			ofono_warn("No SIM card present.");
-
+		if ((status = g_ril_reply_parse_sim_status(ril->modem, message))
+				!= NULL) {
+			if (status->card_state == RIL_CARDSTATE_PRESENT) {
+				DBG("have_sim = TRUE; powering on modem; num_apps: %d",
+					status->num_apps);
+				ril->have_sim = TRUE;
+			} else {
+				ofono_warn("No SIM card present.");
+			}
+			g_ril_reply_free_sim_status(status);
+		}
 		DBG("calling set_powered(TRUE)");
 		ofono_modem_set_powered(modem, TRUE);
 	}
@@ -269,9 +266,14 @@ static void ril_send_power(struct ril_data *ril, ofono_bool_t online,
 	if (ret <= 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(callback, data);
-	} else
-		g_ril_print_request(ril->modem, ret, request);
+	} else {
+		if (online)
+			current_online_state = RIL_ONLINE_PREF;
+		else
+			current_online_state = RIL_OFFLINE;
 
+		g_ril_print_request(ril->modem, ret, request);
+	}
 }
 
 static void ril_set_online(struct ofono_modem *modem, ofono_bool_t online,

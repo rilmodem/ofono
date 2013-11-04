@@ -25,6 +25,8 @@
 #define TFR
 #endif
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <fcntl.h>
 
 int create_dirs(const char *filename, const mode_t mode);

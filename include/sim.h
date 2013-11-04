@@ -200,6 +200,10 @@ const unsigned char *ofono_sim_get_cphs_service_table(struct ofono_sim *sim);
 
 enum ofono_sim_password_type ofono_sim_get_password_type(struct ofono_sim *sim);
 
+void ofono_set_pin_lock_state(struct ofono_sim *sim,
+				enum ofono_sim_password_type type,
+				ofono_bool_t state);
+
 unsigned int ofono_sim_add_state_watch(struct ofono_sim *sim,
 					ofono_sim_state_event_cb_t cb,
 					void *data, ofono_destroy_func destroy);
