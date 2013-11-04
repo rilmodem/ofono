@@ -128,7 +128,7 @@ gboolean g_ril_set_debugf(GRil *ril, GRilDebugFunc func, gpointer user_data);
  * g_ril_cancel.  If an error occurred, an id of 0 is returned.
  *
  */
-guint g_ril_send(GRil *ril, const guint reqid, const char *data,
+gint g_ril_send(GRil *ril, const gint reqid, const char *data,
 			const gsize data_len, GRilResponseFunc func,
 			gpointer user_data, GDestroyNotify notify);
 

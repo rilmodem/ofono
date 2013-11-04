@@ -135,7 +135,7 @@ static void send_get_sim_status(struct ofono_modem *modem)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
 	int request = RIL_REQUEST_GET_SIM_STATUS;
-	guint ret;
+	gint ret;
 
 	ret = g_ril_send(ril->modem, request,
 				NULL, 0, sim_status_cb, modem, NULL);
