@@ -53,7 +53,7 @@ static const struct ril_msg reply_data_call_invalid_1 = {
  * {version=2,num=2 [status=0,retry=-1,cid=0,active=2,type=IP}
  * Parcel is truncated, as num=2 should trigger a failure.
  */
-static const guchar reply_data_call_invalid_parcel2[36] = {
+static const guchar reply_data_call_invalid_parcel2[] = {
 	0x07, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0xff, 0xff, 0xff, 0xff,	0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
 	0x02, 0x00, 0x00, 0x00, 0x49, 0x00, 0x50, 0x00,	0x00, 0x00, 0x00, 0x00
@@ -61,7 +61,7 @@ static const guchar reply_data_call_invalid_parcel2[36] = {
 
 static const struct ril_msg reply_data_call_invalid_2 = {
 	.buf = (gchar *) &reply_data_call_invalid_parcel2,
-	.buf_len = 36,
+	.buf_len = sizeof(reply_data_call_invalid_parcel2),
 };
 
 /*
@@ -73,7 +73,7 @@ static const struct ril_msg reply_data_call_invalid_2 = {
  * ifname=rmnet_usb0,address=10.181.235.154/30,
  * dns=172.16.145.103 172.16.145.103,gateways=10.181.235.153]}
  */
-static const guchar reply_data_call_invalid_parcel3[196] = {
+static const guchar reply_data_call_invalid_parcel3[] = {
 	0x07, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0xff, 0xff, 0xff, 0xff,	0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
 	0xff, 0xff, 0xff, 0xff,
@@ -95,7 +95,7 @@ static const guchar reply_data_call_invalid_parcel3[196] = {
 
 static const struct ril_msg reply_data_call_invalid_3 = {
 	.buf = (gchar *) &reply_data_call_invalid_parcel3,
-	.buf_len = 196,
+	.buf_len = sizeof(reply_data_call_invalid_parcel3),
 };
 
 /*
@@ -107,7 +107,7 @@ static const struct ril_msg reply_data_call_invalid_3 = {
  * ifname=NULL,address=10.181.235.154/30,
  * dns=172.16.145.103 172.16.145.103,gateways=10.181.235.153]}
  */
-static const guchar reply_data_call_invalid_parcel4[190] = {
+static const guchar reply_data_call_invalid_parcel4[] = {
 	0x07, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0xff, 0xff, 0xff, 0xff,	0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
 	0x02, 0x00, 0x00, 0x00, 0x49, 0x00, 0x50, 0x00,	0x00, 0x00, 0x00, 0x00,
@@ -127,7 +127,7 @@ static const guchar reply_data_call_invalid_parcel4[190] = {
 
 static const struct ril_msg reply_data_call_invalid_4 = {
 	.buf = (gchar *) &reply_data_call_invalid_parcel4,
-	.buf_len = 190,
+	.buf_len = sizeof(reply_data_call_invalid_parcel4),
 };
 
 /*
@@ -139,7 +139,7 @@ static const struct ril_msg reply_data_call_invalid_4 = {
  * ifname=rmnet_usb0,address=NULL,
  * dns=172.16.145.103 172.16.145.103,gateways=10.181.235.153]}
  */
-static const guchar reply_data_call_invalid_parcel5[168] = {
+static const guchar reply_data_call_invalid_parcel5[] = {
 	0x07, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0xff, 0xff, 0xff, 0xff,	0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
 	0x02, 0x00, 0x00, 0x00, 0x49, 0x00, 0x50, 0x00,	0x00, 0x00, 0x00, 0x00,
@@ -158,7 +158,7 @@ static const guchar reply_data_call_invalid_parcel5[168] = {
 
 static const struct ril_msg reply_data_call_invalid_5 = {
 	.buf = (gchar *) &reply_data_call_invalid_parcel5,
-	.buf_len = 168,
+	.buf_len = sizeof(reply_data_call_invalid_parcel5),
 };
 
 /*
@@ -170,7 +170,7 @@ static const struct ril_msg reply_data_call_invalid_5 = {
  * ifname=rmnet_usb0,address=10.181.235.154/30,
  * dns=172.16.145.103 172.16.145.103,gateways=NULL]}
  */
-static const guchar reply_data_call_invalid_parcel6[180] = {
+static const guchar reply_data_call_invalid_parcel6[] = {
 	0x07, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0xff, 0xff, 0xff, 0xff,	0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
 	0x02, 0x00, 0x00, 0x00, 0x49, 0x00, 0x50, 0x00,	0x00, 0x00, 0x00, 0x00,
@@ -190,7 +190,7 @@ static const guchar reply_data_call_invalid_parcel6[180] = {
 
 static const struct ril_msg reply_data_call_invalid_6 = {
 	.buf = (gchar *) &reply_data_call_invalid_parcel6,
-	.buf_len = 180,
+	.buf_len = sizeof(reply_data_call_invalid_parcel6),
 };
 
 /*
@@ -202,7 +202,7 @@ static const struct ril_msg reply_data_call_invalid_6 = {
  * ifname=rmnet_usb0,address=10.181.235.154/30,
  * dns=NULL,gateways=10.181.235.153]}
  */
-static const guchar reply_data_call_invalid_parcel7[144] = {
+static const guchar reply_data_call_invalid_parcel7[] = {
 	0x07, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0xff, 0xff, 0xff, 0xff,	0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
 	0x02, 0x00, 0x00, 0x00, 0x49, 0x00, 0x50, 0x00,	0x00, 0x00, 0x00, 0x00,
@@ -219,7 +219,7 @@ static const guchar reply_data_call_invalid_parcel7[144] = {
 
 static const struct ril_msg reply_data_call_invalid_7 = {
 	.buf = (gchar *) &reply_data_call_invalid_parcel7,
-	.buf_len = 144,
+	.buf_len = sizeof(reply_data_call_invalid_parcel7),
 };
 
 /*
@@ -231,7 +231,7 @@ static const struct ril_msg reply_data_call_invalid_7 = {
  * ifname=rmnet_usb0,address=10.181.235.154/30,
  * dns=172.16.145.103 172.16.145.103,gateways=10.181.235.153]}
  */
-static const guchar reply_data_call_valid_parcel1[204] = {
+static const guchar reply_data_call_valid_parcel1[] = {
 	0x07, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0xff, 0xff, 0xff, 0xff,	0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
 	0x02, 0x00, 0x00, 0x00, 0x49, 0x00, 0x50, 0x00,	0x00, 0x00, 0x00, 0x00,
@@ -253,9 +253,81 @@ static const guchar reply_data_call_valid_parcel1[204] = {
 
 static const struct ril_msg reply_data_call_valid_1 = {
 	.buf = (gchar *) &reply_data_call_valid_parcel1,
-	.buf_len = 204,
+	.buf_len = sizeof(reply_data_call_valid_parcel1),
 	.unsolicited = FALSE,
 	.req = RIL_REQUEST_SETUP_DATA_CALL,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_SIM_IO reply with the following parameters:
+ *
+ * {sw1=0x90,sw2=0x00,0000000a2fe2040000000005020000}
+ * This is a reply to a select file for EF_ICCID.
+ */
+static const guchar reply_sim_io_valid_parcel1[] = {
+	0x90, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1e, 0x00, 0x00, 0x00,
+	0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00,
+	0x30, 0x00, 0x61, 0x00, 0x32, 0x00, 0x66, 0x00, 0x65, 0x00, 0x32, 0x00,
+	0x30, 0x00, 0x34, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00,
+	0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x35, 0x00,
+	0x30, 0x00, 0x32, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00,
+	0x00, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_sim_io_valid_1 = {
+	.buf = (gchar *) reply_sim_io_valid_parcel1,
+	.buf_len = sizeof(reply_sim_io_valid_parcel1),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_SIM_IO,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_GET_IMSI reply with the following parameters:
+ *
+ * {214060200695834}
+ */
+static const guchar reply_imsi_valid_parcel1[] = {
+	0x0f, 0x00, 0x00, 0x00, 0x32, 0x00, 0x31, 0x00, 0x34, 0x00, 0x30, 0x00,
+	0x36, 0x00, 0x30, 0x00, 0x32, 0x00, 0x30, 0x00, 0x30, 0x00, 0x36, 0x00,
+	0x39, 0x00, 0x35, 0x00, 0x38, 0x00, 0x33, 0x00, 0x34, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_imsi_valid_1 = {
+	.buf = (gchar *) reply_imsi_valid_parcel1,
+	.buf_len = sizeof(reply_imsi_valid_parcel1),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_GET_IMSI,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_GET_SIM_STATUS reply with the following parameters:
+ *
+ * {card_state=1,universal_pin_state=0,gsm_umts_index=0,cdma_index=-1,
+ *  ims_index=-1, [app_type=1,app_state=5,perso_substate=2,aid_ptr=,
+ *  app_label_ptr=(null),pin1_replaced=0,pin1=3,pin2=1],}
+ */
+static const guchar reply_sim_status_valid_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
+	0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_sim_status_valid_1 = {
+	.buf = (gchar *) reply_sim_status_valid_parcel1,
+	.buf_len = sizeof(reply_sim_status_valid_parcel1),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_GET_SIM_STATUS,
 	.serial_no = 0,
 	.error = 0,
 };
@@ -288,6 +360,39 @@ static void test_reply_data_call_valid(gconstpointer data)
 
 	g_assert(error.type == OFONO_ERROR_TYPE_NO_ERROR &&
 			error.error == 0);
+}
+
+static void test_reply_sim_io_valid(gconstpointer data)
+{
+	/* TODO: fix de-const cast... */
+	struct ril_msg *message = (struct ril_msg *) data;
+	struct reply_sim_io *reply;
+
+	reply = g_ril_reply_parse_sim_io(NULL, message);
+	g_assert(reply != NULL);
+	g_ril_reply_free_sim_io(reply);
+}
+
+static void test_reply_imsi_valid(gconstpointer data)
+{
+	/* TODO: fix de-const cast... */
+	struct ril_msg *message = (struct ril_msg *) data;
+	gchar *reply;
+
+	reply = g_ril_reply_parse_imsi(NULL, message);
+	g_assert(reply != NULL);
+	g_free(reply);
+}
+
+static void test_reply_sim_status_valid(gconstpointer data)
+{
+	/* TODO: fix de-const cast... */
+	struct ril_msg *message = (struct ril_msg *) data;
+	struct reply_sim_status *reply;
+
+	reply = g_ril_reply_parse_sim_status(NULL, message);
+	g_assert(reply != NULL);
+	g_ril_reply_free_sim_status(reply);
 }
 
 int main(int argc, char **argv)
@@ -341,6 +446,21 @@ int main(int argc, char **argv)
 				"valid SETUP_DATA_CALL Test 1",
 				&reply_data_call_valid_1,
 				test_reply_data_call_valid);
+
+	g_test_add_data_func("/testgrilreply/sim: "
+				"valid SIM_IO Test 1",
+				&reply_sim_io_valid_1,
+				test_reply_sim_io_valid);
+
+	g_test_add_data_func("/testgrilreply/sim: "
+				"valid GET_IMSI Test 1",
+				&reply_imsi_valid_1,
+				test_reply_imsi_valid);
+
+	g_test_add_data_func("/testgrilreply/sim: "
+				"valid GET_SIM_STATUS Test 1",
+				&reply_sim_status_valid_1,
+				test_reply_sim_status_valid);
 
 #endif
 

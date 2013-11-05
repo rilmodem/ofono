@@ -19,6 +19,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
+#ifndef RILUTIL_H
+#define RILUTIL_H
 
 #include <stdio.h>
 
@@ -72,26 +74,17 @@ enum app_state {
 	APPSTATE_READY,
 };
 
-#define MAX_UICC_APPS 16
-
-struct sim_status {
-	guint card_state;
-	guint pin_state;
-	guint gsm_umts_index;
-	guint cdma_index;
-	guint ims_index;
-	guint num_apps;
-};
-
-struct sim_app {
-	guint app_type;
-	guint app_state;
-	guint perso_substate;
-	char *aid_str;
-	char *app_str;
-	guint pin_replaced;
-	guint pin1_state;
-	guint pin2_state;
+enum perso_state {
+	PERSOSUBSTATE_SIM_NETWORK = 3,
+	PERSOSUBSTATE_SIM_NETWORK_SUBSET,
+	PERSOSUBSTATE_SIM_CORPORATE,
+	PERSOSUBSTATE_SIM_SERVICE_PROVIDER,
+	PERSOSUBSTATE_SIM_SIM,
+	PERSOSUBSTATE_SIM_NETWORK_PUK,
+	PERSOSUBSTATE_SIM_NETWORK_SUBSET_PUK,
+	PERSOSUBSTATE_SIM_CORPORATE_PUK,
+	PERSOSUBSTATE_SIM_SERVICE_PROVIDER_PUK,
+	PERSOSUBSTATE_SIM_SIM_PUK,
 };
 
 typedef void (*ril_util_sim_inserted_cb_t)(gboolean present, void *userdata);
@@ -112,20 +105,13 @@ struct ril_util_sim_state_query *ril_util_sim_state_query_new(GRil *ril,
 void ril_util_sim_state_query_free(struct ril_util_sim_state_query *req);
 
 GSList *ril_util_parse_clcc(GRil *gril, struct ril_msg *message);
-char *ril_util_parse_sim_io_rsp(GRil *gril, struct ril_msg *message,
-				int *sw1, int *sw2,
-				int *hex_len);
-gboolean ril_util_parse_sim_status(GRil *gril, struct ril_msg *message,
-					struct sim_status *status,
-					struct sim_app **apps);
+
 gboolean ril_util_parse_reg(GRil *gril, struct ril_msg *message, int *status,
 				int *lac, int *ci, int *tech, int *max_calls);
 
 gint ril_util_parse_sms_response(GRil *gril, struct ril_msg *message);
 
 gint ril_util_get_signal(GRil *gril, struct ril_msg *message);
-
-void ril_util_free_sim_apps(struct sim_app **apps, guint num_apps);
 
 struct cb_data {
 	void *cb;
@@ -177,3 +163,5 @@ static inline int ril_util_convert_signal_strength(int strength)
 		e.error = 0;				\
 		f(&e, ##args);				\
 	} while (0)
+
+#endif /* RILUTIL_H */
