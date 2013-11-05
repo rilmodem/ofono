@@ -44,11 +44,53 @@ struct reply_setup_data_call {
 	gchar **ip_addrs;
 };
 
+struct reply_sim_io {
+	int sw1;
+	int sw2;
+	int hex_len;
+	unsigned char *hex_response;
+};
+
+#define MAX_UICC_APPS 16
+
+struct reply_sim_app {
+	guint app_type;
+	guint app_state;
+	guint perso_substate;
+	char *aid_str;
+	char *app_str;
+	guint pin_replaced;
+	guint pin1_state;
+	guint pin2_state;
+};
+
+struct reply_sim_status {
+	guint card_state;
+	guint pin_state;
+	guint gsm_umts_index;
+	guint cdma_index;
+	guint ims_index;
+	guint num_apps;
+	struct reply_sim_app *apps[MAX_UICC_APPS];
+};
+
 void g_ril_reply_free_setup_data_call(struct reply_setup_data_call *reply);
 
 struct reply_setup_data_call *g_ril_reply_parse_data_call(GRil *gril,
 							struct ril_msg *message,
 							struct ofono_error *error);
+
+void g_ril_reply_free_sim_io(struct reply_sim_io *reply);
+
+struct reply_sim_io *g_ril_reply_parse_sim_io(GRil *gril,
+						struct ril_msg *message);
+
+gchar *g_ril_reply_parse_imsi(GRil *gril, struct ril_msg *message);
+
+void g_ril_reply_free_sim_status(struct reply_sim_status *status);
+
+struct reply_sim_status *g_ril_reply_parse_sim_status(GRil *gril,
+							struct ril_msg *message);
 
 #ifdef __cplusplus
 }

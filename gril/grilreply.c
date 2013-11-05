@@ -35,6 +35,7 @@
 #include <ofono/modem.h>
 #include <ofono/gprs-context.h>
 
+#include "util.h"
 #include "grilreply.h"
 #include "grilutil.h"
 
@@ -222,4 +223,223 @@ error:
 	g_free(raw_gws);
 
 	return reply;
+}
+
+void g_ril_reply_free_sim_io(struct reply_sim_io *reply)
+{
+	if (reply) {
+		g_free(reply->hex_response);
+		g_free(reply);
+	}
+}
+
+struct reply_sim_io *g_ril_reply_parse_sim_io(GRil *gril,
+						struct ril_msg *message)
+{
+	struct parcel rilp;
+	char *response = NULL;
+	struct reply_sim_io *reply;
+
+	/*
+	 * Minimum length of SIM_IO_Response is 12:
+	 * sw1 (int32)
+	 * sw2 (int32)
+	 * simResponse (string)
+	 */
+	if (message->buf_len < 12) {
+		ofono_error("Invalid SIM IO reply: size too small (< 12): %d ",
+			    (int) message->buf_len);
+		return NULL;
+	}
+
+	reply =	g_new0(struct reply_sim_io, 1);
+
+	g_ril_init_parcel(message, &rilp);
+	reply->sw1 = parcel_r_int32(&rilp);
+	reply->sw2 = parcel_r_int32(&rilp);
+
+	response = parcel_r_string(&rilp);
+	if (response == NULL)
+		goto error;
+
+	reply->hex_response =
+		decode_hex((const char *) response, strlen(response),
+				(long *) &reply->hex_len, -1);
+	if (reply->hex_response == NULL)
+		goto error;
+
+	g_ril_append_print_buf(gril,
+				"(sw1=0x%.2X,sw2=0x%.2X,%s)",
+				reply->sw1,
+				reply->sw2,
+				response);
+	g_ril_print_response(gril, message);
+
+	g_free(response);
+
+	return reply;
+
+error:
+	g_free(reply);
+
+	return NULL;
+}
+
+gchar *g_ril_reply_parse_imsi(GRil *gril, struct ril_msg *message)
+{
+	struct parcel rilp;
+	gchar *imsi;
+
+	g_ril_init_parcel(message, &rilp);
+
+	/* 15 is the max length of IMSI
+	 * add 4 bytes for string length */
+	/* FIXME: g_assert(message->buf_len <= 19); */
+	imsi = parcel_r_string(&rilp);
+
+	g_ril_append_print_buf(gril, "{%s}", imsi);
+	g_ril_print_response(gril, message);
+
+	return imsi;
+}
+
+void g_ril_reply_free_sim_status(struct reply_sim_status *status)
+{
+	if (status) {
+		guint i;
+
+		for (i = 0; i < status->num_apps; i++) {
+			if (status->apps[i] != NULL) {
+				g_free(status->apps[i]->aid_str);
+				g_free(status->apps[i]->app_str);
+				g_free(status->apps[i]);
+			}
+		}
+
+		g_free(status);
+	}
+}
+
+struct reply_sim_status *g_ril_reply_parse_sim_status(GRil *gril,
+						struct ril_msg *message)
+{
+	struct parcel rilp;
+	int i;
+	struct reply_sim_status *status;
+
+	g_ril_append_print_buf(gril, "[%04d]< %s",
+			message->serial_no,
+			ril_request_id_to_string(message->req));
+
+	g_ril_init_parcel(message, &rilp);
+
+	/*
+	 * FIXME: Need to come up with a common scheme for verifying the
+	 * size of RIL message and properly reacting to bad messages.
+	 * This could be a runtime assertion, disconnect, drop/ignore
+	 * the message, ...
+	 *
+	 * 20 is the min length of RIL_CardStatus_v6 as the AppState
+	 * array can be 0-length.
+	 */
+	if (message->buf_len < 20) {
+		ofono_error("Size of SIM_STATUS reply too small: %d bytes",
+			    (int) message->buf_len);
+		return NULL;
+	}
+
+	status = g_new0(struct reply_sim_status, 1);
+
+	status->card_state = parcel_r_int32(&rilp);
+
+	/*
+	 * NOTE:
+	 *
+	 * The global pin_status is used for multi-application
+	 * UICC cards.  For example, there are SIM cards that
+	 * can be used in both GSM and CDMA phones.  Instead
+	 * of managed PINs for both applications, a global PIN
+	 * is set instead.  It's not clear at this point if
+	 * such SIM cards are supported by ofono or RILD.
+	 */
+
+	status->pin_state = parcel_r_int32(&rilp);
+	status->gsm_umts_index = parcel_r_int32(&rilp);
+	status->cdma_index = parcel_r_int32(&rilp);
+	status->ims_index = parcel_r_int32(&rilp);
+	status->num_apps = parcel_r_int32(&rilp);
+
+	/* TODO:
+	 * How do we handle long (>80 chars) ril_append_print_buf strings?
+	 * Using line wrapping ( via '\' ) introduces spaces in the output.
+	 * Do we just make a style-guide exception for PrintBuf operations?
+	 */
+	g_ril_append_print_buf(gril,
+				"(card_state=%d,universal_pin_state=%d,"
+				"gsm_umts_index=%d,cdma_index=%d,"
+				"ims_index=%d, ",
+				status->card_state,
+				status->pin_state,
+				status->gsm_umts_index,
+				status->cdma_index,
+				status->ims_index);
+
+	if (status->card_state != RIL_CARDSTATE_PRESENT)
+		goto done;
+
+	if (status->num_apps > MAX_UICC_APPS) {
+		ofono_error("SIM error; too many apps: %d", status->num_apps);
+		status->num_apps = MAX_UICC_APPS;
+	}
+
+	for (i = 0; i < status->num_apps; i++) {
+		struct reply_sim_app *app;
+		DBG("processing app[%d]", i);
+		status->apps[i] = g_try_new0(struct reply_sim_app, 1);
+		app = status->apps[i];
+		if (app == NULL) {
+			ofono_error("Can't allocate app_data");
+			goto error;
+		}
+
+		app->app_type = parcel_r_int32(&rilp);
+		app->app_state = parcel_r_int32(&rilp);
+		app->perso_substate = parcel_r_int32(&rilp);
+
+		/* TODO: we need a way to instruct parcel to skip
+		 * a string, without allocating memory...
+		 */
+		app->aid_str = parcel_r_string(&rilp); /* application ID (AID) */
+		app->app_str = parcel_r_string(&rilp); /* application label */
+
+		app->pin_replaced = parcel_r_int32(&rilp);
+		app->pin1_state = parcel_r_int32(&rilp);
+		app->pin2_state = parcel_r_int32(&rilp);
+
+		g_ril_append_print_buf(gril,
+					"%s[app_type=%d,app_state=%d,"
+					"perso_substate=%d,aid_ptr=%s,"
+					"app_label_ptr=%s,pin1_replaced=%d,"
+					"pin1=%d,pin2=%d],",
+					print_buf,
+					app->app_type,
+					app->app_state,
+					app->perso_substate,
+					app->aid_str,
+					app->app_str,
+					app->pin_replaced,
+					app->pin1_state,
+					app->pin2_state);
+	}
+
+done:
+	g_ril_append_print_buf(gril, "%s}", print_buf);
+	g_ril_print_response(gril, message);
+
+	return status;
+
+error:
+	g_ril_reply_free_sim_status(status);
+
+	return NULL;
 }
