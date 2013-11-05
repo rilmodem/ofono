@@ -23,6 +23,7 @@
 #include <config.h>
 #endif
 
+#define _GNU_SOURCE
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
@@ -59,7 +60,7 @@ static const struct req_deactivate_data_call req_deact_data_call_invalid_1 = {
  *
  * (cid=1,reason=0)
  */
-static const guchar req_deact_data_call_valid_parcel1[20] = {
+static const guchar req_deact_data_call_valid_parcel1[] = {
 	0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x31, 0x00, 0x00, 0x00,
 	0x01, 0x00, 0x00, 0x00, 0x30, 0x00, 0x00, 0x00
 };
@@ -72,7 +73,7 @@ static const struct req_deactivate_data_call req_deact_data_call_valid_1 = {
 static const struct request_test_data deact_data_call_valid_test_1 = {
 	.request = &req_deact_data_call_valid_1,
 	.parcel_data = (guchar *) &req_deact_data_call_valid_parcel1,
-	.parcel_size = 20,
+	.parcel_size = sizeof(req_deact_data_call_valid_parcel1),
 };
 
 
@@ -105,7 +106,7 @@ static const struct req_setup_data_call req_setup_data_call_invalid_6 = {
 	.tech = RADIO_TECH_GPRS,
 	.data_profile = RIL_DATA_PROFILE_DEFAULT,
 	.apn = "12345678901234567890123456789012345678901234567890"
-	"123456789012345678901234567890123456789012345678901",
+		"123456789012345678901234567890123456789012345678901",
 };
 
 static const struct req_setup_data_call req_setup_data_call_invalid_7 = {
@@ -163,6 +164,194 @@ static const struct req_setup_data_call req_setup_data_call_valid_4 = {
 	.auth_type = RIL_AUTH_BOTH,
 	.protocol = OFONO_GPRS_PROTO_IPV6,
 };
+
+static const char sim_read_info_path_valid_1[] = {0x3F, 0x00};
+
+static const struct req_sim_read_info req_sim_read_info_valid_1 = {
+	.app_type = RIL_APPTYPE_USIM,
+	.aid_str = "1234567890123456",
+	.fileid = 0x7F01,
+	.path = (const unsigned char *) sim_read_info_path_valid_1,
+	.path_len = sizeof(sim_read_info_path_valid_1),
+};
+
+static const unsigned char sim_read_info_path_invalid_1[] =
+	{0x3F, 0x00, 0x11, 0x22, 0x7F, 0x00, 0x11, 0x22};
+
+static const struct req_sim_read_info req_sim_read_info_invalid_1 = {
+	.app_type = RIL_APPTYPE_ISIM + 10,
+	.aid_str = "1234567890123456",
+	.fileid = 0x7F01,
+	.path = sim_read_info_path_invalid_1,
+	.path_len = sizeof(sim_read_info_path_invalid_1),
+};
+
+/* sim_read_binary tests */
+
+static const guchar req_sim_read_binary_parcel_valid_1[] = {
+0xb0, 0x00, 0x00, 0x00, 0xe2, 0x2f, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00,
+0x33, 0x00, 0x46, 0x00, 0x30, 0x00, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00,
+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x00,
+};
+
+static const unsigned char sim_read_binary_path_valid_1[] = {0x3F, 0x00};
+
+static const struct req_sim_read_binary req_sim_read_binary_valid_1 = {
+	.app_type = RIL_APPTYPE_UNKNOWN,
+	.aid_str = "",
+	.fileid = 0x2FE2,
+	.path = sim_read_binary_path_valid_1,
+	.path_len = sizeof(sim_read_binary_path_valid_1),
+	.start = 0,
+	.length = 0x0A,
+};
+
+static const struct request_test_data sim_read_binary_valid_test_1 = {
+	.request = &req_sim_read_binary_valid_1,
+	.parcel_data = (guchar *) &req_sim_read_binary_parcel_valid_1,
+	.parcel_size = sizeof(req_sim_read_binary_parcel_valid_1),
+};
+
+/* sim_read_record tests */
+
+static const guchar req_sim_read_record_parcel_valid_1[] = {
+0xb2, 0x00, 0x00, 0x00, 0xe2, 0x2f, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00,
+0x33, 0x00, 0x46, 0x00, 0x30, 0x00, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00,
+0x05, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00,
+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x00,
+};
+
+static const unsigned char sim_read_record_path_valid_1[] = {0x3F, 0x00};
+
+static const struct req_sim_read_record req_sim_read_record_valid_1 = {
+	.app_type = RIL_APPTYPE_UNKNOWN,
+	.aid_str = "",
+	.fileid = 0x2FE2,
+	.path = sim_read_record_path_valid_1,
+	.path_len = sizeof(sim_read_record_path_valid_1),
+	.record = 5,
+	.length = 0x0A,
+};
+
+static const struct request_test_data sim_read_record_valid_test_1 = {
+	.request = &req_sim_read_record_valid_1,
+	.parcel_data = (guchar *) &req_sim_read_record_parcel_valid_1,
+	.parcel_size = sizeof(req_sim_read_record_parcel_valid_1),
+};
+
+/* read_imsi tests */
+
+static const guchar req_read_imsi_parcel_valid_1[] = {
+0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+static const char read_imsi_aid_str_1[] = "";
+
+static const struct request_test_data read_imsi_valid_test_1 = {
+	.request = &read_imsi_aid_str_1,
+	.parcel_data = (guchar *) &req_read_imsi_parcel_valid_1,
+	.parcel_size = sizeof(req_read_imsi_parcel_valid_1),
+};
+
+/* pin_send tests */
+
+struct request_test_pin_send_data {
+	const char *passwd;
+	const gchar *aid_str;
+	guchar *parcel_data;
+	gsize parcel_size;
+};
+
+static const guchar req_pin_send_parcel_valid_1[] = {
+0x02, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x31, 0x00, 0x32, 0x00,
+0x33, 0x00, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x00,
+};
+
+static const struct request_test_pin_send_data pin_send_record_valid_test_1 = {
+	.passwd = "1234",
+	.aid_str = "",
+	.parcel_data = (guchar *) &req_pin_send_parcel_valid_1,
+	.parcel_size = sizeof(req_pin_send_parcel_valid_1),
+};
+
+/* pin_change_state tests */
+
+static const guchar req_pin_change_state_valid_1[] = {
+0x05, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x50, 0x00, 0x53, 0x00,
+0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x30, 0x00, 0x00, 0x00,
+0x04, 0x00, 0x00, 0x00, 0x31, 0x00, 0x32, 0x00, 0x33, 0x00, 0x34, 0x00,
+0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x30, 0x00, 0x00, 0x00,
+0xFF, 0xFF, 0xFF, 0xFF,
+};
+
+static const struct req_pin_change_state req_pin_change_state_valid1 = {
+	.aid_str = NULL,
+	.passwd_type = OFONO_SIM_PASSWORD_PHSIM_PIN,
+	.enable = 0,
+	.passwd = "1234",
+};
+
+static const struct request_test_data pin_change_state_valid_test_1 = {
+	.request = &req_pin_change_state_valid1,
+	.parcel_data = (guchar *) &req_pin_change_state_valid_1,
+	.parcel_size = sizeof(req_pin_change_state_valid_1),
+};
+
+/* pin_send_puk tests */
+
+struct request_test_pin_send_puk_data {
+	const char *puk;
+	const char *passwd;
+	const gchar *aid_str;
+	const guchar *parcel_data;
+	gsize parcel_size;
+};
+
+static const guchar req_pin_send_puk_parcel_valid_1[] = {
+0x03, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x31, 0x00, 0x32, 0x00,
+0x33, 0x00, 0x34, 0x00, 0x35, 0x00, 0x36, 0x00, 0x37, 0x00, 0x38, 0x00,
+0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x31, 0x00, 0x32, 0x00,
+0x33, 0x00, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x00,
+};
+
+static const struct request_test_pin_send_puk_data pin_send_puk_valid_test_1 = {
+	.puk = "12345678",
+	.passwd = "1234",
+	.aid_str = "",
+	.parcel_data = req_pin_send_puk_parcel_valid_1,
+	.parcel_size = sizeof(req_pin_send_puk_parcel_valid_1),
+};
+
+/* change_passwd tests */
+
+struct request_test_change_passwd_data {
+	const char *old_passwd;
+	const char *new_passwd;
+	const gchar *aid_str;
+	const guchar *parcel_data;
+	gsize parcel_size;
+};
+
+static const guchar req_change_passwd_parcel_valid_1[] = {
+0x03, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x31, 0x00, 0x32, 0x00,
+0x33, 0x00, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00,
+0x35, 0x00, 0x36, 0x00, 0x37, 0x00, 0x38, 0x00, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+static const struct request_test_change_passwd_data change_passwd_valid_test_1 = {
+	.old_passwd = "1234",
+	.new_passwd = "5678",
+	.aid_str = "",
+	.parcel_data = req_change_passwd_parcel_valid_1,
+	.parcel_size = sizeof(req_change_passwd_parcel_valid_1),
+};
+
 
 /*
  * The following hexadecimal data represents a serialized Binder parcel
@@ -277,6 +466,140 @@ static void test_request_power_valid(gconstpointer data)
 	parcel_free(&rilp);
 }
 
+static void test_request_sim_read_info_valid(gconstpointer data)
+{
+	const struct req_sim_read_info *req = data;
+	gboolean result;
+	struct parcel rilp;
+
+	result = g_ril_request_sim_read_info(NULL, req, &rilp);
+	g_assert(result == TRUE);
+
+	parcel_free(&rilp);
+}
+
+static void test_request_sim_read_info_invalid(gconstpointer data)
+{
+	const struct req_sim_read_info *req = data;
+	gboolean result;
+	struct parcel rilp;
+
+	result = g_ril_request_sim_read_info(NULL, req, &rilp);
+	g_assert(result == FALSE);
+
+	parcel_free(&rilp);
+}
+
+static void test_request_sim_read_binary_valid(gconstpointer data)
+{
+	const struct request_test_data *test_data = data;
+	const struct req_sim_read_binary *req = test_data->request;
+	struct parcel rilp;
+	gboolean result;
+
+	result = g_ril_request_sim_read_binary(NULL, req, &rilp);
+
+	g_assert(result == TRUE);
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+			test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
+static void test_request_sim_read_record_valid(gconstpointer data)
+{
+	const struct request_test_data *test_data = data;
+	const struct req_sim_read_record *req = test_data->request;
+	struct parcel rilp;
+	gboolean result;
+
+	result = g_ril_request_sim_read_record(NULL, req, &rilp);
+
+	g_assert(result == TRUE);
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+			test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
+static void test_request_read_imsi(gconstpointer data)
+{
+	const struct request_test_data *test_data = data;
+	const char *aid_str = test_data->request;
+	struct parcel rilp;
+
+	g_ril_request_read_imsi(NULL, aid_str, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+			test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
+static void test_request_pin_send(gconstpointer data)
+{
+	const struct request_test_pin_send_data *test_data = data;
+	const char *passwd = test_data->passwd;
+	const char *aid_str = test_data->aid_str;
+	struct parcel rilp;
+
+	g_ril_request_pin_send(NULL, passwd, aid_str, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+			test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
+static void test_request_pin_change_state(gconstpointer data)
+{
+	const struct request_test_data *test_data = data;
+	const struct req_pin_change_state *req = test_data->request;
+	struct parcel rilp;
+	gboolean result;
+
+	result = g_ril_request_pin_change_state(NULL, req, &rilp);
+
+	g_assert(result == TRUE);
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+			test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
+static void test_request_pin_send_puk(gconstpointer data)
+{
+	const struct request_test_pin_send_puk_data *test_data = data;
+	const char *puk = test_data->puk;
+	const char *passwd = test_data->passwd;
+	const char *aid_str = test_data->aid_str;
+	struct parcel rilp;
+
+	g_ril_request_pin_send_puk(NULL, puk, passwd, aid_str, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+			test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
+static void test_request_change_passwd(gconstpointer data)
+{
+	const struct request_test_change_passwd_data *test_data = data;
+	const char *old_passwd = test_data->old_passwd;
+	const char *new_passwd = test_data->new_passwd;
+	const char *aid_str = test_data->aid_str;
+	struct parcel rilp;
+
+	g_ril_request_change_passwd(NULL, old_passwd, new_passwd,
+					aid_str, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+			test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -368,6 +691,51 @@ int main(int argc, char **argv)
 				"valid POWER Test 1",
 				&power_valid_test_2,
 				test_request_power_valid);
+
+	g_test_add_data_func("/testgrilrequest/sim_read_info: "
+				"valid SIM_READ_INFO Test 1",
+				&req_sim_read_info_valid_1,
+				test_request_sim_read_info_valid);
+
+	g_test_add_data_func("/testgrilrequest/sim_read_info: "
+				"invalid SIM_READ_INFO Test 1",
+				&req_sim_read_info_invalid_1,
+				test_request_sim_read_info_invalid);
+
+	g_test_add_data_func("/testgrilrequest/sim_read_binary: "
+				"valid SIM_READ_BINARY Test 1",
+				&sim_read_binary_valid_test_1,
+				test_request_sim_read_binary_valid);
+
+	g_test_add_data_func("/testgrilrequest/sim_read_record: "
+				"valid SIM_READ_RECORD Test 1",
+				&sim_read_record_valid_test_1,
+				test_request_sim_read_record_valid);
+
+	g_test_add_data_func("/testgrilrequest/read_imsi: "
+				"valid READ_IMSI Test 1",
+				&read_imsi_valid_test_1,
+				test_request_read_imsi);
+
+	g_test_add_data_func("/testgrilrequest/pin_send: "
+				"valid PIN_SEND Test 1",
+				&pin_send_record_valid_test_1,
+				test_request_pin_send);
+
+	g_test_add_data_func("/testgrilrequest/pin_change_state: "
+				"valid PIN_CHANGE_STATE Test 1",
+				&pin_change_state_valid_test_1,
+				test_request_pin_change_state);
+
+	g_test_add_data_func("/testgrilrequest/pin_send_puk: "
+				"valid PIN_SEND_PUK Test 1",
+				&pin_send_puk_valid_test_1,
+				test_request_pin_send_puk);
+
+	g_test_add_data_func("/testgrilrequest/change_passwd: "
+				"valid CHANGE_PASSWD Test 1",
+				&change_passwd_valid_test_1,
+				test_request_change_passwd);
 
 #endif
 	return g_test_run();
