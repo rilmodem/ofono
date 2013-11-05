@@ -99,7 +99,7 @@ int parcel_w_int32(struct parcel *p, int32_t val)
 	return 0;
 }
 
-int parcel_w_string(struct parcel *p, char *str)
+int parcel_w_string(struct parcel *p, const char *str)
 {
 	gunichar2 *gs16;
 	glong gs16_len;
