@@ -267,11 +267,6 @@ static void ril_send_power(struct ril_data *ril, ofono_bool_t online,
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(callback, data);
 	} else {
-		if (online)
-			current_online_state = RIL_ONLINE_PREF;
-		else
-			current_online_state = RIL_OFFLINE;
-
 		g_ril_print_request(ril->modem, ret, request);
 	}
 }

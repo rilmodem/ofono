@@ -31,12 +31,6 @@ extern "C" {
 #include "parcel.h"
 #include "gril.h"
 
-enum online_states {
-	RIL_OFFLINE,
-	RIL_ONLINE_PREF,
-	RIL_ONLINE,
-};
-
 const char *ril_ofono_protocol_to_ril_string(guint protocol);
 int ril_protocol_string_to_ofono_protocol(gchar *protocol_str);
 const char *ril_appstate_to_string(int app_state);

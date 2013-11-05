@@ -51,15 +51,13 @@
 #include "grilrequest.h"
 #include "grilunsol.h"
 
-/* Based on ../drivers/atmodem/sim.c.
+/*
+ * Based on ../drivers/atmodem/sim.c.
  *
  * TODO:
  * 1. Defines constants for hex literals
  * 2. Document P1-P3 usage (+CSRM)
  */
-
-/* 15 digits maximum PIN. Can be less probably. */
-static const char defaultpasswd[] = "NOTGIVEN0000000";
 
 /*
  * TODO: CDMA/IMS
@@ -82,7 +80,6 @@ struct sim_data {
 	enum ofono_sim_password_type passwd_type;
 	int retries[OFONO_SIM_PASSWORD_INVALID];
 	enum ofono_sim_password_type passwd_state;
-	gchar current_passwd[sizeof(defaultpasswd)];
 };
 
 static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
@@ -407,42 +404,6 @@ static void ril_read_imsi(struct ofono_sim *sim, ofono_sim_imsi_cb_t cb,
 	}
 }
 
-static void set_pin_lock_state(struct ofono_sim *sim, struct reply_sim_app *app)
-{
-	DBG("pin1: %u, pin2: %u", app->pin1_state, app->pin2_state);
-	/*
-	 * Updates only pin and pin2 state. Other locks are not dealt here. For
-	 * that a RIL_REQUEST_QUERY_FACILITY_LOCK request should be used.
-	 */
-	switch (app->pin1_state) {
-	case RIL_PINSTATE_ENABLED_NOT_VERIFIED:
-	case RIL_PINSTATE_ENABLED_VERIFIED:
-	case RIL_PINSTATE_ENABLED_BLOCKED:
-	case RIL_PINSTATE_ENABLED_PERM_BLOCKED:
-		ofono_set_pin_lock_state(sim, OFONO_SIM_PASSWORD_SIM_PIN, TRUE);
-		break;
-	case RIL_PINSTATE_DISABLED:
-		ofono_set_pin_lock_state(sim, OFONO_SIM_PASSWORD_SIM_PIN, FALSE);
-		break;
-	default:
-		break;
-	}
-
-	switch (app->pin2_state) {
-	case RIL_PINSTATE_ENABLED_NOT_VERIFIED:
-	case RIL_PINSTATE_ENABLED_VERIFIED:
-	case RIL_PINSTATE_ENABLED_BLOCKED:
-	case RIL_PINSTATE_ENABLED_PERM_BLOCKED:
-		ofono_set_pin_lock_state(sim, OFONO_SIM_PASSWORD_SIM_PIN2, TRUE);
-		break;
-	case RIL_PINSTATE_DISABLED:
-		ofono_set_pin_lock_state(sim, OFONO_SIM_PASSWORD_SIM_PIN2, FALSE);
-		break;
-	default:
-		break;
-	}
-}
-
 static void configure_active_app(struct sim_data *sd,
 					struct reply_sim_app *app,
 					guint index)
@@ -515,7 +476,6 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 	struct reply_sim_status *status;
 	guint i = 0;
 	guint search_index = -1;
-	struct parcel rilp;
 
 	if ((status = g_ril_reply_parse_sim_status(sd->ril, message))
 			!= NULL
@@ -525,7 +485,8 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 		DBG("num_apps: %d gsm_umts_index: %d", status->num_apps,
 			status->gsm_umts_index);
 
-		/* TODO(CDMA): need some kind of logic to
+		/*
+		 * TODO(CDMA): need some kind of logic to
 		 * set the correct app_index,
 		 */
 		search_index = status->gsm_umts_index;
@@ -535,73 +496,26 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 			if (i == search_index &&
 					app->app_type != RIL_APPTYPE_UNKNOWN) {
 				configure_active_app(sd, app, i);
-				set_pin_lock_state(sim, app);
 				break;
 			}
 		}
 
 		if (sd->sim_registered == FALSE) {
+			/* First status request, after sim_probe() */
 			ofono_sim_register(sim);
 			sd->sim_registered = TRUE;
 		} else {
-			/* TODO: There doesn't seem to be any other
+			/* status request afer entering PIN */
+			/*
+			 * TODO: There doesn't seem to be any other
 			 * way to force the core SIM code to
 			 * recheck the PIN.
 			 * Wouldn't __ofono_sim_refresh be
 			 * more appropriate call here??
 			 * __ofono_sim_refresh(sim, NULL, TRUE, TRUE);
 			 */
-			ofono_sim_inserted_notify(sim, TRUE);
-		}
-
-		if (!strcmp(sd->current_passwd, defaultpasswd)) {
 			__ofono_sim_recheck_pin(sim);
-		} else if (sd->passwd_state !=
-				OFONO_SIM_PASSWORD_SIM_PIN) {
-			__ofono_sim_recheck_pin(sim);
-		} else if (sd->passwd_state ==
-				OFONO_SIM_PASSWORD_SIM_PIN) {
-
-			DBG("%s sending PIN", __FUNCTION__);
-
-			g_ril_request_pin_send(sd->ril,
-						sd->current_passwd,
-						sd->aid_str,
-						&rilp);
-
-			g_ril_send(sd->ril,
-					RIL_REQUEST_ENTER_SIM_PIN,
-					rilp.data, rilp.size, NULL,
-					NULL, g_free);
-
-			parcel_free(&rilp);
 		}
-
-		if (current_online_state == RIL_ONLINE_PREF) {
-
-			DBG("%s sending power on RADIO", __FUNCTION__);
-
-			g_ril_request_power(sd->ril,
-						TRUE,
-						&rilp);
-
-			g_ril_send(sd->ril,
-					RIL_REQUEST_RADIO_POWER,
-					rilp.data,
-					rilp.size,
-					NULL, NULL, g_free);
-
-			parcel_free(&rilp);
-
-			current_online_state = RIL_ONLINE;
-		}
-
-		g_ril_reply_free_sim_status(status);
-	} else if (status) {
-		if (current_online_state == RIL_ONLINE)
-			current_online_state = RIL_ONLINE_PREF;
-
-		ofono_sim_inserted_notify(sim, FALSE);
 
 		g_ril_reply_free_sim_status(status);
 	}
@@ -678,8 +592,6 @@ static void ril_pin_change_state_cb(struct ril_msg *message, gpointer user_data)
 		g_ril_print_response_no_args(sd->ril, message);
 
 	} else {
-		g_stpcpy(sd->current_passwd, defaultpasswd);
-
 		CALLBACK_WITH_FAILURE(cb, cbd->data);
 		/*
 		 * Refresh passwd_state (not needed if the unlock is
@@ -700,8 +612,6 @@ static void ril_pin_send(struct ofono_sim *sim, const char *passwd,
 
 	sd->passwd_type = OFONO_SIM_PASSWORD_SIM_PIN;
 	cbd->user = sd;
-
-	g_stpcpy(sd->current_passwd, passwd);
 
 	g_ril_request_pin_send(sd->ril,
 				passwd,
@@ -749,9 +659,6 @@ static void ril_pin_change_state(struct ofono_sim *sim,
 		goto error;
 	}
 
-	if (passwd_type == OFONO_SIM_PASSWORD_SIM_PIN)
-		g_stpcpy(sd->current_passwd, passwd);
-
 	ret = g_ril_send(sd->ril, request,
 				rilp.data, rilp.size, ril_pin_change_state_cb,
 				cbd, g_free);
@@ -785,8 +692,6 @@ static void ril_pin_send_puk(struct ofono_sim *sim,
 					passwd,
 					sd->aid_str,
 					&rilp);
-
-	g_stpcpy(sd->current_passwd, passwd);
 
 	ret = g_ril_send(sd->ril, request,
 			rilp.data, rilp.size, ril_pin_change_state_cb,
@@ -824,8 +729,6 @@ static void ril_change_passwd(struct ofono_sim *sim,
 
 	if (passwd_type == OFONO_SIM_PASSWORD_SIM_PIN2)
 		request = RIL_REQUEST_CHANGE_SIM_PIN2;
-	else
-		g_stpcpy(sd->current_passwd, new_passwd);
 
 	ret = g_ril_send(sd->ril, request, rilp.data, rilp.size,
 			ril_pin_change_state_cb, cbd, g_free);
@@ -872,7 +775,6 @@ static int ril_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 	sd->passwd_state = OFONO_SIM_PASSWORD_NONE;
 	sd->passwd_type = OFONO_SIM_PASSWORD_NONE;
 	sd->sim_registered = FALSE;
-	strcpy(sd->current_passwd, defaultpasswd);
 
 	/*
 	 * The number of retries is unreliable in the current RIL
