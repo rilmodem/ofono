@@ -165,12 +165,11 @@ static void ril_sim_read_info(struct ofono_sim *sim, int fileid,
 				void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, sd);
 	struct parcel rilp;
 	struct req_sim_read_info req;
 	int request = RIL_REQUEST_SIM_IO;
 	guint ret = 0;
-	cbd->user = sd;
 
 	req.app_type = sd->app_type;
 	req.aid_str = sd->aid_str;
@@ -247,12 +246,11 @@ static void ril_sim_read_binary(struct ofono_sim *sim, int fileid,
 				ofono_sim_read_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, sd);
 	struct parcel rilp;
 	struct req_sim_read_binary req;
 	int request = RIL_REQUEST_SIM_IO;
 	guint ret = 0;
-	cbd->user = sd;
 
 	req.app_type = sd->app_type;
 	req.aid_str = sd->aid_str;
@@ -299,12 +297,11 @@ static void ril_sim_read_record(struct ofono_sim *sim, int fileid,
 				ofono_sim_read_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, sd);
 	struct parcel rilp;
 	struct req_sim_read_record req;
 	int request = RIL_REQUEST_SIM_IO;
 	guint ret = 0;
-	cbd->user = sd;
 
 	req.app_type = sd->app_type;
 	req.aid_str = sd->aid_str;
@@ -382,11 +379,10 @@ static void ril_read_imsi(struct ofono_sim *sim, ofono_sim_imsi_cb_t cb,
 				void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, sd);
 	struct parcel rilp;
 	int request = RIL_REQUEST_GET_IMSI;
 	guint ret;
-	cbd->user = sd;
 
 	g_ril_request_read_imsi(sd->ril,
 				sd->aid_str,
@@ -606,13 +602,12 @@ static void ril_pin_send(struct ofono_sim *sim, const char *passwd,
 				ofono_sim_lock_unlock_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, sd);
 	struct parcel rilp;
 	int request = RIL_REQUEST_ENTER_SIM_PIN;
 	int ret;
 
 	sd->passwd_type = OFONO_SIM_PASSWORD_SIM_PIN;
-	cbd->user = sd;
 
 	g_ril_request_pin_send(sd->ril,
 				passwd,
@@ -639,14 +634,13 @@ static void ril_pin_change_state(struct ofono_sim *sim,
 					ofono_sim_lock_unlock_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, sd);
 	struct parcel rilp;
 	struct req_pin_change_state req;
 	int request = RIL_REQUEST_SET_FACILITY_LOCK;
 	int ret = 0;
 
 	sd->passwd_type = passwd_type;
-	cbd->user = sd;
 
 	req.aid_str = sd->aid_str;
 	req.passwd_type = passwd_type;
@@ -680,13 +674,12 @@ static void ril_pin_send_puk(struct ofono_sim *sim,
 				ofono_sim_lock_unlock_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, sd);
 	struct parcel rilp;
 	int request = RIL_REQUEST_ENTER_SIM_PUK;
 	int ret = 0;
 
 	sd->passwd_type = OFONO_SIM_PASSWORD_SIM_PUK;
-	cbd->user = sd;
 
 	g_ril_request_pin_send_puk(sd->ril,
 					puk,
@@ -714,13 +707,12 @@ static void ril_change_passwd(struct ofono_sim *sim,
 				ofono_sim_lock_unlock_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, sd);
 	struct parcel rilp;
 	int request = RIL_REQUEST_CHANGE_SIM_PIN;
 	int ret = 0;
 
 	sd->passwd_type = passwd_type;
-	cbd->user = sd;
 
 	g_ril_request_change_passwd(sd->ril,
 					old_passwd,

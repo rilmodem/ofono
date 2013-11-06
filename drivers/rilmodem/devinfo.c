@@ -51,7 +51,7 @@ static void ril_query_manufacturer(struct ofono_devinfo *info,
 					void *data)
 {
 	const char *attr = "Fake Manufacturer";
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, NULL);
 	struct ofono_error error;
 	decode_ril_error(&error, "OK");
 
@@ -66,7 +66,7 @@ static void ril_query_model(struct ofono_devinfo *info,
 				void *data)
 {
 	const char *attr = "Fake Modem Model";
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, NULL);
 	struct ofono_error error;
 	decode_ril_error(&error, "OK");
 
@@ -104,7 +104,7 @@ static void ril_query_revision(struct ofono_devinfo *info,
 				ofono_devinfo_query_cb_t cb,
 				void *data)
 {
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, NULL);
 	GRil *ril = ofono_devinfo_get_data(info);
 	int request = RIL_REQUEST_BASEBAND_VERSION;
 	int ret;
@@ -149,7 +149,7 @@ static void ril_query_serial(struct ofono_devinfo *info,
 				ofono_devinfo_query_cb_t cb,
 				void *data)
 {
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, NULL);
 	GRil *ril = ofono_devinfo_get_data(info);
 	/* TODO: make it support both RIL_REQUEST_GET_IMEI (deprecated) and
 	 * RIL_REQUEST_DEVICE_IDENTITY depending on the rild version used */

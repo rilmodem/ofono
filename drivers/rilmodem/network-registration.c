@@ -125,11 +125,9 @@ static void ril_network_state_change(struct ril_msg *message, gpointer user_data
 {
 	struct ofono_netreg *netreg = user_data;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(ril_creg_notify, netreg);
+	struct cb_data *cbd = cb_data_new(ril_creg_notify, netreg, nd);
 	int request = RIL_REQUEST_VOICE_REGISTRATION_STATE;
 	int ret;
-
-	cbd->user = nd;
 
 	if (message->req != RIL_UNSOL_RESPONSE_VOICE_NETWORK_STATE_CHANGED)
 		goto error;
@@ -157,11 +155,9 @@ static void ril_registration_status(struct ofono_netreg *netreg,
 					void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, nd);
 	int request = RIL_REQUEST_VOICE_REGISTRATION_STATE;
 	int ret;
-
-	cbd->user = nd;
 
 	ret = g_ril_send(nd->ril, request, NULL,
 				0, ril_creg_cb, cbd, g_free);
@@ -236,11 +232,9 @@ static void ril_current_operator(struct ofono_netreg *netreg,
 				ofono_netreg_operator_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, nd);
 	int request = RIL_REQUEST_OPERATOR;
 	int ret;
-
-	cbd->user = nd;
 
 	ret = g_ril_send(nd->ril, request, NULL,
 				0, ril_cops_cb, cbd, g_free);
@@ -341,11 +335,9 @@ static void ril_list_operators(struct ofono_netreg *netreg,
 				ofono_netreg_operator_list_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, nd);
 	int request = RIL_REQUEST_QUERY_AVAILABLE_NETWORKS;
 	int ret;
-
-	cbd->user = nd;
 
 	ret = g_ril_send(nd->ril, request, NULL,
 				0, ril_cops_list_cb, cbd, g_free);
@@ -381,12 +373,9 @@ static void ril_register_auto(struct ofono_netreg *netreg,
 				ofono_netreg_register_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, nd);
 	int request = RIL_REQUEST_SET_NETWORK_SELECTION_AUTOMATIC;
 	int ret;
-
-	/* add *netreg_data to callback */
-	cbd->user = nd;
 
 	ret = g_ril_send(nd->ril, request,
 				NULL, 0, ril_register_cb, cbd, g_free);
@@ -404,14 +393,11 @@ static void ril_register_manual(struct ofono_netreg *netreg,
 				ofono_netreg_register_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, nd);
 	char buf[OFONO_MAX_MCC_LENGTH + OFONO_MAX_MNC_LENGTH + 1];
 	struct parcel rilp;
 	int request = RIL_REQUEST_SET_NETWORK_SELECTION_MANUAL;
 	int ret;
-
-	/* add *netreg_data to callback */
-	cbd->user = nd;
 
 	parcel_init(&rilp);
 
@@ -476,11 +462,9 @@ static void ril_signal_strength(struct ofono_netreg *netreg,
 				ofono_netreg_strength_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, nd);
 	int request = RIL_REQUEST_SIGNAL_STRENGTH;
 	int ret;
-
-	cbd->user = nd;
 
 	ret = g_ril_send(nd->ril, request,
 				NULL, 0, ril_strength_cb, cbd, g_free);

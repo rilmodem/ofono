@@ -224,7 +224,7 @@ static void ril_gprs_context_activate_primary(struct ofono_gprs_context *gc,
 						ofono_gprs_context_cb_t cb, void *data)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, gc);
 	struct req_setup_data_call request;
 	struct parcel rilp;
 	struct ofono_error error;
@@ -232,8 +232,6 @@ static void ril_gprs_context_activate_primary(struct ofono_gprs_context *gc,
 	int ret = 0;
 
 	DBG("Activating contex: %d", ctx->cid);
-
-	cbd->user = gc;
 
 	/* TODO: implement radio technology selection. */
 	request.tech = RADIO_TECH_HSPA;
@@ -347,8 +345,7 @@ static void ril_gprs_context_deactivate_primary(struct ofono_gprs_context *gc,
 		return;
 	}
 
-	cbd = cb_data_new(cb, data);
-	cbd->user = gc;
+	cbd = cb_data_new(cb, data, gc);
 
 	gcd->state = STATE_DISABLING;
 
