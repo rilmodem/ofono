@@ -246,7 +246,7 @@ static void ril_send_power(struct ril_data *ril, ofono_bool_t online,
 	int ret;
 
 	if (callback) {
-		cbd = cb_data_new(callback, data);
+		cbd = cb_data_new(callback, data, NULL);
 		notify = g_free;
 		g_assert(func);
 	} else {
