@@ -119,13 +119,14 @@ struct cb_data {
 	void *user;
 };
 
-static inline struct cb_data *cb_data_new(void *cb, void *data)
+static inline struct cb_data *cb_data_new(void *cb, void *data, void *user)
 {
 	struct cb_data *ret;
 
 	ret = g_new0(struct cb_data, 1);
 	ret->cb = cb;
 	ret->data = data;
+	ret->user = user;
 
 	return ret;
 }

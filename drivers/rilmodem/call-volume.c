@@ -72,11 +72,10 @@ static void ril_call_volume_mute(struct ofono_call_volume *cv, int muted,
 				ofono_call_volume_cb_t cb, void *data)
 {
 	struct cv_data *cvd = ofono_call_volume_get_data(cv);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, cvd);
 	struct parcel rilp;
 	int request = RIL_REQUEST_SET_MUTE;
 	int ret;
-	cbd->user = cvd;
 
 	DBG("");
 

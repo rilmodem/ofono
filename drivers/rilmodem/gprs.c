@@ -89,7 +89,7 @@ static void ril_gprs_state_change(struct ril_msg *message, gpointer user_data)
 static void ril_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 					ofono_gprs_cb_t cb, void *data)
 {
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, NULL);
 	struct gprs_data *gd = ofono_gprs_get_data(gprs);
 	struct ofono_error error;
 
@@ -229,18 +229,16 @@ static void ril_gprs_registration_status(struct ofono_gprs *gprs,
 					void *data)
 {
 	struct gprs_data *gd = ofono_gprs_get_data(gprs);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, gprs);
 	int request = RIL_REQUEST_DATA_REGISTRATION_STATE;
 	guint ret;
 
-	cbd->user = gprs;
-
 	DBG("");
 
-	/* 
-	 * TODO (optimization): if gd->ofono_attached == FALSE, don't 
+	/*
+	 * TODO (optimization): if gd->ofono_attached == FALSE, don't
 	 * send REQ_DATA_REG; just invoke with the callback with
-	 * status == !REGISTERED!!! 
+	 * status == !REGISTERED!!!
 	 */
 
 	ret = g_ril_send(gd->ril, request,

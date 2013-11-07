@@ -71,13 +71,11 @@ static void ril_cmgs(struct ofono_sms *sms, const unsigned char *pdu,
 			ofono_sms_submit_cb_t cb, void *user_data)
 {
 	struct sms_data *sd = ofono_sms_get_data(sms);
-	struct cb_data *cbd = cb_data_new(cb, user_data);
+	struct cb_data *cbd = cb_data_new(cb, user_data, sd);
 	struct parcel rilp;
 	char *tpdu;
 	int request = RIL_REQUEST_SEND_SMS;
 	int ret, smsc_len;
-
-	cbd->user = sd;
 
         DBG("pdu_len: %d, tpdu_len: %d mms: %d", pdu_len, tpdu_len, mms);
 

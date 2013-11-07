@@ -295,12 +295,10 @@ static void ril_dial(struct ofono_voicecall *vc,
 			void *data)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data, vc);
 	struct parcel rilp;
 	int request = RIL_REQUEST_DIAL;
 	int ret;
-
-	cbd->user = vc;
 
 	parcel_init(&rilp);
 
