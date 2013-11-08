@@ -1427,8 +1427,6 @@ static void sim_imsi_obtained(struct ofono_sim *sim, const char *imsi)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(sim->atom);
-	unsigned char aux_mnc_length;
-	const char *str;
 
 	sim->imsi = g_strdup(imsi);
 
@@ -1438,35 +1436,41 @@ static void sim_imsi_obtained(struct ofono_sim *sim, const char *imsi)
 						DBUS_TYPE_STRING, &sim->imsi);
 
 	/*
-	 * sim->mnc_length = 0 means that EFad did not contain the MNC length
-	 * field. So we will copy 3 digits from the IMSI in the MNC. MNC can
-	 * have either 2 or 3 digits depending on the MCC: we will try with
-	 * those 2 lengths when searching in the database for this corner case
-	 * (this situation can happen for SIMs (non-USIM), as MNC lenght field
-	 * is not mandatory for them - see TS 51.011)
+	 * sim->mnc_length = 0 means that EFad was not present or that EFad did
+	 * not contain the MNC length field (MNC length is not mandatory for
+	 * SIMs (non-USIM) - see TS 51.011).
+	 *
+	 * MNC can have either 2 or 3 digits depending on the MCC: we will try
+	 * to find a correspondence in an MCC-MNC length database
 	 */
-	if (sim->mnc_length)
-		aux_mnc_length = sim->mnc_length;
-	else
-		aux_mnc_length = OFONO_MAX_MNC_LENGTH;
+	if (sim->mnc_length == 0) {
+		int mnc_aux =
+			__ofono_sim_mnclength_get_mnclength(sim->imsi);
+		if (mnc_aux > 0)
+			sim->mnc_length = mnc_aux;
+	}
 
-	strncpy(sim->mcc, sim->imsi, OFONO_MAX_MCC_LENGTH);
-	sim->mcc[OFONO_MAX_MCC_LENGTH] = '\0';
-	strncpy(sim->mnc, sim->imsi + OFONO_MAX_MCC_LENGTH,
-		aux_mnc_length);
-	sim->mnc[aux_mnc_length] = '\0';
+	if (sim->mnc_length) {
+		const char *str;
 
-	str = sim->mcc;
-	ofono_dbus_signal_property_changed(conn, path,
-					OFONO_SIM_MANAGER_INTERFACE,
-					"MobileCountryCode",
-					DBUS_TYPE_STRING, &str);
+		strncpy(sim->mcc, sim->imsi, OFONO_MAX_MCC_LENGTH);
+		sim->mcc[OFONO_MAX_MCC_LENGTH] = '\0';
+		strncpy(sim->mnc, sim->imsi + OFONO_MAX_MCC_LENGTH,
+			sim->mnc_length);
+		sim->mnc[sim->mnc_length] = '\0';
 
-	str = sim->mnc;
-	ofono_dbus_signal_property_changed(conn, path,
-					OFONO_SIM_MANAGER_INTERFACE,
-					"MobileNetworkCode",
-					DBUS_TYPE_STRING, &str);
+		str = sim->mcc;
+		ofono_dbus_signal_property_changed(conn, path,
+						OFONO_SIM_MANAGER_INTERFACE,
+						"MobileCountryCode",
+						DBUS_TYPE_STRING, &str);
+
+		str = sim->mnc;
+		ofono_dbus_signal_property_changed(conn, path,
+						OFONO_SIM_MANAGER_INTERFACE,
+						"MobileNetworkCode",
+						DBUS_TYPE_STRING, &str);
+	}
 
 	sim_set_ready(sim);
 
@@ -2247,14 +2251,6 @@ const char *ofono_sim_get_mnc(struct ofono_sim *sim)
 		return NULL;
 
 	return sim->mnc;
-}
-
-unsigned ofono_sim_get_mnc_length(struct ofono_sim *sim)
-{
-	if (sim == NULL)
-		return 0;
-
-	return sim->mnc_length;
 }
 
 const char *ofono_sim_get_spn(struct ofono_sim *sim)
