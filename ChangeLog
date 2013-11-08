@@ -1,3 +1,15 @@
+ver 1.13:
+	Fix issue with parsing SS control strings.
+	Fix issue with error reporting and Sierra modems.
+	Fix issue with GPRS activation and SIM900 modems.
+	Fix issue with serial receiver and SIM900 modems.
+	Fix issue with signal strength and SIM900 modems.
+	Fix issue with AT+CNMI handling and SIM900 modems.
+	Fix issue with broken +CMER behavior and MBM modems.
+	Fix issue with handling +CIEV and release and swap.
+	Add support for Handsfree profile 1.6 functionality.
+	Add support for Handsfree audio interface.
+
 ver 1.12:
 	Fix issue with alpha ID and self explanatory icons.
 	Fix issue with SIM Refresh handling and resetting state.
