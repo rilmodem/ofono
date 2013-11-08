@@ -332,6 +332,28 @@ static const struct ril_msg reply_sim_status_valid_1 = {
 	.error = 0,
 };
 
+/*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_GET_SMSC_ADDRESS reply with the following parameters:
+ *
+ * {type=145,number=34607003110}
+ */
+static const guchar reply_get_smsc_address_valid_parcel1[] = {
+	0x12, 0x00, 0x00, 0x00, 0x22, 0x00, 0x2b, 0x00, 0x33, 0x00, 0x34, 0x00,
+	0x36, 0x00, 0x30, 0x00, 0x37, 0x00, 0x30, 0x00, 0x30, 0x00, 0x33, 0x00,
+	0x31, 0x00, 0x31, 0x00, 0x30, 0x00, 0x22, 0x00, 0x2c, 0x00, 0x31, 0x00,
+	0x34, 0x00, 0x35, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_get_smsc_address_valid_1 = {
+	.buf = (gchar *) reply_get_smsc_address_valid_parcel1,
+	.buf_len = sizeof(reply_get_smsc_address_valid_parcel1),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_GET_SMSC_ADDRESS,
+	.serial_no = 0,
+	.error = 0,
+};
+
 static void test_reply_data_call_invalid(gconstpointer data)
 {
 	/* TODO: fix de-const cast... */
@@ -393,6 +415,18 @@ static void test_reply_sim_status_valid(gconstpointer data)
 	reply = g_ril_reply_parse_sim_status(NULL, message);
 	g_assert(reply != NULL);
 	g_ril_reply_free_sim_status(reply);
+}
+
+static void test_reply_get_smsc_address_valid(gconstpointer data)
+{
+	/* TODO: fix de-const cast... */
+	struct ril_msg *message = (struct ril_msg *) data;
+	struct ofono_phone_number *reply;
+
+	reply = g_ril_reply_parse_get_smsc_address(NULL, message);
+
+	g_assert(reply != NULL);
+	g_free(reply);
 }
 
 int main(int argc, char **argv)
@@ -461,6 +495,11 @@ int main(int argc, char **argv)
 				"valid GET_SIM_STATUS Test 1",
 				&reply_sim_status_valid_1,
 				test_reply_sim_status_valid);
+
+	g_test_add_data_func("/testgrilreply/sim: "
+				"valid GET_SMSC_ADDRESS Test 1",
+				&reply_get_smsc_address_valid_1,
+				test_reply_get_smsc_address_valid);
 
 #endif
 
