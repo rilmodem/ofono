@@ -103,9 +103,6 @@ void g_ril_unref(GRil *ril);
 
 GRil *g_ril_clone(GRil *ril);
 
-void g_ril_suspend(GRil *ril);
-void g_ril_resume(GRil *ril);
-
 gboolean g_ril_set_disconnect_function(GRil *ril, GRilDisconnectFunc disconnect,
 					gpointer user_data);
 
