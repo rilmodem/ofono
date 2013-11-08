@@ -73,6 +73,16 @@ Signals		PropertyChanged(string name, variant value)
 			This signal is emitted whenever a Message object
 			has been removed, e.g. when it reaches a final state.
 
+		StatusReport(object path, boolean delivered)
+
+			This signal is emitted whenever a SMS Status Report is
+			received for a previously sent message (note that the
+			Message object already has been removed at this point).
+
+			Possible 'delivered' values are:
+				true  - successfully delivered
+				false - delivery failed
+
 Properties	string ServiceCenterAddress
 
 			Contains the number of the SMS service center.
