@@ -634,6 +634,38 @@ static gboolean setup_telit(struct modem_info *modem)
 	return TRUE;
 }
 
+static gboolean setup_he910(struct modem_info *modem)
+{
+	const char *mdm = NULL, *aux = NULL;
+	GSList *list;
+
+	DBG("%s", modem->syspath);
+
+	for (list = modem->devices; list; list = list->next) {
+		struct device_info *info = list->data;
+
+		DBG("%s %s %s %s", info->devnode, info->interface,
+						info->number, info->label);
+
+		if (g_strcmp0(info->interface, "2/2/1") == 0) {
+			if (g_strcmp0(info->number, "00") == 0)
+				mdm = info->devnode;
+			else if (g_strcmp0(info->number, "06") == 0)
+				aux = info->devnode;
+		}
+	}
+
+	if (aux == NULL || mdm == NULL)
+		return FALSE;
+
+	DBG("modem=%s aux=%s", mdm, aux);
+
+	ofono_modem_set_string(modem->modem, "Modem", mdm);
+	ofono_modem_set_string(modem->modem, "Aux", aux);
+
+	return TRUE;
+}
+
 static gboolean setup_simcom(struct modem_info *modem)
 {
 	const char *mdm = NULL, *aux = NULL, *gps = NULL, *diag = NULL;
@@ -778,6 +810,7 @@ static struct {
 	{ "novatel",	setup_novatel	},
 	{ "nokia",	setup_nokia	},
 	{ "telit",	setup_telit	},
+	{ "he910",	setup_he910	},
 	{ "simcom",	setup_simcom	},
 	{ "zte",	setup_zte	},
 	{ "icera",	setup_icera	},
@@ -988,6 +1021,7 @@ static struct {
 	{ "simcom",	"option",	"05c6", "9000"	},
 	{ "telit",	"usbserial",	"1bc7"		},
 	{ "telit",	"option",	"1bc7"		},
+	{ "he910",	"cdc_acm",	"1bc7", "0021"	},
 	{ "nokia",	"option",	"0421", "060e"	},
 	{ "nokia",	"option",	"0421", "0623"	},
 	{ "samsung",	"option",	"04e8", "6889"	},
