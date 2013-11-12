@@ -2967,7 +2967,7 @@ static void provision_context(const struct ofono_gprs_provision_data *ap,
 	gprs->contexts = g_slist_append(gprs->contexts, context);
 }
 
-static int provision_contexts(struct ofono_gprs *gprs, const char *mcc,
+static void provision_contexts(struct ofono_gprs *gprs, const char *mcc,
 				const char *mnc, const char *spn)
 {
 	struct ofono_gprs_provision_data *settings;
@@ -2977,15 +2977,13 @@ static int provision_contexts(struct ofono_gprs *gprs, const char *mcc,
 	if (__ofono_gprs_provision_get_settings(mcc, mnc, spn,
 						&settings, &count) == FALSE) {
 		ofono_warn("Provisioning failed");
-		return -EINVAL;
+		return;
 	}
 
 	for (i = 0; i < count; i++)
 		provision_context(&settings[i], gprs);
 
 	__ofono_gprs_provision_free_settings(settings, count);
-
-	return 0;
 }
 
 static void ofono_gprs_finish_register(struct ofono_gprs *gprs)
@@ -3023,25 +3021,9 @@ static void spn_read_cb(const char *spn, const char *dc, void *data)
 	struct ofono_gprs *gprs	= data;
 	struct ofono_modem *modem = __ofono_atom_get_modem(gprs->atom);
 	struct ofono_sim *sim = __ofono_atom_find(OFONO_ATOM_TYPE_SIM, modem);
-	const char *mnc = ofono_sim_get_mnc(sim);
-	const char *mcc = ofono_sim_get_mcc(sim);
 
-	if (ofono_sim_get_mnc_length(sim) == 0 && mnc != NULL) {
-		/* MNC length not found in EFad: we try with length 3 and 2 */
-		char aux_mnc[OFONO_MAX_MNC_LENGTH + 1];
-
-		strncpy(aux_mnc, mnc, OFONO_MAX_MNC_LENGTH);
-		aux_mnc[OFONO_MAX_MNC_LENGTH] = '\0';
-
-		if (provision_contexts(gprs, mcc, aux_mnc, spn) != 0) {
-			ofono_info("MNC length is not 3: trying length 2");
-			aux_mnc[OFONO_MAX_MNC_LENGTH - 1] = '\0';
-			provision_contexts(gprs, mcc, aux_mnc, spn);
-		}
-
-	} else {
-		provision_contexts(gprs, mcc, mnc, spn);
-	}
+	provision_contexts(gprs, ofono_sim_get_mcc(sim),
+				ofono_sim_get_mnc(sim), spn);
 
 	ofono_sim_remove_spn_watch(sim, &gprs->spn_watch);
 
