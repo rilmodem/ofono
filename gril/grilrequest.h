@@ -95,6 +95,10 @@ void g_ril_request_power(GRil *gril,
 				gboolean power,
 				struct parcel *rilp);
 
+void g_ril_request_set_net_select_manual(GRil *gril,
+					const char *mccmnc,
+					struct parcel *rilp);
+
 gboolean g_ril_request_setup_data_call(GRil *gril,
 					const struct req_setup_data_call *req,
 					struct parcel *rilp,
