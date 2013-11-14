@@ -106,9 +106,6 @@ void ril_util_sim_state_query_free(struct ril_util_sim_state_query *req);
 
 GSList *ril_util_parse_clcc(GRil *gril, struct ril_msg *message);
 
-gboolean ril_util_parse_reg(GRil *gril, struct ril_msg *message, int *status,
-				int *lac, int *ci, int *tech, int *max_calls);
-
 gint ril_util_parse_sms_response(GRil *gril, struct ril_msg *message);
 
 gint ril_util_get_signal(GRil *gril, struct ril_msg *message);

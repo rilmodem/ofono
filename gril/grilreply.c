@@ -171,7 +171,7 @@ struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
 						struct ril_msg *message) {
 	struct parcel rilp;
 	struct reply_operator *operator;
-	struct reply_avail_ops *reply;
+	struct reply_avail_ops *reply = NULL;
 	int num_ops, num_strings;
 	unsigned int i;
 
@@ -182,7 +182,7 @@ struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
 	if (message->buf_len < 4) {
 		ofono_error("%s: invalid QUERY_AVAIL_NETWORKS reply: "
 				"size too small (< 4): %d ",
-				__FUNCTION__,
+				__func__,
 				(int) message->buf_len);
 		goto error;
 	}
@@ -195,7 +195,7 @@ struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
 	if (num_strings % 4) {
 		ofono_error("%s: invalid QUERY_AVAIL_NETWORKS reply: "
 				"num_strings (%d) MOD 4 != 0",
-				__FUNCTION__,
+				__func__,
 				num_strings);
 		goto error;
 	}
@@ -204,17 +204,17 @@ struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
 	DBG("noperators = %d", num_ops);
 
 	reply = g_try_new0(struct reply_avail_ops, 1);
-	if (!reply) {
-		ofono_error("%s: can't allocate reply struct", __FUNCTION__);
+	if (reply == NULL) {
+		ofono_error("%s: can't allocate reply struct", __func__);
 		goto error;
 	}
 
 	reply->num_ops = num_ops;
 	for (i = 0; i < num_ops; i++) {
 		operator = g_try_new0(struct reply_operator, 1);
-		if (!operator) {
+		if (operator == NULL) {
 			ofono_error("%s: can't allocate reply struct",
-					__FUNCTION__);
+					__func__);
 			goto error;
 		}
 
@@ -223,20 +223,30 @@ struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
 		operator->numeric = parcel_r_string(&rilp);
 		operator->status = parcel_r_string(&rilp);
 
-		if (!operator->lalpha && !operator->salpha) {
+		if (operator->lalpha == NULL && operator->salpha == NULL) {
 			ofono_error("%s: operator (%s) doesn't specify names",
 					operator->numeric,
-					__FUNCTION__);
+					__func__);
 			g_ril_reply_free_operator(operator);
 			continue;
 		}
 
-		if (!operator->numeric) {
+		if (operator->numeric == NULL) {
 			ofono_error("%s: operator (%s/%s) "
 					"doesn't specify numeric",
 					operator->lalpha,
 					operator->salpha,
-					__FUNCTION__);
+					__func__);
+			g_ril_reply_free_operator(operator);
+			continue;
+		}
+
+		if (operator->status == NULL) {
+			ofono_error("%s: operator (%s/%s) "
+					"doesn't specify status",
+					operator->lalpha,
+					operator->salpha,
+					__func__);
 			g_ril_reply_free_operator(operator);
 			continue;
 		}
@@ -275,7 +285,7 @@ struct reply_operator *g_ril_reply_parse_operator(GRil *gril,
 {
 	struct parcel rilp;
 	int num_params;
-	struct reply_operator *reply;
+	struct reply_operator *reply = NULL;
 
 	/*
 	 * Minimum message length is 16:
@@ -285,7 +295,7 @@ struct reply_operator *g_ril_reply_parse_operator(GRil *gril,
 	if (message->buf_len < 16) {
 		ofono_error("%s: invalid OPERATOR reply: "
 				"size too small (< 16): %d ",
-				__FUNCTION__,
+				__func__,
 				(int) message->buf_len);
 		goto error;
 	}
@@ -295,7 +305,7 @@ struct reply_operator *g_ril_reply_parse_operator(GRil *gril,
 	if ((num_params = parcel_r_int32(&rilp)) != OPERATOR_NUM_PARAMS) {
 		ofono_error("%s: invalid OPERATOR reply: "
 				"number of params is %d; should be 3.",
-				__FUNCTION__,
+				__func__,
 				num_params);
 		goto error;
 	}
@@ -306,18 +316,18 @@ struct reply_operator *g_ril_reply_parse_operator(GRil *gril,
 	reply->salpha = parcel_r_string(&rilp);
 	reply->numeric = parcel_r_string(&rilp);
 
-	if (!reply->lalpha && !reply->salpha) {
+	if (reply->lalpha == NULL && reply->salpha == NULL) {
 		ofono_error("%s: invalid OPERATOR reply: "
 				" no names returned.",
-				__FUNCTION__);
+				__func__);
 
 		goto error;
 	}
 
-	if (!reply->numeric) {
+	if (reply->numeric == NULL) {
 		ofono_error("%s: invalid OPERATOR reply: "
 				" no numeric returned.",
-				__FUNCTION__);
+				__func__);
 		goto error;
 	}
 
@@ -374,7 +384,7 @@ struct reply_setup_data_call *g_ril_reply_parse_data_call(GRil *gril,
 	if (message->buf_len < MIN_DATA_CALL_REPLY_SIZE) {
 		/* TODO: make a macro for error logging */
 		ofono_error("%s: SETUP_DATA_CALL reply too small: %d",
-				__FUNCTION__,
+				__func__,
 				(int) message->buf_len);
 		OFONO_EINVAL(error);
 		goto error;
@@ -400,7 +410,7 @@ struct reply_setup_data_call *g_ril_reply_parse_data_call(GRil *gril,
 	reply->version = parcel_r_int32(&rilp);
 	num = parcel_r_int32(&rilp);
 	if (num != 1) {
-		ofono_error("%s: too many calls: %d", __FUNCTION__, num);
+		ofono_error("%s: too many calls: %d", __func__, num);
 		OFONO_EINVAL(error);
 		goto error;
 	}
@@ -436,7 +446,7 @@ struct reply_setup_data_call *g_ril_reply_parse_data_call(GRil *gril,
 	protocol = ril_protocol_string_to_ofono_protocol(type);
 	if (protocol < 0) {
 		ofono_error("%s: Invalid type(protocol) specified: %s",
-				__FUNCTION__,
+				__func__,
 				type);
 		OFONO_EINVAL(error);
 		goto error;
@@ -446,7 +456,7 @@ struct reply_setup_data_call *g_ril_reply_parse_data_call(GRil *gril,
 
 	if (reply->ifname == NULL || strlen(reply->ifname) == 0) {
 		ofono_error("%s: No interface specified: %s",
-				__FUNCTION__,
+				__func__,
 				reply->ifname);
 
 		OFONO_EINVAL(error);
@@ -475,7 +485,7 @@ struct reply_setup_data_call *g_ril_reply_parse_data_call(GRil *gril,
 	 * simplified.
 	 */
 	if (reply->ip_addrs == NULL || (sizeof(reply->ip_addrs) == 0)) {
-		ofono_error("%s no IP address: %s", __FUNCTION__, raw_ip_addrs);
+		ofono_error("%s no IP address: %s", __func__, raw_ip_addrs);
 
 		OFONO_EINVAL(error);
 		goto error;
@@ -491,7 +501,7 @@ struct reply_setup_data_call *g_ril_reply_parse_data_call(GRil *gril,
 		reply->gateways = NULL;
 
 	if (reply->gateways == NULL || (sizeof(reply->gateways) == 0)) {
-		ofono_error("%s: no gateways: %s", __FUNCTION__, raw_gws);
+		ofono_error("%s: no gateways: %s", __func__, raw_gws);
 		OFONO_EINVAL(error);
 		goto error;
 	}
@@ -504,7 +514,7 @@ struct reply_setup_data_call *g_ril_reply_parse_data_call(GRil *gril,
 
 	if (reply->dns_addresses == NULL ||
 		(sizeof(reply->dns_addresses) == 0)) {
-		ofono_error("%s: no DNS: %s", __FUNCTION__, dnses);
+		ofono_error("%s: no DNS: %s", __func__, dnses);
 
 		OFONO_EINVAL(error);
 		goto error;
@@ -538,7 +548,7 @@ struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
 	if (message->buf_len < 4) {
 		ofono_error("%s: invalid %s reply: "
 				"size too small (< 4): %d ",
-				__FUNCTION__,
+				__func__,
 				ril_request_id_to_string(message->req),
 				(int) message->buf_len);
 		return NULL;
@@ -556,7 +566,7 @@ struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
 	 */
 	if ((tmp = parcel_r_int32(&rilp)) < 4) {
 		ofono_error("%s: invalid %s; response array is too small: %d",
-				__FUNCTION__,
+				__func__,
 				ril_request_id_to_string(message->req),
 				tmp);
 		goto error;
@@ -591,9 +601,9 @@ struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
 	}
 
 
-	if (!sstatus) {
+	if (sstatus == NULL) {
 		ofono_error("%s: no status included in %s reply",
-				__FUNCTION__,
+				__func__,
 				ril_request_id_to_string(message->req));
 		goto error;
 	}

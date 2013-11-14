@@ -235,7 +235,7 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 
 	if (req->tech < RADIO_TECH_GPRS || req->tech > RADIO_TECH_GSM) {
 		ofono_error("%s: Invalid tech value: %d",
-				__FUNCTION__,
+				__func__,
 				req->tech);
 		goto error;
 	}
@@ -263,7 +263,7 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 		break;
 	default:
 		ofono_error("%s, invalid data_profile value: %d",
-				__FUNCTION__,
+				__func__,
 				req->data_profile);
 		goto error;
 	}
@@ -274,14 +274,14 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 	apn_len = strlen(req->apn);
 	if (apn_len == 0 || apn_len > 100) {
 		ofono_error("%s: invalid apn length: %d",
-				__FUNCTION__,
+				__func__,
 				(int) apn_len);
 		goto error;
 	}
 
 	if (req->auth_type > RIL_AUTH_BOTH) {
 		ofono_error("%s: Invalid auth type: %d",
-				__FUNCTION__,
+				__func__,
 				req->auth_type);
 		goto error;
 	}
@@ -289,7 +289,7 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 	protocol_str = ril_ofono_protocol_to_ril_string(req->protocol);
 	if (protocol_str == NULL) {
 		ofono_error("%s: Invalid protocol: %d",
-				__FUNCTION__,
+				__func__,
 				req->protocol);
 		goto error;
 	}
@@ -501,7 +501,7 @@ gboolean g_ril_request_pin_change_state(GRil *gril,
 		break;
 	default:
 		ofono_error("%s: Invalid password type: %d",
-				__FUNCTION__,
+				__func__,
 				req->passwd_type);
 		goto error;
 	}

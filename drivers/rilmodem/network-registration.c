@@ -4,7 +4,8 @@
  *
  *  Copyright (C) 2008-2011  Intel Corporation. All rights reserved.
  *  Copyright (C) 2010  ST-Ericsson AB.
- *  Copyright (C) 2012  Canonical Ltd.
+ *  Copyright (C) 2012-2013  Canonical Ltd.
+ *  Copyright (C) 2013  Jolla Ltd.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -40,6 +41,10 @@
 #include "gril.h"
 #include "rilmodem.h"
 
+#include "grilreply.h"
+#include "grilrequest.h"
+#include "grilunsol.h"
+
 struct netreg_data {
 	GRil *ril;
 	char mcc[OFONO_MAX_MCC_LENGTH + 1];
@@ -54,13 +59,9 @@ struct netreg_data {
 	unsigned int vendor;
 };
 
-/* 27.007 Section 7.3 <stat> */
-enum operator_status {
-	OPERATOR_STATUS_UNKNOWN =	0,
-	OPERATOR_STATUS_AVAILABLE =	1,
-	OPERATOR_STATUS_CURRENT =	2,
-	OPERATOR_STATUS_FORBIDDEN =	3,
-};
+static void ril_registration_status(struct ofono_netreg *netreg,
+					ofono_netreg_status_cb_t cb,
+					void *data);
 
 static void extract_mcc_mnc(const char *str, char *mcc, char *mnc)
 {
@@ -73,39 +74,38 @@ static void extract_mcc_mnc(const char *str, char *mcc, char *mnc)
 	mnc[OFONO_MAX_MNC_LENGTH] = '\0';
 }
 
-/*
- * TODO: The functions in this file are stubbed out, and
- * will need to be re-worked to talk to the /gril layer
- * in order to get real values from RILD.
- */
-
 static void ril_creg_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_netreg_status_cb_t cb = cbd->cb;
 	struct netreg_data *nd = cbd->user;
-	struct ofono_error error;
-	int status, lac, ci, tech;
+	struct reply_reg_state *reply;
 
 	DBG("");
 
 	if (message->error != RIL_E_SUCCESS) {
-		decode_ril_error(&error, "FAIL");
-		ofono_error("Failed to pull registration state");
-		cb(&error, -1, -1, -1, -1, cbd->data);
-		return;
+		ofono_error("%s: failed to pull registration state",
+				__FUNCTION__);
+		goto error;
 	}
 
-	decode_ril_error(&error, "OK");
+	if (!(reply = g_ril_reply_parse_reg_state(nd->ril, message)))
+		goto error;
 
-	if (ril_util_parse_reg(nd->ril, message, &status,
-				&lac, &ci, &tech, NULL) == FALSE) {
-		CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, cbd->data);
-		return;
-	}
+	nd->tech = reply->tech;
 
-	nd->tech = tech;
-	cb(&error, status, lac, ci, tech, cbd->data);
+	CALLBACK_WITH_SUCCESS(cb,
+				reply->status,
+				reply->lac,
+				reply->ci,
+				reply->tech,
+				cbd->data);
+
+	g_free(reply);
+	return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, cbd->data);
 }
 
 static void ril_creg_notify(struct ofono_error *error, int status, int lac,
@@ -125,29 +125,10 @@ static void ril_network_state_change(struct ril_msg *message, gpointer user_data
 {
 	struct ofono_netreg *netreg = user_data;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(ril_creg_notify, netreg, nd);
-	int request = RIL_REQUEST_VOICE_REGISTRATION_STATE;
-	int ret;
-
-	if (message->req != RIL_UNSOL_RESPONSE_VOICE_NETWORK_STATE_CHANGED)
-		goto error;
 
 	g_ril_print_unsol_no_args(nd->ril, message);
 
-	ret = g_ril_send(nd->ril, request, NULL,
-				0, ril_creg_cb, cbd, g_free);
-
-	/* For operator update ofono will use the current_operator cb
-	 * so we don't need to probe ril here */
-
-	g_ril_print_request_no_args(nd->ril, ret, request);
-
-	if (ret > 0)
-		return;
-
-error:
-	ofono_error("Unable to request network state changed");
-	g_free(cbd);
+	ril_registration_status(netreg, NULL, NULL);
 }
 
 static void ril_registration_status(struct ofono_netreg *netreg,
@@ -155,16 +136,25 @@ static void ril_registration_status(struct ofono_netreg *netreg,
 					void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(cb, data, nd);
+	struct cb_data *cbd;
 	int request = RIL_REQUEST_VOICE_REGISTRATION_STATE;
 	int ret;
+
+	/*
+	 * If no cb specified, setup internal callback to
+	 * handle unsolicited VOICE_NET_STATE_CHANGE events.
+	 */
+	if (!cb)
+		cbd = cb_data_new(ril_creg_notify, netreg, nd);
+	else
+		cbd = cb_data_new(cb, data, nd);
 
 	ret = g_ril_send(nd->ril, request, NULL,
 				0, ril_creg_cb, cbd, g_free);
 
 	g_ril_print_request_no_args(nd->ril, ret, request);
 
-	if (ret <= 0) {
+	if (!ret) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, data);
 	}
@@ -175,52 +165,33 @@ static void ril_cops_cb(struct ril_msg *message, gpointer user_data)
 	struct cb_data *cbd = user_data;
 	ofono_netreg_operator_cb_t cb = cbd->cb;
 	struct netreg_data *nd = cbd->user;
-	struct ofono_error error;
-	struct parcel rilp;
+	struct reply_operator *reply;
 	struct ofono_network_operator op;
-	gchar *lalpha, *salpha, *numeric;
 
-	if (message->error == RIL_E_SUCCESS) {
-		decode_ril_error(&error, "OK");
-	} else {
-		ofono_error("Failed to retrive the current operator");
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: failed to retrive the current operator",
+				__FUNCTION__);
 		goto error;
 	}
 
-	ril_util_init_parcel(message, &rilp);
-
-	/* Size of char ** */
-	if (parcel_r_int32(&rilp) == 0)
+	if (!(reply = g_ril_reply_parse_operator(nd->ril, message)))
 		goto error;
 
-	lalpha = parcel_r_string(&rilp);
-	salpha = parcel_r_string(&rilp);
-	numeric = parcel_r_string(&rilp);
-
 	/* Try to use long by default */
-	if (lalpha)
-		strncpy(op.name, lalpha, OFONO_MAX_OPERATOR_NAME_LENGTH);
-	else
-		strncpy(op.name, salpha, OFONO_MAX_OPERATOR_NAME_LENGTH);
+	if (reply->lalpha)
+		strncpy(op.name, reply->lalpha, OFONO_MAX_OPERATOR_NAME_LENGTH);
+	else if (reply->salpha)
+		strncpy(op.name, reply->salpha, OFONO_MAX_OPERATOR_NAME_LENGTH);
 
-	extract_mcc_mnc(numeric, op.mcc, op.mnc);
+	extract_mcc_mnc(reply->numeric, op.mcc, op.mnc);
 
 	/* Set to current */
 	op.status = OPERATOR_STATUS_CURRENT;
 	op.tech = nd->tech;
 
-	g_ril_append_print_buf(nd->ril,
-				"(lalpha=%s, salpha=%s, numeric=%s, %s, mcc=%s, mnc=%s, %s)",
-				lalpha, salpha, numeric,
-				op.name, op.mcc, op.mnc,
-				registration_tech_to_string(op.tech));
-	g_ril_print_response(nd->ril, message);
+	CALLBACK_WITH_SUCCESS(cb, &op, cbd->data);
 
-	g_free(lalpha);
-	g_free(salpha);
-	g_free(numeric);
-
-	cb(&error, &op, cbd->data);
+	g_ril_reply_free_operator(reply);
 
 	return;
 
@@ -241,7 +212,7 @@ static void ril_current_operator(struct ofono_netreg *netreg,
 
 	g_ril_print_request_no_args(nd->ril, ret, request);
 
-	if (ret <= 0) {
+	if (!ret) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, NULL, data);
 	}
@@ -252,83 +223,68 @@ static void ril_cops_list_cb(struct ril_msg *message, gpointer user_data)
 	struct cb_data *cbd = user_data;
 	ofono_netreg_operator_list_cb_t cb = cbd->cb;
 	struct netreg_data *nd = cbd->user;
+	struct reply_avail_ops *reply;
 	struct ofono_network_operator *list;
-	struct ofono_error error;
-	struct parcel rilp;
-	int noperators, i;
-	gchar *lalpha, *salpha, *numeric, *status;
+	struct reply_operator *operator;
+	GSList *l;
+	unsigned int i = 0;
 
-	if (message->error == RIL_E_SUCCESS) {
-		decode_ril_error(&error, "OK");
-	} else {
-		ofono_error("Failed to retrive the list of operators");
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: failed to retrive the list of operators",
+				__FUNCTION__);
 		goto error;
 	}
 
-	ril_util_init_parcel(message, &rilp);
-
-	g_ril_append_print_buf(nd->ril, "{");
-
-	/* Number of operators at the list (4 strings for every operator) */
-	noperators = parcel_r_int32(&rilp) / 4;
-	DBG("noperators = %d", noperators);
-
-	list = g_try_new0(struct ofono_network_operator, noperators);
-	if (list == NULL)
+	if (!(reply = g_ril_reply_parse_avail_ops(nd->ril, message)))
 		goto error;
 
-	for (i = 0; i < noperators; i++) {
-		lalpha = parcel_r_string(&rilp);
-		salpha = parcel_r_string(&rilp);
-		numeric = parcel_r_string(&rilp);
-		status = parcel_r_string(&rilp);
+	list = g_try_new0(struct ofono_network_operator, reply->num_ops);
+	if (list == NULL) {
+		ofono_error("%s: can't allocate ofono_network_operator",
+				__FUNCTION__);
+
+		goto error;
+	}
+
+	for (l = reply->list; l; l = l->next) {
+		operator = l->data;
 
 		/* Try to use long by default */
-		if (lalpha) {
-			strncpy(list[i].name, lalpha,
+		if (operator->lalpha) {
+			strncpy(list[i].name, operator->lalpha,
 					OFONO_MAX_OPERATOR_NAME_LENGTH);
 		} else {
-			strncpy(list[i].name, salpha,
+			strncpy(list[i].name, operator->salpha,
 					OFONO_MAX_OPERATOR_NAME_LENGTH);
 		}
 
-		extract_mcc_mnc(numeric, list[i].mcc, list[i].mnc);
+		extract_mcc_mnc(operator->numeric, list[i].mcc, list[i].mnc);
 
 		/* FIXME: need to fix this for CDMA */
 		/* Use GSM as default, as RIL doesn't pass that info to us */
 		list[i].tech = ACCESS_TECHNOLOGY_GSM;
 
 		/* Set the proper status  */
-		if (!strcmp(status, "unknown"))
+		if (!strcmp(operator->status, "unknown"))
 			list[i].status = OPERATOR_STATUS_UNKNOWN;
-		else if (!strcmp(status, "available"))
+		else if (!strcmp(operator->status, "available"))
 			list[i].status = OPERATOR_STATUS_AVAILABLE;
-		else if (!strcmp(status, "current"))
+		else if (!strcmp(operator->status, "current"))
 			list[i].status = OPERATOR_STATUS_CURRENT;
-		else if (!strcmp(status, "forbidden"))
+		else if (!strcmp(operator->status, "forbidden"))
 			list[i].status = OPERATOR_STATUS_FORBIDDEN;
 
-		g_ril_append_print_buf(nd->ril,
-					"%s [operator=%s, %s, %s, status: %s]",
-					print_buf,
-					list[i].name, list[i].mcc,
-					list[i].mnc, status);
-
-		g_free(lalpha);
-		g_free(salpha);
-		g_free(numeric);
-		g_free(status);
+		i++;
 	}
 
-	g_ril_append_print_buf(nd->ril, "%s}", print_buf);
-	g_ril_print_response(nd->ril, message);
-
-	cb(&error, noperators, list, cbd->data);
+	CALLBACK_WITH_SUCCESS(cb, reply->num_ops, list, cbd->data);
+	g_ril_reply_free_avail_ops(reply);
 
 	return;
 
 error:
 	CALLBACK_WITH_FAILURE(cb, 0, NULL, cbd->data);
+	g_ril_reply_free_avail_ops(reply);
 }
 
 static void ril_list_operators(struct ofono_netreg *netreg,
@@ -344,7 +300,7 @@ static void ril_list_operators(struct ofono_netreg *netreg,
 
 	g_ril_print_request_no_args(nd->ril, ret, request);
 
-	if (ret <= 0) {
+	if (!ret) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, 0, NULL, data);
 	}
@@ -382,7 +338,7 @@ static void ril_register_auto(struct ofono_netreg *netreg,
 
 	g_ril_print_request_no_args(nd->ril, ret, request);
 
-	if (ret <= 0) {
+	if (!ret) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, data);
 	}
@@ -399,22 +355,20 @@ static void ril_register_manual(struct ofono_netreg *netreg,
 	int request = RIL_REQUEST_SET_NETWORK_SELECTION_MANUAL;
 	int ret;
 
-	parcel_init(&rilp);
-
 	/* RIL expects a char * specifying MCCMNC of network to select */
 	snprintf(buf, sizeof(buf), "%s%s", mcc, mnc);
-	parcel_w_string(&rilp, buf);
+
+	g_ril_request_set_net_select_manual(nd->ril, buf, &rilp);
 
 	ret = g_ril_send(nd->ril, request,
 				rilp.data, rilp.size, ril_register_cb,
 				cbd, g_free);
+
+	g_ril_print_request(nd->ril, ret, request);
 	parcel_free(&rilp);
 
-	g_ril_append_print_buf(nd->ril,	"(%s)", buf);
-	g_ril_print_request(nd->ril, ret, request);
-
 	/* In case of error free cbd and return the cb with failure */
-	if (ret <= 0) {
+	if (!ret) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, data);
 	}
@@ -471,7 +425,7 @@ static void ril_signal_strength(struct ofono_netreg *netreg,
 
 	g_ril_print_request_no_args(nd->ril, ret, request);
 
-	if (ret <= 0) {
+	if (!ret) {
 		ofono_error("Send RIL_REQUEST_SIGNAL_STRENGTH failed.");
 
 		g_free(cbd);
@@ -483,21 +437,12 @@ static void ril_nitz_notify(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct parcel rilp;
 	int year, mon, mday, hour, min, sec, dst, tzi;
 	char tzs, tz[4];
 	gchar *nitz;
 
-	if (message->req != RIL_UNSOL_NITZ_TIME_RECEIVED)
+	if (!(nitz = g_ril_unsol_parse_nitz(nd->ril, message)))
 		goto error;
-
-
-	ril_util_init_parcel(message, &rilp);
-
-	nitz = parcel_r_string(&rilp);
-
-	g_ril_append_print_buf(nd->ril, "(%s)", nitz);
-	g_ril_print_unsol(nd->ril, message);
 
 	sscanf(nitz, "%u/%u/%u,%u:%u:%u%c%u,%u", &year, &mon, &mday,
 			&hour, &min, &sec, &tzs, &tzi, &dst);
@@ -519,7 +464,7 @@ static void ril_nitz_notify(struct ril_msg *message, gpointer user_data)
 	return;
 
 error:
-	ofono_error("Unable to notify ofono about nitz");
+	ofono_error("%s: unable to notify ofono about NITZ", __FUNCTION__);
 }
 
 static gboolean ril_delayed_register(gpointer user_data)
@@ -566,16 +511,13 @@ static int ril_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 	ofono_netreg_set_data(netreg, nd);
 
         /*
-	 * TODO: analyze if capability check is needed
-	 * and/or timer should be adjusted.
-	 *
 	 * ofono_netreg_register() needs to be called after
 	 * the driver has been set in ofono_netreg_create(),
 	 * which calls this function.  Most other drivers make
 	 * some kind of capabilities query to the modem, and then
-	 * call register in the callback; we use a timer instead.
+	 * call register in the callback; we use the idle loop here.
 	 */
-        g_timeout_add_seconds(1, ril_delayed_register, netreg);
+        g_idle_add(ril_delayed_register, netreg);
 
 	return 0;
 }

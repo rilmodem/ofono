@@ -99,7 +99,7 @@ struct unsol_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
 
 	if (message->buf_len < MIN_DATA_CALL_LIST_SIZE) {
 		ofono_error("%s: message too small: %d",
-				__FUNCTION__,
+				__func__,
 				(int) message->buf_len);
 		OFONO_EINVAL(error);
 		goto error;
@@ -165,7 +165,6 @@ error:
 
 char *g_ril_unsol_parse_nitz(GRil *gril, struct ril_msg *message)
 {
-	struct data_call *call;
 	struct parcel rilp;
 	gchar *nitz = NULL;
 
@@ -173,7 +172,7 @@ char *g_ril_unsol_parse_nitz(GRil *gril, struct ril_msg *message)
 
 	if (message->buf_len < MIN_NITZ_SIZE) {
 		ofono_error("%s: NITZ too small: %d",
-				__FUNCTION__,
+				__func__,
 				(int) message->buf_len);
 		goto error;
 	}
