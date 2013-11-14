@@ -50,14 +50,6 @@ enum network_registration_mode {
 	NETWORK_REGISTRATION_MODE_AUTO_ONLY =	5, /* Out of range of 27.007 */
 };
 
-/* 27.007 Section 7.3 <stat> */
-enum operator_status {
-	OPERATOR_STATUS_UNKNOWN =	0,
-	OPERATOR_STATUS_AVAILABLE =	1,
-	OPERATOR_STATUS_CURRENT =	2,
-	OPERATOR_STATUS_FORBIDDEN =	3,
-};
-
 struct ofono_netreg {
 	int status;
 	int location;
