@@ -31,6 +31,27 @@
 extern "C" {
 #endif
 
+struct reply_operator {
+	char *lalpha;
+	char *salpha;
+	char *numeric;
+	char *status;
+};
+
+struct reply_avail_ops {
+	guint num_ops;
+	GSList *list;
+};
+
+struct reply_reg_state {
+	int status;
+	int lac;
+	int ci;
+	int tech;
+	int reason;
+	unsigned int max_cids;
+};
+
 struct reply_setup_data_call {
 	guint version;
 	guint status;
@@ -74,6 +95,16 @@ struct reply_sim_status {
 	struct reply_sim_app *apps[MAX_UICC_APPS];
 };
 
+void g_ril_reply_free_avail_ops(struct reply_avail_ops *reply);
+
+struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
+							struct ril_msg *message);
+
+void g_ril_reply_free_operator(struct reply_operator *reply);
+
+struct reply_operator *g_ril_reply_parse_operator(GRil *gril,
+						struct ril_msg *message);
+
 void g_ril_reply_free_setup_data_call(struct reply_setup_data_call *reply);
 
 struct reply_setup_data_call *g_ril_reply_parse_data_call(GRil *gril,
@@ -86,6 +117,9 @@ struct reply_sim_io *g_ril_reply_parse_sim_io(GRil *gril,
 						struct ril_msg *message);
 
 gchar *g_ril_reply_parse_imsi(GRil *gril, struct ril_msg *message);
+
+struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
+						struct ril_msg *message);
 
 void g_ril_reply_free_sim_status(struct reply_sim_status *status);
 

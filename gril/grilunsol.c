@@ -40,6 +40,12 @@
 /* Minimum size is two int32s version/number of calls */
 #define MIN_DATA_CALL_LIST_SIZE 8
 
+/*
+ * Minimum NITZ is: 'yy/mm/dd,hh:mm:ss'
+ * TZ '(+/-)tz,dt' are optional
+ */
+#define MIN_NITZ_SIZE 17 
+
 static gint data_call_compare(gconstpointer a, gconstpointer b)
 {
 	const struct data_call *ca = a;
@@ -93,7 +99,7 @@ struct unsol_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
 
 	if (message->buf_len < MIN_DATA_CALL_LIST_SIZE) {
 		ofono_error("%s: message too small: %d",
-				__func__,
+				__FUNCTION__,
 				(int) message->buf_len);
 		OFONO_EINVAL(error);
 		goto error;
@@ -155,4 +161,30 @@ struct unsol_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
 
 error:
 	return reply;
+}
+
+char *g_ril_unsol_parse_nitz(GRil *gril, struct ril_msg *message)
+{
+	struct data_call *call;
+	struct parcel rilp;
+	gchar *nitz = NULL;
+
+	DBG("");
+
+	if (message->buf_len < MIN_NITZ_SIZE) {
+		ofono_error("%s: NITZ too small: %d",
+				__FUNCTION__,
+				(int) message->buf_len);
+		goto error;
+	}
+
+	g_ril_init_parcel(message, &rilp);
+
+	nitz = parcel_r_string(&rilp);
+
+	g_ril_append_print_buf(gril, "(%s)", nitz);
+	g_ril_print_unsol(gril, message);
+
+error:
+	return nitz;
 }
