@@ -55,6 +55,9 @@ struct unsol_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
 					struct ril_msg *message,
 					struct ofono_error *error);
 
+char *g_ril_unsol_parse_nitz(GRil *gril, struct ril_msg *message);
+
+
 #ifdef __cplusplus
 }
 #endif

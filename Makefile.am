@@ -740,17 +740,20 @@ unit_test_caif_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_caif_OBJECTS)
 
 unit_test_grilrequest_SOURCES = unit/test-grilrequest.c $(gril_sources) \
-				src/log.c src/util.c src/simutil.c gatchat/ringbuffer.c
+				src/log.c src/util.c src/simutil.c \
+				src/common.c gatchat/ringbuffer.c
 unit_test_grilrequest_LDADD = @GLIB_LIBS@ -ldl
 unit_objects += $(unit_test_grilrequest_OBJECTS)
 
 unit_test_grilreply_SOURCES = unit/test-grilreply.c $(gril_sources) \
-				src/log.c src/util.c src/simutil.c gatchat/ringbuffer.c
+				src/log.c src/util.c src/simutil.c \
+				src/common.c gatchat/ringbuffer.c
 unit_test_grilreply_LDADD = @GLIB_LIBS@ -ldl
 unit_objects += $(unit_test_grilreply_OBJECTS)
 
 unit_test_grilunsol_SOURCES = unit/test-grilunsol.c $(gril_sources) \
-				src/log.c src/util.c src/simutil.c gatchat/ringbuffer.c
+				src/log.c src/util.c src/simutil.c \
+				src/common.c gatchat/ringbuffer.c
 unit_test_grilunsol_LDADD = @GLIB_LIBS@ -ldl
 unit_objects += $(unit_test_grilunsol_OBJECTS)
 

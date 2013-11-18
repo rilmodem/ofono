@@ -208,6 +208,18 @@ void g_ril_request_power(GRil *gril,
 	g_ril_append_print_buf(gril, "(%d)", power);
 }
 
+void g_ril_request_set_net_select_manual(GRil *gril,
+					const char *mccmnc,
+					struct parcel *rilp)
+{
+	DBG("");
+
+	parcel_init(rilp);
+	parcel_w_string(rilp, mccmnc);
+
+	g_ril_append_print_buf(gril, "(%s)", mccmnc);
+}
+
 gboolean g_ril_request_setup_data_call(GRil *gril,
 					const struct req_setup_data_call *req,
 					struct parcel *rilp,
@@ -222,7 +234,9 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 	DBG("");
 
 	if (req->tech < RADIO_TECH_GPRS || req->tech > RADIO_TECH_GSM) {
-		ofono_error("%s: Invalid tech value: %d", __func__, req->tech);
+		ofono_error("%s: Invalid tech value: %d",
+				__func__,
+				req->tech);
 		goto error;
 	}
 
@@ -487,7 +501,8 @@ gboolean g_ril_request_pin_change_state(GRil *gril,
 		break;
 	default:
 		ofono_error("%s: Invalid password type: %d",
-				__func__, req->passwd_type);
+				__func__,
+				req->passwd_type);
 		goto error;
 	}
 
