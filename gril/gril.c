@@ -111,6 +111,13 @@ struct _GRil {
 	guint group;
 };
 
+struct req_hdr {
+	/* Warning: length is stored in network order */
+	uint32_t length;
+	uint32_t reqid;
+	uint32_t serial;
+};
+
 #define RIL_PRINT_BUF_SIZE 8096
 char print_buf[RIL_PRINT_BUF_SIZE] __attribute__((used));
 
@@ -225,51 +232,36 @@ static struct ril_request *ril_request_create(struct ril_s *ril,
 						gboolean wakeup)
 {
 	struct ril_request *r;
-	gsize len;
-	gchar *cur_bufp;
-	guint32 *net_length;
-	gint32 *request, *serial_no;
+	struct req_hdr header;
 
 	r = g_try_new0(struct ril_request, 1);
-	if (r == NULL)
-		return 0;
+	if (r == NULL) {
+		ofono_error("%s Out of memory", __func__);
+		return NULL;
+	}
 
+	DBG("req: %s, id: %d, data_len: %zu",
+		ril_request_id_to_string(req), id, data_len);
 
-	DBG("req: %s, id: %d, data_len: %d",
-		ril_request_id_to_string(req), id, (int) data_len);
-
-	/* RIL request: 8 byte header + data */
-	len = 8 + data_len;
-
-	/* Add 4 bytes to buffer length to include length prefix */
-	r->data_len = len + 4;
+	/* Full request size: header size plus buffer length */
+	r->data_len = data_len + sizeof(header);
 
 	r->data = g_try_new(char, r->data_len);
 	if (r->data == NULL) {
 		ofono_error("ril_request: can't allocate new request.");
 		g_free(r);
-		return 0;
+		return NULL;
 	}
 
-	/* convert length to network byte order (Big Endian) */
-	net_length = (guint32 *) r->data;
-	*net_length = htonl(len);
+	/* Length does not include the length field. Network order. */
+	header.length = htonl(r->data_len - sizeof(header.length));
+	header.reqid = req;
+	header.serial = id;
 
-	/* advance past initial length */
-	cur_bufp = r->data + 4;
-
-	/* write request code */
-	request = (gint32 *) cur_bufp;
-	*request = req;
-	cur_bufp += 4;
-
-	/* write serial number */
-	serial_no = (gint32 *) cur_bufp;
-	*serial_no = id;
-	cur_bufp += 4;
-
+	/* copy header */
+	memcpy(r->data, &header, sizeof(header));
 	/* copy request data */
-	memcpy(cur_bufp, (const void *) data, data_len);
+	memcpy(r->data + sizeof(header), data, data_len);
 
 	r->req = req;
 	r->gid = gid;
@@ -330,8 +322,8 @@ static void handle_response(struct ril_s *p, struct ril_msg *message)
 	gsize count = g_queue_get_length(p->command_queue);
 	struct ril_request *req;
 	gboolean found = FALSE;
-	guint i;
-	guint len, id;
+	guint i, len;
+	gint id;
 
 	g_assert(count > 0);
 
@@ -358,7 +350,8 @@ static void handle_response(struct ril_s *p, struct ril_msg *message)
 			len = g_queue_get_length(p->out_queue);
 			DBG("requests in sent queue before removing:%d", len);
 			for (i = 0; i < len; i++) {
-				id = (guint) g_queue_peek_nth(p->out_queue, i);
+				id = GPOINTER_TO_INT(g_queue_peek_nth(
+							p->out_queue, i));
 				if (id == req->id) {
 					g_queue_pop_nth(p->out_queue, i);
 					break;
@@ -429,13 +422,13 @@ static void handle_unsol_req(struct ril_s *p, struct ril_msg *message)
 
 static void dispatch(struct ril_s *p, struct ril_msg *message)
 {
-	gint32 *unsolicited_field, *id_num_field;
+	int32_t *unsolicited_field, *id_num_field;
 	gchar *bufp = message->buf;
 	gchar *datap;
 	gsize data_len;
 
 	/* This could be done with a struct/union... */
-	unsolicited_field = (gint32 *) bufp;
+	unsolicited_field = (int32_t *) (void *) bufp;
 	if (*unsolicited_field)
 		message->unsolicited = TRUE;
 	else
@@ -443,7 +436,7 @@ static void dispatch(struct ril_s *p, struct ril_msg *message)
 
 	bufp += 4;
 
-	id_num_field = (gint32 *) bufp;
+	id_num_field = (int32_t *) (void *) bufp;
 	if (message->unsolicited) {
 		message->req = (int) *id_num_field;
 
@@ -457,7 +450,7 @@ static void dispatch(struct ril_s *p, struct ril_msg *message)
 		message->serial_no = (int) *id_num_field;
 
 		bufp += 4;
-		message->error = *((guint32 *) bufp);
+		message->error = *((int32_t *) (void *) bufp);
 
 		/*
 		 * A RIL Solicited Response is three UINT32 fields ( unsolicied,
@@ -504,10 +497,10 @@ static struct ril_msg *read_fixed_record(struct ril_s *p,
 						const guchar *bytes, gsize *len)
 {
 	struct ril_msg *message;
-	int message_len, plen;
+	unsigned message_len, plen;
 
 	/* First four bytes are length in TCP byte order (Big Endian) */
-	plen = ntohl(*((uint32_t *) bytes));
+	plen = ntohl(*((uint32_t *) (void *) bytes));
 	bytes += 4;
 
 	/* TODO: Verify that 4k is the max message size from rild.
@@ -615,9 +608,10 @@ static gboolean can_write_data(gpointer data)
 	struct ril_s *ril = data;
 	struct ril_request *req;
 	gsize bytes_written, towrite, len;
-	guint qlen, oqlen, id;
+	guint qlen, oqlen;
+	gint id;
 	gboolean written = TRUE;
-	int i, j;
+	guint i, j;
 
 	qlen = g_queue_get_length(ril->command_queue);
 	if (qlen < 1)
@@ -629,7 +623,8 @@ static gboolean can_write_data(gpointer data)
 		for (i = 0; i < qlen; i++) {
 			req = g_queue_peek_nth(ril->command_queue, i);
 			if (req) {
-				id = (guint) g_queue_peek_head(ril->out_queue);
+				id = GPOINTER_TO_INT(g_queue_peek_head(
+							ril->out_queue));
 				if (req->id == id)
 					goto out;
 			} else {
@@ -644,7 +639,7 @@ static gboolean can_write_data(gpointer data)
 		if (req == NULL)
 			return FALSE;
 
-		g_queue_push_head(ril->out_queue,(gpointer) req->id);
+		g_queue_push_head(ril->out_queue, GINT_TO_POINTER(req->id));
 
 		goto out;
 	}
@@ -655,7 +650,8 @@ static gboolean can_write_data(gpointer data)
 			return FALSE;
 
 		for (j = 0; j < oqlen; j++) {
-			id = (guint) g_queue_peek_nth(ril->out_queue, j);
+			id = GPOINTER_TO_INT(
+					g_queue_peek_nth(ril->out_queue, j));
 			if (req->id == id) {
 				written = TRUE;
 				break;
@@ -672,13 +668,13 @@ static gboolean can_write_data(gpointer data)
 	if (written == TRUE)
 		return FALSE;
 
-	g_queue_push_head(ril->out_queue,(gpointer) req->id);
+	g_queue_push_head(ril->out_queue, GINT_TO_POINTER(req->id));
 
 out:
 	len = req->data_len;
 
 	towrite = len - ril->req_bytes_written;
-	DBG("req:%d,len:%d,towrite:%d", req->id, len, towrite);
+	DBG("req:%d,len:%zu,towrite:%zu", req->id, len, towrite);
 #ifdef WRITE_SCHEDULER_DEBUG
 	if (towrite > 5)
 		towrite = 5;
@@ -865,8 +861,7 @@ static struct ril_notify *ril_notify_create(struct ril_s *ril,
 static void ril_cancel_group(struct ril_s *ril, guint group)
 {
 	int n = 0;
-	int i;
-	guint len;
+	guint len, i;
 	struct ril_request *req;
 
 	if (ril->command_queue == NULL)
@@ -882,7 +877,8 @@ static void ril_cancel_group(struct ril_s *ril, guint group)
 
 		len = g_queue_get_length(ril->out_queue);
 		for (i = 0; i < len; i++) {
-			if ((guint) g_queue_peek_nth(ril->out_queue, i)
+			if (GPOINTER_TO_INT(
+					g_queue_peek_nth(ril->out_queue, i))
 					== req->id) {
 				g_queue_pop_nth(ril->out_queue, i);
 				break;

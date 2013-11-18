@@ -73,7 +73,7 @@ void parcel_free(struct parcel *p)
 int32_t parcel_r_int32(struct parcel *p)
 {
 	int32_t ret;
-	ret = *((int32_t *) (p->data + p->offset));
+	ret = *((int32_t *) (void *) (p->data + p->offset));
 	p->offset += sizeof(int32_t);
 	return ret;
 }
@@ -87,7 +87,7 @@ int parcel_w_int32(struct parcel *p, int32_t val)
 
 		if (p->offset + sizeof(int32_t) < p->capacity) {
 			/* There's enough space */
-			*((int32_t *) (p->data + p->offset)) = val;
+			*((int32_t *) (void *) (p->data + p->offset)) = val;
 			p->offset += sizeof(int32_t);
 			p->size += sizeof(int32_t);
 			break;
@@ -127,7 +127,8 @@ int parcel_w_string(struct parcel *p, const char *str)
 		if (p->offset + len < p->capacity) {
 			/* There's enough space */
 			memcpy(p->data + p->offset, gs16, gs16_size);
-			*((char16_t *) (p->data + p->offset + gs16_size)) = 0;
+			*((char16_t *) (void *)
+				(p->data + p->offset + gs16_size)) = 0;
 			p->offset += padded;
 			p->size += padded;
 			if (padded != len) {
@@ -148,7 +149,8 @@ int parcel_w_string(struct parcel *p, const char *str)
 				DBG("Writing %d bytes, padded to %d\n",
 				    (int) len, (int) padded);
 
-				*((uint32_t*)(p->data + p->offset - 4)) &=
+				*((uint32_t*) (void *)
+					(p->data + p->offset - 4)) &=
 							mask[padded - len];
 			}
 			break;
@@ -172,7 +174,7 @@ char* parcel_r_string(struct parcel *p)
 	if (len16 < 0)
 		return NULL;
 
-	ret = g_utf16_to_utf8((gunichar2 *) (p->data + p->offset),
+	ret = g_utf16_to_utf8((gunichar2 *) (void *) (p->data + p->offset),
 				len16, NULL, NULL, NULL);
 	if (ret == NULL)
 		return NULL;
