@@ -280,7 +280,7 @@ void __ofono_cbs_sim_download(struct ofono_stk *stk, const struct cbs *msg)
 
 	e.type = STK_ENVELOPE_TYPE_CBS_PP_DOWNLOAD;
 	e.src = STK_DEVICE_IDENTITY_TYPE_NETWORK;
-	memcpy(&e.cbs_pp_download.page, msg, sizeof(msg));
+	memcpy(&e.cbs_pp_download.page, msg, sizeof(*msg));
 
 	err = stk_send_envelope(stk, &e, stk_cbs_download_cb,
 				ENVELOPE_RETRIES_DEFAULT);
