@@ -32,6 +32,7 @@ src/ofono.service
 dundee/dundee
 dundee/dundee.service
 
+test-driver
 unit/test-common
 unit/test-util
 unit/test-idmap
@@ -42,6 +43,9 @@ unit/test-mux
 unit/test-caif
 unit/test-stkutil
 unit/test-cdmasms
+unit/test-grilreply
+unit/test-grilrequest
+unit/test-grilunsol
 
 tools/huawei-audio
 tools/auto-enable

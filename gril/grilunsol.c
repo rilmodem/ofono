@@ -34,6 +34,7 @@
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/gprs-context.h>
+#include "util.h"
 
 #include "grilunsol.h"
 
@@ -44,7 +45,7 @@
  * Minimum NITZ is: 'yy/mm/dd,hh:mm:ss'
  * TZ '(+/-)tz,dt' are optional
  */
-#define MIN_NITZ_SIZE 17 
+#define MIN_NITZ_SIZE 17
 
 static gint data_call_compare(gconstpointer a, gconstpointer b)
 {
@@ -163,6 +164,7 @@ error:
 	return reply;
 }
 
+
 char *g_ril_unsol_parse_nitz(GRil *gril, struct ril_msg *message)
 {
 	struct parcel rilp;
@@ -186,4 +188,56 @@ char *g_ril_unsol_parse_nitz(GRil *gril, struct ril_msg *message)
 
 error:
 	return nitz;
+}
+
+void g_ril_unsol_free_sms_data(struct unsol_sms_data *unsol)
+{
+	if (unsol != NULL) {
+		g_free(unsol->data);
+		g_free(unsol);
+	}
+}
+
+struct unsol_sms_data *g_ril_unsol_parse_new_sms(GRil *gril, struct ril_msg *message)
+{
+	struct parcel rilp;
+	char *ril_pdu;
+	size_t ril_pdu_len;
+	struct unsol_sms_data *sms_data;
+
+	sms_data = g_new0(struct unsol_sms_data, 1);
+	if (sms_data == NULL) {
+		ofono_error("%s out of memory", __func__);
+		goto error;
+	}
+
+	g_ril_init_parcel(message, &rilp);
+
+	ril_pdu = parcel_r_string(&rilp);
+	if (ril_pdu == NULL) {
+		ofono_error("%s Unable to parse notification", __func__);
+		goto error;
+	}
+
+	ril_pdu_len = strlen(ril_pdu);
+
+	sms_data->data = decode_hex(ril_pdu, ril_pdu_len,
+					&sms_data->length, -1);
+	if (sms_data->data == NULL) {
+		ofono_error("%s Unable to decode notification", __func__);
+		goto error_dec;
+	}
+
+	g_ril_append_print_buf(gril, "{%s}", ril_pdu);
+	g_ril_print_unsol(gril, message);
+
+	g_free(ril_pdu);
+
+	return sms_data;
+
+error_dec:
+	g_free(ril_pdu);
+error:
+	g_ril_unsol_free_sms_data(sms_data);
+	return NULL;
 }

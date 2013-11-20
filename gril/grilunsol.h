@@ -49,6 +49,11 @@ struct data_call {
     char *gateways;
 };
 
+struct unsol_sms_data {
+	long length;
+	unsigned char *data;
+};
+
 void g_ril_unsol_free_data_call_list(struct unsol_data_call_list *unsol);
 
 struct unsol_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
@@ -57,6 +62,9 @@ struct unsol_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
 
 char *g_ril_unsol_parse_nitz(GRil *gril, struct ril_msg *message);
 
+void g_ril_unsol_free_sms_data(struct unsol_sms_data *unsol);
+
+struct unsol_sms_data *g_ril_unsol_parse_new_sms(GRil *gril, struct ril_msg *message);
 
 #ifdef __cplusplus
 }

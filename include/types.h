@@ -83,6 +83,12 @@ struct ofono_error {
 #define OFONO_MAX_PHONE_NUMBER_LENGTH 80
 #define OFONO_MAX_CALLER_NAME_LENGTH 80
 
+/* Number types, 3GPP TS 24.008 subclause 10.5.4.7, octect 3 */
+/* Unknown, ISDN numbering plan */
+#define OFONO_NUMBER_TYPE_UNKNOWN 129
+/* International, ISDN numbering plan */
+#define OFONO_NUMBER_TYPE_INTERNATIONAL 145
+
 struct ofono_phone_number {
 	char number[OFONO_MAX_PHONE_NUMBER_LENGTH + 1];
 	int type;

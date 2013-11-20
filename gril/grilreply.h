@@ -126,6 +126,12 @@ void g_ril_reply_free_sim_status(struct reply_sim_status *status);
 struct reply_sim_status *g_ril_reply_parse_sim_status(GRil *gril,
 							struct ril_msg *message);
 
+struct ofono_phone_number *g_ril_reply_parse_get_smsc_address(
+						GRil *gril,
+						struct ril_msg *message);
+
+int g_ril_reply_parse_sms_response(GRil *gril, struct ril_msg *message);
+
 #ifdef __cplusplus
 }
 #endif

@@ -271,32 +271,6 @@ GSList *ril_util_parse_clcc(GRil *gril, struct ril_msg *message)
 	return l;
 }
 
-gint ril_util_parse_sms_response(GRil *gril, struct ril_msg *message)
-{
-	struct parcel rilp;
-	int error, mr;
-	char *ack_pdu;
-
-	/* Set up Parcel struct for proper parsing */
-	ril_util_init_parcel(message, &rilp);
-
-	/* TP-Message-Reference for GSM/
-	 * BearerData MessageId for CDMA
-	 */
-	mr = parcel_r_int32(&rilp);
-	ack_pdu = parcel_r_string(&rilp);
-	error = parcel_r_int32(&rilp);
-
-
-	g_ril_append_print_buf(gril, "{%d,%s,%d}",
-				mr, ack_pdu, error);
-	g_ril_print_response(gril, message);
-
-	g_free(ack_pdu);
-
-	return mr;
-}
-
 gint ril_util_get_signal(GRil *gril, struct ril_msg *message)
 {
 	struct parcel rilp;
