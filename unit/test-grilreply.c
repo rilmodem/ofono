@@ -356,12 +356,10 @@ static const struct ril_msg reply_get_smsc_address_valid_1 = {
 
 static void test_reply_data_call_invalid(gconstpointer data)
 {
-	/* TODO: fix de-const cast... */
-	struct ril_msg *message = (struct ril_msg *) data;
 	struct ofono_error error;
 	struct reply_setup_data_call *reply;
 
-	reply = g_ril_reply_parse_data_call(NULL, message, &error);
+	reply = g_ril_reply_parse_data_call(NULL, data, &error);
 	g_assert(reply != NULL);
 	g_ril_reply_free_setup_data_call(reply);
 
@@ -371,12 +369,10 @@ static void test_reply_data_call_invalid(gconstpointer data)
 
 static void test_reply_data_call_valid(gconstpointer data)
 {
-	/* TODO: fix de-const cast... */
-	struct ril_msg *message = (struct ril_msg *) data;
 	struct ofono_error error;
 	struct reply_setup_data_call *reply;
 
-	reply = g_ril_reply_parse_data_call(NULL, message, &error);
+	reply = g_ril_reply_parse_data_call(NULL, data, &error);
 	g_assert(reply != NULL);
 	g_ril_reply_free_setup_data_call(reply);
 
@@ -386,44 +382,32 @@ static void test_reply_data_call_valid(gconstpointer data)
 
 static void test_reply_sim_io_valid(gconstpointer data)
 {
-	/* TODO: fix de-const cast... */
-	struct ril_msg *message = (struct ril_msg *) data;
-	struct reply_sim_io *reply;
-
-	reply = g_ril_reply_parse_sim_io(NULL, message);
+	struct reply_sim_io *reply = g_ril_reply_parse_sim_io(NULL, data);
 	g_assert(reply != NULL);
 	g_ril_reply_free_sim_io(reply);
 }
 
 static void test_reply_imsi_valid(gconstpointer data)
 {
-	/* TODO: fix de-const cast... */
-	struct ril_msg *message = (struct ril_msg *) data;
-	gchar *reply;
-
-	reply = g_ril_reply_parse_imsi(NULL, message);
+	gchar *reply = g_ril_reply_parse_imsi(NULL, data);
 	g_assert(reply != NULL);
 	g_free(reply);
 }
 
 static void test_reply_sim_status_valid(gconstpointer data)
 {
-	/* TODO: fix de-const cast... */
-	struct ril_msg *message = (struct ril_msg *) data;
 	struct reply_sim_status *reply;
 
-	reply = g_ril_reply_parse_sim_status(NULL, message);
+	reply = g_ril_reply_parse_sim_status(NULL, data);
 	g_assert(reply != NULL);
 	g_ril_reply_free_sim_status(reply);
 }
 
 static void test_reply_get_smsc_address_valid(gconstpointer data)
 {
-	/* TODO: fix de-const cast... */
-	struct ril_msg *message = (struct ril_msg *) data;
 	struct ofono_phone_number *reply;
 
-	reply = g_ril_reply_parse_get_smsc_address(NULL, message);
+	reply = g_ril_reply_parse_get_smsc_address(NULL, data);
 
 	g_assert(reply != NULL);
 	g_free(reply);
