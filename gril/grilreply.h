@@ -98,39 +98,38 @@ struct reply_sim_status {
 void g_ril_reply_free_avail_ops(struct reply_avail_ops *reply);
 
 struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
-							struct ril_msg *message);
-
+						const struct ril_msg *message);
 void g_ril_reply_free_operator(struct reply_operator *reply);
 
 struct reply_operator *g_ril_reply_parse_operator(GRil *gril,
-						struct ril_msg *message);
+						const struct ril_msg *message);
 
 void g_ril_reply_free_setup_data_call(struct reply_setup_data_call *reply);
 
 struct reply_setup_data_call *g_ril_reply_parse_data_call(GRil *gril,
-							struct ril_msg *message,
-							struct ofono_error *error);
+						const struct ril_msg *message,
+						struct ofono_error *error);
 
 void g_ril_reply_free_sim_io(struct reply_sim_io *reply);
 
 struct reply_sim_io *g_ril_reply_parse_sim_io(GRil *gril,
-						struct ril_msg *message);
+						const struct ril_msg *message);
 
-gchar *g_ril_reply_parse_imsi(GRil *gril, struct ril_msg *message);
+gchar *g_ril_reply_parse_imsi(GRil *gril, const struct ril_msg *message);
 
 struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
-						struct ril_msg *message);
+						const struct ril_msg *message);
 
 void g_ril_reply_free_sim_status(struct reply_sim_status *status);
 
 struct reply_sim_status *g_ril_reply_parse_sim_status(GRil *gril,
-							struct ril_msg *message);
+						const struct ril_msg *message);
 
 struct ofono_phone_number *g_ril_reply_parse_get_smsc_address(
 						GRil *gril,
-						struct ril_msg *message);
+						const struct ril_msg *message);
 
-int g_ril_reply_parse_sms_response(GRil *gril, struct ril_msg *message);
+int g_ril_reply_parse_sms_response(GRil *gril, const struct ril_msg *message);
 
 #ifdef __cplusplus
 }
