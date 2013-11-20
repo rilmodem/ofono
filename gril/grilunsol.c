@@ -36,6 +36,7 @@
 #include <ofono/gprs-context.h>
 #include "util.h"
 
+#include "common.h"
 #include "grilunsol.h"
 
 /* Minimum size is two int32s version/number of calls */
@@ -240,4 +241,41 @@ error_dec:
 error:
 	g_ril_unsol_free_sms_data(sms_data);
 	return NULL;
+}
+
+void g_ril_unsol_free_supp_svc_notif(struct unsol_supp_svc_notif *unsol)
+{
+	g_free(unsol);
+}
+
+struct unsol_supp_svc_notif *g_ril_unsol_parse_supp_svc_notif(GRil *gril,
+						struct ril_msg *message)
+{
+	struct parcel rilp;
+	char *tmp_number;
+	int type;
+	struct unsol_supp_svc_notif *unsol =
+		g_new0(struct unsol_supp_svc_notif, 1);
+
+	g_ril_init_parcel(message, &rilp);
+
+	unsol->notif_type = parcel_r_int32(&rilp);
+	unsol->code = parcel_r_int32(&rilp);
+	unsol->index = parcel_r_int32(&rilp);
+	type = parcel_r_int32(&rilp);
+	tmp_number = parcel_r_string(&rilp);
+
+	if (tmp_number != NULL) {
+		strncpy(unsol->number.number, tmp_number,
+			OFONO_MAX_PHONE_NUMBER_LENGTH);
+		unsol->number.type = type;
+		g_free(tmp_number);
+	}
+
+	g_ril_append_print_buf(gril, "{%d,%d,%d,%d,%s}",
+				unsol->notif_type, unsol->code, unsol->index,
+				type, tmp_number);
+	g_ril_print_unsol(gril, message);
+
+	return unsol;
 }

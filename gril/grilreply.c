@@ -949,3 +949,112 @@ int g_ril_reply_parse_sms_response(GRil *gril, const struct ril_msg *message)
 
 	return mr;
 }
+
+static gint g_ril_call_compare(gconstpointer a, gconstpointer b)
+{
+	const struct ofono_call *ca = a;
+	const struct ofono_call *cb = b;
+
+	if (ca->id < cb->id)
+		return -1;
+
+	if (ca->id > cb->id)
+		return 1;
+
+	return 0;
+}
+
+GSList *g_ril_reply_parse_get_calls(GRil *gril, const struct ril_msg *message)
+{
+	struct ofono_call *call;
+	struct parcel rilp;
+	GSList *l = NULL;
+	int num, i;
+	gchar *number, *name;
+
+	g_ril_init_parcel(message, &rilp);
+
+	g_ril_append_print_buf(gril, "{");
+
+	/* maguro signals no calls with empty event data */
+	if (rilp.size < sizeof(int32_t))
+		goto no_calls;
+
+	/* Number of RIL_Call structs */
+	num = parcel_r_int32(&rilp);
+	for (i = 0; i < num; i++) {
+		call = g_try_new(struct ofono_call, 1);
+		if (call == NULL)
+			break;
+
+		ofono_call_init(call);
+		call->status = parcel_r_int32(&rilp);
+		call->id = parcel_r_int32(&rilp);
+		call->phone_number.type = parcel_r_int32(&rilp);
+		parcel_r_int32(&rilp); /* isMpty */
+		parcel_r_int32(&rilp); /* isMT */
+		parcel_r_int32(&rilp); /* als */
+		call->type = parcel_r_int32(&rilp); /* isVoice */
+		parcel_r_int32(&rilp); /* isVoicePrivacy */
+		number = parcel_r_string(&rilp);
+		if (number) {
+			strncpy(call->phone_number.number, number,
+				OFONO_MAX_PHONE_NUMBER_LENGTH);
+			g_free(number);
+		}
+
+		parcel_r_int32(&rilp); /* numberPresentation */
+		name = parcel_r_string(&rilp);
+		if (name) {
+			strncpy(call->name, name,
+				OFONO_MAX_CALLER_NAME_LENGTH);
+			g_free(name);
+		}
+
+		parcel_r_int32(&rilp); /* namePresentation */
+		parcel_r_int32(&rilp); /* uusInfo */
+
+		if (strlen(call->phone_number.number) > 0)
+			call->clip_validity = 0;
+		else
+			call->clip_validity = 2;
+
+		g_ril_append_print_buf(gril,
+					"%s [id=%d,status=%d,type=%d,"
+					"number=%s,name=%s]",
+					print_buf,
+					call->id, call->status, call->type,
+					call->phone_number.number, call->name);
+
+		l = g_slist_insert_sorted(l, call, g_ril_call_compare);
+	}
+
+no_calls:
+	g_ril_append_print_buf(gril, "%s}", print_buf);
+	g_ril_print_response(gril, message);
+
+	return l;
+}
+
+enum ofono_disconnect_reason g_ril_reply_parse_call_fail_cause(
+				GRil *gril, const struct ril_msg *message)
+{
+	enum ofono_disconnect_reason reason = OFONO_DISCONNECT_REASON_ERROR;
+	int last_cause = CALL_FAIL_ERROR_UNSPECIFIED;
+	struct parcel rilp;
+
+	g_ril_init_parcel(message, &rilp);
+
+	if (rilp.size < sizeof(int32_t))
+		ofono_error("%s: Parcel is too small", __func__);
+	else if (parcel_r_int32(&rilp) > 0)
+		last_cause = parcel_r_int32(&rilp);
+
+	if (last_cause == CALL_FAIL_NORMAL || last_cause == CALL_FAIL_BUSY)
+		reason = OFONO_DISCONNECT_REASON_REMOTE_HANGUP;
+
+	g_ril_append_print_buf(gril, "{%d}", last_cause);
+	g_ril_print_response(gril, message);
+
+	return reason;
+}
