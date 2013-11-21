@@ -134,7 +134,7 @@ if __name__ == '__main__':
 					interface_keyword="interface")
 
 	for member in ["IncomingBroadcast", "EmergencyBroadcast",
-			"IncomingMessage", "ImmediateMessage"]:
+			"IncomingMessage", "ImmediateMessage", "StatusReport"]:
 		bus.add_signal_receiver(message,
 					bus_name="org.ofono",
 					signal_name = member,
