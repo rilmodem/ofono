@@ -506,6 +506,9 @@ builtin_sources += plugins/smart-messaging.c
 builtin_modules += push_notification
 builtin_sources += plugins/push-notification.c
 
+builtin_modules += smshistory
+builtin_sources += plugins/smshistory.c
+
 sbin_PROGRAMS = src/ofonod
 
 src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
