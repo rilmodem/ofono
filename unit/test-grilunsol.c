@@ -159,7 +159,7 @@ static void test_unsol_data_call_list_changed_invalid(gconstpointer data)
 	struct ofono_error error;
 	struct unsol_data_call_list *unsol;
 
-        unsol = g_ril_unsol_parse_data_call_list(NULL, data, &error);
+	unsol = g_ril_unsol_parse_data_call_list(NULL, data, &error);
 	g_assert(unsol != NULL);
 	g_ril_unsol_free_data_call_list(unsol);
 
@@ -172,7 +172,7 @@ static void test_unsol_data_call_list_changed_valid(gconstpointer data)
 	struct ofono_error error;
 	struct unsol_data_call_list *unsol;
 
-        unsol = g_ril_unsol_parse_data_call_list(NULL, data, &error);
+	unsol = g_ril_unsol_parse_data_call_list(NULL, data, &error);
 	g_assert(unsol != NULL);
 	g_ril_unsol_free_data_call_list(unsol);
 
