@@ -137,8 +137,6 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 	gboolean notify_status = FALSE;
 	int old_status;
 
-	DBG("");
-
 	if (message->error != RIL_E_SUCCESS) {
 		ofono_error("%s: DATA_REGISTRATION_STATE reply failure: %s",
 				__func__,
@@ -215,6 +213,8 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 		 * This callback is a result of the inital call
 		 * to probe(), so should return after registration.
 		 */
+		g_free(reply);
+
 		return;
 	}
 
