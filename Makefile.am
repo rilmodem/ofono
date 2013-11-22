@@ -487,6 +487,9 @@ builtin_sources += plugins/samsung.c
 builtin_modules += sim900
 builtin_sources += plugins/sim900.c
 
+builtin_modules += connman
+builtin_sources += plugins/connman.c
+
 if BLUETOOTH
 if BLUEZ4
 builtin_modules += bluez4
@@ -506,9 +509,6 @@ builtin_sources += plugins/hfp_ag_bluez4.c plugins/bluez4.h
 
 builtin_modules += dun_gw_bluez4
 builtin_sources += plugins/dun_gw_bluez4.c plugins/bluez4.h
-
-builtin_modules += connman
-builtin_sources += plugins/connman.c
 
 builtin_sources += $(btio_sources)
 builtin_cflags += @BLUEZ_CFLAGS@
