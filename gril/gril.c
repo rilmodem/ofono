@@ -464,23 +464,30 @@ static void dispatch(struct ril_s *p, struct ril_msg *message)
 	/* advance to start of data.. */
 	bufp += 4;
 
-	/* Now, allocate new buffer for data only, copy from
-	 * original, and free the original...
+	/*
+	 * Now, use buffer for event data if present
 	 */
 	if (data_len) {
 		datap = g_try_malloc(data_len);
 		if (datap == NULL)
 			goto error;
 
-		/* Copy bytes into new buffer */
-		memmove(datap, (const void *) bufp, data_len);
+		/* Copy event bytes from message->buf into new buffer */
+		memcpy(datap, bufp, data_len);
 
-		/* Free old buffer */
+		/* Free buffer that includes header */
 		g_free(message->buf);
 
 		/* ...and replace with new buffer */
 		message->buf = datap;
 		message->buf_len = data_len;
+	} else {
+		/* Free buffer that includes header */
+		g_free(message->buf);
+
+		/* To know if there was no data when parsing */
+		message->buf = NULL;
+		message->buf_len = 0;
 	}
 
 	if (message->unsolicited == TRUE)
