@@ -93,26 +93,51 @@ static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
 	int flen = 0, rlen = 0, str = 0;
 	guchar access[3] = { 0x00, 0x00, 0x00 };
 	guchar file_status = EF_STATUS_VALID;
-	struct reply_sim_io *reply;
+	struct reply_sim_io *reply = NULL;
 
-	if (message->error == RIL_E_SUCCESS) {
-		decode_ril_error(&error, "OK");
-	} else {
-		ofono_error("Reply failure: %s",
+	/* Error, and no data */
+	if (message->error != RIL_E_SUCCESS && message->buf_len == 0) {
+		ofono_error("%s: Reply failure: %s", __func__,
 				ril_error_to_string(message->error));
 		decode_ril_error(&error, "FAIL");
 		goto error;
 	}
 
-	if ((reply = g_ril_reply_parse_sim_io(sd->ril, message))
-			== NULL) {
-		ofono_error("Can't parse SIM IO response from RILD");
+	/*
+	 * The reply can have event data even when message->error is not zero
+	 * in mako.
+	 */
+	reply = g_ril_reply_parse_sim_io(sd->ril, message);
+	if (reply == NULL) {
 		decode_ril_error(&error, "FAIL");
 		goto error;
 	}
 
 	sw1 = reply->sw1;
 	sw2 = reply->sw2;
+
+	/*
+	 * SIM app file not found || USIM app file not found
+	 * See 3gpp TS 51.011, 9.4.4, and ETSI TS 102 221, 10.2.1.5.3
+	 * This can happen with result SUCCESS (maguro) or GENERIC_FAILURE
+	 * (mako)
+	 */
+	if ((sw1 == 0x94 && sw2 == 0x04) || (sw1 == 0x6A && sw2 == 0x82)) {
+		DBG("File not found. Error %s",
+			ril_error_to_string(message->error));
+		decode_ril_error(&error, "FAIL");
+		goto error;
+	}
+
+	if (message->error == RIL_E_SUCCESS) {
+		decode_ril_error(&error, "OK");
+	} else {
+		ofono_error("%s: Reply failure: %s, %02x, %02x", __func__,
+				ril_error_to_string(message->error), sw1, sw2);
+		decode_ril_error(&error, "FAIL");
+		goto error;
+	}
+
 	if ((sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92 && sw1 != 0x9f) ||
 		(sw1 == 0x90 && sw2 != 0x00)) {
 		ofono_error("Error reply, invalid values: sw1: %02x sw2: %02x",
@@ -124,7 +149,7 @@ static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
 		error.type = OFONO_ERROR_TYPE_SIM;
 		error.error = (sw1 << 8) | sw2;
 
-		goto err_aft_reply;
+		goto error;
 	}
 
 	if (reply->hex_len) {
@@ -142,9 +167,9 @@ static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
 	}
 
 	if (!ok) {
-		ofono_error("parse response failed");
+		ofono_error("%s: parse response failed", __func__);
 		decode_ril_error(&error, "FAIL");
-		goto err_aft_reply;
+		goto error;
 	}
 
 	cb(&error, flen, str, rlen, access, file_status, cbd->data);
@@ -153,9 +178,9 @@ static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
 
 	return;
 
-err_aft_reply:
-	g_ril_reply_free_sim_io(reply);
 error:
+	g_ril_reply_free_sim_io(reply);
+
 	cb(&error, -1, -1, -1, NULL, EF_STATUS_INVALIDATED, cbd->data);
 }
 
@@ -170,6 +195,8 @@ static void ril_sim_read_info(struct ofono_sim *sim, int fileid,
 	struct req_sim_read_info req;
 	int request = RIL_REQUEST_SIM_IO;
 	guint ret = 0;
+
+	DBG("file %04x", fileid);
 
 	req.app_type = sd->app_type;
 	req.aid_str = sd->aid_str;
@@ -252,6 +279,8 @@ static void ril_sim_read_binary(struct ofono_sim *sim, int fileid,
 	int request = RIL_REQUEST_SIM_IO;
 	guint ret = 0;
 
+	DBG("file %04x", fileid);
+
 	req.app_type = sd->app_type;
 	req.aid_str = sd->aid_str;
 	req.fileid = fileid;
@@ -302,6 +331,8 @@ static void ril_sim_read_record(struct ofono_sim *sim, int fileid,
 	struct req_sim_read_record req;
 	int request = RIL_REQUEST_SIM_IO;
 	guint ret = 0;
+
+	DBG("file %04x", fileid);
 
 	req.app_type = sd->app_type;
 	req.aid_str = sd->aid_str;
