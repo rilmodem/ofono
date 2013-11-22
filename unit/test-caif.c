@@ -140,10 +140,8 @@ static void test_connect(gboolean use_socket)
 
 static void test_basic(void)
 {
-	if (g_test_trap_fork(60 * 1000 * 1000, 0) == TRUE) {
-		test_connect(TRUE);
-		exit(0);
-	}
+	g_test_trap_subprocess("/testcaif/basic:subprocess",
+				60 * 1000 * 1000, 0);
 
 	g_test_trap_assert_passed();
 	//g_test_trap_assert_stderr("failed");
@@ -151,13 +149,21 @@ static void test_basic(void)
 
 static void test_chnlat(void)
 {
-	if (g_test_trap_fork(60 * 1000 * 1000, 0) == TRUE) {
-		test_connect(FALSE);
-		exit(0);
-	}
+	g_test_trap_subprocess("/testcaif/chnlat:subprocess",
+				60 * 1000 * 1000, 0);
 
 	g_test_trap_assert_passed();
 	//g_test_trap_assert_stderr("failed");
+}
+
+static void test_connect_sock(void)
+{
+	test_connect(TRUE);
+}
+
+static void test_connect_no_sock(void)
+{
+	test_connect(FALSE);
 }
 
 int main(int argc, char **argv)
@@ -166,6 +172,10 @@ int main(int argc, char **argv)
 
 	g_test_add_func("/testcaif/basic", test_basic);
 	g_test_add_func("/testcaif/chnlat", test_chnlat);
+	g_test_add_func("/testcaif/basic:subprocess",
+			test_connect_sock);
+	g_test_add_func("/testcaif/chnlat:subprocess",
+			test_connect_no_sock);
 
 	return g_test_run();
 }
