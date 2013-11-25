@@ -268,6 +268,41 @@ static void sim_watch(struct ofono_atom *atom,
 	sim_state_watch(ofono_sim_get_state(sim), modem);
 }
 
+static void voicecall_watch(struct ofono_atom *atom,
+				enum ofono_atom_watch_condition cond,
+				void *data)
+{
+	struct ofono_atom *sim_atom;
+	struct ofono_sim *sim;
+	struct ofono_modem *modem;
+	DBusConnection *conn = ofono_dbus_get_connection();
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED)
+		return;
+
+	/*
+	 * This logic is only intended to handle voicecall atoms
+	 * registered in post_sim state or later
+	 */
+	modem = __ofono_atom_get_modem(atom);
+
+	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
+	if (sim_atom == NULL)
+		return;
+
+	sim = __ofono_atom_get_data(sim_atom);
+	if (ofono_sim_get_state(sim) != OFONO_SIM_STATE_READY)
+		return;
+
+	modems = g_list_append(modems, modem);
+
+	if (modems->next != NULL)
+		return;
+
+	bt_register_profile(conn, HFP_AG_UUID, HFP_VERSION_1_5, "hfp_ag",
+					HFP_AG_EXT_PROFILE_PATH, NULL, 0);
+}
+
 static void modem_watch(struct ofono_modem *modem, gboolean added, void *user)
 {
 	DBG("modem: %p, added: %d", modem, added);
@@ -277,6 +312,8 @@ static void modem_watch(struct ofono_modem *modem, gboolean added, void *user)
 
 	__ofono_modem_add_atom_watch(modem, OFONO_ATOM_TYPE_SIM,
 					sim_watch, modem, NULL);
+	__ofono_modem_add_atom_watch(modem, OFONO_ATOM_TYPE_VOICECALL,
+					voicecall_watch, modem, NULL);
 }
 
 static void call_modemwatch(struct ofono_modem *modem, void *user)
