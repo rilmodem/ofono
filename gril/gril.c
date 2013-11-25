@@ -985,7 +985,7 @@ static gboolean ril_unregister(struct ril_s *ril, gboolean mark_only,
 	return FALSE;
 }
 
-void g_ril_init_parcel(struct ril_msg *message, struct parcel *rilp)
+void g_ril_init_parcel(const struct ril_msg *message, struct parcel *rilp)
 {
 	/* Set up Parcel struct for proper parsing */
 	rilp->data = message->buf;

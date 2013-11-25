@@ -159,9 +159,7 @@ static void test_unsol_data_call_list_changed_invalid(gconstpointer data)
 	struct ofono_error error;
 	struct unsol_data_call_list *unsol;
 
-        unsol = g_ril_unsol_parse_data_call_list(NULL,
-						 (struct ril_msg *) data,
-						 &error);
+	unsol = g_ril_unsol_parse_data_call_list(NULL, data, &error);
 	g_assert(unsol != NULL);
 	g_ril_unsol_free_data_call_list(unsol);
 
@@ -174,9 +172,7 @@ static void test_unsol_data_call_list_changed_valid(gconstpointer data)
 	struct ofono_error error;
 	struct unsol_data_call_list *unsol;
 
-        unsol = g_ril_unsol_parse_data_call_list(NULL,
-						 (struct ril_msg *) data,
-						 &error);
+	unsol = g_ril_unsol_parse_data_call_list(NULL, data, &error);
 	g_assert(unsol != NULL);
 	g_ril_unsol_free_data_call_list(unsol);
 
@@ -188,7 +184,7 @@ static void test_unsol_response_new_sms_valid(gconstpointer data)
 {
 	struct unsol_sms_data *sms_data;
 
-	sms_data = g_ril_unsol_parse_new_sms(NULL, (struct ril_msg *) data);
+	sms_data = g_ril_unsol_parse_new_sms(NULL, data);
 
 	g_assert(sms_data != NULL);
 	g_assert(sms_data->data != NULL);

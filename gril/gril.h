@@ -91,7 +91,7 @@ extern char print_buf[];
 #define g_ril_print_unsol_no_args(gril, message)				\
         G_RIL_TRACE(gril, "[UNSOL]< %s", ril_unsol_request_to_string(message->req))
 
-void g_ril_init_parcel(struct ril_msg *message, struct parcel *rilp);
+void g_ril_init_parcel(const struct ril_msg *message, struct parcel *rilp);
 
 GRil *g_ril_new();
 

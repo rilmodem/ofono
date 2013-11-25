@@ -85,7 +85,7 @@ void g_ril_unsol_free_data_call_list(struct unsol_data_call_list *unsol)
 }
 
 struct unsol_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
-					struct ril_msg *message,
+					const struct ril_msg *message,
 					struct ofono_error *error)
 {
 	struct data_call *call;
@@ -164,8 +164,7 @@ error:
 	return reply;
 }
 
-
-char *g_ril_unsol_parse_nitz(GRil *gril, struct ril_msg *message)
+char *g_ril_unsol_parse_nitz(GRil *gril, const struct ril_msg *message)
 {
 	struct parcel rilp;
 	gchar *nitz = NULL;
@@ -198,7 +197,8 @@ void g_ril_unsol_free_sms_data(struct unsol_sms_data *unsol)
 	}
 }
 
-struct unsol_sms_data *g_ril_unsol_parse_new_sms(GRil *gril, struct ril_msg *message)
+struct unsol_sms_data *g_ril_unsol_parse_new_sms(GRil *gril,
+						const struct ril_msg *message)
 {
 	struct parcel rilp;
 	char *ril_pdu;
