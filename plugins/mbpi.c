@@ -176,6 +176,12 @@ static void apn_start(GMarkupParseContext *context, const gchar *element_name,
 	else if (g_str_equal(element_name, "password"))
 		g_markup_parse_context_push(context, &text_parser,
 						&apn->password);
+	else if (g_str_equal(element_name, "mmsc"))
+		g_markup_parse_context_push(context, &text_parser,
+						&apn->message_center);
+	else if (g_str_equal(element_name, "mmsproxy"))
+		g_markup_parse_context_push(context, &text_parser,
+						&apn->message_proxy);
 	else if (g_str_equal(element_name, "usage"))
 		usage_start(context, attribute_names, attribute_values,
 				&apn->type, error);
