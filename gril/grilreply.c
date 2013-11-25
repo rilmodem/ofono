@@ -577,6 +577,11 @@ struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
 	slac = parcel_r_string(&rilp);
 	sci = parcel_r_string(&rilp);
 	stech = parcel_r_string(&rilp);
+	/*
+	 * We must set a default value for the number of simultaneous calls
+	 * as some RIL implementations do not send this field (maguro).
+	 */
+	reply->max_cids = 1;
 
 	tmp -= 4;
 
