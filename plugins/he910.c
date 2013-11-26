@@ -204,12 +204,6 @@ static void cfun_enable_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_send(data->chat, "AT#AUTOATT=0", none_prefix,
 				NULL, NULL, NULL);
 
-	/* Follow sim state */
-	g_at_chat_register(data->chat, "#QSS:", he910_qss_notify,
-				FALSE, modem, NULL);
-
-	/* Enable sim state notification */
-	g_at_chat_send(data->chat, "AT#QSS=2", none_prefix, NULL, NULL, NULL);
 }
 
 static int he910_enable(struct ofono_modem *modem)
@@ -238,11 +232,12 @@ static int he910_enable(struct ofono_modem *modem)
 	g_at_chat_send(data->chat, "ATE0 +CMEE=1", none_prefix,
 				NULL, NULL, NULL);
 
-	/*
-	 * Disable sim state notification so that we sure get a notification
-	 * when we enable it again later and don't have to query it.
-	 */
-	g_at_chat_send(data->chat, "AT#QSS=0", none_prefix, NULL, NULL, NULL);
+	/* Follow sim state */
+	g_at_chat_register(data->chat, "#QSS:", he910_qss_notify,
+				FALSE, modem, NULL);
+
+	/* Enable sim state notification */
+	g_at_chat_send(data->chat, "AT#QSS=2", none_prefix, NULL, NULL, NULL);
 
 	/* Set phone functionality */
 	g_at_chat_send(data->chat, "AT+CFUN=1", none_prefix,
