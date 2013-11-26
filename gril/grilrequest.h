@@ -177,6 +177,10 @@ void g_ril_request_separate_conn(GRil *gril,
 void g_ril_request_set_supp_svc_notif(GRil *gril,
 					struct parcel *rilp);
 
+void g_ril_request_set_mute(GRil *gril,
+				int muted,
+				struct parcel *rilp);
+
 #ifdef __cplusplus
 }
 #endif
