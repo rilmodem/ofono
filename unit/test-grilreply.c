@@ -429,6 +429,44 @@ static const struct ril_msg reply_call_fail_cause_valid_1 = {
 	.error = 0,
 };
 
+/*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_GET_MUTE reply with the following parameters:
+ *
+ * {muted=0}
+ */
+static const guchar reply_get_mute_off_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_get_mute_off_1 = {
+	.buf = (gchar *) reply_get_mute_off_parcel1,
+	.buf_len = sizeof(reply_get_mute_off_parcel1),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_GET_MUTE,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_GET_MUTE reply with the following parameters:
+ *
+ * {muted=1}
+ */
+static const guchar reply_get_mute_on_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_get_mute_on_1 = {
+	.buf = (gchar *) reply_get_mute_on_parcel1,
+	.buf_len = sizeof(reply_get_mute_on_parcel1),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_GET_MUTE,
+	.serial_no = 0,
+	.error = 0,
+};
+
 static void test_reply_data_call_invalid(gconstpointer data)
 {
 	struct ofono_error error;
@@ -516,6 +554,24 @@ static void test_reply_call_fail_cause_valid(gconstpointer data)
 	reason = g_ril_reply_parse_call_fail_cause(NULL, data);
 
 	g_assert(reason >= 0);
+}
+
+static void test_reply_get_mute_off(gconstpointer data)
+{
+	int muted;
+
+	muted = g_ril_reply_parse_get_mute(NULL, data);
+
+	g_assert(muted == 0);
+}
+
+static void test_reply_get_mute_on(gconstpointer data)
+{
+	int muted;
+
+	muted = g_ril_reply_parse_get_mute(NULL, data);
+
+	g_assert(muted == 1);
 }
 
 int main(int argc, char **argv)
@@ -609,6 +665,16 @@ int main(int argc, char **argv)
 				"valid CALL_FAIL_CAUSE Test 1",
 				&reply_call_fail_cause_valid_1,
 				test_reply_call_fail_cause_valid);
+
+	g_test_add_data_func("/testgrilreply/call-volume: "
+				"off GET_MUTE Test 1",
+				&reply_get_mute_off_1,
+				test_reply_get_mute_off);
+
+	g_test_add_data_func("/testgrilreply/call-volume: "
+				"on GET_MUTE Test 1",
+				&reply_get_mute_on_1,
+				test_reply_get_mute_on);
 
 #endif
 

@@ -490,6 +490,31 @@ static const struct request_test_data set_supp_svc_notif_valid_test_1 = {
 	.parcel_size = sizeof(req_set_supp_svc_notif_parcel_valid_1),
 };
 
+/* set_mute tests */
+
+static const int mute_off = 0;
+static const int mute_on = 1;
+
+static const guchar req_set_mute_valid_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static const struct request_test_data set_mute_valid_test_1 = {
+	.request = &mute_off,
+	.parcel_data = (guchar *) &req_set_mute_valid_parcel1,
+	.parcel_size = sizeof(req_set_mute_valid_parcel1),
+};
+
+static const guchar req_set_mute_valid_parcel2[] = {
+	0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
+};
+
+static const struct request_test_data set_mute_valid_test_2 = {
+	.request = &mute_on,
+	.parcel_data = (guchar *) &req_set_mute_valid_parcel2,
+	.parcel_size = sizeof(req_set_mute_valid_parcel2),
+};
+
 /*
  * The following hexadecimal data represents a serialized Binder parcel
  * instance containing a valid RIL_REQUEST_RADIO_POWER 'OFF' message.
@@ -848,6 +873,20 @@ static void test_request_set_supp_svc_notif(gconstpointer data)
 	parcel_free(&rilp);
 }
 
+static void test_request_set_mute_valid(gconstpointer data)
+{
+	const struct request_test_data *test_data = data;
+	const int *muted = test_data->request;
+	struct parcel rilp;
+
+	g_ril_request_set_mute(NULL, *muted, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+				test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -1024,6 +1063,16 @@ int main(int argc, char **argv)
 				"valid SET_SUPP_SVC_NOTIF Test 1",
 				&set_supp_svc_notif_valid_test_1,
 				test_request_set_supp_svc_notif);
+
+	g_test_add_data_func("/testgrilrequest/call-volume: "
+				"valid SET_MUTE Test 1",
+				&set_mute_valid_test_1,
+				test_request_set_mute_valid);
+
+	g_test_add_data_func("/testgrilrequest/call-volume: "
+				"valid SET_MUTE Test 2",
+				&set_mute_valid_test_2,
+				test_request_set_mute_valid);
 
 #endif
 	return g_test_run();
