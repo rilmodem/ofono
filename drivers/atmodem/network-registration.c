@@ -1656,6 +1656,8 @@ static void cind_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	int min = 0;
 	int max = 0;
 	int tmp_min, tmp_max, invalid;
+	int i, len;
+	char buf[256];
 
 	if (!ok)
 		goto error;
@@ -1714,6 +1716,15 @@ static void cind_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	if (nd->signal_index == 0)
 		goto error;
+
+	/* Turn off all CIEV indicators except the signal indicator */
+	len = sprintf(buf, "AT+CIND=");
+
+	for (i = 1; i < index - 1; i++)
+		len += sprintf(buf + len, i == nd->signal_index ? "1," : "0,");
+
+	len += sprintf(buf + len, i == nd->signal_index ? "1" : "0");
+	g_at_chat_send(nd->chat, buf, NULL, NULL, NULL, NULL);
 
 	switch (nd->vendor) {
 	case OFONO_VENDOR_MBM:
