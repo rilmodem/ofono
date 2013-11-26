@@ -205,11 +205,13 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 				RIL_UNSOL_RESPONSE_VOICE_NETWORK_STATE_CHANGED,
 				ril_gprs_state_change, gprs);
 
-		if (reply->max_cids > gd->max_cids) {
-			DBG("Setting max cids to %d", reply->max_cids);
+		if (reply->max_cids)
 			gd->max_cids = reply->max_cids;
-			ofono_gprs_set_cid_range(gprs, 1, reply->max_cids);
-		}
+		else
+			gd->max_cids = 1;
+
+		DBG("Setting max cids to %d", gd->max_cids);
+		ofono_gprs_set_cid_range(gprs, 1, gd->max_cids);
 
 		/*
 		 * This callback is a result of the inital call
