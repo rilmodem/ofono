@@ -154,6 +154,27 @@ static const struct ril_msg unsol_response_new_sms_valid_2 = {
 	.error = 0,
 };
 
+/*
+ * The following hexadecimal data represents a serialized Binder parcel
+ * instance containing a valid RIL_UNSOL_SUPP_SVC_NOTIFICATION message
+ * with the following parameters:
+ *
+ * {1,2,0,0,} -> call has been put on hold
+ */
+static const guchar unsol_supp_svc_notif_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff
+};
+
+static const struct ril_msg unsol_supp_svc_notif_valid_1 = {
+	.buf = (gchar *) &unsol_supp_svc_notif_parcel1,
+	.buf_len = sizeof(unsol_supp_svc_notif_parcel1),
+	.unsolicited = TRUE,
+	.req = RIL_UNSOL_SUPP_SVC_NOTIFICATION,
+	.serial_no = 0,
+	.error = 0,
+};
+
 static void test_unsol_data_call_list_changed_invalid(gconstpointer data)
 {
 	struct ofono_error error;
@@ -193,6 +214,16 @@ static void test_unsol_response_new_sms_valid(gconstpointer data)
 	g_ril_unsol_free_sms_data(sms_data);
 }
 
+static void test_unsol_supp_svc_notif_valid(gconstpointer data)
+{
+	struct unsol_supp_svc_notif *unsol;
+
+	unsol = g_ril_unsol_parse_supp_svc_notif(NULL,
+						(struct ril_msg *) data);
+	g_assert(unsol != NULL);
+	g_ril_unsol_free_supp_svc_notif(unsol);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -204,25 +235,30 @@ int main(int argc, char **argv)
  * failures when run on PowerPC.
  */
 #if BYTE_ORDER == LITTLE_ENDIAN
-	g_test_add_data_func("/testgrilrequest/gprs-context: "
+	g_test_add_data_func("/testgrilunsol/gprs-context: "
 				"invalid DATA_CALL_LIST_CHANGED Test 1",
 				&unsol_data_call_list_changed_invalid_1,
 				test_unsol_data_call_list_changed_invalid);
 
-	g_test_add_data_func("/testgrilrequest/gprs-context: "
+	g_test_add_data_func("/testgrilunsol/gprs-context: "
 				"valid DATA_CALL_LIST_CHANGED Test 1",
 				&unsol_data_call_list_changed_valid_1,
 				test_unsol_data_call_list_changed_valid);
 
-	g_test_add_data_func("/testgrilrequest/sms: "
+	g_test_add_data_func("/testgrilunsol/sms: "
 				"valid RESPONSE_NEW_SMS Test 1",
 				&unsol_response_new_sms_valid_1,
 				test_unsol_response_new_sms_valid);
 
-	g_test_add_data_func("/testgrilrequest/sms: "
+	g_test_add_data_func("/testgrilunsol/sms: "
 				"valid RESPONSE_NEW_SMS Test 2",
 				&unsol_response_new_sms_valid_2,
 				test_unsol_response_new_sms_valid);
+
+	g_test_add_data_func("/testgrilunsol/voicecall: "
+				"valid SUPP_SVC_NOTIF Test 1",
+				&unsol_supp_svc_notif_valid_1,
+				test_unsol_supp_svc_notif_valid);
 
 #endif
 	return g_test_run();

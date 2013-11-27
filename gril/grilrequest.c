@@ -38,6 +38,7 @@
 #include "grilrequest.h"
 #include "simutil.h"
 #include "util.h"
+#include "common.h"
 
 /* DEACTIVATE_DATA_CALL request parameters */
 #define DEACTIVATE_DATA_CALL_NUM_PARAMS 2
@@ -635,4 +636,74 @@ void g_ril_request_set_smsc_address(GRil *gril,
 	parcel_w_string(rilp, number);
 
 	g_ril_append_print_buf(gril, "(%s)", number);
+}
+
+void g_ril_request_dial(GRil *gril,
+			const struct ofono_phone_number *ph,
+			enum ofono_clir_option clir,
+			struct parcel *rilp)
+{
+	parcel_init(rilp);
+
+	/* Number to dial */
+	parcel_w_string(rilp, phone_number_to_string(ph));
+	/* CLIR mode */
+	parcel_w_int32(rilp, clir);
+	/* USS, empty string */
+	/* TODO: Deal with USS properly */
+	parcel_w_int32(rilp, 0);
+	parcel_w_int32(rilp, 0);
+
+	g_ril_append_print_buf(gril, "(%s,%d,0,0)",
+				phone_number_to_string(ph),
+				clir);
+}
+
+void g_ril_request_hangup(GRil *gril,
+				unsigned call_id,
+				struct parcel *rilp)
+{
+	parcel_init(rilp);
+	parcel_w_int32(rilp, 1); /* Always 1 - AT+CHLD=1x */
+	parcel_w_int32(rilp, call_id);
+
+	g_ril_append_print_buf(gril, "(%u)", call_id);
+}
+
+void g_ril_request_dtmf(GRil *gril,
+			char dtmf_char,
+			struct parcel *rilp)
+{
+	char ril_dtmf[2];
+
+	parcel_init(rilp);
+	/* Ril wants just one character, but we need to send as string */
+	ril_dtmf[0] = dtmf_char;
+	ril_dtmf[1] = '\0';
+	parcel_w_string(rilp, ril_dtmf);
+
+	g_ril_append_print_buf(gril, "(%s)", ril_dtmf);
+}
+
+void g_ril_request_separate_conn(GRil *gril,
+					int call_id,
+					struct parcel *rilp)
+{
+	parcel_init(rilp);
+
+	/* Payload is an array that holds just one element */
+	parcel_w_int32(rilp, 1);
+	parcel_w_int32(rilp, call_id);
+
+	g_ril_append_print_buf(gril, "(%d)", call_id);
+}
+
+void g_ril_request_set_supp_svc_notif(GRil *gril,
+					struct parcel *rilp)
+{
+	parcel_init(rilp);
+	parcel_w_int32(rilp, 1); /* size of array */
+	parcel_w_int32(rilp, 1); /* notifications enabled */
+
+	g_ril_append_print_buf(gril, "(1)");
 }

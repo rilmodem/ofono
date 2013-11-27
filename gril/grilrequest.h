@@ -157,6 +157,26 @@ void g_ril_request_set_smsc_address(GRil *gril,
 					const struct ofono_phone_number *sca,
 					struct parcel *rilp);
 
+void g_ril_request_dial(GRil *gril,
+			const struct ofono_phone_number *ph,
+			enum ofono_clir_option clir,
+			struct parcel *rilp);
+
+void g_ril_request_hangup(GRil *gril,
+				unsigned call_id,
+				struct parcel *rilp);
+
+void g_ril_request_dtmf(GRil *gril,
+			char dtmf_char,
+			struct parcel *rilp);
+
+void g_ril_request_separate_conn(GRil *gril,
+					int call_id,
+					struct parcel *rilp);
+
+void g_ril_request_set_supp_svc_notif(GRil *gril,
+					struct parcel *rilp);
+
 #ifdef __cplusplus
 }
 #endif

@@ -354,6 +354,81 @@ static const struct ril_msg reply_get_smsc_address_valid_1 = {
 	.error = 0,
 };
 
+/*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_GET_CURRENT_CALLS reply with the following parameters:
+ *
+ * {[id=2,status=0,type=1,number=686732222,name=]
+ *  [id=1,status=1,type=1,number=917525555,name=]}
+ */
+static const guchar reply_get_current_calls_valid_parcel1[] = {
+	0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+	0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x09, 0x00, 0x00, 0x00, 0x36, 0x00, 0x38, 0x00, 0x36, 0x00, 0x37, 0x00,
+	0x33, 0x00, 0x32, 0x00, 0x32, 0x00, 0x32, 0x00, 0x32, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+	0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x09, 0x00, 0x00, 0x00, 0x39, 0x00, 0x31, 0x00, 0x37, 0x00, 0x35, 0x00,
+	0x32, 0x00, 0x35, 0x00, 0x35, 0x00, 0x35, 0x00, 0x35, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_get_current_calls_valid_1 = {
+	.buf = (gchar *) reply_get_current_calls_valid_parcel1,
+	.buf_len = sizeof(reply_get_current_calls_valid_parcel1),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_GET_CURRENT_CALLS,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/* RIL_REQUEST_GET_CURRENT_CALLS NULL reply */
+static const struct ril_msg reply_get_current_calls_invalid_1 = {
+	.buf = NULL,
+	.buf_len = 0,
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_GET_CURRENT_CALLS,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/* RIL_REQUEST_GET_CURRENT_CALLS no calls */
+static const guchar reply_get_current_calls_invalid_parcel2[] = {
+	0x00, 0x00, 0x00, 0x00,
+};
+
+static const struct ril_msg reply_get_current_calls_invalid_2 = {
+	.buf = (gchar *) reply_get_current_calls_invalid_parcel2,
+	.buf_len = sizeof(reply_get_current_calls_invalid_parcel2),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_GET_CURRENT_CALLS,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_LAST_CALL_FAIL_CAUSE reply with the following parameters:
+ *
+ * {16}
+ */
+static const guchar reply_call_fail_cause_valid_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_call_fail_cause_valid_1 = {
+	.buf = (gchar *) reply_call_fail_cause_valid_parcel1,
+	.buf_len = sizeof(reply_call_fail_cause_valid_parcel1),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_LAST_CALL_FAIL_CAUSE,
+	.serial_no = 0,
+	.error = 0,
+};
+
 static void test_reply_data_call_invalid(gconstpointer data)
 {
 	struct ofono_error error;
@@ -411,6 +486,36 @@ static void test_reply_get_smsc_address_valid(gconstpointer data)
 
 	g_assert(reply != NULL);
 	g_free(reply);
+}
+
+static void test_reply_get_current_calls_valid(gconstpointer data)
+{
+	GSList *calls;
+
+	calls = g_ril_reply_parse_get_calls(NULL, data);
+
+	g_assert(calls != NULL);
+
+	g_slist_foreach(calls, (GFunc) g_free, NULL);
+	g_slist_free(calls);
+}
+
+static void test_reply_get_current_calls_invalid(gconstpointer data)
+{
+	GSList *calls;
+
+	calls = g_ril_reply_parse_get_calls(NULL, data);
+
+	g_assert(calls == NULL);
+}
+
+static void test_reply_call_fail_cause_valid(gconstpointer data)
+{
+	enum ofono_disconnect_reason reason;
+
+	reason = g_ril_reply_parse_call_fail_cause(NULL, data);
+
+	g_assert(reason >= 0);
 }
 
 int main(int argc, char **argv)
@@ -484,6 +589,26 @@ int main(int argc, char **argv)
 				"valid GET_SMSC_ADDRESS Test 1",
 				&reply_get_smsc_address_valid_1,
 				test_reply_get_smsc_address_valid);
+
+	g_test_add_data_func("/testgrilreply/voicecall: "
+				"valid GET_CURRENT_CALLS Test 1",
+				&reply_get_current_calls_valid_1,
+				test_reply_get_current_calls_valid);
+
+	g_test_add_data_func("/testgrilreply/voicecall: "
+				"invalid GET_CURRENT_CALLS Test 1",
+				&reply_get_current_calls_invalid_1,
+				test_reply_get_current_calls_invalid);
+
+	g_test_add_data_func("/testgrilreply/voicecall: "
+				"invalid GET_CURRENT_CALLS Test 2",
+				&reply_get_current_calls_invalid_2,
+				test_reply_get_current_calls_invalid);
+
+	g_test_add_data_func("/testgrilreply/voicecall: "
+				"valid CALL_FAIL_CAUSE Test 1",
+				&reply_call_fail_cause_valid_1,
+				test_reply_call_fail_cause_valid);
 
 #endif
 
