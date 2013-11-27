@@ -405,6 +405,8 @@ static void configure_active_app(struct sim_data *sd,
 					struct reply_sim_app *app,
 					guint index)
 {
+	g_free(sd->aid_str);
+	g_free(sd->app_str);
 	sd->app_type = app->app_type;
 	sd->aid_str = g_strdup(app->aid_str);
 	sd->app_str = g_strdup(app->app_str);
@@ -803,6 +805,8 @@ static void ril_sim_remove(struct ofono_sim *sim)
 	ofono_sim_set_data(sim, NULL);
 
 	g_ril_unref(sd->ril);
+	g_free(sd->aid_str);
+	g_free(sd->app_str);
 	g_free(sd);
 }
 
