@@ -3,7 +3,7 @@
  *  oFono - Open Source Telephony - RIL Modem Support
  *
  *  Copyright (C) 2008-2011  Intel Corporation. All rights reserved.
- *  Copyright (C) 2012 Canonical Ltd.
+ *  Copyright (C) 2012-2013 Canonical Ltd.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -39,6 +39,7 @@
 #include "gril.h"
 
 #include "rilmodem.h"
+#include "grilreply.h"
 
 /*
  * TODO: The functions in this file are stubbed out, and
@@ -80,9 +81,9 @@ static void query_revision_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_devinfo_query_cb_t cb = cbd->cb;
+	GRil *ril = cbd->user;
 	struct ofono_error error;
-	struct parcel rilp;
-	gchar *revision;
+	char *revision;
 
 	if (message->error == RIL_E_SUCCESS) {
 		decode_ril_error(&error, "OK");
@@ -92,8 +93,7 @@ static void query_revision_cb(struct ril_msg *message, gpointer user_data)
 		return;
 	}
 
-	ril_util_init_parcel(message, &rilp);
-	revision = parcel_r_string(&rilp);
+	revision = g_ril_reply_parse_baseband_version(ril, message);
 
 	cb(&error, revision, cbd->data);
 
@@ -104,13 +104,13 @@ static void ril_query_revision(struct ofono_devinfo *info,
 				ofono_devinfo_query_cb_t cb,
 				void *data)
 {
-	struct cb_data *cbd = cb_data_new(cb, data, NULL);
 	GRil *ril = ofono_devinfo_get_data(info);
+	struct cb_data *cbd = cb_data_new(cb, data, ril);
 	int request = RIL_REQUEST_BASEBAND_VERSION;
 	int ret;
 
 	ret = g_ril_send(ril, request, NULL, 0,
-					query_revision_cb, cbd, g_free);
+				query_revision_cb, cbd, g_free);
 
 	g_ril_print_request_no_args(ril, ret, request);
 
@@ -124,8 +124,8 @@ static void query_serial_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_devinfo_query_cb_t cb = cbd->cb;
+	GRil *ril = cbd->user;
 	struct ofono_error error;
-	struct parcel rilp;
 	gchar *imei;
 
 	if (message->error == RIL_E_SUCCESS) {
@@ -136,9 +136,7 @@ static void query_serial_cb(struct ril_msg *message, gpointer user_data)
 		return;
 	}
 
-	ril_util_init_parcel(message, &rilp);
-
-	imei = parcel_r_string(&rilp);
+	imei = g_ril_reply_parse_baseband_version(ril, message);
 
 	cb(&error, imei, cbd->data);
 
@@ -149,8 +147,8 @@ static void ril_query_serial(struct ofono_devinfo *info,
 				ofono_devinfo_query_cb_t cb,
 				void *data)
 {
-	struct cb_data *cbd = cb_data_new(cb, data, NULL);
 	GRil *ril = ofono_devinfo_get_data(info);
+	struct cb_data *cbd = cb_data_new(cb, data, ril);
 	/* TODO: make it support both RIL_REQUEST_GET_IMEI (deprecated) and
 	 * RIL_REQUEST_DEVICE_IDENTITY depending on the rild version used */
 	int request = RIL_REQUEST_GET_IMEI;
@@ -188,16 +186,13 @@ static int ril_devinfo_probe(struct ofono_devinfo *info, unsigned int vendor,
 	ofono_devinfo_set_data(info, ril);
 
 	/*
-	 * TODO: analyze if capability check is needed
-	 * and/or timer should be adjusted.
-	 *
 	 * ofono_devinfo_register() needs to be called after
 	 * the driver has been set in ofono_devinfo_create(),
 	 * which calls this function.  Most other drivers make
 	 * some kind of capabilities query to the modem, and then
-	 * call register in the callback; we use a timer instead.
+	 * call register in the callback; we use an idle event instead.
 	 */
-	g_timeout_add_seconds(1, ril_delayed_register, info);
+	g_idle_add(ril_delayed_register, info);
 
 	return 0;
 }
