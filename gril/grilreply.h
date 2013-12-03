@@ -95,6 +95,11 @@ struct reply_sim_status {
 	struct reply_sim_app *apps[MAX_UICC_APPS];
 };
 
+struct reply_clir {
+	int status;
+	int provisioned;
+};
+
 void g_ril_reply_free_avail_ops(struct reply_avail_ops *reply);
 
 struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
@@ -143,6 +148,17 @@ char *g_ril_reply_parse_baseband_version(GRil *gril,
 
 char *g_ril_reply_parse_get_imei(GRil *gril,
 					const struct ril_msg *message);
+
+int g_ril_reply_parse_query_call_waiting(GRil *gril,
+						const struct ril_msg *message);
+
+int g_ril_reply_parse_query_clip(GRil *gril,
+					const struct ril_msg *message);
+
+void g_ril_reply_free_get_clir(struct reply_clir *rclir);
+
+struct reply_clir *g_ril_reply_parse_get_clir(GRil *gril,
+						const struct ril_msg *message);
 
 #ifdef __cplusplus
 }
