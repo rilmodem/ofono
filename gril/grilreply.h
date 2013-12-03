@@ -138,6 +138,12 @@ enum ofono_disconnect_reason g_ril_reply_parse_call_fail_cause(
 
 int g_ril_reply_parse_get_mute(GRil *gril, const struct ril_msg *message);
 
+char *g_ril_reply_parse_baseband_version(GRil *gril,
+						const struct ril_msg *message);
+
+char *g_ril_reply_parse_get_imei(GRil *gril,
+					const struct ril_msg *message);
+
 #ifdef __cplusplus
 }
 #endif
