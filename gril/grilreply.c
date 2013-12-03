@@ -1076,3 +1076,35 @@ int g_ril_reply_parse_get_mute(GRil *gril, const struct ril_msg *message)
 	return muted;
 
 }
+
+char *g_ril_reply_parse_baseband_version(GRil *gril,
+						const struct ril_msg *message)
+{
+	struct parcel rilp;
+	char *version;
+
+	g_ril_init_parcel(message, &rilp);
+
+	version = parcel_r_string(&rilp);
+
+	g_ril_append_print_buf(gril, "{%s}", version);
+	g_ril_print_response(gril, message);
+
+	return version;
+}
+
+char *g_ril_reply_parse_get_imei(GRil *gril,
+					const struct ril_msg *message)
+{
+	struct parcel rilp;
+	char *imei;
+
+	g_ril_init_parcel(message, &rilp);
+
+	imei = parcel_r_string(&rilp);
+
+	g_ril_append_print_buf(gril, "{%s}", imei);
+	g_ril_print_response(gril, message);
+
+	return imei;
+}
