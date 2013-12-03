@@ -467,6 +467,50 @@ static const struct ril_msg reply_get_mute_on_1 = {
 	.error = 0,
 };
 
+/*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_BASEBAND_VERSION reply with the following parameters:
+ *
+ * {M9615A-CEFWMAZM-2.0.1700.48}
+ */
+static const guchar reply_baseband_version_valid_parcel1[] = {
+	0x1b, 0x00, 0x00, 0x00, 0x4d, 0x00, 0x39, 0x00, 0x36, 0x00, 0x31, 0x00,
+	0x35, 0x00, 0x41, 0x00, 0x2d, 0x00, 0x43, 0x00, 0x45, 0x00, 0x46, 0x00,
+	0x57, 0x00, 0x4d, 0x00, 0x41, 0x00, 0x5a, 0x00, 0x4d, 0x00, 0x2d, 0x00,
+	0x32, 0x00, 0x2e, 0x00, 0x30, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x37, 0x00,
+	0x30, 0x00, 0x30, 0x00, 0x2e, 0x00, 0x34, 0x00, 0x38, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_baseband_version_valid_1 = {
+	.buf = (gchar *) reply_baseband_version_valid_parcel1,
+	.buf_len = sizeof(reply_baseband_version_valid_parcel1),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_BASEBAND_VERSION,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_GET_IMEI reply with the following parameters:
+ *
+ * {355136050779043}
+ */
+static const guchar reply_get_imei_valid_parcel1[] = {
+	0x0f, 0x00, 0x00, 0x00, 0x33, 0x00, 0x35, 0x00, 0x35, 0x00, 0x31, 0x00,
+	0x33, 0x00, 0x36, 0x00, 0x30, 0x00, 0x35, 0x00, 0x30, 0x00, 0x37, 0x00,
+	0x37, 0x00, 0x39, 0x00, 0x30, 0x00, 0x34, 0x00, 0x33, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_get_imei_valid_1 = {
+	.buf = (gchar *) reply_get_imei_valid_parcel1,
+	.buf_len = sizeof(reply_get_imei_valid_parcel1),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_GET_IMEI,
+	.serial_no = 0,
+	.error = 0,
+};
+
 static void test_reply_data_call_invalid(gconstpointer data)
 {
 	struct ofono_error error;
@@ -574,6 +618,28 @@ static void test_reply_get_mute_on(gconstpointer data)
 	g_assert(muted == 1);
 }
 
+static void test_reply_baseband_version_valid(gconstpointer data)
+{
+	char *version;
+
+	version = g_ril_reply_parse_baseband_version(NULL, data);
+
+	g_assert(version != NULL);
+
+	g_free(version);
+}
+
+static void test_reply_get_imei_valid(gconstpointer data)
+{
+	char *imei;
+
+	imei = g_ril_reply_parse_get_imei(NULL, data);
+
+	g_assert(imei != NULL);
+
+	g_free(imei);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -675,6 +741,16 @@ int main(int argc, char **argv)
 				"on GET_MUTE Test 1",
 				&reply_get_mute_on_1,
 				test_reply_get_mute_on);
+
+	g_test_add_data_func("/testgrilreply/devinfo: "
+				"valid BASEBAND_VERSION Test 1",
+				&reply_baseband_version_valid_1,
+				test_reply_baseband_version_valid);
+
+	g_test_add_data_func("/testgrilreply/devinfo: "
+				"valid GET_IMEI Test 1",
+				&reply_get_imei_valid_1,
+				test_reply_get_imei_valid);
 
 #endif
 
