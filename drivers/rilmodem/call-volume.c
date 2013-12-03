@@ -3,7 +3,7 @@
  *  oFono - Open Source Telephony
  *
  *  Copyright (C) 2008-2011  Intel Corporation. All rights reserved.
- *  Copyright (C) 2012 Canonical Ltd.
+ *  Copyright (C) 2012-2013 Canonical Ltd.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -42,6 +42,8 @@
 
 #include "rilmodem.h"
 #include "parcel.h"
+#include "grilrequest.h"
+#include "grilreply.h"
 
 struct cv_data {
 	GRil *ril;
@@ -69,7 +71,7 @@ static void volume_mute_cb(struct ril_msg *message, gpointer user_data)
 }
 
 static void ril_call_volume_mute(struct ofono_call_volume *cv, int muted,
-				ofono_call_volume_cb_t cb, void *data)
+					ofono_call_volume_cb_t cb, void *data)
 {
 	struct cv_data *cvd = ofono_call_volume_get_data(cv);
 	struct cb_data *cbd = cb_data_new(cb, data, cvd);
@@ -77,18 +79,15 @@ static void ril_call_volume_mute(struct ofono_call_volume *cv, int muted,
 	int request = RIL_REQUEST_SET_MUTE;
 	int ret;
 
-	DBG("");
-
-	parcel_init(&rilp);
-	parcel_w_int32(&rilp, 1);
-	parcel_w_int32(&rilp, muted);
 	DBG("Initial ril muted state: %d", muted);
-	ret = g_ril_send(cvd->ril, request, rilp.data,
-			rilp.size, volume_mute_cb, cbd, g_free);
-	parcel_free(&rilp);
 
-	g_ril_append_print_buf(cvd->ril, "(%d)", muted);
+	g_ril_request_set_mute(cvd->ril, muted, &rilp);
+
+	ret = g_ril_send(cvd->ril, request, rilp.data, rilp.size,
+				volume_mute_cb, cbd, g_free);
+
 	g_ril_print_request(cvd->ril, ret, request);
+	parcel_free(&rilp);
 
 	if (ret <= 0) {
 		ofono_error("Send RIL_REQUEST_SET_MUTE failed.");
@@ -101,22 +100,14 @@ static void probe_mute_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_call_volume *cv = user_data;
 	struct cv_data *cvd = ofono_call_volume_get_data(cv);
-	struct parcel rilp;
 	int muted;
 
 	if (message->error != RIL_E_SUCCESS) {
-		ofono_error("Could not retrive the ril mute state");
+		ofono_error("Could not retrieve the ril mute state");
 		return;
 	}
 
-	ril_util_init_parcel(message, &rilp);
-
-	/* skip length of int[] */
-	parcel_r_int32(&rilp);
-	muted = parcel_r_int32(&rilp);
-
-	g_ril_append_print_buf(cvd->ril, "{%d}", muted);
-	g_ril_print_response(cvd->ril, message);
+	muted = g_ril_reply_parse_get_mute(cvd->ril, message);
 
 	ofono_call_volume_set_muted(cv, muted);
 }
@@ -148,7 +139,7 @@ static gboolean ril_delayed_register(gpointer user_data)
 }
 
 static int ril_call_volume_probe(struct ofono_call_volume *cv,
-				unsigned int vendor, void *data)
+					unsigned int vendor, void *data)
 {
 	GRil *ril = data;
 	struct cv_data *cvd;
@@ -162,17 +153,14 @@ static int ril_call_volume_probe(struct ofono_call_volume *cv,
 
 	ofono_call_volume_set_data(cv, cvd);
 
-        /*
-	 * TODO: analyze if capability check is needed
-	 * and/or timer should be adjusted.
-	 *
+	/*
 	 * ofono_call_volume_register() needs to be called after
 	 * the driver has been set in ofono_call_volume_create(),
 	 * which calls this function.  Most other drivers make
-         * some kind of capabilities query to the modem, and then
-	 * call register in the callback; we use a timer instead.
+	 * some kind of capabilities query to the modem, and then
+	 * call register in the callback; we use an idle event instead.
 	 */
-	g_timeout_add_seconds(2, ril_delayed_register, cv);
+	g_idle_add(ril_delayed_register, cv);
 
 	return 0;
 }

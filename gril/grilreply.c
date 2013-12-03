@@ -1058,3 +1058,21 @@ enum ofono_disconnect_reason g_ril_reply_parse_call_fail_cause(
 
 	return reason;
 }
+
+int g_ril_reply_parse_get_mute(GRil *gril, const struct ril_msg *message)
+{
+	struct parcel rilp;
+	int muted;
+
+	g_ril_init_parcel(message, &rilp);
+
+	/* skip length of int[] */
+	parcel_r_int32(&rilp);
+	muted = parcel_r_int32(&rilp);
+
+	g_ril_append_print_buf(gril, "{%d}", muted);
+	g_ril_print_response(gril, message);
+
+	return muted;
+
+}
