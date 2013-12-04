@@ -63,6 +63,7 @@ void hfp_slc_info_init(struct hfp_slc_info *info, guint16 version)
 	info->hf_features |= HFP_HF_FEATURE_3WAY;
 	info->hf_features |= HFP_HF_FEATURE_CLIP;
 	info->hf_features |= HFP_HF_FEATURE_REMOTE_VOLUME_CONTROL;
+	info->hf_features |= HFP_HF_FEATURE_VOICE_RECOGNITION;
 
 	if (version < HFP_VERSION_1_5)
 		goto done;
