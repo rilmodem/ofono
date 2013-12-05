@@ -53,6 +53,7 @@ void parcel_init(struct parcel *p)
 	p->size = 0;
 	p->capacity = sizeof(int32_t);
 	p->offset = 0;
+	p->malformed = 0;
 }
 
 void parcel_grow(struct parcel *p, size_t size)
@@ -73,6 +74,16 @@ void parcel_free(struct parcel *p)
 int32_t parcel_r_int32(struct parcel *p)
 {
 	int32_t ret;
+
+	if (p->malformed)
+		return 0;
+
+	if (p->offset + sizeof(int32_t) > p->size) {
+		ofono_error("%s: parcel is too small", __func__);
+		p->malformed = 1;
+		return 0;
+	}
+
 	ret = *((int32_t *) (void *) (p->data + p->offset));
 	p->offset += sizeof(int32_t);
 	return ret;
@@ -81,9 +92,6 @@ int32_t parcel_r_int32(struct parcel *p)
 int parcel_w_int32(struct parcel *p, int32_t val)
 {
 	for (;;) {
-
-		DBG("parcel_w_int32(%d): offset = %d, cap = %d, size = %d\n",
-		    val, (int) p->offset, (int) p->capacity, (int) p->size);
 
 		if (p->offset + sizeof(int32_t) < p->capacity) {
 			/* There's enough space */
@@ -122,8 +130,6 @@ int parcel_w_string(struct parcel *p, const char *str)
 	for (;;) {
 		size_t padded = PAD_SIZE(len);
 
-		DBG("parcel_w_string(\"%s\"): len %d offset %d, cap %d, size %d",
-		    str, (int) len, (int) p->offset, (int) p->capacity, (int) p->size);
 		if (p->offset + len < p->capacity) {
 			/* There's enough space */
 			memcpy(p->data + p->offset, gs16, gs16_size);
@@ -146,9 +152,6 @@ int parcel_w_string(struct parcel *p, const char *str)
 				};
 #endif
 
-				DBG("Writing %d bytes, padded to %d\n",
-				    (int) len, (int) padded);
-
 				*((uint32_t*) (void *)
 					(p->data + p->offset - 4)) &=
 							mask[padded - len];
@@ -169,17 +172,31 @@ char* parcel_r_string(struct parcel *p)
 {
 	char *ret;
 	int len16 = parcel_r_int32(p);
+	int strbytes;
+
+	if (p->malformed)
+		return NULL;
 
 	/* This is how a null string is sent */
 	if (len16 < 0)
 		return NULL;
 
+	strbytes = PAD_SIZE((len16 + 1) * sizeof(char16_t));
+	if (p->offset + strbytes > p->size) {
+		ofono_error("%s: parcel is too small", __func__);
+		p->malformed = 1;
+		return NULL;
+	}
+
 	ret = g_utf16_to_utf8((gunichar2 *) (void *) (p->data + p->offset),
 				len16, NULL, NULL, NULL);
-	if (ret == NULL)
+	if (ret == NULL) {
+		ofono_error("%s: wrong UTF16 coding", __func__);
+		p->malformed = 1;
 		return NULL;
+	}
 
-	p->offset += PAD_SIZE((len16 + 1) * sizeof(char16_t));
+	p->offset += strbytes;
 
 	return ret;
 }
