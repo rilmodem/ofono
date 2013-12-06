@@ -166,6 +166,7 @@ void ril_util_init_parcel(struct ril_msg *message, struct parcel *rilp)
 	rilp->size = message->buf_len;
 	rilp->capacity = message->buf_len;
 	rilp->offset = 0;
+	rilp->malformed = 0;
 }
 
 struct ril_util_sim_state_query *ril_util_sim_state_query_new(GRil *ril,

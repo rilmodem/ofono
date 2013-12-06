@@ -29,6 +29,7 @@ struct parcel {
 	size_t offset;
 	size_t capacity;
 	size_t size;
+	int malformed;
 };
 
 void parcel_init(struct parcel *p);

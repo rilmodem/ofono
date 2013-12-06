@@ -999,6 +999,7 @@ void g_ril_init_parcel(const struct ril_msg *message, struct parcel *rilp)
 	rilp->size = message->buf_len;
 	rilp->capacity = message->buf_len;
 	rilp->offset = 0;
+	rilp->malformed = 0;
 }
 
 GRil *g_ril_new()
