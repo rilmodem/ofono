@@ -74,6 +74,9 @@ void g_ril_unsol_free_sms_data(struct unsol_sms_data *unsol);
 struct unsol_sms_data *g_ril_unsol_parse_new_sms(GRil *gril,
 						const struct ril_msg *message);
 
+int g_ril_unsol_parse_signal_strength(GRil *gril,
+					const struct ril_msg *message);
+
 void g_ril_unsol_free_supp_svc_notif(struct unsol_supp_svc_notif *unsol);
 
 struct unsol_supp_svc_notif *g_ril_unsol_parse_supp_svc_notif(GRil *gril,
