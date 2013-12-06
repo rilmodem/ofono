@@ -377,14 +377,9 @@ static void ril_strength_notify(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	int strength;
+	int strength = g_ril_unsol_parse_signal_strength(nd->ril, message);
 
-	g_assert(message->req == RIL_UNSOL_SIGNAL_STRENGTH);
-
-	strength = ril_util_get_signal(nd->ril, message);
 	ofono_netreg_strength_notify(netreg, strength);
-
-	return;
 }
 
 static void ril_strength_cb(struct ril_msg *message, gpointer user_data)
@@ -402,7 +397,8 @@ static void ril_strength_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	strength = ril_util_get_signal(nd->ril, message);
+	/* The g_ril_unsol* function handles both reply & unsolicited */
+	strength = g_ril_unsol_parse_signal_strength(nd->ril, message);
 	cb(&error, strength, cbd->data);
 
 	return;

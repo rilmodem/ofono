@@ -24,8 +24,6 @@
 
 #include <stdio.h>
 
-#include "parcel.h"
-
 /* TODO: create a table lookup*/
 #define PREFIX_30_NETMASK "255.255.255.252"
 #define PREFIX_29_NETMASK "255.255.255.248"
@@ -95,7 +93,6 @@ gint ril_util_call_compare_by_phone_number(gconstpointer a, gconstpointer b);
 gint ril_util_call_compare_by_id(gconstpointer a, gconstpointer b);
 gint ril_util_call_compare(gconstpointer a, gconstpointer b);
 gchar *ril_util_get_netmask(const char *address);
-void ril_util_init_parcel(struct ril_msg *message, struct parcel *rilp);
 
 struct ril_util_sim_state_query *ril_util_sim_state_query_new(GRil *ril,
 						guint interval, guint num_times,
@@ -103,8 +100,6 @@ struct ril_util_sim_state_query *ril_util_sim_state_query_new(GRil *ril,
 						void *userdata,
 						GDestroyNotify destroy);
 void ril_util_sim_state_query_free(struct ril_util_sim_state_query *req);
-
-gint ril_util_get_signal(GRil *gril, struct ril_msg *message);
 
 struct cb_data {
 	void *cb;
