@@ -223,7 +223,7 @@ static struct ril_request *ril_request_create(struct ril_s *ril,
 						guint gid,
 						const gint req,
 						const gint id,
-						char *rilp,
+						struct parcel *rilp,
 						GRilResponseFunc func,
 						gpointer user_data,
 						GDestroyNotify notify,
@@ -1071,7 +1071,7 @@ GRil *g_ril_ref(GRil *ril)
 	return ril;
 }
 
-gint g_ril_send(GRil *ril, const gint reqid, parcel *rilp,
+gint g_ril_send(GRil *ril, const gint reqid, struct parcel *rilp,
 		GRilResponseFunc func, gpointer user_data,
 		GDestroyNotify notify)
 {

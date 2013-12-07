@@ -193,7 +193,6 @@ static void ril_sim_read_info(struct ofono_sim *sim, int fileid,
 	struct cb_data *cbd = cb_data_new(cb, data, sd);
 	struct parcel rilp;
 	struct req_sim_read_info req;
-	int request = RIL_REQUEST_SIM_IO;
 	guint ret = 0;
 
 	DBG("file %04x", fileid);
@@ -211,19 +210,13 @@ static void ril_sim_read_info(struct ofono_sim *sim, int fileid,
 		goto error;
 	}
 
-	ret = g_ril_send(sd->ril,
-				request,
-				rilp.data,
-				rilp.size,
-				ril_file_info_cb, cbd, g_free);
-
 	g_ril_append_print_buf(sd->ril,
 				"%s0,0,15,(null),pin2=(null),aid=%s)",
 				print_buf,
 				sd->aid_str);
-	g_ril_print_request(sd->ril, ret, request);
 
-	parcel_free(&rilp);
+	ret = g_ril_send(sd->ril, RIL_REQUEST_SIM_IO, &rilp,
+				ril_file_info_cb, cbd, g_free);
 
 error:
 	if (ret == 0) {
@@ -276,8 +269,7 @@ static void ril_sim_read_binary(struct ofono_sim *sim, int fileid,
 	struct cb_data *cbd = cb_data_new(cb, data, sd);
 	struct parcel rilp;
 	struct req_sim_read_binary req;
-	int request = RIL_REQUEST_SIM_IO;
-	guint ret = 0;
+	gint ret = 0;
 
 	DBG("file %04x", fileid);
 
@@ -296,12 +288,6 @@ static void ril_sim_read_binary(struct ofono_sim *sim, int fileid,
 		goto error;
 	}
 
-	ret = g_ril_send(sd->ril,
-				request,
-				rilp.data,
-				rilp.size,
-				ril_file_io_cb, cbd, g_free);
-
 	g_ril_append_print_buf(sd->ril,
 				"%s%d,%d,%d,(null),pin2=(null),aid=%s)",
 				print_buf,
@@ -309,10 +295,9 @@ static void ril_sim_read_binary(struct ofono_sim *sim, int fileid,
 				(start & 0xff),
 				length,
 				sd->aid_str);
-	g_ril_print_request(sd->ril, ret, request);
 
-	parcel_free(&rilp);
-
+	ret = g_ril_send(sd->ril, RIL_REQUEST_SIM_IO, &rilp,
+				ril_file_io_cb, cbd, g_free);
 error:
 	if (ret == 0) {
 		g_free(cbd);
@@ -329,7 +314,6 @@ static void ril_sim_read_record(struct ofono_sim *sim, int fileid,
 	struct cb_data *cbd = cb_data_new(cb, data, sd);
 	struct parcel rilp;
 	struct req_sim_read_record req;
-	int request = RIL_REQUEST_SIM_IO;
 	guint ret = 0;
 
 	DBG("file %04x", fileid);
@@ -349,12 +333,6 @@ static void ril_sim_read_record(struct ofono_sim *sim, int fileid,
 		goto error;
 	}
 
-	ret = g_ril_send(sd->ril,
-				request,
-				rilp.data,
-				rilp.size,
-				ril_file_io_cb, cbd, g_free);
-
 	g_ril_append_print_buf(sd->ril,
 				"%s%d,%d,%d,(null),pin2=(null),aid=%s)",
 				print_buf,
@@ -362,9 +340,9 @@ static void ril_sim_read_record(struct ofono_sim *sim, int fileid,
 				4,
 				length,
 				sd->aid_str);
-	g_ril_print_request(sd->ril, ret, request);
 
-	parcel_free(&rilp);
+	ret = g_ril_send(sd->ril, RIL_REQUEST_SIM_IO, &rilp,
+				ril_file_io_cb, cbd, g_free);
 
 error:
 	if (ret == 0) {
@@ -412,21 +390,11 @@ static void ril_read_imsi(struct ofono_sim *sim, ofono_sim_imsi_cb_t cb,
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data, sd);
 	struct parcel rilp;
-	int request = RIL_REQUEST_GET_IMSI;
-	guint ret;
 
-	g_ril_request_read_imsi(sd->ril,
-				sd->aid_str,
-				&rilp);
+	g_ril_request_read_imsi(sd->ril, sd->aid_str, &rilp);
 
-	ret = g_ril_send(sd->ril, request,
-				rilp.data, rilp.size, ril_imsi_cb, cbd, g_free);
-
-	g_ril_print_request(sd->ril, ret, request);
-
-	parcel_free(&rilp);
-
-	if (ret == 0) {
+	if (g_ril_send(sd->ril, RIL_REQUEST_GET_IMSI, &rilp,
+			ril_imsi_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, NULL, data);
 	}
@@ -554,18 +522,12 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 }
 
 
-static int send_get_sim_status(struct ofono_sim *sim)
+static void send_get_sim_status(struct ofono_sim *sim)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	int request = RIL_REQUEST_GET_SIM_STATUS;
-	guint ret;
 
-	ret = g_ril_send(sd->ril, request,
-				NULL, 0, sim_status_cb, sim, NULL);
-
-	g_ril_print_request_no_args(sd->ril, ret, request);
-
-	return ret;
+	g_ril_send(sd->ril, RIL_REQUEST_GET_SIM_STATUS, NULL,
+			sim_status_cb, sim, NULL);
 }
 
 static void ril_sim_status_changed(struct ril_msg *message, gpointer user_data)
@@ -637,8 +599,6 @@ static void ril_pin_send(struct ofono_sim *sim, const char *passwd,
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data, sd);
 	struct parcel rilp;
-	int request = RIL_REQUEST_ENTER_SIM_PIN;
-	int ret;
 
 	sd->passwd_type = OFONO_SIM_PASSWORD_SIM_PIN;
 
@@ -647,15 +607,8 @@ static void ril_pin_send(struct ofono_sim *sim, const char *passwd,
 				sd->aid_str,
 				&rilp);
 
-	ret = g_ril_send(sd->ril, request,
-				rilp.data, rilp.size, ril_pin_change_state_cb,
-				cbd, g_free);
-
-	g_ril_print_request(sd->ril, ret, request);
-
-	parcel_free(&rilp);
-
-	if (ret == 0) {
+	if (g_ril_send(sd->ril, RIL_REQUEST_ENTER_SIM_PIN, &rilp,
+			ril_pin_change_state_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, data);
 	}
@@ -670,7 +623,6 @@ static void ril_pin_change_state(struct ofono_sim *sim,
 	struct cb_data *cbd = cb_data_new(cb, data, sd);
 	struct parcel rilp;
 	struct req_pin_change_state req;
-	int request = RIL_REQUEST_SET_FACILITY_LOCK;
 	int ret = 0;
 
 	sd->passwd_type = passwd_type;
@@ -687,13 +639,8 @@ static void ril_pin_change_state(struct ofono_sim *sim,
 		goto error;
 	}
 
-	ret = g_ril_send(sd->ril, request,
-				rilp.data, rilp.size, ril_pin_change_state_cb,
-				cbd, g_free);
-
-	g_ril_print_request(sd->ril, ret, request);
-
-	parcel_free(&rilp);
+	ret = g_ril_send(sd->ril, RIL_REQUEST_SET_FACILITY_LOCK, &rilp,
+				ril_pin_change_state_cb, cbd, g_free);
 
 error:
 	if (ret == 0) {
@@ -709,8 +656,6 @@ static void ril_pin_send_puk(struct ofono_sim *sim,
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data, sd);
 	struct parcel rilp;
-	int request = RIL_REQUEST_ENTER_SIM_PUK;
-	int ret = 0;
 
 	sd->passwd_type = OFONO_SIM_PASSWORD_SIM_PUK;
 
@@ -720,15 +665,8 @@ static void ril_pin_send_puk(struct ofono_sim *sim,
 					sd->aid_str,
 					&rilp);
 
-	ret = g_ril_send(sd->ril, request,
-			rilp.data, rilp.size, ril_pin_change_state_cb,
-			cbd, g_free);
-
-	g_ril_print_request(sd->ril, ret, request);
-
-	parcel_free(&rilp);
-
-	if (ret == 0) {
+	if (g_ril_send(sd->ril, RIL_REQUEST_ENTER_SIM_PUK, &rilp,
+			ril_pin_change_state_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, data);
 	}
@@ -743,7 +681,6 @@ static void ril_change_passwd(struct ofono_sim *sim,
 	struct cb_data *cbd = cb_data_new(cb, data, sd);
 	struct parcel rilp;
 	int request = RIL_REQUEST_CHANGE_SIM_PIN;
-	int ret = 0;
 
 	sd->passwd_type = passwd_type;
 
@@ -756,14 +693,8 @@ static void ril_change_passwd(struct ofono_sim *sim,
 	if (passwd_type == OFONO_SIM_PASSWORD_SIM_PIN2)
 		request = RIL_REQUEST_CHANGE_SIM_PIN2;
 
-	ret = g_ril_send(sd->ril, request, rilp.data, rilp.size,
-			ril_pin_change_state_cb, cbd, g_free);
-
-	g_ril_print_request(sd->ril, ret, request);
-
-	parcel_free(&rilp);
-
-	if (ret == 0) {
+	if (g_ril_send(sd->ril, request, &rilp, ril_pin_change_state_cb,
+			cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, data);
 	}

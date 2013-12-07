@@ -262,17 +262,11 @@ static void ril_gprs_registration_status(struct ofono_gprs *gprs,
 {
 	struct gprs_data *gd = ofono_gprs_get_data(gprs);
 	struct cb_data *cbd = cb_data_new(cb, data, gprs);
-	int request = RIL_REQUEST_DATA_REGISTRATION_STATE;
-	gint ret;
 
 	DBG("");
 
-	ret = g_ril_send(gd->ril, request,
-				NULL, 0, ril_data_reg_cb, cbd, g_free);
-
-	g_ril_print_request_no_args(gd->ril, ret, request);
-
-	if (!ret) {
+	if (g_ril_send(gd->ril, RIL_REQUEST_DATA_REGISTRATION_STATE, NULL,
+			ril_data_reg_cb, cbd, g_free) == 0) {
 		ofono_error("%s: send "
 				"RIL_REQUEST_DATA_REGISTRATION_STATE failed",
 				__func__);

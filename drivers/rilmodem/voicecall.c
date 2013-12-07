@@ -111,6 +111,7 @@ static void clcc_poll_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	int reqid = RIL_REQUEST_LAST_CALL_FAIL_CAUSE;
 	GSList *calls;
 	GSList *n, *o;
 	struct ofono_call *nc, *oc;
@@ -140,14 +141,13 @@ static void clcc_poll_cb(struct ril_msg *message, gpointer user_data)
 				/* Get disconnect cause before calling core */
 				struct lastcause_req *reqdata =
 					g_try_new0(struct lastcause_req, 1);
-				if (reqdata) {
-					int req;
-					req = RIL_REQUEST_LAST_CALL_FAIL_CAUSE;
+				if (reqdata != NULL) {
 					reqdata->vc = user_data;
 					reqdata->id = oc->id;
-					g_ril_send(vd->ril, req,
-							NULL, 0, lastcause_cb,
-							reqdata, g_free);
+
+					g_ril_send(vd->ril, reqid, NULL,
+							lastcause_cb, reqdata,
+							g_free);
 				}
 			}
 
@@ -221,13 +221,9 @@ static gboolean poll_clcc(gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	int request = RIL_REQUEST_GET_CURRENT_CALLS;
-	int ret;
 
-	ret = g_ril_send(vd->ril, request, NULL,
-			0, clcc_poll_cb, vc, NULL);
-
-	g_ril_print_request_no_args(vd->ril, ret, request);
+	g_ril_send(vd->ril, RIL_REQUEST_GET_CURRENT_CALLS, NULL,
+			clcc_poll_cb, vc, NULL);
 
 	vd->clcc_source = 0;
 
@@ -239,8 +235,6 @@ static void generic_cb(struct ril_msg *message, gpointer user_data)
 	struct change_state_req *req = user_data;
 	struct voicecall_data *vd = ofono_voicecall_get_data(req->vc);
 	struct ofono_error error;
-	int request = RIL_REQUEST_GET_CURRENT_CALLS;
-	int ret;
 
 	if (message->error == RIL_E_SUCCESS) {
 		decode_ril_error(&error, "OK");
@@ -264,10 +258,8 @@ static void generic_cb(struct ril_msg *message, gpointer user_data)
 	}
 
 out:
-	ret = g_ril_send(vd->ril, request, NULL,
-				0, clcc_poll_cb, req->vc, NULL);
-
-	g_ril_print_request_no_args(vd->ril, ret, request);
+	g_ril_send(vd->ril, RIL_REQUEST_GET_CURRENT_CALLS, NULL,
+			clcc_poll_cb, req->vc, NULL);
 
 	/* We have to callback after we schedule a poll if required */
 	if (req->cb)
@@ -276,8 +268,7 @@ out:
 
 static int ril_template(const guint rreq, struct ofono_voicecall *vc,
 			GRilResponseFunc func, unsigned int affected_types,
-			gpointer pdata, const gsize psize,
-			ofono_voicecall_cb_t cb, void *data)
+			gpointer pdata, ofono_voicecall_cb_t cb, void *data)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct change_state_req *req = g_try_new0(struct change_state_req, 1);
@@ -291,7 +282,7 @@ static int ril_template(const guint rreq, struct ofono_voicecall *vc,
 	req->data = data;
 	req->affected_types = affected_types;
 
-	ret = g_ril_send(vd->ril, rreq, pdata, psize, func, req, g_free);
+	ret = g_ril_send(vd->ril, rreq, pdata, func, req, g_free);
 	if (ret > 0)
 		return ret;
 error:
@@ -356,21 +347,12 @@ static void ril_dial(struct ofono_voicecall *vc,
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct cb_data *cbd = cb_data_new(cb, data, vc);
 	struct parcel rilp;
-	int request = RIL_REQUEST_DIAL;
-	int ret;
 
 	g_ril_request_dial(vd->ril, ph, clir, &rilp);
 
 	/* Send request to RIL */
-	ret = g_ril_send(vd->ril, request, rilp.data,
-				rilp.size, rild_cb, cbd, g_free);
-
-	g_ril_print_request(vd->ril, ret, request);
-
-	parcel_free(&rilp);
-
-	/* In case of error free cbd and return the cb with failure */
-	if (ret <= 0) {
+	if (g_ril_send(vd->ril, RIL_REQUEST_DIAL, &rilp,
+			rild_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, data);
 	}
@@ -384,8 +366,6 @@ static void ril_hangup_all(struct ofono_voicecall *vc,
 	struct ofono_error error;
 	struct ofono_call *call;
 	GSList *l;
-	int request = RIL_REQUEST_HANGUP;
-	int ret;
 
 	for (l = vd->calls; l; l = l->next) {
 		call = l->data;
@@ -394,12 +374,8 @@ static void ril_hangup_all(struct ofono_voicecall *vc,
 		g_ril_request_hangup(vd->ril, call->id, &rilp);
 
 		/* Send request to RIL */
-		ret = ril_template(request, vc, generic_cb, AFFECTED_STATES_ALL,
-					rilp.data, rilp.size, NULL, NULL);
-
-		g_ril_print_request(vd->ril, ret, request);
-
-		parcel_free(&rilp);
+		ril_template(RIL_REQUEST_HANGUP, vc, generic_cb,
+				AFFECTED_STATES_ALL, &rilp, NULL, NULL);
 	}
 
 	/* TODO: Deal in case of an error at hungup */
@@ -412,20 +388,14 @@ static void ril_hangup_specific(struct ofono_voicecall *vc,
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct parcel rilp;
-	int request = RIL_REQUEST_HANGUP;
-	int ret;
 
 	DBG("Hanging up call with id %d", id);
 
 	g_ril_request_hangup(vd->ril, id, &rilp);
 
 	/* Send request to RIL */
-	ret = ril_template(request, vc, generic_cb, AFFECTED_STATES_ALL,
-				rilp.data, rilp.size, cb, data);
-
-	g_ril_print_request(vd->ril, ret, request);
-
-	parcel_free(&rilp);
+	ril_template(RIL_REQUEST_HANGUP, vc, generic_cb,
+			AFFECTED_STATES_ALL, &rilp, cb, data);
 }
 
 static void ril_call_state_notify(struct ril_msg *message, gpointer user_data)
@@ -473,17 +443,10 @@ static void ril_ss_notify(struct ril_msg *message, gpointer user_data)
 static void ril_answer(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	int request = RIL_REQUEST_ANSWER;
-	int ret;
-
 	DBG("Answering current call");
 
 	/* Send request to RIL */
-	ret = ril_template(request, vc, generic_cb, 0,
-				NULL, 0, cb, data);
-
-	g_ril_print_request_no_args(vd->ril, ret, request);
+	ril_template(RIL_REQUEST_ANSWER, vc, generic_cb, 0, NULL, cb, data);
 }
 
 static void ril_send_dtmf_cb(struct ril_msg *message, gpointer user_data)
@@ -512,8 +475,6 @@ static void ril_send_dtmf_cb(struct ril_msg *message, gpointer user_data)
 static void send_one_dtmf(struct voicecall_data *vd)
 {
 	struct parcel rilp;
-	int request = RIL_REQUEST_DTMF;
-	int ret;
 
 	if (vd->tone_pending == TRUE)
 		return; /* RIL request pending */
@@ -523,11 +484,8 @@ static void send_one_dtmf(struct voicecall_data *vd)
 
 	g_ril_request_dtmf(vd->ril, vd->tone_queue[0], &rilp);
 
-	ret = g_ril_send(vd->ril, request, rilp.data,
-				rilp.size, ril_send_dtmf_cb, vd, NULL);
-
-	g_ril_print_request(vd->ril, ret, request);
-	parcel_free(&rilp);
+	g_ril_send(vd->ril, RIL_REQUEST_DTMF, &rilp,
+			ril_send_dtmf_cb, vd, NULL);
 
 	vd->tone_pending = TRUE;
 }
@@ -563,13 +521,7 @@ static void clear_dtmf_queue(struct voicecall_data *vd)
 static void ril_create_multiparty(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	int request = RIL_REQUEST_CONFERENCE;
-	int ret;
-
-	ret = ril_template(request, vc, generic_cb, 0, NULL, 0, cb, data);
-
-	g_ril_print_request_no_args(vd->ril, ret, request);
+	ril_template(RIL_REQUEST_CONFERENCE, vc, generic_cb, 0, NULL, cb, data);
 }
 
 static void ril_private_chat(struct ofono_voicecall *vc, int id,
@@ -577,96 +529,59 @@ static void ril_private_chat(struct ofono_voicecall *vc, int id,
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct parcel rilp;
-	int request = RIL_REQUEST_SEPARATE_CONNECTION;
-	int ret;
 
 	g_ril_request_separate_conn(vd->ril, id, &rilp);
 
 	/* Send request to RIL */
-	ret = ril_template(request, vc, generic_cb, 0, rilp.data, rilp.size,
-				cb, data);
-
-	g_ril_print_request(vd->ril, ret, request);
-
-	parcel_free(&rilp);
+	ril_template(RIL_REQUEST_SEPARATE_CONNECTION, vc,
+			generic_cb, 0, &rilp, cb, data);
 }
 
 static void ril_swap_without_accept(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	int request = RIL_REQUEST_SWITCH_HOLDING_AND_ACTIVE;
-	int ret;
-
-	ret = ril_template(request, vc, generic_cb, 0, NULL, 0, cb, data);
-
-	g_ril_print_request_no_args(vd->ril, ret, request);
+	ril_template(RIL_REQUEST_SWITCH_HOLDING_AND_ACTIVE, vc,
+			generic_cb, 0, NULL, cb, data);
 }
 
 static void ril_hold_all_active(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	int request = RIL_REQUEST_SWITCH_HOLDING_AND_ACTIVE;
-	int ret;
-
-	ret = ril_template(request, vc, generic_cb, 0, NULL, 0, cb, data);
-
-	g_ril_print_request_no_args(vd->ril, ret, request);
+	ril_template(RIL_REQUEST_SWITCH_HOLDING_AND_ACTIVE, vc,
+			generic_cb, 0, NULL, cb, data);
 }
 
 static void ril_release_all_held(struct ofono_voicecall *vc,
 					ofono_voicecall_cb_t cb, void *data)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	int request = RIL_REQUEST_HANGUP_WAITING_OR_BACKGROUND;
-	int ret;
-
-	ret = ril_template(request, vc, generic_cb, 0, NULL, 0, cb, data);
-
-	g_ril_print_request_no_args(vd->ril, ret, request);
+	ril_template(RIL_REQUEST_HANGUP_WAITING_OR_BACKGROUND, vc,
+			generic_cb, 0, NULL, cb, data);
 }
 
 static void ril_release_all_active(struct ofono_voicecall *vc,
 					ofono_voicecall_cb_t cb, void *data)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	int request = RIL_REQUEST_HANGUP_FOREGROUND_RESUME_BACKGROUND;
-	int ret;
-
-	ret = ril_template(request, vc, generic_cb, 0, NULL, 0, cb, data);
-
-	g_ril_print_request_no_args(vd->ril, ret, request);
+	ril_template(RIL_REQUEST_HANGUP_FOREGROUND_RESUME_BACKGROUND, vc,
+			generic_cb, 0, NULL, cb, data);
 }
 
 static void ril_set_udub(struct ofono_voicecall *vc,
 					ofono_voicecall_cb_t cb, void *data)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	int request = RIL_REQUEST_HANGUP_WAITING_OR_BACKGROUND;
-	int ret;
-
-	ret = ril_template(request, vc, generic_cb, 0, NULL, 0, cb, data);
-
-	g_ril_print_request_no_args(vd->ril, ret, request);
+	ril_template(RIL_REQUEST_HANGUP_WAITING_OR_BACKGROUND, vc,
+			generic_cb, 0, NULL, cb, data);
 }
 
 static gboolean enable_supp_svc(gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	int request = RIL_REQUEST_SET_SUPP_SVC_NOTIFICATION;
-	int ret;
 	struct parcel rilp;
 
 	g_ril_request_set_supp_svc_notif(vd->ril, &rilp);
 
-	ret = g_ril_send(vd->ril, request, rilp.data,
-				rilp.size, NULL, vc, NULL);
-
-	g_ril_print_request(vd->ril, ret, request);
-
-	parcel_free(&rilp);
+	g_ril_send(vd->ril, RIL_REQUEST_SET_SUPP_SVC_NOTIFICATION, &rilp,
+			NULL, vc, NULL);
 
 	/* Makes this a single shot */
 	return FALSE;

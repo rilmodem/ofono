@@ -106,15 +106,9 @@ static void ril_query_revision(struct ofono_devinfo *info,
 {
 	GRil *ril = ofono_devinfo_get_data(info);
 	struct cb_data *cbd = cb_data_new(cb, data, ril);
-	int request = RIL_REQUEST_BASEBAND_VERSION;
-	int ret;
 
-	ret = g_ril_send(ril, request, NULL, 0,
-				query_revision_cb, cbd, g_free);
-
-	g_ril_print_request_no_args(ril, ret, request);
-
-	if (ret <= 0) {
+	if (g_ril_send(ril, RIL_REQUEST_BASEBAND_VERSION, NULL,
+			query_revision_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, NULL, data);
 	}
@@ -149,17 +143,14 @@ static void ril_query_serial(struct ofono_devinfo *info,
 {
 	GRil *ril = ofono_devinfo_get_data(info);
 	struct cb_data *cbd = cb_data_new(cb, data, ril);
-	/* TODO: make it support both RIL_REQUEST_GET_IMEI (deprecated) and
-	 * RIL_REQUEST_DEVICE_IDENTITY depending on the rild version used */
-	int request = RIL_REQUEST_GET_IMEI;
-	int ret;
 
-	ret = g_ril_send(ril, request, NULL, 0,
-					query_serial_cb, cbd, g_free);
+	/*
+	 * TODO: make it support both RIL_REQUEST_GET_IMEI (deprecated) and
+	 * RIL_REQUEST_DEVICE_IDENTITY depending on the rild version used
+	 */
 
-	g_ril_print_request_no_args(ril, ret, request);
-
-	if (ret <= 0) {
+	if (g_ril_send(ril, RIL_REQUEST_GET_IMEI, NULL,
+			query_serial_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, NULL, data);
 	}

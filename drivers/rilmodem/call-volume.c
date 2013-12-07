@@ -76,20 +76,13 @@ static void ril_call_volume_mute(struct ofono_call_volume *cv, int muted,
 	struct cv_data *cvd = ofono_call_volume_get_data(cv);
 	struct cb_data *cbd = cb_data_new(cb, data, cvd);
 	struct parcel rilp;
-	int request = RIL_REQUEST_SET_MUTE;
-	int ret;
 
 	DBG("Initial ril muted state: %d", muted);
 
 	g_ril_request_set_mute(cvd->ril, muted, &rilp);
 
-	ret = g_ril_send(cvd->ril, request, rilp.data, rilp.size,
-				volume_mute_cb, cbd, g_free);
-
-	g_ril_print_request(cvd->ril, ret, request);
-	parcel_free(&rilp);
-
-	if (ret <= 0) {
+	if (g_ril_send(cvd->ril, RIL_REQUEST_SET_MUTE, &rilp,
+			volume_mute_cb, cbd, g_free) == 0) {
 		ofono_error("Send RIL_REQUEST_SET_MUTE failed.");
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, data);
@@ -116,13 +109,9 @@ static void call_probe_mute(gpointer user_data)
 {
 	struct ofono_call_volume *cv = user_data;
 	struct cv_data *cvd = ofono_call_volume_get_data(cv);
-	int request = RIL_REQUEST_GET_MUTE;
-	int ret;
 
-	ret = g_ril_send(cvd->ril, request, NULL, 0,
-				probe_mute_cb, cv, NULL);
-
-	g_ril_print_request_no_args(cvd->ril, ret, request);
+	g_ril_send(cvd->ril, RIL_REQUEST_GET_MUTE, NULL,
+			probe_mute_cb, cv, NULL);
 }
 
 static gboolean ril_delayed_register(gpointer user_data)
