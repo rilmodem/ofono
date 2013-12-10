@@ -211,7 +211,6 @@ static gboolean ril_unregister_all(struct ril_s *ril,
 	return TRUE;
 }
 
-
 /*
  * This function creates a RIL request.  For a good reference on
  * the layout of RIL requests, responses, and unsolicited requests
@@ -224,8 +223,7 @@ static struct ril_request *ril_request_create(struct ril_s *ril,
 						guint gid,
 						const gint req,
 						const gint id,
-						const char *data,
-						const gsize data_len,
+						struct parcel *rilp,
 						GRilResponseFunc func,
 						gpointer user_data,
 						GDestroyNotify notify,
@@ -233,6 +231,10 @@ static struct ril_request *ril_request_create(struct ril_s *ril,
 {
 	struct ril_request *r;
 	struct req_hdr header;
+	guint data_len = 0;
+
+	if (rilp != NULL)
+		data_len = rilp->size;
 
 	r = g_try_new0(struct ril_request, 1);
 	if (r == NULL) {
@@ -240,7 +242,7 @@ static struct ril_request *ril_request_create(struct ril_s *ril,
 		return NULL;
 	}
 
-	DBG("req: %s, id: %d, data_len: %zu",
+	DBG("req: %s, id: %d, data_len: %u",
 		ril_request_id_to_string(req), id, data_len);
 
 	/* Full request size: header size plus buffer length */
@@ -261,7 +263,8 @@ static struct ril_request *ril_request_create(struct ril_s *ril,
 	/* copy header */
 	memcpy(r->data, &header, sizeof(header));
 	/* copy request data */
-	memcpy(r->data + sizeof(header), data, data_len);
+	if (data_len)
+		memcpy(r->data + sizeof(header), rilp->data, data_len);
 
 	r->req = req;
 	r->gid = gid;
@@ -1068,9 +1071,9 @@ GRil *g_ril_ref(GRil *ril)
 	return ril;
 }
 
-gint g_ril_send(GRil *ril, const gint reqid, const char *data,
-			const gsize data_len, GRilResponseFunc func,
-			gpointer user_data, GDestroyNotify notify)
+gint g_ril_send(GRil *ril, const gint reqid, struct parcel *rilp,
+		GRilResponseFunc func, gpointer user_data,
+		GDestroyNotify notify)
 {
 	struct ril_request *r;
 	struct ril_s *p;
@@ -1082,9 +1085,12 @@ gint g_ril_send(GRil *ril, const gint reqid, const char *data,
 
 	p = ril->parent;
 
-	r = ril_request_create(p, ril->group, reqid, p->next_cmd_id,
-				data, data_len, func,
-				user_data, notify, FALSE);
+	r = ril_request_create(p, ril->group, reqid, p->next_cmd_id, rilp,
+				func, user_data, notify, FALSE);
+
+	if (rilp != NULL)
+		parcel_free(rilp);
+
 	if (r == NULL)
 		return 0;
 
@@ -1094,6 +1100,11 @@ gint g_ril_send(GRil *ril, const gint reqid, const char *data,
 
 	DBG("calling wakeup_writer: qlen: %d", g_queue_get_length(p->command_queue));
 	ril_wakeup_writer(p);
+
+	if (rilp == NULL)
+		g_ril_print_request_no_args(ril, r->id, reqid);
+	else
+		g_ril_print_request(ril, r->id, reqid);
 
 	return r->id;
 }

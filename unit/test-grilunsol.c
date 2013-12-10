@@ -42,6 +42,12 @@
  * once more tests are added.
  */
 
+typedef struct signal_strength_test signal_strength_test;
+struct signal_strength_test {
+	int strength;
+	const struct ril_msg msg;
+};
+
 static const struct ril_msg unsol_data_call_list_changed_invalid_1 = {
 	.buf = "",
 	.buf_len = 0,
@@ -175,6 +181,35 @@ static const struct ril_msg unsol_supp_svc_notif_valid_1 = {
 	.error = 0,
 };
 
+/*
+ * The following hexadecimal data represents a serialized Binder parcel
+ * instance containing a valid RIL_UNSOL_SIGNAL_STRENGTH message
+ * with the following parameters:
+ *
+ * (gw: 14, cdma: -1, evdo: -1, lte: 99)
+ *
+ * Note, the return value for gw sigmal is: (gw * 100) / 31, which
+ * in this case equals 45.
+ */
+static const guchar unsol_signal_strength_parcel1[] = {
+	0x0e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,	0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0x63, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0x7f,
+	0xff, 0xff, 0xff, 0x7f, 0xff, 0xff, 0xff, 0x7f, 0xff, 0xff, 0xff, 0x7f
+};
+
+static const signal_strength_test unsol_signal_strength_valid_1 = {
+	.strength = 45,
+	.msg = {
+		.buf = (gchar *) &unsol_signal_strength_parcel1,
+		.buf_len = sizeof(unsol_signal_strength_parcel1),
+		.unsolicited = TRUE,
+		.req = RIL_UNSOL_SIGNAL_STRENGTH,
+		.serial_no = 0,
+		.error = 0,
+	}
+};
+
 static void test_unsol_data_call_list_changed_invalid(gconstpointer data)
 {
 	struct ofono_error error;
@@ -199,6 +234,13 @@ static void test_unsol_data_call_list_changed_valid(gconstpointer data)
 
 	g_assert(error.type == OFONO_ERROR_TYPE_NO_ERROR &&
 			error.error == 0);
+}
+
+static void test_signal_strength_valid(gconstpointer data)
+{
+	const signal_strength_test *test = data;
+	int strength = g_ril_unsol_parse_signal_strength(NULL, &test->msg);
+	g_assert(strength == test->strength);
 }
 
 static void test_unsol_response_new_sms_valid(gconstpointer data)
@@ -259,6 +301,11 @@ int main(int argc, char **argv)
 				"valid SUPP_SVC_NOTIF Test 1",
 				&unsol_supp_svc_notif_valid_1,
 				test_unsol_supp_svc_notif_valid);
+
+	g_test_add_data_func("/testgrilunsol/voicecall: "
+				"valid SIGNAL_STRENGTH Test 1",
+				&unsol_signal_strength_valid_1,
+				test_signal_strength_valid);
 
 #endif
 	return g_test_run();

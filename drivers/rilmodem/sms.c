@@ -73,21 +73,12 @@ static void ril_csca_set(struct ofono_sms *sms,
 	struct sms_data *sd = ofono_sms_get_data(sms);
 	struct cb_data *cbd = cb_data_new(cb, user_data, sd);
 	struct parcel rilp;
-	gint ret;
-	int request = RIL_REQUEST_SET_SMSC_ADDRESS;
 
 	g_ril_request_set_smsc_address(sd->ril, sca, &rilp);
 
 	/* Send request to RIL */
-	ret = g_ril_send(sd->ril, request, rilp.data,
-				rilp.size, ril_csca_set_cb, cbd, g_free);
-
-	g_ril_print_request(sd->ril, ret, request);
-
-	parcel_free(&rilp);
-
-	/* In case of error free cbd and return the cb with failure */
-	if (ret == 0) {
+	if (g_ril_send(sd->ril, RIL_REQUEST_SET_SMSC_ADDRESS, &rilp,
+			ril_csca_set_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, user_data);
 	}
@@ -122,17 +113,11 @@ static void ril_csca_query(struct ofono_sms *sms, ofono_sms_sca_query_cb_t cb,
 {
 	struct sms_data *sd = ofono_sms_get_data(sms);
 	struct cb_data *cbd = cb_data_new(cb, user_data, sd);
-	int request = RIL_REQUEST_GET_SMSC_ADDRESS;
-	int ret;
 
 	DBG("Sending csca_query");
 
-	ret = g_ril_send(sd->ril, request, NULL, 0,
-				ril_csca_query_cb, cbd, g_free);
-
-	g_ril_print_request(sd->ril, ret, request);
-
-	if (ret == 0) {
+	if (g_ril_send(sd->ril, RIL_REQUEST_GET_SMSC_ADDRESS, NULL,
+			ril_csca_query_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, NULL, user_data);
 	}
@@ -164,8 +149,6 @@ static void ril_cmgs(struct ofono_sms *sms, const unsigned char *pdu,
 	struct sms_data *sd = ofono_sms_get_data(sms);
 	struct cb_data *cbd = cb_data_new(cb, user_data, sd);
 	struct parcel rilp;
-	int request = RIL_REQUEST_SEND_SMS;
-	int ret;
 	struct req_sms_cmgs req;
 
 	DBG("pdu_len: %d, tpdu_len: %d mms: %d", pdu_len, tpdu_len, mms);
@@ -178,17 +161,8 @@ static void ril_cmgs(struct ofono_sms *sms, const unsigned char *pdu,
 
 	g_ril_request_sms_cmgs(sd->ril, &req, &rilp);
 
-	ret = g_ril_send(sd->ril,
-				request,
-				rilp.data,
-				rilp.size,
-				ril_submit_sms_cb, cbd, g_free);
-
-	g_ril_print_request(sd->ril, ret, request);
-
-	parcel_free(&rilp);
-
-	if (ret == 0) {
+	if (g_ril_send(sd->ril, RIL_REQUEST_SEND_SMS, &rilp,
+			ril_submit_sms_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, -1, user_data);
 	}
@@ -205,22 +179,15 @@ static void ril_ack_delivery(struct ofono_sms *sms)
 {
 	struct sms_data *sd = ofono_sms_get_data(sms);
 	struct parcel rilp;
-	int ret;
-	int request = RIL_REQUEST_SMS_ACKNOWLEDGE;
 
 	g_ril_request_sms_acknowledge(sd->ril, &rilp);
 
 	/* TODO: should ACK be sent for either of the error cases? */
 
 	/* ACK the incoming NEW_SMS */
-	ret = g_ril_send(sd->ril, request,
-				rilp.data,
-				rilp.size,
-				ril_ack_delivery_cb, NULL, NULL);
+	g_ril_send(sd->ril, RIL_REQUEST_SMS_ACKNOWLEDGE, &rilp,
+			ril_ack_delivery_cb, NULL, NULL);
 
-	g_ril_print_request(sd->ril, ret, request);
-
-	parcel_free(&rilp);
 }
 
 static void ril_sms_notify(struct ril_msg *message, gpointer user_data)

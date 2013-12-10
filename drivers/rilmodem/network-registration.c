@@ -137,8 +137,6 @@ static void ril_registration_status(struct ofono_netreg *netreg,
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct cb_data *cbd;
-	int request = RIL_REQUEST_VOICE_REGISTRATION_STATE;
-	int ret;
 
 	/*
 	 * If no cb specified, setup internal callback to
@@ -149,12 +147,8 @@ static void ril_registration_status(struct ofono_netreg *netreg,
 	else
 		cbd = cb_data_new(cb, data, nd);
 
-	ret = g_ril_send(nd->ril, request, NULL,
-				0, ril_creg_cb, cbd, g_free);
-
-	g_ril_print_request_no_args(nd->ril, ret, request);
-
-	if (!ret) {
+	if (g_ril_send(nd->ril, RIL_REQUEST_VOICE_REGISTRATION_STATE, NULL,
+			ril_creg_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, data);
 	}
@@ -204,15 +198,9 @@ static void ril_current_operator(struct ofono_netreg *netreg,
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct cb_data *cbd = cb_data_new(cb, data, nd);
-	int request = RIL_REQUEST_OPERATOR;
-	int ret;
 
-	ret = g_ril_send(nd->ril, request, NULL,
-				0, ril_cops_cb, cbd, g_free);
-
-	g_ril_print_request_no_args(nd->ril, ret, request);
-
-	if (!ret) {
+	if (g_ril_send(nd->ril, RIL_REQUEST_OPERATOR, NULL,
+			ril_cops_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, NULL, data);
 	}
@@ -291,15 +279,9 @@ static void ril_list_operators(struct ofono_netreg *netreg,
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct cb_data *cbd = cb_data_new(cb, data, nd);
-	int request = RIL_REQUEST_QUERY_AVAILABLE_NETWORKS;
-	int ret;
 
-	ret = g_ril_send(nd->ril, request, NULL,
-				0, ril_cops_list_cb, cbd, g_free);
-
-	g_ril_print_request_no_args(nd->ril, ret, request);
-
-	if (!ret) {
+	if (g_ril_send(nd->ril, RIL_REQUEST_QUERY_AVAILABLE_NETWORKS, NULL,
+			ril_cops_list_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, 0, NULL, data);
 	}
@@ -329,15 +311,9 @@ static void ril_register_auto(struct ofono_netreg *netreg,
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct cb_data *cbd = cb_data_new(cb, data, nd);
-	int request = RIL_REQUEST_SET_NETWORK_SELECTION_AUTOMATIC;
-	int ret;
 
-	ret = g_ril_send(nd->ril, request,
-				NULL, 0, ril_register_cb, cbd, g_free);
-
-	g_ril_print_request_no_args(nd->ril, ret, request);
-
-	if (!ret) {
+	if (g_ril_send(nd->ril, RIL_REQUEST_SET_NETWORK_SELECTION_AUTOMATIC, NULL,
+			ril_register_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, data);
 	}
@@ -351,23 +327,15 @@ static void ril_register_manual(struct ofono_netreg *netreg,
 	struct cb_data *cbd = cb_data_new(cb, data, nd);
 	char buf[OFONO_MAX_MCC_LENGTH + OFONO_MAX_MNC_LENGTH + 1];
 	struct parcel rilp;
-	int request = RIL_REQUEST_SET_NETWORK_SELECTION_MANUAL;
-	int ret;
 
 	/* RIL expects a char * specifying MCCMNC of network to select */
 	snprintf(buf, sizeof(buf), "%s%s", mcc, mnc);
 
 	g_ril_request_set_net_select_manual(nd->ril, buf, &rilp);
 
-	ret = g_ril_send(nd->ril, request,
-				rilp.data, rilp.size, ril_register_cb,
-				cbd, g_free);
-
-	g_ril_print_request(nd->ril, ret, request);
-	parcel_free(&rilp);
-
 	/* In case of error free cbd and return the cb with failure */
-	if (!ret) {
+	if (g_ril_send(nd->ril, RIL_REQUEST_SET_NETWORK_SELECTION_MANUAL, &rilp,
+			ril_register_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, data);
 	}
@@ -377,14 +345,9 @@ static void ril_strength_notify(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	int strength;
+	int strength = g_ril_unsol_parse_signal_strength(nd->ril, message);
 
-	g_assert(message->req == RIL_UNSOL_SIGNAL_STRENGTH);
-
-	strength = ril_util_get_signal(nd->ril, message);
 	ofono_netreg_strength_notify(netreg, strength);
-
-	return;
 }
 
 static void ril_strength_cb(struct ril_msg *message, gpointer user_data)
@@ -402,7 +365,8 @@ static void ril_strength_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	strength = ril_util_get_signal(nd->ril, message);
+	/* The g_ril_unsol* function handles both reply & unsolicited */
+	strength = g_ril_unsol_parse_signal_strength(nd->ril, message);
 	cb(&error, strength, cbd->data);
 
 	return;
@@ -416,15 +380,9 @@ static void ril_signal_strength(struct ofono_netreg *netreg,
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct cb_data *cbd = cb_data_new(cb, data, nd);
-	int request = RIL_REQUEST_SIGNAL_STRENGTH;
-	int ret;
 
-	ret = g_ril_send(nd->ril, request,
-				NULL, 0, ril_strength_cb, cbd, g_free);
-
-	g_ril_print_request_no_args(nd->ril, ret, request);
-
-	if (!ret) {
+	if (g_ril_send(nd->ril, RIL_REQUEST_SIGNAL_STRENGTH, NULL,
+			ril_strength_cb, cbd, g_free) == 0) {
 		ofono_error("Send RIL_REQUEST_SIGNAL_STRENGTH failed.");
 
 		g_free(cbd);

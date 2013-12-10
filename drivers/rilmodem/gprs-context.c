@@ -228,7 +228,6 @@ static void ril_gprs_context_activate_primary(struct ofono_gprs_context *gc,
 	struct req_setup_data_call request;
 	struct parcel rilp;
 	struct ofono_error error;
-	int reqid = RIL_REQUEST_SETUP_DATA_CALL;
 	int ret = 0;
 
 	DBG("Activating contex: %d", ctx->cid);
@@ -257,16 +256,8 @@ static void ril_gprs_context_activate_primary(struct ofono_gprs_context *gc,
 	gcd->active_ctx_cid = ctx->cid;
 	gcd->state = STATE_ENABLING;
 
-	ret = g_ril_send(gcd->ril,
-				reqid,
-				rilp.data,
-				rilp.size,
+	ret = g_ril_send(gcd->ril, RIL_REQUEST_SETUP_DATA_CALL, &rilp,
 				ril_setup_data_call_cb, cbd, g_free);
-
-	/* NOTE - we could make the following function part of g_ril_send? */
-	g_ril_print_request(gcd->ril, ret, reqid);
-
-	parcel_free(&rilp);
 
 error:
 	g_free(request.apn);
@@ -329,13 +320,12 @@ static void ril_gprs_context_deactivate_primary(struct ofono_gprs_context *gc,
 	struct parcel rilp;
 	struct req_deactivate_data_call request;
 	struct ofono_error error;
-	int reqid = RIL_REQUEST_DEACTIVATE_DATA_CALL;
 	int ret = 0;
 
 	DBG("cid: %d active_rild_cid: %d", id, gcd->active_rild_cid);
 
 	if (gcd->state == STATE_IDLE || gcd->state == STATE_DISABLING) {
-		/* nothing to do */ 	  
+		/* nothing to do */
 
 		if (cb) {
 			CALLBACK_WITH_SUCCESS(cb, data);
@@ -358,20 +348,15 @@ static void ril_gprs_context_deactivate_primary(struct ofono_gprs_context *gc,
 		goto error;
 	}
 
-	ret = g_ril_send(gcd->ril,
-				reqid,
-				rilp.data,
-				rilp.size,
-				ril_deactivate_data_call_cb, cbd, g_free);
-
+	/* TODO: this should be folded into g_ril_request_deactivate_data_call()!!! */
 	g_ril_append_print_buf(gcd->ril, "(%d,0)", request.cid);
-	g_ril_print_request(gcd->ril, ret, reqid);
 
-	parcel_free(&rilp);
+	ret = g_ril_send(gcd->ril, RIL_REQUEST_DEACTIVATE_DATA_CALL, &rilp,
+				ril_deactivate_data_call_cb, cbd, g_free);
 
 error:
 	if (ret <= 0) {
-		/* TODO: should we force state to disconnected here? */	  
+		/* TODO: should we force state to disconnected here? */
 
 		ofono_error("Send RIL_REQUEST_DEACTIVATE_DATA_CALL failed.");
 		g_free(cbd);

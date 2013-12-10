@@ -157,18 +157,6 @@ gchar *ril_util_get_netmask(const gchar *address)
 	return result;
 }
 
-/* TODO: this function can go away, once all the code has been
- * re-factored to use grilreply.c */
-void ril_util_init_parcel(struct ril_msg *message, struct parcel *rilp)
-{
-	/* Set up Parcel struct for proper parsing */
-	rilp->data = message->buf;
-	rilp->size = message->buf_len;
-	rilp->capacity = message->buf_len;
-	rilp->offset = 0;
-	rilp->malformed = 0;
-}
-
 struct ril_util_sim_state_query *ril_util_sim_state_query_new(GRil *ril,
 						guint interval, guint num_times,
 						ril_util_sim_inserted_cb_t cb,
@@ -203,62 +191,4 @@ void ril_util_sim_state_query_free(struct ril_util_sim_state_query *req)
 		req->destroy(req->userdata);
 
 	g_free(req);
-}
-
-gint ril_util_get_signal(GRil *gril, struct ril_msg *message)
-{
-	struct parcel rilp;
-	int gw_signal, cdma_dbm, evdo_dbm, lte_signal;
-
-	/* Set up Parcel struct for proper parsing */
-	ril_util_init_parcel(message, &rilp);
-
-	/* RIL_SignalStrength_v6 */
-	/* GW_SignalStrength */
-	gw_signal = parcel_r_int32(&rilp);
-	parcel_r_int32(&rilp); /* bitErrorRate */
-
-	/* CDMA_SignalStrength */
-	cdma_dbm = parcel_r_int32(&rilp);
-	parcel_r_int32(&rilp); /* ecio */
-
-	/* EVDO_SignalStrength */
-	evdo_dbm = parcel_r_int32(&rilp);
-	parcel_r_int32(&rilp); /* ecio */
-	parcel_r_int32(&rilp); /* signalNoiseRatio */
-
-	/* LTE_SignalStrength */
-	lte_signal = parcel_r_int32(&rilp);
-	parcel_r_int32(&rilp); /* rsrp */
-	parcel_r_int32(&rilp); /* rsrq */
-	parcel_r_int32(&rilp); /* rssnr */
-	parcel_r_int32(&rilp); /* cqi */
-
-	g_ril_append_print_buf(gril, "(gw: %d, cdma: %d, evdo: %d, lte: %d)",
-				gw_signal, cdma_dbm, evdo_dbm, lte_signal);
-
-	if (message->unsolicited)
-		g_ril_print_unsol(gril, message);
-	else
-		g_ril_print_response(gril, message);
-
-	/* Return the first valid one */
-	if ((gw_signal != 99) && (gw_signal != -1))
-		return (gw_signal * 100) / 31;
-	if ((lte_signal != 99) && (lte_signal != -1))
-		return (lte_signal * 100) / 31;
-
-	/* In case of dbm, return the value directly */
-	if (cdma_dbm != -1) {
-		if (cdma_dbm > 100)
-			cdma_dbm = 100;
-		return cdma_dbm;
-	}
-	if (evdo_dbm != -1) {
-		if (evdo_dbm > 100)
-			evdo_dbm = 100;
-		return evdo_dbm;
-	}
-
-	return -1;
 }

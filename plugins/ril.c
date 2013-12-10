@@ -134,14 +134,9 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 static void send_get_sim_status(struct ofono_modem *modem)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
-	int request = RIL_REQUEST_GET_SIM_STATUS;
-	gint ret;
 
-	ret = g_ril_send(ril->modem, request,
-				NULL, 0, sim_status_cb, modem, NULL);
-
-	if (ret > 0)
-		g_ril_print_request_no_args(ril->modem, ret, request);
+	g_ril_send(ril->modem, RIL_REQUEST_GET_SIM_STATUS, NULL,
+			sim_status_cb, modem, NULL);
 }
 
 static int ril_probe(struct ofono_modem *modem)
@@ -241,9 +236,7 @@ static void ril_send_power(struct ril_data *ril, ofono_bool_t online,
 {
 	struct cb_data *cbd;
 	GDestroyNotify notify;
-	int request = RIL_REQUEST_RADIO_POWER;
 	struct parcel rilp;
-	int ret;
 
 	if (callback) {
 		cbd = cb_data_new(callback, data, NULL);
@@ -258,16 +251,10 @@ static void ril_send_power(struct ril_data *ril, ofono_bool_t online,
 
 	g_ril_request_power(ril->modem, (const gboolean) online, &rilp);
 
-	ret = g_ril_send(ril->modem, request, rilp.data,
-				rilp.size, func, cbd, notify);
-
-	parcel_free(&rilp);
-
-	if (ret <= 0) {
+	if (g_ril_send(ril->modem, RIL_REQUEST_RADIO_POWER, &rilp,
+			func, cbd, notify) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(callback, data);
-	} else {
-		g_ril_print_request(ril->modem, ret, request);
 	}
 }
 
