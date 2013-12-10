@@ -243,6 +243,27 @@ error:
 	return NULL;
 }
 
+int g_ril_unsol_parse_radio_state_changed(GRil *gril, const struct ril_msg *message)
+{
+	struct parcel rilp;
+	int radio_state;
+
+	g_ril_init_parcel(message, &rilp);
+
+	radio_state = parcel_r_int32(&rilp);
+
+	if (rilp.malformed) {
+		ofono_error("%s: malformed parcel received", __func__);
+		radio_state = -1;
+	}
+
+	g_ril_append_print_buf(gril, "(state: %s)",
+				ril_radio_state_to_string(radio_state));
+
+	g_ril_print_unsol(gril, message);
+
+	return radio_state;
+}
 int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message)
 {
 	struct parcel rilp;
