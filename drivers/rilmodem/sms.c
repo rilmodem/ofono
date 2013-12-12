@@ -129,15 +129,14 @@ static void ril_submit_sms_cb(struct ril_msg *message, gpointer user_data)
 	struct ofono_error error;
 	ofono_sms_submit_cb_t cb = cbd->cb;
 	struct sms_data *sd = cbd->user;
-	int mr;
+	int mr = 0;
 
 	if (message->error == RIL_E_SUCCESS) {
 		decode_ril_error(&error, "OK");
+		mr = g_ril_reply_parse_sms_response(sd->ril, message);
 	} else {
 		decode_ril_error(&error, "FAIL");
 	}
-
-	mr = g_ril_reply_parse_sms_response(sd->ril, message);
 
 	cb(&error, mr, cbd->data);
 }
