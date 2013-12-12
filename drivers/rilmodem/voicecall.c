@@ -90,6 +90,13 @@ struct lastcause_req {
 	int id;
 };
 
+/* Data for dial after swap */
+struct hold_before_dial_req {
+	struct ofono_voicecall *vc;
+	struct ofono_phone_number dial_ph;
+	enum ofono_clir_option dial_clir;
+};
+
 static void send_one_dtmf(struct voicecall_data *vd);
 static void clear_dtmf_queue(struct voicecall_data *vd);
 
@@ -301,8 +308,6 @@ static void rild_cb(struct ril_msg *message, gpointer user_data)
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	ofono_voicecall_cb_t cb = cbd->cb;
 	struct ofono_error error;
-	struct ofono_call *call;
-	GSList *l;
 
 	if (message->error == RIL_E_SUCCESS) {
 		decode_ril_error(&error, "OK");
@@ -312,17 +317,6 @@ static void rild_cb(struct ril_msg *message, gpointer user_data)
 	}
 
 	g_ril_print_response_no_args(vd->ril, message);
-
-	/* On a success, make sure to put all active calls on hold */
-	for (l = vd->calls; l; l = l->next) {
-		call = l->data;
-
-		if (call->status != CALL_STATUS_ACTIVE)
-			continue;
-
-		call->status = CALL_STATUS_HELD;
-		ofono_voicecall_notify(vc, call);
-	}
 
 	/* CLCC will update the oFono call list with proper ids  */
 	if (!vd->clcc_source)
@@ -339,7 +333,7 @@ out:
 	cb(&error, cbd->data);
 }
 
-static void ril_dial(struct ofono_voicecall *vc,
+static void dial(struct ofono_voicecall *vc,
 			const struct ofono_phone_number *ph,
 			enum ofono_clir_option clir, ofono_voicecall_cb_t cb,
 			void *data)
@@ -355,6 +349,76 @@ static void ril_dial(struct ofono_voicecall *vc,
 			rild_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, data);
+	}
+}
+
+static void hold_before_dial_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	struct hold_before_dial_req *req = cbd->user;
+	struct voicecall_data *vd = ofono_voicecall_get_data(req->vc);
+	ofono_voicecall_cb_t cb = cbd->cb;
+
+	if (message->error != RIL_E_SUCCESS) {
+		g_free(req);
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+		return;
+	}
+
+	g_ril_print_response_no_args(vd->ril, message);
+
+	/* Current calls held: we can dial now */
+	dial(req->vc, &req->dial_ph, req->dial_clir, cb, cbd->data);
+
+	g_free(req);
+}
+
+static void ril_dial(struct ofono_voicecall *vc,
+			const struct ofono_phone_number *ph,
+			enum ofono_clir_option clir, ofono_voicecall_cb_t cb,
+			void *data)
+{
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	int current_active = 0;
+	struct ofono_call *call;
+	GSList *l;
+
+	/* Check for current active calls */
+	for (l = vd->calls; l; l = l->next) {
+		call = l->data;
+
+		if (call->status == CALL_STATUS_ACTIVE) {
+			current_active = 1;
+			break;
+		}
+	}
+
+	/*
+	 * The network will put current active calls on hold. In some cases
+	 * (mako), the modem also updates properly the state. In others
+	 * (maguro), we need to explicitly set the state to held. In both cases
+	 * we send a request for holding the active call, as it is not harmful
+	 * when it is not really needed, and is what Android does.
+	 */
+	if (current_active) {
+		struct hold_before_dial_req *req;
+		struct cb_data *cbd;
+
+		req = g_malloc0(sizeof(*req));
+		req->vc = vc;
+		req->dial_ph = *ph;
+		req->dial_clir = clir;
+
+		cbd = cb_data_new(cb, data, req);
+
+		if (g_ril_send(vd->ril, RIL_REQUEST_SWITCH_HOLDING_AND_ACTIVE,
+				NULL, hold_before_dial_cb, cbd, g_free) == 0) {
+			g_free(cbd);
+			CALLBACK_WITH_FAILURE(cb, data);
+		}
+
+	} else {
+		dial(vc, ph, clir, cb, data);
 	}
 }
 
