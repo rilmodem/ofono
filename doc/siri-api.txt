@@ -1,0 +1,41 @@
+Siri hierarchy [experimental]
+========================
+
+Service		org.ofono
+Interface	org.ofono.Siri
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns all Siri properties. See the
+			properties section for available properties.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.Failed
+
+		void SetProperty(string name, variant value)
+
+			Changes the value of the specified property. Only
+			properties that are listed as read-write are
+			changeable. On success a PropertyChanged signal
+			will be emitted.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.InProgress
+					 [service].Error.Failed
+
+Signals		PropertyChanged(string property, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+Properties	boolean	Enabled [readonly]
+
+			This property indicates whether Siri is available on
+			the device.
+
+		string EyesFreeMode [readwrite]
+
+			This property indicates the state of Siri Eyes Free
+			Mode.  The current possible values are: "enabled"
+			and "disabled"
