@@ -21,7 +21,7 @@ pkginclude_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/cdma-connman.h include/gnss.h \
 			include/private-network.h include/cdma-netreg.h \
 			include/cdma-provision.h include/handsfree.h \
-			include/handsfree-audio.h \
+			include/handsfree-audio.h include/siri.h \
 			include/sim-mnclength.h include/spn-table.h \
 			include/dns-client.h
 
