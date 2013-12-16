@@ -389,7 +389,8 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/hfpmodem/network-registration.c \
 			drivers/hfpmodem/call-volume.c \
 			drivers/hfpmodem/devinfo.c \
-			drivers/hfpmodem/handsfree.c
+			drivers/hfpmodem/handsfree.c \
+			drivers/hfpmodem/siri.c
 
 builtin_modules += speedupmodem
 builtin_sources += drivers/atmodem/atutil.h \
