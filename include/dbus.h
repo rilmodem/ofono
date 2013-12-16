@@ -60,6 +60,7 @@ extern "C" {
 #define OFONO_GNSS_INTERFACE "org.ofono.AssistedSatelliteNavigation"
 #define OFONO_GNSS_POSR_AGENT_INTERFACE "org.ofono.PositioningRequestAgent"
 #define OFONO_HANDSFREE_INTERFACE OFONO_SERVICE ".Handsfree"
+#define OFONO_SIRI_INTERFACE OFONO_SERVICE ".Siri"
 #define OFONO_NETWORK_TIME_INTERFACE OFONO_SERVICE ".NetworkTime"
 
 /* CDMA Interfaces */
