@@ -61,6 +61,7 @@
 #include <ofono/gprs-context.h>
 #include <ofono/gnss.h>
 #include <ofono/handsfree.h>
+#include <ofono/siri.h>
 
 #include <drivers/atmodem/vendor.h>
 #include <drivers/atmodem/atutil.h>
@@ -960,6 +961,7 @@ static void localhfp_pre_sim(struct ofono_modem *modem)
 	ofono_netreg_create(modem, 0, "hfpmodem", info);
 	ofono_call_volume_create(modem, 0, "hfpmodem", info);
 	ofono_handsfree_create(modem, 0, "hfpmodem", info);
+	ofono_siri_create(modem, 0, "hfpmodem", info);
 }
 
 static struct ofono_modem_driver localhfp_driver = {
