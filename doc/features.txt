@@ -739,3 +739,11 @@ Bluetooth Handsfree Profile
   access to Bluetooth HFP specific features via the oFono Handsfree interface.
   These features include voice recognition activation, last number redial,
   etc.
+
+Apple Siri
+==========
+
+- Siri feature. oFono can query availability of Siri on an iOS device. oFono
+  uses 'EyesFreeMode' property on the Siri interface to control the state of the
+  Siri Eyes Free Mode. When EyesFreeMode state is enabled, the iOS device’s
+  screen won’t light up during a voice recognition session and an incoming call.
