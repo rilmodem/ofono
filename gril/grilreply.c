@@ -1108,3 +1108,103 @@ char *g_ril_reply_parse_get_imei(GRil *gril,
 
 	return imei;
 }
+
+int g_ril_reply_parse_query_call_waiting(GRil *gril,
+						const struct ril_msg *message)
+{
+	struct parcel rilp;
+	int numint, enabled, cls;
+
+	g_ril_init_parcel(message, &rilp);
+
+	numint = parcel_r_int32(&rilp);
+	if (numint < 1) {
+		ofono_error("%s Wrong format", __func__);
+		goto error;
+	}
+
+	enabled = parcel_r_int32(&rilp);
+
+	if (enabled > 0)
+		cls = parcel_r_int32(&rilp);
+	else
+		cls = 0;
+
+	g_ril_append_print_buf(gril, "{%d,0x%x}", enabled, cls);
+	g_ril_print_response(gril, message);
+
+	return cls;
+
+error:
+	return -1;
+}
+
+int g_ril_reply_parse_query_clip(GRil *gril,
+					const struct ril_msg *message)
+{
+	struct parcel rilp;
+	int clip_status, numint;
+
+	g_ril_init_parcel(message, &rilp);
+
+	numint = parcel_r_int32(&rilp);
+	if (numint != 1) {
+		ofono_error("%s Wrong format", __func__);
+		goto error;
+	}
+
+	clip_status = parcel_r_int32(&rilp);
+
+	g_ril_append_print_buf(gril, "{%d}", clip_status);
+	g_ril_print_response(gril, message);
+
+	return clip_status;
+
+error:
+	return -1;
+}
+
+void g_ril_reply_free_get_clir(struct reply_clir *rclir)
+{
+	g_free(rclir);
+}
+
+struct reply_clir *g_ril_reply_parse_get_clir(GRil *gril,
+						const struct ril_msg *message)
+{
+	struct parcel rilp;
+	struct reply_clir *rclir;
+	int numint;
+
+	rclir = g_try_malloc0(sizeof(*rclir));
+	if (rclir == NULL) {
+		ofono_error("%s Out of memory", __func__);
+		goto error;
+	}
+
+	g_ril_init_parcel(message, &rilp);
+
+	/* Length */
+	numint = parcel_r_int32(&rilp);
+	if (numint != 2) {
+		ofono_error("%s Wrong format", __func__);
+		goto error;
+	}
+
+	/* Set HideCallerId property from network */
+	rclir->status = parcel_r_int32(&rilp);
+
+	/* State of the CLIR supplementary service in the network */
+	rclir->provisioned = parcel_r_int32(&rilp);
+
+	g_ril_append_print_buf(gril, "{%d,%d}",
+				rclir->status, rclir->provisioned);
+	g_ril_print_response(gril, message);
+
+	return rclir;
+
+error:
+	g_free(rclir);
+
+	return NULL;
+}

@@ -336,3 +336,58 @@ struct unsol_supp_svc_notif *g_ril_unsol_parse_supp_svc_notif(GRil *gril,
 
 	return unsol;
 }
+
+void g_ril_unsol_free_ussd(struct unsol_ussd *unsol)
+{
+	if (unsol != NULL) {
+		g_free(unsol->message);
+		g_free(unsol);
+	}
+}
+
+struct unsol_ussd *g_ril_unsol_parse_ussd(GRil *gril, struct ril_msg *message)
+{
+	struct parcel rilp;
+	struct unsol_ussd *ussd;
+	char *typestr = NULL;
+	int numstr;
+
+	ussd = g_try_malloc0(sizeof(*ussd));
+	if (ussd == NULL) {
+		ofono_error("%s out of memory", __func__);
+		goto error;
+	}
+
+	g_ril_init_parcel(message, &rilp);
+
+	numstr = parcel_r_int32(&rilp);
+	if (numstr < 1) {
+		ofono_error("%s malformed parcel", __func__);
+		goto error;
+	}
+
+	typestr = parcel_r_string(&rilp);
+	if (typestr == NULL || *typestr == '\0') {
+		ofono_error("%s wrong type", __func__);
+		goto error;
+	}
+
+	ussd->type = *typestr - '0';
+
+	g_free(typestr);
+
+	if (numstr > 1)
+		ussd->message = parcel_r_string(&rilp);
+
+	g_ril_append_print_buf(gril, "{%d,%s}", ussd->type, ussd->message);
+
+	g_ril_print_unsol(gril, message);
+
+	return ussd;
+
+error:
+	g_free(typestr);
+	g_free(ussd);
+
+	return NULL;
+}

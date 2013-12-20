@@ -717,3 +717,66 @@ void g_ril_request_set_mute(GRil *gril, int muted, struct parcel *rilp)
 
 	g_ril_append_print_buf(gril, "(%d)", muted);
 }
+
+void g_ril_request_send_ussd(GRil *gril,
+				const char *ussd,
+				struct parcel *rilp)
+{
+	parcel_init(rilp);
+	parcel_w_string(rilp, ussd);
+
+	g_ril_append_print_buf(gril, "(%s)", ussd);
+}
+
+void g_ril_request_set_call_waiting(GRil *gril,
+					int enabled, int serviceclass,
+					struct parcel *rilp)
+{
+	parcel_init(rilp);
+
+	parcel_w_int32(rilp, 2);	/* Number of params */
+	parcel_w_int32(rilp, enabled);	/* on/off */
+
+	/*
+	 * Modem seems to respond with error to all queries
+	 * or settings made with bearer class
+	 * BEARER_CLASS_DEFAULT. Design decision: If given
+	 * class is BEARER_CLASS_DEFAULT let's map it to
+	 * SERVICE_CLASS_VOICE effectively making it the
+	 * default bearer.
+	 */
+	if (serviceclass == BEARER_CLASS_DEFAULT)
+		serviceclass = BEARER_CLASS_VOICE;
+
+	parcel_w_int32(rilp, serviceclass);	/* Service class */
+
+	g_ril_append_print_buf(gril, "(%d, 0x%x)", enabled, serviceclass);
+}
+
+void g_ril_request_query_call_waiting(GRil *gril,
+					int serviceclass,
+					struct parcel *rilp)
+{
+	parcel_init(rilp);
+
+	parcel_w_int32(rilp, 1);	/* Number of params */
+	/*
+	 * RILD expects service class to be 0 as certain carriers can reject the
+	 * query with specific service class
+	 */
+	parcel_w_int32(rilp, 0);
+
+	g_ril_append_print_buf(gril, "(0)");
+}
+
+void g_ril_request_set_clir(GRil *gril,
+				int mode,
+				struct parcel *rilp)
+{
+	parcel_init(rilp);
+
+	parcel_w_int32(rilp, 1);	/* Number of params */
+	parcel_w_int32(rilp, mode);
+
+	g_ril_append_print_buf(gril, "(%d)", mode);
+}

@@ -515,6 +515,68 @@ static const struct request_test_data set_mute_valid_test_2 = {
 	.parcel_size = sizeof(req_set_mute_valid_parcel2),
 };
 
+/* send_ussd tests */
+
+static const guchar req_send_ussd_parcel_valid_1[] = {
+	0x05, 0x00, 0x00, 0x00, 0x2a, 0x00, 0x31, 0x00, 0x31, 0x00, 0x38, 0x00,
+	0x23, 0x00, 0x00, 0x00
+};
+
+static const struct request_test_data send_ussd_valid_test_1 = {
+	.request = "*118#",
+	.parcel_data = req_send_ussd_parcel_valid_1,
+	.parcel_size = sizeof(req_send_ussd_parcel_valid_1),
+};
+
+/* set_call_waiting tests */
+
+struct request_test_set_call_waiting {
+	int enabled;
+	int serviceclass;
+	const char *parcel_data;
+	size_t parcel_size;
+};
+
+static const char req_set_call_waiting_parcel_valid_1[] = {
+	0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
+};
+
+static const struct request_test_set_call_waiting
+		set_call_waiting_valid_test_1 = {
+	.enabled = 0,
+	.serviceclass = 0x01,
+	.parcel_data = req_set_call_waiting_parcel_valid_1,
+	.parcel_size = sizeof(req_set_call_waiting_parcel_valid_1),
+};
+
+/* query_call_waiting tests */
+
+const int query_call_waiting_mode_0 = 0;
+
+static const guchar req_query_call_waiting_parcel_valid_1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static const struct request_test_data query_call_waiting_valid_test_1 = {
+	.request = &query_call_waiting_mode_0,
+	.parcel_data = req_query_call_waiting_parcel_valid_1,
+	.parcel_size = sizeof(req_query_call_waiting_parcel_valid_1),
+};
+
+/* set_clir tests */
+
+const int set_clir_mode_0 = 0;
+
+static const guchar req_set_clir_parcel_valid_1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static const struct request_test_data set_clir_valid_test_1 = {
+	.request = &set_clir_mode_0,
+	.parcel_data = req_set_clir_parcel_valid_1,
+	.parcel_size = sizeof(req_set_clir_parcel_valid_1),
+};
+
 /*
  * The following hexadecimal data represents a serialized Binder parcel
  * instance containing a valid RIL_REQUEST_RADIO_POWER 'OFF' message.
@@ -887,6 +949,61 @@ static void test_request_set_mute_valid(gconstpointer data)
 	parcel_free(&rilp);
 }
 
+static void test_request_send_ussd(gconstpointer data)
+{
+	const struct request_test_data *test_data = data;
+	struct parcel rilp;
+
+	g_ril_request_send_ussd(NULL, test_data->request, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+				test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
+static void test_request_set_call_waiting(gconstpointer data)
+{
+	const struct request_test_set_call_waiting *test_data = data;
+	struct parcel rilp;
+
+	g_ril_request_set_call_waiting(NULL, test_data->enabled,
+					test_data->serviceclass, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+				test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
+static void test_request_query_call_waiting(gconstpointer data)
+{
+	const struct request_test_data *test_data = data;
+	int mode = *(int *) test_data->request;
+	struct parcel rilp;
+
+	g_ril_request_query_call_waiting(NULL, mode, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+				test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
+static void test_request_set_clir(gconstpointer data)
+{
+	const struct request_test_data *test_data = data;
+	int mode = *(int *) test_data->request;
+	struct parcel rilp;
+
+	g_ril_request_set_clir(NULL, mode, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+				test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -1073,6 +1190,26 @@ int main(int argc, char **argv)
 				"valid SET_MUTE Test 2",
 				&set_mute_valid_test_2,
 				test_request_set_mute_valid);
+
+	g_test_add_data_func("/testgrilrequest/ussd: "
+				"valid SEND_USSD Test 1",
+				&send_ussd_valid_test_1,
+				test_request_send_ussd);
+
+	g_test_add_data_func("/testgrilrequest/call-settings: "
+				"valid SET_CALL_WAITING Test 1",
+				&set_call_waiting_valid_test_1,
+				test_request_set_call_waiting);
+
+	g_test_add_data_func("/testgrilrequest/call-settings: "
+				"valid QUERY_CALL_WAITING Test 1",
+				&query_call_waiting_valid_test_1,
+				test_request_query_call_waiting);
+
+	g_test_add_data_func("/testgrilrequest/call-settings: "
+				"valid SET_CLIR Test 1",
+				&set_clir_valid_test_1,
+				test_request_set_clir);
 
 #endif
 	return g_test_run();

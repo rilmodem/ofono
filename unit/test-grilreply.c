@@ -1344,6 +1344,63 @@ static const struct ril_msg reply_get_imei_valid_1 = {
 	.error = 0,
 };
 
+/*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_QUERY_CALL_WAITING reply with the following parameters:
+ *
+ * {1,0x30}
+ */
+static const guchar reply_query_call_waiting_valid_parcel1[] = {
+	0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x30, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_query_call_waiting_valid_1 = {
+	.buf = (gchar *) reply_query_call_waiting_valid_parcel1,
+	.buf_len = sizeof(reply_query_call_waiting_valid_parcel1),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_QUERY_CALL_WAITING,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_QUERY_CLIP reply with the following parameters:
+ *
+ * {1}
+ */
+static const guchar reply_query_clip_valid_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_query_clip_valid_1 = {
+	.buf = (gchar *) reply_query_clip_valid_parcel1,
+	.buf_len = sizeof(reply_query_clip_valid_parcel1),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_QUERY_CLIP,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_GET_CLIR reply with the following parameters:
+ *
+ * {2,4}
+ */
+static const guchar reply_get_clir_valid_parcel1[] = {
+	0x02, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_get_clir_valid_1 = {
+	.buf = (gchar *) reply_get_clir_valid_parcel1,
+	.buf_len = sizeof(reply_get_clir_valid_parcel1),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_GET_CLIR,
+	.serial_no = 0,
+	.error = 0,
+};
+
 static void test_reply_data_call_invalid(gconstpointer data)
 {
 	struct ofono_error error;
@@ -1514,6 +1571,35 @@ static void test_reply_get_imei_valid(gconstpointer data)
 	g_assert(imei != NULL);
 
 	g_free(imei);
+}
+
+static void test_reply_query_call_waiting_valid(gconstpointer data)
+{
+	int cls;
+
+	cls = g_ril_reply_parse_query_call_waiting(NULL, data);
+
+	g_assert(cls != -1);
+}
+
+static void test_reply_query_clip_valid(gconstpointer data)
+{
+	int clip_status;
+
+	clip_status = g_ril_reply_parse_query_clip(NULL, data);
+
+	g_assert(clip_status != -1);
+}
+
+static void test_reply_get_clir_valid(gconstpointer data)
+{
+	struct reply_clir *reply;
+
+	reply = g_ril_reply_parse_get_clir(NULL, data);
+
+	g_assert(reply != NULL);
+
+	g_ril_reply_free_get_clir(reply);
 }
 
 int main(int argc, char **argv)
@@ -1747,6 +1833,21 @@ int main(int argc, char **argv)
 				"valid GET_IMEI Test 1",
 				&reply_get_imei_valid_1,
 				test_reply_get_imei_valid);
+
+	g_test_add_data_func("/testgrilreply/call-settings: "
+				"valid QUERY_CALL_WAITING Test 1",
+				&reply_query_call_waiting_valid_1,
+				test_reply_query_call_waiting_valid);
+
+	g_test_add_data_func("/testgrilreply/call-settings: "
+				"valid QUERY_CLIP Test 1",
+				&reply_query_clip_valid_1,
+				test_reply_query_clip_valid);
+
+	g_test_add_data_func("/testgrilreply/call-settings: "
+				"valid GET_CLIR Test 1",
+				&reply_get_clir_valid_1,
+				test_reply_get_clir_valid);
 
 #endif
 

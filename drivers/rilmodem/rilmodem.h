@@ -51,3 +51,9 @@ extern void ril_gprs_exit(void);
 
 extern void ril_gprs_context_init(void);
 extern void ril_gprs_context_exit(void);
+
+extern void ril_ussd_init(void);
+extern void ril_ussd_exit(void);
+
+extern void ril_call_settings_init(void);
+extern void ril_call_settings_exit(void);
