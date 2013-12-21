@@ -641,8 +641,7 @@ else
 build_plugindir = $(plugindir)
 endif
 
-AM_CFLAGS = @DBUS_CFLAGS@ @GLIB_CFLAGS@ @USB_CFLAGS@ \
-					$(builtin_cflags) \
+AM_CFLAGS = @DBUS_CFLAGS@ @GLIB_CFLAGS@ $(builtin_cflags) \
 					-DOFONO_PLUGIN_BUILTIN \
 					-DPLUGINDIR=\""$(build_plugindir)"\"
 
