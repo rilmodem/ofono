@@ -30,6 +30,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 #include <glib.h>
 #include <glib/gprintf.h>
 
