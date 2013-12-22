@@ -1,3 +1,8 @@
+ver 1.14:
+	Add support for Apple Siri specific Handsfree commands.
+	Add support for provisioning of MMSC and Message Proxy.
+	Add support for Telit HE910 modems.
+
 ver 1.13:
 	Fix issue with parsing SS control strings.
 	Fix issue with error reporting and Sierra modems.
