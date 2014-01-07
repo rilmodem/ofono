@@ -312,6 +312,8 @@ static void io_disconnect(gpointer user_data)
 {
 	struct ril_s *ril = user_data;
 
+	ofono_error("%s: disconnected from rild", __func__);
+
 	ril_cleanup(ril);
 	g_ril_io_unref(ril->io);
 	ril->io = NULL;
@@ -351,7 +353,7 @@ static void handle_response(struct ril_s *p, struct ril_msg *message)
 				req->callback(message, req->user_data);
 
 			len = g_queue_get_length(p->out_queue);
-			DBG("requests in sent queue before removing:%d", len);
+			DBG("requests in out_queue before removing: %d", len);
 			for (i = 0; i < len; i++) {
 				id = GPOINTER_TO_INT(g_queue_peek_nth(
 							p->out_queue, i));
@@ -529,8 +531,11 @@ static struct ril_msg *read_fixed_record(struct ril_s *p,
 	*/
 
 	message_len = *len - 4;
-	if (message_len < plen)
+	if (message_len < plen) {
+		DBG("Not enough bytes for fixed record; len: %d avail: %d",
+			plen, message_len);
 		return NULL;
+	}
 
 	/* FIXME: add check for message_len = 0? */
 
@@ -560,8 +565,6 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 
 	p->in_read_handler = TRUE;
 
-	DBG("len: %d, wrap: %d", len, wrap);
-
 	while (p->suspended == FALSE && (p->read_so_far < len)) {
 		gsize rbytes = MIN(len - p->read_so_far, wrap - p->read_so_far);
 
@@ -579,10 +582,8 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 		message = read_fixed_record(p, buf, &rbytes);
 
 		/* wait for the rest of the record... */
-		if (message == NULL) {
-			DBG("Not enough bytes for fixed record");
+		if (message == NULL)
 			break;
-		}
 
 		buf += rbytes;
 		p->read_so_far += rbytes;
@@ -873,31 +874,36 @@ static void ril_cancel_group(struct ril_s *ril, guint group)
 	int n = 0;
 	guint len, i;
 	struct ril_request *req;
+	gboolean sent;
 
 	if (ril->command_queue == NULL)
 		return;
 
 	while ((req = g_queue_peek_nth(ril->command_queue, n)) != NULL) {
-		if (req->gid != group) {
+		if (req->id == 0 || req->gid != group) {
 			n += 1;
 			continue;
 		}
 
 		req->callback = NULL;
+		sent = FALSE;
 
 		len = g_queue_get_length(ril->out_queue);
 		for (i = 0; i < len; i++) {
 			if (GPOINTER_TO_INT(
 					g_queue_peek_nth(ril->out_queue, i))
 					== req->id) {
-				g_queue_pop_nth(ril->out_queue, i);
+				n += 1;
+				sent = TRUE;
 				break;
 			}
  		}
 
+		if (sent)
+			continue;
+
 		g_queue_remove(ril->command_queue, req);
 		ril_request_destroy(req);
-		n += 1;
 	}
 }
 
@@ -1098,7 +1104,8 @@ gint g_ril_send(GRil *ril, const gint reqid, struct parcel *rilp,
 
 	g_queue_push_tail(p->command_queue, r);
 
-	DBG("calling wakeup_writer: qlen: %d", g_queue_get_length(p->command_queue));
+	DBG("calling wakeup_writer: command_queue len: %d",
+		g_queue_get_length(p->command_queue));
 	ril_wakeup_writer(p);
 
 	if (rilp == NULL)
