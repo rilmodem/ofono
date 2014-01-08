@@ -79,6 +79,9 @@ void g_ril_unsol_free_sms_data(struct unsol_sms_data *unsol);
 struct unsol_sms_data *g_ril_unsol_parse_new_sms(GRil *gril,
 						const struct ril_msg *message);
 
+int g_ril_unsol_parse_radio_state_changed(GRil *gril,
+					const struct ril_msg *message);
+
 int g_ril_unsol_parse_signal_strength(GRil *gril,
 					const struct ril_msg *message);
 

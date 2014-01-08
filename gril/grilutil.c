@@ -178,6 +178,20 @@ const char *ril_pinstate_to_string(int pin_state)
 	}
 }
 
+const char *ril_radio_state_to_string(int radio_state)
+{
+	switch (radio_state) {
+	case RADIO_STATE_OFF:
+		return "OFF";
+	case RADIO_STATE_UNAVAILABLE:
+		return "UNAVAILABLE";
+	case RADIO_STATE_ON:
+		return "ON";
+	default:
+		return "<INVALID>";
+	}
+}
+
 const char *ril_request_id_to_string(int req)
 {
 	switch (req) {

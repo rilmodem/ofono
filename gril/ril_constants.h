@@ -57,6 +57,11 @@
 #define PREF_NET_TYPE_LTE_CMDA_EVDO_GSM_WCDMA 10
 #define PREF_NET_TYPE_LTE_ONLY 11
 
+/* Radio States */
+#define RADIO_STATE_OFF 0
+#define RADIO_STATE_UNAVAILABLE 1
+#define RADIO_STATE_ON 10
+
 /* Radio technologies */
 #define RADIO_TECH_UNKNOWN 0
 #define RADIO_TECH_GPRS 1

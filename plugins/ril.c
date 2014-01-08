@@ -30,10 +30,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
-#include <gril.h>
-#include <grilreply.h>
-#include <parcel.h>
-#include <grilrequest.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
@@ -58,6 +54,13 @@
 #include <ofono/audio-settings.h>
 #include <ofono/types.h>
 
+#include "ofono.h"
+
+#include <gril.h>
+#include <grilreply.h>
+#include <grilrequest.h>
+#include <grilunsol.h>
+
 #include "drivers/rilmodem/rilmodem.h"
 
 #define MAX_SIM_STATUS_RETRIES 15
@@ -67,6 +70,10 @@ struct ril_data {
 	int sim_status_retries;
 	ofono_bool_t connected;
 	ofono_bool_t have_sim;
+	ofono_bool_t ofono_online;
+	int radio_state;
+	struct ofono_sim *sim;
+	struct ofono_voicecall *voice;
 };
 
 static void send_get_sim_status(struct ofono_modem *modem);
@@ -87,6 +94,55 @@ static gboolean sim_status_retry(gpointer user_data)
 	return FALSE;
 }
 
+static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct ril_data *ril = ofono_modem_get_data(modem);
+	int radio_state = g_ril_unsol_parse_radio_state_changed(ril->modem,
+								message);
+
+	if (radio_state != ril->radio_state) {
+
+		ofono_info("%s: state: %s ril->ofono_online: %d",
+				__func__,
+				ril_radio_state_to_string(radio_state),
+				ril->ofono_online);
+
+		ril->radio_state = radio_state;
+
+		switch (radio_state) {
+		case RADIO_STATE_ON:
+
+			if (ril->voice == NULL)
+				ril->voice =
+					ofono_voicecall_create(modem,
+								0,
+								RILMODEM,
+								ril->modem);
+
+			send_get_sim_status(modem);
+			break;
+
+		case RADIO_STATE_UNAVAILABLE:
+		case RADIO_STATE_OFF:
+
+			/*
+			 * If radio powers off asychronously, then
+			 * assert, and let upstart re-start the stack.
+			 */
+			if (ril->ofono_online) {
+				ofono_error("%s: radio self-powered off!",
+						__func__);
+				g_assert(FALSE);
+			}
+			break;
+		default:
+			/* Malformed parcel; no radio state == broken rild */
+			g_assert(FALSE);
+		}
+	}
+}
+
 static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -95,45 +151,53 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 
 	DBG("");
 
-	/*
-	 * ril.h claims this should NEVER fail!
-	 * However this isn't quite true.  So,
-	 * on anything other than SUCCESS, we
-	 * log an error, and schedule another
-	 * GET_SIM_STATUS request.
-	 */
-
 	if (message->error != RIL_E_SUCCESS) {
 		ril->sim_status_retries++;
 
-		ofono_error("GET_SIM_STATUS reques failed: %d; retries: %d",
-				message->error, ril->sim_status_retries);
+		ofono_error("GET_SIM_STATUS request failed: %s; retries: %d",
+				ril_error_to_string(message->error),
+				ril->sim_status_retries);
 
 		if (ril->sim_status_retries < MAX_SIM_STATUS_RETRIES)
 			g_timeout_add_seconds(2, sim_status_retry, modem);
 		else
 			ofono_error("Max retries for GET_SIM_STATUS exceeded!");
 	} else {
+
 		if ((status = g_ril_reply_parse_sim_status(ril->modem, message))
 				!= NULL) {
+
 			if (status->card_state == RIL_CARDSTATE_PRESENT) {
-				DBG("have_sim = TRUE; powering on modem; num_apps: %d",
+				DBG("Card PRESENT; num_apps: %d",
 					status->num_apps);
-				ril->have_sim = TRUE;
+
+				if (!ril->have_sim) {
+					DBG("notify SIM inserted");
+					ril->have_sim = TRUE;
+
+					ofono_sim_inserted_notify(ril->sim, TRUE);
+				}
+
 			} else {
-				ofono_warn("No SIM card present.");
+				ofono_warn("Card NOT_PRESENT.");
+
+				if (ril->have_sim) {
+					DBG("notify SIM removed");
+					ril->have_sim = FALSE;
+
+					ofono_sim_inserted_notify(ril->sim, FALSE);
+				}
 			}
 			g_ril_reply_free_sim_status(status);
 		}
-		DBG("calling set_powered(TRUE)");
-		ofono_modem_set_powered(modem, TRUE);
 	}
-	/* TODO: handle emergency calls if SIM !present or locked */
 }
 
 static void send_get_sim_status(struct ofono_modem *modem)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
+
+	DBG("");
 
 	g_ril_send(ril->modem, RIL_REQUEST_GET_SIM_STATUS, NULL,
 			sim_status_cb, modem, NULL);
@@ -141,15 +205,17 @@ static void send_get_sim_status(struct ofono_modem *modem)
 
 static int ril_probe(struct ofono_modem *modem)
 {
-	struct ril_data *ril = NULL;
-
-	ril = g_try_new0(struct ril_data, 1);
+	struct ril_data *ril = g_try_new0(struct ril_data, 1);
 	if (ril == NULL) {
 		errno = ENOMEM;
 		goto error;
 	}
 
-	ril->modem = NULL;
+	DBG("");
+
+	ril->have_sim = FALSE;
+	ril->ofono_online = FALSE;
+	ril->radio_state = RADIO_STATE_OFF;
 
 	ofono_modem_set_data(modem, ril);
 
@@ -179,13 +245,11 @@ static void ril_remove(struct ofono_modem *modem)
 static void ril_pre_sim(struct ofono_modem *modem)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
-	struct ofono_sim *sim;
 
-	sim = ofono_sim_create(modem, 0, RILMODEM, ril->modem);
-	ofono_voicecall_create(modem, 0, RILMODEM, ril->modem);
+	DBG("");
 
-	if (sim && ril->have_sim)
-		ofono_sim_inserted_notify(sim, TRUE);
+	ril->sim = ofono_sim_create(modem, 0, RILMODEM, ril->modem);
+	g_assert(ril->sim != NULL);
 }
 
 static void ril_post_sim(struct ofono_modem *modem)
@@ -223,30 +287,32 @@ static void ril_post_online(struct ofono_modem *modem)
 static void ril_set_online_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
+	struct ril_data *ril = cbd->user;
 	ofono_modem_online_cb_t cb = cbd->cb;
 
-	if (message->error == RIL_E_SUCCESS)
+	if (message->error == RIL_E_SUCCESS) {
+		DBG("%s: set_online OK: ril->ofono_online: %d", __func__,
+			ril->ofono_online);
 		CALLBACK_WITH_SUCCESS(cb, cbd->data);
-	else
+	} else {
+		ofono_error("%s: set_online: %d failed", __func__,
+				ril->ofono_online);
 		CALLBACK_WITH_FAILURE(cb, cbd->data);
+	}
 }
 
 static void ril_send_power(struct ril_data *ril, ofono_bool_t online,
 				GRilResponseFunc func,
-				ofono_modem_online_cb_t callback,
-				void *data)
+				gpointer user_data)
 {
-	struct cb_data *cbd;
-	GDestroyNotify notify;
+	struct cb_data *cbd = user_data;
+	ofono_modem_online_cb_t cb;
+	GDestroyNotify notify = NULL;
 	struct parcel rilp;
 
-	if (callback) {
-		cbd = cb_data_new(callback, data, NULL);
+	if (cbd != NULL) {
 		notify = g_free;
-		g_assert(func);
-	} else {
-		cbd = NULL;
-		notify = NULL;
+		cb = cbd->cb;
 	}
 
 	DBG("(online = 1, offline = 0)): %i", online);
@@ -254,9 +320,10 @@ static void ril_send_power(struct ril_data *ril, ofono_bool_t online,
 	g_ril_request_power(ril->modem, (const gboolean) online, &rilp);
 
 	if (g_ril_send(ril->modem, RIL_REQUEST_RADIO_POWER, &rilp,
-			func, cbd, notify) == 0) {
+			func, cbd, notify) == 0 && cbd != NULL) {
+
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
 		g_free(cbd);
-		CALLBACK_WITH_FAILURE(callback, data);
 	}
 }
 
@@ -264,7 +331,13 @@ static void ril_set_online(struct ofono_modem *modem, ofono_bool_t online,
 				ofono_modem_online_cb_t callback, void *data)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
-	ril_send_power(ril, online, ril_set_online_cb, callback, data);
+	struct cb_data *cbd = cb_data_new(callback, data, ril);
+
+	ril->ofono_online = online;
+
+	DBG("setting ril->ofono_online to: %d", online);
+
+	ril_send_power(ril, online, ril_set_online_cb, cbd);
 }
 
 static void ril_connected(struct ril_msg *message, gpointer user_data)
@@ -277,14 +350,16 @@ static void ril_connected(struct ril_msg *message, gpointer user_data)
 	/* TODO: need a disconnect function to restart things! */
 	ril->connected = TRUE;
 
-	send_get_sim_status(modem);
+	DBG("calling set_powered(TRUE)");
+
+	ofono_modem_set_powered(modem, TRUE);
 }
 
 static int ril_enable(struct ofono_modem *modem)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
 
-	ril->have_sim = FALSE;
+	DBG("");
 
 	ril->modem = g_ril_new();
 
@@ -310,6 +385,9 @@ static int ril_enable(struct ofono_modem *modem)
 	g_ril_register(ril->modem, RIL_UNSOL_RIL_CONNECTED,
 			ril_connected, modem);
 
+	g_ril_register(ril->modem, RIL_UNSOL_RESPONSE_RADIO_STATE_CHANGED,
+			ril_radio_state_changed, modem);
+
 	ofono_devinfo_create(modem, 0, RILMODEM, ril->modem);
 
 	return -EINPROGRESS;
@@ -321,7 +399,7 @@ static int ril_disable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ril_send_power(ril, FALSE, NULL, NULL, NULL);
+	ril_send_power(ril, FALSE, NULL, NULL);
 
 	return 0;
 }
