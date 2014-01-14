@@ -1,0 +1,85 @@
+#!/usr/bin/python
+#
+#
+# This test ensures that basic modem information is available
+# when the modem is online and has a valid, unlocked SIM present.
+#
+# *** REQUIRED SETUP ***
+#
+# 1. /etc/host:
+# This script uses telnetlib to access the emulator console.  In
+# order for this to work, the emulator needs to be configured so
+# that it can access 'localhost' on the host machine.  This is 
+# done by modifying /etc/hosts in the emulator to define 'localhost'
+# as 10.0.2.2, which is a special alias to the host loopback interface.
+# Without this change, it's impossible for this script to access the
+# emulator console.
+#
+# 2. Modem online
+# This script must be run *after* the modem has been brought online,
+# otherwise it will fail.  This is currently done by telepathy-ofono,
+# which isn't being started in the current touch emulator, however it
+# will soon be the responsibility of urfkill.
+#
+#  *** TODO ***
+#
+# 1. This test calls HangupAll() which is an asynchronous operation.
+# There's no getting around that fact that a timer needs to be used
+# to delay querying the calls after the hangup.  The code currently
+# uses a time.sleep(5), however it could be changed to list for a
+# CallRemoved signal.  A timer would still be required to catch the
+# scenario where the signal was never received.
+#
+# 2. Implement signal handler in case time.sleep() is interruped by
+# by a signal.
+#
+
+import dbus
+import sys
+import time
+import telnetlib
+
+def create_incoming_call(number, port):
+
+    tn = telnetlib.Telnet("localhost", 5554)
+    tn.read_until("OK")
+
+    tn.write("gsm call " + number + "\n")
+    print "incoming call created"
+
+    tn.read_until("OK")
+    tn.write("exit")
+
+if __name__ == "__main__":
+
+    if len(sys.argv) == 2:
+       port = sys.argv[1]
+    else:
+        port = 5554
+
+    create_incoming_call("6663334444", port)
+
+    bus = dbus.SystemBus()
+
+    manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+						'org.ofono.Manager')
+    modems = manager.GetModems()
+
+    for path, properties in modems:
+	print "[ %s ]" % (path)
+
+	assert "org.ofono.VoiceCallManager" in properties["Interfaces"]
+
+	mgr = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.VoiceCallManager')
+	calls = mgr.GetCalls()
+
+        assert len(calls) > 0, "No incoming call present!"
+
+        mgr.HangupAll()
+
+        time.sleep(5)
+
+	calls = mgr.GetCalls()
+
+        assert len(calls) == 0, "HangupAll() failed, calls still exist!"
