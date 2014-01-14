@@ -1120,6 +1120,74 @@ static const struct ril_msg reply_sim_io_valid_1 = {
 };
 
 /*
+ * The following hexadecimal data contains the event data of an valid
+ * RIL_REQUEST_SIM_IO reply with the following parameters:
+ *
+ * {sw1=0x90,sw2=0x00,(null)}
+ * This is a reply to a select file for EF_ICCID.
+ */
+static const guchar reply_sim_io_valid_parcel2[] = {
+	0x90, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff
+};
+
+static const struct ril_msg reply_sim_io_valid_2 = {
+	.buf = (gchar *) reply_sim_io_valid_parcel2,
+	.buf_len = sizeof(reply_sim_io_valid_parcel2),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_SIM_IO,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data contains the event data of an invalid
+ * RIL_REQUEST_SIM_IO reply with the following parameters:
+ *
+ * Note - this is invalid because the response includes a non-hex char ('Z').
+ *
+ * {sw1=0x90,sw2=0x00,Z000000a2fe2040000000005020000}
+ * This is a reply to a select file for EF_ICCID.
+ */
+static const guchar reply_sim_io_invalid_parcel1[] = {
+	0x90, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1e, 0x00, 0x00, 0x00,
+	0x5A, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00,
+	0x30, 0x00, 0x61, 0x00, 0x32, 0x00, 0x66, 0x00, 0x65, 0x00, 0x32, 0x00,
+	0x30, 0x00, 0x34, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00,
+	0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x35, 0x00,
+	0x30, 0x00, 0x32, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00,
+	0x00, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_sim_io_invalid_1 = {
+	.buf = (gchar *) reply_sim_io_invalid_parcel1,
+	.buf_len = sizeof(reply_sim_io_invalid_parcel1),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_SIM_IO,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data contains the event data of an invalid
+ * RIL_REQUEST_SIM_IO reply with the following parameters:
+ *
+ * {sw1=0x90,sw2=0x00,<malformed length>}
+ * This is a reply to a select file for EF_ICCID.
+ */
+static const guchar reply_sim_io_invalid_parcel2[] = {
+	0x90, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff
+};
+
+static const struct ril_msg reply_sim_io_invalid_2 = {
+	.buf = (gchar *) reply_sim_io_invalid_parcel2,
+	.buf_len = sizeof(reply_sim_io_invalid_parcel2),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_SIM_IO,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
  * The following hexadecimal data contains the event data of a valid
  * RIL_REQUEST_GET_IMSI reply with the following parameters:
  *
@@ -1477,6 +1545,12 @@ static void test_reply_sim_io_valid(gconstpointer data)
 	g_ril_reply_free_sim_io(reply);
 }
 
+static void test_reply_sim_io_invalid(gconstpointer data)
+{
+	struct reply_sim_io *reply = g_ril_reply_parse_sim_io(NULL, data);
+	g_assert(reply == NULL);
+}
+
 static void test_reply_imsi_valid(gconstpointer data)
 {
 	gchar *reply = g_ril_reply_parse_imsi(NULL, data);
@@ -1778,6 +1852,21 @@ int main(int argc, char **argv)
 				"valid SIM_IO Test 1",
 				&reply_sim_io_valid_1,
 				test_reply_sim_io_valid);
+
+	g_test_add_data_func("/testgrilreply/sim: "
+				"valid SIM_IO Test 2",
+				&reply_sim_io_valid_2,
+				test_reply_sim_io_valid);
+
+	g_test_add_data_func("/testgrilreply/sim: "
+				"invalid SIM_IO Test 1",
+				&reply_sim_io_invalid_1,
+				test_reply_sim_io_invalid);
+
+	g_test_add_data_func("/testgrilreply/sim: "
+				"invalid SIM_IO Test 2",
+				&reply_sim_io_invalid_2,
+				test_reply_sim_io_invalid);
 
 	g_test_add_data_func("/testgrilreply/sim: "
 				"valid GET_IMSI Test 1",
