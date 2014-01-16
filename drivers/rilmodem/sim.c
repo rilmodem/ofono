@@ -245,7 +245,12 @@ static void ril_file_io_cb(struct ril_msg *message, gpointer user_data)
 	if ((reply = g_ril_reply_parse_sim_io(sd->ril, message))
 			== NULL) {
 		ofono_error("Can't parse SIM IO response from RILD");
-		decode_ril_error(&error, "FAIL");
+		goto error;
+	}
+
+	if (reply->hex_len == 0) {
+		ofono_error("Null SIM IO response from RILD");
+		g_ril_reply_free_sim_io(reply);
 		goto error;
 	}
 
