@@ -827,6 +827,70 @@ fail:
 	}
 }
 
+static void bind_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
+{
+	struct ofono_emulator *em = user_data;
+	char buf[128];
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_QUERY:
+		g_at_server_send_info(em->server, "+BIND: 1,1", TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+
+		__ofono_emulator_slc_condition(em,
+					OFONO_EMULATOR_SLC_CONDITION_BIND);
+		break;
+
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		sprintf(buf, "+BIND: (1)");
+		g_at_server_send_info(em->server, buf, TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+	{
+		GAtResultIter iter;
+		int hf_indicator;
+		int num_hf_indicators = 0;
+
+		g_at_result_iter_init(&iter, result);
+		g_at_result_iter_next(&iter, "");
+
+		/* check validity of the request */
+		while (num_hf_indicators < 20 &&
+				g_at_result_iter_next_number(&iter,
+							&hf_indicator)) {
+			if (hf_indicator > 0xffff)
+				goto fail;
+
+			num_hf_indicators += 1;
+		}
+
+		/* Check that we have nothing extra in the stream */
+		if (g_at_result_iter_skip_next(&iter) == TRUE)
+			goto fail;
+
+		/* request is valid, update the indicator activation status */
+		g_at_result_iter_init(&iter, result);
+		g_at_result_iter_next(&iter, "");
+
+		while (g_at_result_iter_next_number(&iter, &hf_indicator))
+			ofono_info("HF supports indicator: 0x%04x",
+					hf_indicator);
+
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+
+		break;
+	}
+
+	default:
+fail:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+}
+
 static void emulator_add_indicator(struct ofono_emulator *em, const char* name,
 					int min, int max, int dflt,
 					gboolean mandatory)
@@ -929,6 +993,7 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 		g_at_server_register(em->server, "+CCWA", ccwa_cb, em, NULL);
 		g_at_server_register(em->server, "+CMEE", cmee_cb, em, NULL);
 		g_at_server_register(em->server, "+BIA", bia_cb, em, NULL);
+		g_at_server_register(em->server, "+BIND", bind_cb, em, NULL);
 	}
 
 	__ofono_atom_register(em->atom, emulator_unregister);
