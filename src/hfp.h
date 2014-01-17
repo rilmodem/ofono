@@ -31,6 +31,7 @@ enum hfp_ag_feature {
 	HFP_AG_FEATURE_ENHANCED_CALL_CONTROL =	0x80,
 	HFP_AG_FEATURE_EXTENDED_RES_CODE =	0x100,
 	HFP_AG_FEATURE_CODEC_NEGOTIATION =	0x200,
+	HFP_AG_FEATURE_HF_INDICATORS =		0x400,
 };
 
 /* HFP HF supported features bitmap. Bluetooth HFP 1.6 spec page 88 */
@@ -43,6 +44,7 @@ enum hfp_hf_feature {
 	HFP_HF_FEATURE_ENHANCED_CALL_STATUS =	0x20,
 	HFP_HF_FEATURE_ENHANCED_CALL_CONTROL =	0x40,
 	HFP_HF_FEATURE_CODEC_NEGOTIATION =	0x80,
+	HFP_HF_FEATURE_HF_INDICATORS =		0x100,
 };
 
 /* HFP AG supported call hold and multiparty services bitmap. Bluetooth HFP 1.6 spec page 76 */
@@ -83,5 +85,6 @@ enum hfp_codec {
 enum hfp_version {
 	HFP_VERSION_1_5 =	0x0105,
 	HFP_VERSION_1_6 =	0x0106,
-	HFP_VERSION_LATEST =	HFP_VERSION_1_6,
+	HFP_VERSION_1_7 =	0x0107,
+	HFP_VERSION_LATEST =	HFP_VERSION_1_7,
 };
