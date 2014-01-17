@@ -636,7 +636,8 @@ done:
 
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 
-		em->slc = TRUE;
+		__ofono_emulator_slc_condition(em,
+					OFONO_EMULATOR_SLC_CONDITION_CMER);
 		break;
 	}
 
@@ -1264,5 +1265,33 @@ void __ofono_emulator_set_indicator_forced(struct ofono_emulator *em,
 			g_at_server_send_unsolicited(em->server, buf);
 		} else
 			ind->deferred = TRUE;
+	}
+}
+
+void __ofono_emulator_slc_condition(struct ofono_emulator *em,
+					enum ofono_emulator_slc_condition cond)
+{
+	if (em->slc == TRUE)
+		return;
+
+	switch (cond) {
+	case OFONO_EMULATOR_SLC_CONDITION_CMER:
+		if ((em->r_features & HFP_HF_FEATURE_3WAY) &&
+				(em->l_features & HFP_AG_FEATURE_3WAY))
+			return;
+		/* Fall Through */
+
+	case OFONO_EMULATOR_SLC_CONDITION_CHLD:
+		if ((em->r_features & HFP_HF_FEATURE_HF_INDICATORS) &&
+				(em->l_features & HFP_HF_FEATURE_HF_INDICATORS))
+			return;
+		/* Fall Through */
+
+	case OFONO_EMULATOR_SLC_CONDITION_BIND:
+		ofono_info("SLC reached");
+		em->slc = TRUE;
+
+	default:
+		break;
 	}
 }
