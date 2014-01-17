@@ -891,6 +891,44 @@ fail:
 	}
 }
 
+static void biev_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
+{
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+	{
+		GAtResultIter iter;
+		int hf_indicator;
+		int val;
+
+		g_at_result_iter_init(&iter, result);
+		g_at_result_iter_next(&iter, "");
+
+		if (g_at_result_iter_next_number(&iter, &hf_indicator) == FALSE)
+			goto fail;
+
+		if (hf_indicator != 1)
+			goto fail;
+
+		if (g_at_result_iter_next_number(&iter, &val) == FALSE)
+			goto fail;
+
+		if (val < 0 || val > 1)
+			goto fail;
+
+		ofono_info("Enhanced Safety indicator: %d", val);
+
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	}
+
+	default:
+fail:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+}
+
 static void emulator_add_indicator(struct ofono_emulator *em, const char* name,
 					int min, int max, int dflt,
 					gboolean mandatory)
@@ -994,6 +1032,7 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 		g_at_server_register(em->server, "+CMEE", cmee_cb, em, NULL);
 		g_at_server_register(em->server, "+BIA", bia_cb, em, NULL);
 		g_at_server_register(em->server, "+BIND", bind_cb, em, NULL);
+		g_at_server_register(em->server, "+BIEV", biev_cb, em, NULL);
 	}
 
 	__ofono_atom_register(em->atom, emulator_unregister);
