@@ -88,3 +88,7 @@ enum hfp_version {
 	HFP_VERSION_1_7 =	0x0107,
 	HFP_VERSION_LATEST =	HFP_VERSION_1_7,
 };
+
+enum hfp_hf_indicator {
+	HFP_HF_INDICATOR_ENHANCED_SAFETY =	0x0001,
+};
