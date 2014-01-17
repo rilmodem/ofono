@@ -3317,6 +3317,10 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 
 		ofono_emulator_send_info(em, buf, TRUE);
 		result.type = OFONO_ERROR_TYPE_NO_ERROR;
+
+		__ofono_emulator_slc_condition(em,
+					OFONO_EMULATOR_SLC_CONDITION_CHLD);
+
 		break;
 
 	case OFONO_EMULATOR_REQUEST_TYPE_QUERY:

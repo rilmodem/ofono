@@ -506,8 +506,17 @@ void __ofono_gprs_provision_free_settings(
 				int count);
 
 #include <ofono/emulator.h>
+
+enum ofono_emulator_slc_condition {
+	OFONO_EMULATOR_SLC_CONDITION_CMER,
+	OFONO_EMULATOR_SLC_CONDITION_CHLD,
+	OFONO_EMULATOR_SLC_CONDITION_BIND,
+};
+
 void __ofono_emulator_set_indicator_forced(struct ofono_emulator *em,
 						const char *name, int value);
+void __ofono_emulator_slc_condition(struct ofono_emulator *em,
+					enum ofono_emulator_slc_condition cond);
 
 #include <ofono/gnss.h>
 #include <ofono/cdma-sms.h>
