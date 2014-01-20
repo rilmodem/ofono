@@ -835,6 +835,9 @@ static gboolean can_write_data(gpointer data)
 	gsize len;
 	char *cr;
 	gboolean wakeup_first = FALSE;
+#ifdef WRITE_SCHEDULER_DEBUG
+	int limiter;
+#endif
 
 	/* Grab the first command off the queue and write as
 	 * much of it as we can
@@ -886,13 +889,20 @@ static gboolean can_write_data(gpointer data)
 		towrite = cr - (cmd->cmd + chat->cmd_bytes_written) + 1;
 
 #ifdef WRITE_SCHEDULER_DEBUG
-	if (towrite > 5)
-		towrite = 5;
+	limiter = towrite;
+
+	if (limiter > 5)
+		limiter = 5;
 #endif
 
 	bytes_written = g_at_io_write(chat->io,
 					cmd->cmd + chat->cmd_bytes_written,
-					towrite);
+#ifdef WRITE_SCHEDULER_DEBUG
+					limiter
+#else
+					towrite
+#endif
+					);
 
 	if (bytes_written == 0)
 		return FALSE;
