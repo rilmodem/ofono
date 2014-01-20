@@ -234,8 +234,8 @@ static void chld_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	info->ag_mpty_features = ag_mpty_feature;
 
-	if (info->ag_features & HFP_AG_FEATURE_HF_INDICATORS &&
-			info->hf_features & HFP_HF_FEATURE_HF_INDICATORS) {
+	if ((info->ag_features & HFP_AG_FEATURE_HF_INDICATORS) &&
+			(info->hf_features & HFP_HF_FEATURE_HF_INDICATORS)) {
 		slc_establish_data_ref(sed);
 		g_at_chat_send(info->chat, "AT+BIND=1", none_prefix,
 				bind_set_cb, sed, slc_establish_data_unref);
