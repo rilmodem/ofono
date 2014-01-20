@@ -51,6 +51,8 @@ struct ofono_handsfree {
 	ofono_bool_t inband_ringing;
 	ofono_bool_t voice_recognition;
 	ofono_bool_t voice_recognition_pending;
+	ofono_bool_t ddr;
+	ofono_bool_t ddr_pending;
 	unsigned int ag_features;
 	unsigned int ag_chld_features;
 	unsigned char battchg;
@@ -247,6 +249,10 @@ static DBusMessage *generate_get_properties_reply(struct ofono_handsfree *hf,
 		ofono_dbus_dict_append(&dict, "EchoCancelingNoiseReduction",
 						DBUS_TYPE_BOOLEAN, &hf->nrec);
 
+	if (hf->ag_features & HFP_AG_FEATURE_HF_INDICATORS)
+		ofono_dbus_dict_append(&dict, "DistractedDrivingReduction",
+						DBUS_TYPE_BOOLEAN, &hf->ddr);
+
 	voice_recognition = hf->voice_recognition;
 	ofono_dbus_dict_append(&dict, "VoiceRecognition", DBUS_TYPE_BOOLEAN,
 				&voice_recognition);
@@ -359,6 +365,30 @@ static void voicerec_set_cb(const struct ofono_error *error, void *data)
 					&hf->voice_recognition);
 }
 
+static void ddr_set_cb(const struct ofono_error *error, void *data)
+{
+	struct ofono_handsfree *hf = data;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(hf->atom);
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		__ofono_dbus_pending_reply(&hf->pending,
+					__ofono_error_failed(hf->pending));
+		return;
+	}
+
+	hf->ddr = hf->ddr_pending;
+
+	__ofono_dbus_pending_reply(&hf->pending,
+				dbus_message_new_method_return(hf->pending));
+
+	ofono_dbus_signal_property_changed(conn, path,
+					OFONO_HANDSFREE_INTERFACE,
+					"DistractedDrivingReduction",
+					DBUS_TYPE_BOOLEAN,
+					&hf->voice_recognition);
+}
+
 static void nrec_set_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_handsfree *hf = data;
@@ -437,6 +467,20 @@ static DBusMessage *handsfree_set_property(DBusConnection *conn,
 
 		hf->pending = dbus_message_ref(msg);
 		hf->driver->disable_nrec(hf, nrec_set_cb, hf);
+	} else if (g_str_equal(name, "DistractedDrivingReduction") == TRUE) {
+		if (!(hf->ag_features & HFP_AG_FEATURE_HF_INDICATORS))
+			return __ofono_error_not_supported(msg);
+
+		if (!hf->driver->hf_indicator)
+			return __ofono_error_not_implemented(msg);
+
+		if (hf->ddr == enabled)
+			return dbus_message_new_method_return(msg);
+
+		hf->pending = dbus_message_ref(msg);
+		hf->ddr_pending = enabled;
+		hf->driver->hf_indicator(hf, HFP_HF_INDICATOR_ENHANCED_SAFETY,
+						enabled, ddr_set_cb, hf);
 	} else
 		return __ofono_error_invalid_args(msg);
 
