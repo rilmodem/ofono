@@ -53,6 +53,7 @@ Properties	array{string} Features [readonly]
 				"private-chat"
 				"create-multiparty"
 				"transfer"
+				"hf-indicators"
 
 		boolean InbandRinging [readonly]
 
