@@ -19,6 +19,8 @@ Methods		dict GetProperties()
 
 			Possible Errors: [service].Error.InProgress
 					 [service].Error.InvalidArguments
+					 [service].Error.NotImplemented
+					 [service].Error.NotSupported
 
 		string RequestPhoneNumber()
 
@@ -63,7 +65,7 @@ Properties	array{string} Features [readonly]
 			to activate or deactivate the function from the HF, or
 			the AG could autonomously initiate it.
 
-		boolean EchoCancelingNoiseReduction [readwrite]
+		boolean EchoCancelingNoiseReduction [readwrite, optional]
 
 			Non-persistent Boolean property representing whether
 			echo canceling and noise reduction is enabled in the
