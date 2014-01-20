@@ -96,6 +96,9 @@ static const char **ag_features_list(unsigned int features,
 	if (chld_features & HFP_AG_CHLD_4)
 		list[i++] = "transfer";
 
+	if (features & HFP_AG_FEATURE_HF_INDICATORS)
+		list[i++] = "hf-indicators";
+
 	list[i] = NULL;
 
 	return list;
