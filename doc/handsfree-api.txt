@@ -83,3 +83,10 @@ Properties	array{string} Features [readonly]
 		array{string} SubscriberNumbers [readonly]
 
 			List of subscriber numbers provided by the AG.
+
+		boolean DistractedDrivingReduction [readwrite, optional]
+
+			Non-persistent property representing whether
+			distracted driving reduction mode should be enabled in
+			the AG.  Support for this feature is optional on the
+			AG.
