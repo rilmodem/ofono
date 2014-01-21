@@ -1086,6 +1086,7 @@ struct ofono_emulator *ofono_emulator_create(struct ofono_modem *modem,
 	em->l_features |= HFP_AG_FEATURE_ENHANCED_CALL_STATUS;
 	em->l_features |= HFP_AG_FEATURE_ENHANCED_CALL_CONTROL;
 	em->l_features |= HFP_AG_FEATURE_EXTENDED_RES_CODE;
+	em->l_features |= HFP_AG_FEATURE_HF_INDICATORS;
 	em->events_mode = 3;	/* default mode is forwarding events */
 	em->cmee_mode = 0;	/* CME ERROR disabled by default */
 
