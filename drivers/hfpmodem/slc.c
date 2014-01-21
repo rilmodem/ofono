@@ -78,6 +78,11 @@ void hfp_slc_info_init(struct hfp_slc_info *info, guint16 version)
 
 	info->hf_features |= HFP_HF_FEATURE_CODEC_NEGOTIATION;
 
+	if (version < HFP_VERSION_1_7)
+		goto done;
+
+	info->hf_features |= HFP_HF_FEATURE_HF_INDICATORS;
+
 done:
 	memset(info->cind_val, 0, sizeof(info->cind_val));
 	memset(info->cind_pos, 0, sizeof(info->cind_pos));
