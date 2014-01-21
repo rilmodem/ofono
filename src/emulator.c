@@ -1073,15 +1073,10 @@ struct ofono_emulator_request {
 };
 
 static void handler_proxy(GAtServer *server, GAtServerRequestType type,
-				GAtResult *result, gpointer userdata)
+					GAtResult *result, gpointer userdata)
 {
 	struct handler *h = userdata;
 	struct ofono_emulator_request req;
-
-	if (h->em->type == OFONO_EMULATOR_TYPE_HFP && h->em->slc == FALSE) {
-		g_at_server_send_final(h->em->server, G_AT_SERVER_RESULT_ERROR);
-		return;
-	}
 
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
@@ -1103,6 +1098,33 @@ static void handler_proxy(GAtServer *server, GAtServerRequestType type,
 	h->cb(h->em, &req, h->data);
 }
 
+static void handler_proxy_need_slc(GAtServer *server,
+					GAtServerRequestType type,
+					GAtResult *result, gpointer userdata)
+{
+	struct handler *h = userdata;
+
+	if (h->em->slc == FALSE) {
+		g_at_server_send_final(h->em->server, G_AT_SERVER_RESULT_ERROR);
+		return;
+	}
+
+	handler_proxy(server, type, result, userdata);
+}
+
+static void handler_proxy_chld(GAtServer *server, GAtServerRequestType type,
+				GAtResult *result, gpointer userdata)
+{
+	struct handler *h = userdata;
+
+	if (h->em->slc == FALSE && type != G_AT_SERVER_REQUEST_TYPE_SUPPORT) {
+		g_at_server_send_final(h->em->server, G_AT_SERVER_RESULT_ERROR);
+		return;
+	}
+
+	handler_proxy(server, type, result, userdata);
+}
+
 static void handler_destroy(gpointer userdata)
 {
 	struct handler *h = userdata;
@@ -1119,6 +1141,7 @@ ofono_bool_t ofono_emulator_add_handler(struct ofono_emulator *em,
 					void *data, ofono_destroy_func destroy)
 {
 	struct handler *h;
+	GAtServerNotifyFunc func = handler_proxy;
 
 	h = g_new0(struct handler, 1);
 	h->cb = cb;
@@ -1126,7 +1149,14 @@ ofono_bool_t ofono_emulator_add_handler(struct ofono_emulator *em,
 	h->destroy = destroy;
 	h->em = em;
 
-	if (g_at_server_register(em->server, prefix, handler_proxy, h,
+	if (em->type == OFONO_EMULATOR_TYPE_HFP) {
+		func = handler_proxy_need_slc;
+
+		if (!strcmp(prefix, "+CHLD"))
+			func = handler_proxy_chld;
+	}
+
+	if (g_at_server_register(em->server, prefix, func, h,
 					handler_destroy) == TRUE)
 		return TRUE;
 
