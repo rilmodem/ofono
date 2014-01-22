@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include <glib.h>
 
@@ -42,17 +43,17 @@ struct ofono_emulator {
 	enum ofono_emulator_type type;
 	GAtServer *server;
 	GAtPPP *ppp;
-	gboolean slc;
 	int l_features;
 	int r_features;
-	int events_mode;
-	gboolean events_ind;
-	unsigned char cmee_mode;
 	GSList *indicators;
 	guint callsetup_source;
-	gboolean clip;
-	gboolean ccwa;
 	int pns_id;
+	bool slc : 1;
+	unsigned int events_mode : 2;
+	bool events_ind : 1;
+	unsigned int cmee_mode : 2;
+	bool clip : 1;
+	bool ccwa : 1;
 };
 
 struct indicator {
