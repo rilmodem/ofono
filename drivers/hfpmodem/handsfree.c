@@ -360,6 +360,25 @@ static void hfp_disable_nrec(struct ofono_handsfree *hf,
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
+static void hfp_hf_indicator(struct ofono_handsfree *hf,
+				unsigned short indicator, unsigned int value,
+				ofono_handsfree_cb_t cb, void *data)
+{
+	struct hf_data *hd = ofono_handsfree_get_data(hf);
+	struct cb_data *cbd = cb_data_new(cb, data);
+	char buf[128];
+
+	snprintf(buf, sizeof(buf), "AT+BIEV=%u,%u", indicator, value);
+
+	if (g_at_chat_send(hd->chat, buf, NULL, hf_generic_set_cb,
+							cbd, g_free) > 0)
+		return;
+
+	g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, data);
+}
+
 static struct ofono_handsfree_driver driver = {
 	.name			= "hfpmodem",
 	.probe			= hfp_handsfree_probe,
@@ -368,6 +387,7 @@ static struct ofono_handsfree_driver driver = {
 	.request_phone_number	= hfp_request_phone_number,
 	.voice_recognition	= hfp_voice_recognition,
 	.disable_nrec		= hfp_disable_nrec,
+	.hf_indicator		= hfp_hf_indicator,
 };
 
 void hfp_handsfree_init(void)
