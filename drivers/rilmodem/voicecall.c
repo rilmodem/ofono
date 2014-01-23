@@ -433,13 +433,28 @@ static void ril_hangup_all(struct ofono_voicecall *vc,
 
 	for (l = vd->calls; l; l = l->next) {
 		call = l->data;
-		/* TODO: Hangup just the active ones once we have call
-		 * state tracking (otherwise it can't handle ringing) */
-		g_ril_request_hangup(vd->ril, call->id, &rilp);
 
-		/* Send request to RIL */
-		ril_template(RIL_REQUEST_HANGUP, vc, generic_cb,
-				AFFECTED_STATES_ALL, &rilp, NULL, NULL);
+		if (call->status == CALL_STATUS_INCOMING) {
+			/*
+			 * Need to use this request so that declined
+			 * calls in this state, are properly forwarded
+			 * to voicemail.  REQUEST_HANGUP doesn't do the
+			 * right thing for some operators, causing the
+			 * caller to hear a fast busy signal.
+			 */
+			ril_template(RIL_REQUEST_HANGUP_WAITING_OR_BACKGROUND,
+					vc, generic_cb, AFFECTED_STATES_ALL,
+					NULL, NULL, NULL);
+		} else {
+
+			/* TODO: Hangup just the active ones once we have call
+			 * state tracking (otherwise it can't handle ringing) */
+			g_ril_request_hangup(vd->ril, call->id, &rilp);
+
+			/* Send request to RIL */
+			ril_template(RIL_REQUEST_HANGUP, vc, generic_cb,
+					AFFECTED_STATES_ALL, &rilp, NULL, NULL);
+		}
 	}
 
 	/* TODO: Deal in case of an error at hungup */
