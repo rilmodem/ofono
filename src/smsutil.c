@@ -240,7 +240,7 @@ gboolean sms_mwi_dcs_decode(guint8 dcs, enum sms_mwi_type *type,
 	else
 		ch = SMS_CHARSET_7BIT;
 
-	act = dcs & 0x8;
+	act = (dcs & 0x8) ? TRUE : FALSE;
 
 	t = (enum sms_mwi_type) (dcs & 0x3);
 

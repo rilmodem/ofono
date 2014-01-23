@@ -257,6 +257,7 @@ static void ril_post_sim(struct ofono_modem *modem)
 	struct ril_data *ril = ofono_modem_get_data(modem);
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
+	struct ofono_message_waiting *mw;
 
 	/* TODO: this function should setup:
 	 *  - phonebook
@@ -272,6 +273,10 @@ static void ril_post_sim(struct ofono_modem *modem)
 		DBG("calling gprs_add_context");
 		ofono_gprs_add_context(gprs, gc);
 	}
+
+	mw = ofono_message_waiting_create(modem);
+	if (mw)
+		ofono_message_waiting_register(mw);
 }
 
 static void ril_post_online(struct ofono_modem *modem)
