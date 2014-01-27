@@ -232,6 +232,7 @@ static int hfp_handsfree_probe(struct ofono_handsfree *hf,
 {
 	struct hfp_slc_info *info = data;
 	struct hf_data *hd;
+	unsigned int i;
 
 	DBG("");
 	hd = g_new0(struct hf_data, 1);
@@ -244,6 +245,14 @@ static int hfp_handsfree_probe(struct ofono_handsfree *hf,
 	hd->battchg_index = info->cind_pos[HFP_INDICATOR_BATTCHG];
 	ofono_handsfree_battchg_notify(hf,
 					info->cind_val[HFP_INDICATOR_BATTCHG]);
+
+	ofono_handsfree_set_hf_indicators(hf, info->hf_indicators,
+						info->num_hf_indicators);
+
+	for (i = 0; i < info->num_hf_indicators; i++)
+		ofono_handsfree_hf_indicator_active_notify(hf,
+			info->hf_indicators[i],
+			info->hf_indicator_active_map & (1 << i));
 
 	hd->register_source = g_idle_add(hfp_handsfree_register, hf);
 
