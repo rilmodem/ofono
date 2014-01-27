@@ -672,7 +672,11 @@ test_scripts = test/backtrace \
 		test/release-and-swap \
 		test/hold-and-answer \
 		test/hangup-multiparty \
-		test/hangup-call
+		test/hangup-call \
+		test/rilmodem/test-hangup \
+		test/rilmodem/test-modem-offline \
+		test/rilmodem/test-sim-online
+
 
 if TEST
 testdir = $(pkglibdir)/test
