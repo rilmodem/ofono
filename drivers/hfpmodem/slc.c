@@ -117,9 +117,11 @@ static void slc_established(struct slc_establish_data *sed)
 static void bind_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct slc_establish_data *sed = user_data;
+	struct hfp_slc_info *info = sed->info;
 	GAtResultIter iter;
 	int hf_indicator;
 	int enabled;
+	unsigned int i;
 
 	if (!ok)
 		goto error;
@@ -135,6 +137,15 @@ static void bind_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 		ofono_info("AG wants indicator %d %s",
 				hf_indicator, enabled ? "enabled" : "disabled");
+
+		for (i = 0; i < info->num_hf_indicators; i++) {
+			if (info->hf_indicators[i] != hf_indicator)
+				continue;
+
+			info->hf_indicator_active_map |= enabled << i;
+		}
+
+		ofono_info("Active map: %02x", info->hf_indicator_active_map);
 	}
 
 	slc_established(sed);
@@ -163,11 +174,14 @@ static void bind_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		goto error;
 
 	while (g_at_result_iter_next_number(&iter, &hf_indicator)) {
-		ofono_info("AG supports the following indicator: %d",
+		if (info->num_hf_indicators >= 20)
+			goto error;
+
+		ofono_info("AG supports the following HF indicator: %d",
 				hf_indicator);
 
-		if (hf_indicator == HFP_HF_INDICATOR_ENHANCED_SAFETY)
-			ofono_info("Distracted Driving Reduction");
+		info->hf_indicators[info->num_hf_indicators] = hf_indicator;
+		info->num_hf_indicators += 1;
 	}
 
 	if (!g_at_result_iter_close_list(&iter))

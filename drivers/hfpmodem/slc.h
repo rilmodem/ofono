@@ -39,6 +39,9 @@ struct hfp_slc_info {
 	unsigned int hf_features;
 	unsigned char cind_pos[HFP_INDICATOR_LAST];
 	unsigned int cind_val[HFP_INDICATOR_LAST];
+	unsigned short hf_indicators[20];
+	unsigned char num_hf_indicators;
+	unsigned int hf_indicator_active_map;
 };
 
 void hfp_slc_info_init(struct hfp_slc_info *info, guint16 version);
