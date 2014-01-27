@@ -9,242 +9,242 @@ import dbus
 import time
 
 def is_modem_online(properties):
-    """Returns the modem 'Online' property.
-    """
-    return properties['Online']
+	"""Returns the modem 'Online' property.
+	"""
+	return properties['Online']
 
 def set_modem_online(modem, path):
-    """Sets the modem 'Online' property.
-    """
+	"""Sets the modem 'Online' property.
+	"""
 
-    print "Setting modem %s online..." % path
+	print "Setting modem %s online..." % path
 
-    modem.SetProperty("Online", dbus.Boolean(1), timeout = 120)
+	modem.SetProperty("Online", dbus.Boolean(1), timeout = 120)
 
 def validate_emergency_numbers():
-    # valid VoiceCallManager properties
-    voice = dbus.Interface(bus.get_object('org.ofono', path),
-                           'org.ofono.VoiceCallManager')
+	# valid VoiceCallManager properties
+	voice = dbus.Interface(bus.get_object('org.ofono', path),
+			'org.ofono.VoiceCallManager')
 
-    properties = voice.GetProperties()
-    keys = properties.keys()
+	properties = voice.GetProperties()
+	keys = properties.keys()
 
-    assert keys.index('EmergencyNumbers') != 'ValueError'
+	assert keys.index("EmergencyNumbers") != "ValueError"
 
-    numbers = properties['EmergencyNumbers']
+	numbers = properties["EmergencyNumbers"]
 
-    print "%s" % numbers
+	print "%s" % numbers
 
-    for number in numbers:
-        assert number in ['08', '000', '999', '110', '112', '911', '118', '119']
+	for number in numbers:
+		assert number in ["08", "000", "999", "110", "112", "911", "118", "119"]
 
-        print "OK\n"
+	print "OK\n"
 
 def validate_netreg(args, path):
-    """Validates NetworkRegistration properties.
-    """
+	"""Validates NetworkRegistration properties.
+	"""
 
-    # valid NetworkRegistration properties
-    netreg = dbus.Interface(bus.get_object('org.ofono', path),
-                            'org.ofono.NetworkRegistration')
+	# valid NetworkRegistration properties
+	netreg = dbus.Interface(bus.get_object('org.ofono', path),
+				'org.ofono.NetworkRegistration')
 
-    properties = netreg.GetProperties()
-    keys = properties.keys()
+	properties = netreg.GetProperties()
+	keys = properties.keys()
 
-    assert keys.index('Status') != 'ValueError'
+	assert keys.index("Status") != "ValueError"
 
-    # TODO: no Strength reported by emulator!
-    # assert keys.index('Strength') != 'ValueError'
+	# TODO: no Strength reported by emulator!
+	# assert keys.index("Strength") != "ValueError"
 
-    assert keys.index('Name') != 'ValueError'
-    assert keys.index('LocationAreaCode') != 'ValueError'
-    assert keys.index('Mode') != 'ValueError'
-    assert keys.index('MobileCountryCode') != 'ValueError'
+	assert keys.index("Name") != "ValueError"
+	assert keys.index("LocationAreaCode") != "ValueError"
+	assert keys.index("Mode") != "ValueError"
+	assert keys.index("MobileCountryCode") != "ValueError"
 
-    # TODO: no Technology reported by emulator
-    # assert keys.index('Technology') != 'ValueError'
+	# TODO: no Technology reported by emulator
+	# assert keys.index("Technology") != "ValueError"
 
-    assert keys.index('CellId') != 'ValueError'
-    assert keys.index('MobileNetworkCode') != 'ValueError'
+	assert keys.index("CellId") != "ValueError"
+	assert keys.index("MobileNetworkCode") != "ValueError"
 
-    assert properties['Status'] == 'registered'
-    assert properties['Name'] == 'Android (Android)'
-    assert properties['LocationAreaCode'] == 65535
+	assert properties["Status"] == "registered"
+	assert properties["Name"] == "Android (Android)"
+	assert properties["LocationAreaCode"] == 65535
 
-    # TODO: emulator reports 'Mode' as 'auto' ! 'auto-only'
-    # assert properties['Mode'] == 'auto-only'
+	# TODO: emulator reports "Mode" as "auto" ! "auto-only"
+	# assert properties["Mode"] == "auto-only"
 
-    assert properties['MobileCountryCode'] == '310'
+	assert properties["MobileCountryCode"] == "310"
     
-    # TODO: no Technology reported by emulator
-    # assert properties['Technology'] == 'umts'
+	# TODO: no Technology reported by emulator
+	# assert properties["Technology"] == "umts"
 
-    assert properties['MobileNetworkCode'] == '260'
+	assert properties["MobileNetworkCode"] == "260"
 
 
 def parse_arguments():
-    """Parses command-line arguments.
-    """
+	"""Parses command-line arguments.
+	"""
 
-    parser = argparse.ArgumentParser(
-        description='test-sim-online script')
-    parser.add_argument('-e',
-                        '--emulator',
-                        dest='emulator',
-                        action='store_true',
-                        help='''Indicates that this script is to
-                        run in the Touch emulator''',
-                        default=False
-                        )
-    parser.add_argument('-o',
-                        '--online',
-                        dest='online',
-                        action='store_true',
-                        help='''Set the modem online if required''',
-                        default=False,
-                        )
-    parser.add_argument('--mnc',
-                        dest='mnc',
-                        help='''Specify a MNC (mobile-network-code) to
-                        match against''',
-                        default='',
-                        )
-    parser.add_argument('--mcc',
-                        dest='mcc',
-                        help='''Specify a MCC (mobile-country-code) to
-                        match against''',
-                        default='',
-                        )
-    parser.add_argument('--subscriber',
-                        dest='subscriber',
-                        help='''Specify a SubscriberIdentity to
-                        match against''',
-                        default='',
-                        )
-    parser.add_argument('--netreg',
-                        dest='netreg',
-                        action='store_true',
-                        help='''Validate Netreg interface''',
-                        default=False,
-                        )
+	parser = argparse.ArgumentParser(description="test-sim-online script")
 
-    return parser.parse_args()
+	parser.add_argument("-e",
+			"--emulator",
+			dest="emulator",
+			action="store_true",
+			help="""Indicates that this script is to
+			run in the Touch emulator""",
+			default=False
+			)
+	parser.add_argument("-o",
+			"--online",
+			dest="online",
+			action="store_true",
+			help="""Set the modem online if required""",
+			default=False,
+			)
+	parser.add_argument("--mnc",
+			dest="mnc",
+			help="""Specify a MNC (mobile-network-code) to
+			match against""",
+			default="",
+			)
+	parser.add_argument("--mcc",
+			dest="mcc",
+			help="""Specify a MCC (mobile-country-code) to
+			match against""",
+			default="",
+			)
+	parser.add_argument("--subscriber",
+			dest="subscriber",
+			help="""Specify a SubscriberIdentity to
+			match against""",
+			default="",
+			)
+	parser.add_argument("--netreg",
+			dest="netreg",
+			action="store_true",
+			help="""Validate Netreg interface""",
+			default=False,
+			)
+
+	return parser.parse_args()
 
 def main(args):
 
-    bus = dbus.SystemBus()
+	bus = dbus.SystemBus()
 
-    manager = dbus.Interface(bus.get_object('org.ofono', '/'),
-                             'org.ofono.Manager')
-    modems = manager.GetModems()
-    path = modems[0][0]
-    modem = dbus.Interface(bus.get_object('org.ofono', path), 'org.ofono.Modem')
-    properties = modem.GetProperties()
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+				'org.ofono.Manager')
+	modems = manager.GetModems()
+	path = modems[0][0]
+	modem = dbus.Interface(bus.get_object('org.ofono', path), 'org.ofono.Modem')
+	properties = modem.GetProperties()
 
-    print "[ %s ]" % path
+	print "[ %s ]" % path
 
-    if is_modem_online(properties) == 0 and args.online == True:
-        set_modem_online(modem, path)
-        time.sleep(5)
+	if is_modem_online(properties) == 0 and args.online == True:
+		set_modem_online(modem, path)
+		time.sleep(5)
 
-    keys = properties.keys()
+	keys = properties.keys()
 
-    assert keys.index("Features") != 'ValueError'
-    assert keys.index("Emergency") != 'ValueError'
-    assert keys.index("Powered") != 'ValueError'
-    assert keys.index("Lockdown") != 'ValueError'
-    assert keys.index("Interfaces") != 'ValueError'
-    assert keys.index('Online') != 'ValueError'
-    assert keys.index('Model') != 'ValueError'
+	assert keys.index("Features") != "ValueError"
+	assert keys.index("Emergency") != "ValueError"
+	assert keys.index("Powered") != "ValueError"
+	assert keys.index("Lockdown") != "ValueError"
+	assert keys.index("Interfaces") != "ValueError"
+	assert keys.index("Online") != "ValueError"
+	assert keys.index("Model") != "ValueError"
 
-    # TODO: not properly set by emulator
-    if args.emulator == False:
-        assert keys.index("Revision") != 'ValueError'
+	# TODO: not properly set by emulator
+	if args.emulator == False:
+		assert keys.index("Revision") != "ValueError"
 
-    assert keys.index('Type') != 'ValueError'
+	assert keys.index("Type") != "ValueError"
     
-    # TODO: not properly set by emulator
-    if args.emulator == False:
-        assert keys.index('Serial') != 'ValueError'
+	# TODO: not properly set by emulator
+	if args.emulator == False:
+		assert keys.index("Serial") != "ValueError"
 
-    assert keys.index('Manufacturer') != 'ValueError'
+	assert keys.index("Manufacturer") != "ValueError"
 
-    # validate Features = net sms gprs sim
+	# validate Features = net sms gprs sim
 
-    assert properties['Emergency'] == 0
-    assert properties['Powered'] == 1
-    assert properties["Lockdown"] == 0
+	assert properties["Emergency"] == 0
+	assert properties["Powered"] == 1
+	assert properties["Lockdown"] == 0
 
-    # TODO: validate Interfaces: NetworkReg, CallVolume, MessageManager,
-    #       ConnectionManager, NetworkTime, SimManager, VoiceCallManager
+	# TODO: validate Interfaces: NetworkReg, CallVolume, MessageManager,
+	#       ConnectionManager, NetworkTime, SimManager, VoiceCallManager
 
-    assert properties['Online'] == 1
-    assert properties['Model'] == "Fake Modem Model"
-    assert properties['Type'] == "hardware"
+	assert properties["Online"] == 1
+	assert properties["Model"] == "Fake Modem Model"
+	assert properties["Type"] == "hardware"
 
-    # TODO: not properly set by emulator
-    # assert properties['Serial'] == "000000000000000"
+	# TODO: not properly set by emulator
+	# assert properties["Serial"] == "000000000000000"
 
-    assert properties['Manufacturer'] == "Fake Manufacturer"
+	assert properties["Manufacturer"] == "Fake Manufacturer"
 
-    # valid SimManager properties
-    simmanager = dbus.Interface(bus.get_object('org.ofono', path),
-                                'org.ofono.SimManager')
+	# valid SimManager properties
+	simmanager = dbus.Interface(bus.get_object('org.ofono', path),
+				'org.ofono.SimManager')
 
-    properties = simmanager.GetProperties()
-    keys = properties.keys()
+	properties = simmanager.GetProperties()
+	keys = properties.keys()
 
-    assert keys.index('Retries') != 'ValueError'
-    assert keys.index('FixedDialing') != 'ValueError'
-    assert keys.index('MobileCountryCode') != 'ValueError'
-    assert keys.index('SubscriberNumbers') != 'ValueError'
-    assert keys.index('BarredDialing') != 'ValueError'
-    assert keys.index('CardIdentifier') != 'ValueError'
-    assert keys.index('LockedPins') != 'ValueError'
-    assert keys.index('MobileNetworkCode') != 'ValueError'
-    assert keys.index('SubscriberIdentity') != 'ValueError'
-    assert keys.index('Present') != 'ValueError'
-    assert keys.index('PinRequired') != 'ValueError'
+	assert keys.index("Retries") != "ValueError"
+	assert keys.index("FixedDialing") != "ValueError"
+	assert keys.index("MobileCountryCode") != "ValueError"
+	assert keys.index("SubscriberNumbers") != "ValueError"
+	assert keys.index("BarredDialing") != "ValueError"
+	assert keys.index("CardIdentifier") != "ValueError"
+	assert keys.index("LockedPins") != "ValueError"
+	assert keys.index("MobileNetworkCode") != "ValueError"
+	assert keys.index("SubscriberIdentity") != "ValueError"
+	assert keys.index("Present") != "ValueError"
+	assert keys.index("PinRequired") != "ValueError"
 
-    # TODO: Retries isn't currently populated ( lp: )
-    # assert properties['Retries'] == 
+	# TODO: Retries isn't currently populated ( lp: )
+	# assert properties["Retries"] ==
 
-    assert properties['FixedDialing'] == 0
+	assert properties["FixedDialing"] == 0
 
-    # TODO: make these optional arguments
-    if args.emulator:
-        assert properties['MobileCountryCode'] == '310'
-    elif args.mcc != '':
-        assert properties['MobileCountryCode'] == args.mcc
+	# TODO: make these optional arguments
+	if args.emulator:
+		assert properties["MobileCountryCode"] == "310"
+	elif args.mcc != "":
+		assert properties["MobileCountryCode"] == args.mcc
 
-    if args.emulator:
-        assert properties['SubscriberNumbers'][0] == '15555215554'
+	if args.emulator:
+		assert properties["SubscriberNumbers"][0] == "15555215554"
 
-    assert properties['BarredDialing'] == 0
+	assert properties["BarredDialing"] == 0
 
-    if args.emulator:
-        assert properties['CardIdentifier'] == '89014103211118510720'
+	if args.emulator:
+		assert properties["CardIdentifier"] == "89014103211118510720"
 
-    assert len(properties['LockedPins']) == 0
+	assert len(properties["LockedPins"]) == 0
 
-    if args.emulator:
-        assert properties['MobileNetworkCode'] == '260'
-    elif args.mnc != '':
-        assert properties['MobileNetworkCode'] == args.mnc
+	if args.emulator:
+		assert properties["MobileNetworkCode"] == "260"
+	elif args.mnc != "":
+		assert properties["MobileNetworkCode"] == args.mnc
 
-    if args.emulator:
-        assert properties['SubscriberIdentity'] == '310260000000000'
-    elif args.subscriber != '':
-        assert properties['SubscriberIdentity'] == args.subscriber
+	if args.emulator:
+		assert properties["SubscriberIdentity"] == "310260000000000"
+	elif args.subscriber != "":
+		assert properties["SubscriberIdentity"] == args.subscriber
 
-    assert properties['Present'] == 1
-    assert properties['PinRequired'] == "none"
+	assert properties["Present"] == 1
+	assert properties["PinRequired"] == "none"
 
-    if args.netreg:
-        validate_netreg(args, path)
+	if args.netreg:
+		validate_netreg(args, path)
 
-    # TODO: add support for emergency numbers
+	# TODO: add support for emergency numbers
 
 if __name__ == "__main__":
-    args = parse_arguments()
-    main(args)
+	args = parse_arguments()
+	main(args)

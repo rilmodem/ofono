@@ -37,45 +37,45 @@ import telnetlib
 
 def create_incoming_call(number, port):
 
-    tn = telnetlib.Telnet("localhost", 5554)
-    tn.read_until("OK")
+	tn = telnetlib.Telnet("localhost", 5554)
+	tn.read_until("OK")
 
-    tn.write("gsm call " + number + "\n")
-    print "incoming call created"
+	tn.write("gsm call " + number + "\n")
+	print "incoming call created"
 
-    tn.read_until("OK")
-    tn.write("exit")
+	tn.read_until("OK")
+	tn.write("exit")
 
 if __name__ == "__main__":
 
-    if len(sys.argv) == 2:
-       port = sys.argv[1]
-    else:
-        port = 5554
+	if len(sys.argv) == 2:
+		port = sys.argv[1]
+	else:
+		port = 5554
 
-    create_incoming_call("6663334444", port)
+	create_incoming_call("6663334444", port)
 
-    bus = dbus.SystemBus()
+	bus = dbus.SystemBus()
 
-    manager = dbus.Interface(bus.get_object('org.ofono', '/'),
-						'org.ofono.Manager')
-    modems = manager.GetModems()
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+				'org.ofono.Manager')
+	modems = manager.GetModems()
 
-    for path, properties in modems:
-	print "[ %s ]" % (path)
+	for path, properties in modems:
+		print "[ %s ]" % (path)
 
-	assert "org.ofono.VoiceCallManager" in properties["Interfaces"]
+		assert "org.ofono.VoiceCallManager" in properties["Interfaces"]
 
-	mgr = dbus.Interface(bus.get_object('org.ofono', path),
-					'org.ofono.VoiceCallManager')
-	calls = mgr.GetCalls()
+		mgr = dbus.Interface(bus.get_object('org.ofono', path),
+				'org.ofono.VoiceCallManager')
+		calls = mgr.GetCalls()
 
-        assert len(calls) > 0, "No incoming call present!"
+		assert len(calls) > 0, "No incoming call present!"
 
-        mgr.HangupAll()
+		mgr.HangupAll()
 
-        time.sleep(5)
+		time.sleep(5)
 
-	calls = mgr.GetCalls()
+		calls = mgr.GetCalls()
 
-        assert len(calls) == 0, "HangupAll() failed, calls still exist!"
+		assert len(calls) == 0, "HangupAll() failed, calls still exist!"
