@@ -206,6 +206,27 @@ static void hfp_cnum_query(struct ofono_handsfree *hf,
 	CALLBACK_WITH_FAILURE(cb, -1, NULL, data);
 }
 
+static void bind_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_handsfree *hf = user_data;
+	int hf_indicator;
+	int active;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+BIND:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &hf_indicator))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &active))
+		return;
+
+	ofono_handsfree_hf_indicator_active_notify(hf, hf_indicator, active);
+}
+
 static gboolean hfp_handsfree_register(gpointer user_data)
 {
 	struct ofono_handsfree *hf = user_data;
@@ -216,6 +237,7 @@ static gboolean hfp_handsfree_register(gpointer user_data)
 	g_at_chat_register(hd->chat, "+BSIR:", bsir_notify, FALSE, hf, NULL);
 	g_at_chat_register(hd->chat, "+BVRA:", bvra_notify, FALSE, hf, NULL);
 	g_at_chat_register(hd->chat, "+CIEV:", ciev_notify, FALSE, hf, NULL);
+	g_at_chat_register(hd->chat, "+BIND:", bind_notify, FALSE, hf, NULL);
 
 	if (hd->ag_features & HFP_AG_FEATURE_IN_BAND_RING_TONE)
 		ofono_handsfree_set_inband_ringing(hf, TRUE);
