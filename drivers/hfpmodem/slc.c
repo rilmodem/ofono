@@ -82,6 +82,9 @@ void hfp_slc_info_init(struct hfp_slc_info *info, guint16 version)
 		goto done;
 
 	info->hf_features |= HFP_HF_FEATURE_HF_INDICATORS;
+	memset(info->hf_indicators, 0, sizeof(info->hf_indicators));
+	info->num_hf_indicators = 0;
+	info->hf_indicator_active_map = 0;
 
 done:
 	memset(info->cind_val, 0, sizeof(info->cind_val));
