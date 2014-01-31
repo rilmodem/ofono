@@ -767,7 +767,8 @@ test_scripts = test/backtrace \
 		test/set-msisdn \
 		test/rilmodem/test-hangup \
 		test/rilmodem/test-modem-offline \
-		test/rilmodem/test-sim-online
+		test/rilmodem/test-sim-online \
+		test/set-ddr
 
 if TEST
 testdir = $(pkglibdir)/test
