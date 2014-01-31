@@ -408,10 +408,20 @@ void ofono_handsfree_set_hf_indicators(struct ofono_handsfree *hf,
 	}
 }
 
+static void ddr_update_cb(const struct ofono_error *error, void *data)
+{
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
+		return;
+
+	ofono_info("Failed to update DDR indicator");
+}
+
 void ofono_handsfree_hf_indicator_active_notify(struct ofono_handsfree *hf,
 						unsigned int indicator,
 						ofono_bool_t active)
 {
+	DBG("%d, %d", indicator, active);
+
 	switch (indicator) {
 	case HFP_HF_INDICATOR_ENHANCED_SAFETY:
 		if (!hf->have_ddr)
@@ -425,7 +435,7 @@ void ofono_handsfree_hf_indicator_active_notify(struct ofono_handsfree *hf,
 		if (hf->ddr_active && hf->driver && hf->driver->hf_indicator)
 			hf->driver->hf_indicator(hf,
 					HFP_HF_INDICATOR_ENHANCED_SAFETY,
-					hf->ddr, ddr_set_cb, hf);
+					hf->ddr, ddr_update_cb, hf);
 		break;
 	}
 }
