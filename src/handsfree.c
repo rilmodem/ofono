@@ -422,6 +422,11 @@ void ofono_handsfree_hf_indicator_active_notify(struct ofono_handsfree *hf,
 {
 	DBG("%d, %d", indicator, active);
 
+	if (active)
+		active = TRUE;
+	else
+		active = FALSE;
+
 	switch (indicator) {
 	case HFP_HF_INDICATOR_ENHANCED_SAFETY:
 		if (!hf->have_ddr)
