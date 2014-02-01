@@ -493,6 +493,9 @@ builtin_sources += examples/private-network.c
 
 builtin_modules += stktest
 builtin_sources += plugins/stktest.c
+
+builtin_modules += emulator_fuzz
+builtin_sources += plugins/emulator_fuzz.c
 endif
 
 builtin_modules += smart_messaging
