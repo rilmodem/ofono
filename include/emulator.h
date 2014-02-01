@@ -104,6 +104,9 @@ enum ofono_emulator_request_type ofono_emulator_request_get_type(
 
 void ofono_emulator_set_indicator(struct ofono_emulator *em,
 					const char *name, int value);
+void ofono_emulator_set_hf_indicator_active(struct ofono_emulator *em,
+						int indicator,
+						ofono_bool_t active);
 
 #ifdef __cplusplus
 }
