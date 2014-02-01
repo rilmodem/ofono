@@ -232,7 +232,7 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 	if (modems->next != NULL)
 		return;
 
-	bt_register_profile(conn, HFP_AG_UUID, HFP_VERSION_1_5, "hfp_ag",
+	bt_register_profile(conn, HFP_AG_UUID, HFP_VERSION_1_7, "hfp_ag",
 					HFP_AG_EXT_PROFILE_PATH, NULL, 0);
 }
 
@@ -299,7 +299,7 @@ static void voicecall_watch(struct ofono_atom *atom,
 	if (modems->next != NULL)
 		return;
 
-	bt_register_profile(conn, HFP_AG_UUID, HFP_VERSION_1_5, "hfp_ag",
+	bt_register_profile(conn, HFP_AG_UUID, HFP_VERSION_1_7, "hfp_ag",
 					HFP_AG_EXT_PROFILE_PATH, NULL, 0);
 }
 
