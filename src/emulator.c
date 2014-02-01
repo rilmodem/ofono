@@ -1431,3 +1431,22 @@ void __ofono_emulator_slc_condition(struct ofono_emulator *em,
 		break;
 	}
 }
+
+void ofono_emulator_set_hf_indicator_active(struct ofono_emulator *em,
+						int indicator,
+						ofono_bool_t active)
+{
+	char buf[64];
+
+	if (!(em->l_features & HFP_HF_FEATURE_HF_INDICATORS))
+		return;
+
+	if (!(em->r_features & HFP_HF_FEATURE_HF_INDICATORS))
+		return;
+
+	if (indicator != HFP_HF_INDICATOR_ENHANCED_SAFETY)
+		return;
+
+	sprintf(buf, "+BIND: %d,%d", HFP_HF_INDICATOR_ENHANCED_SAFETY, active);
+	g_at_server_send_unsolicited(em->server, buf);
+}
