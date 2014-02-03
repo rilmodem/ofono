@@ -135,7 +135,7 @@ void idmap_put(struct idmap *idmap, unsigned int id)
 
 	id %= BITS_PER_LONG;
 
-	idmap->bits[offset] &= ~(1 << id);
+	idmap->bits[offset] &= ~(1UL << id);
 }
 
 unsigned int idmap_alloc(struct idmap *idmap)
@@ -149,7 +149,7 @@ unsigned int idmap_alloc(struct idmap *idmap)
 		return idmap->max + 1;
 
 	offset = bit / BITS_PER_LONG;
-	idmap->bits[offset] |= 1 << (bit % BITS_PER_LONG);
+	idmap->bits[offset] |= 1UL << (bit % BITS_PER_LONG);
 
 	return bit + idmap->min;
 }
@@ -163,7 +163,7 @@ void idmap_take(struct idmap *idmap, unsigned int id)
 		return;
 
 	offset = bit / BITS_PER_LONG;
-	idmap->bits[offset] |= 1 << (bit % BITS_PER_LONG);
+	idmap->bits[offset] |= 1UL << (bit % BITS_PER_LONG);
 }
 
 /*
@@ -186,7 +186,7 @@ unsigned int idmap_alloc_next(struct idmap *idmap, unsigned int last)
 		return idmap_alloc(idmap);
 
 	offset = bit / BITS_PER_LONG;
-	idmap->bits[offset] |= 1 << (bit % BITS_PER_LONG);
+	idmap->bits[offset] |= 1UL << (bit % BITS_PER_LONG);
 
 	return bit + idmap->min;
 }
