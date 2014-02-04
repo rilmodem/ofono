@@ -40,8 +40,10 @@
 
 #include "android-apndb.h"
 
+/* TODO: consider reading path from an environment variable */
+
 #ifndef ANDROID_APN_DATABASE
-#define ANDROID_APN_DATABASE		"/usr/share/android-apn-database/apns.xml"
+#define ANDROID_APN_DATABASE    "/android/system/etc/apns-conf.xml"
 #endif
 
 struct apndb_data {
@@ -64,8 +66,11 @@ void android_apndb_ap_free(struct ofono_gprs_provision_data *ap)
 	g_free(ap);
 }
 
-static void android_apndb_g_set_error(GMarkupParseContext *context, GError **error,
-				GQuark domain, gint code, const gchar *fmt, ...)
+static void android_apndb_g_set_error(GMarkupParseContext *context,
+					GError **error,
+					GQuark domain,
+					gint code,
+					const gchar *fmt, ...)
 {
 	va_list ap;
 	gint line_number, char_number;
@@ -83,7 +88,24 @@ static void android_apndb_g_set_error(GMarkupParseContext *context, GError **err
 
 static enum ofono_gprs_context_type determine_apn_type(const char *types)
 {
-	/* The database contains entries with the following type field contents:
+
+	/*
+	 * TODO: would it make sense to add an additional property
+	 * called 'capabilities' that could expose all of the types
+	 * included in an apn's attribute?
+	 *
+	 * I imagine on Android, the use of 'dun' and 'supl', are so
+	 * that if a user has data disabled, and these types are exposed
+	 * the data connection will be activated on demand for DUN or
+	 * SUPL, and deactivated when done ( ie. similar to MMS ).
+	 * If we just show type="any", then I suppose that the code
+	 * could just do the same thing, however we may not be honoring
+	 * the true capabilities and/or needs of the operator(s) in
+	 * question.
+	 */
+
+	/*
+	 * The database contains entries with the following type field contents:
 	 * - default
 	 * - default,mms
 	 * - default,supl
@@ -125,6 +147,13 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 	if (!g_str_equal(element_name, "apn"))
 		return;
 
+	/*
+	 * TODO:
+	 *
+	 * Need to research and possibly handle "proxy",
+	 * "port", and "server".
+	 */
+
 	for (i = 0; attribute_names[i]; i++) {
 		if (g_str_equal(attribute_names[i], "carrier"))
 			carrier = attribute_values[i];
@@ -134,7 +163,7 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 			mnc = attribute_values[i];
 		else if (g_str_equal(attribute_names[i], "apn"))
 			apn = attribute_values[i];
-		else if (g_str_equal(attribute_names[i], "username"))
+		else if (g_str_equal(attribute_names[i], "user"))
 			username = attribute_values[i];
 		else if (g_str_equal(attribute_names[i], "password"))
 			password = attribute_values[i];
@@ -162,13 +191,18 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 		return;
 	}
 
-
 	if (g_str_equal(mcc, apndb->match_mcc) &&
 		g_str_equal(mnc, apndb->match_mnc)) {
 		if (apn == NULL) {
 			android_apndb_g_set_error(context, error, G_MARKUP_ERROR,
 						G_MARKUP_ERROR_MISSING_ATTRIBUTE,
 						"APN attribute missing");
+			return;
+		}
+
+		if (types == NULL) {
+			ofono_error("%s: apn for %s missing type attribute",
+					__func__, carrier);
 			return;
 		}
 
@@ -191,15 +225,19 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 
 		if (mmsproxy) {
 			if (mmsport)
-				ap->message_proxy = g_strdup_printf("%s:%s", mmsproxy, mmsport);
+				ap->message_proxy = g_strdup_printf("%s:%s",
+								mmsproxy,
+								mmsport);
 			else
 				ap->message_proxy = g_strdup(mmsproxy);
 		}
 
 		ap->type = determine_apn_type(types);
 
-		/* there is no differentiation between IPv4 and IPv6 in the database so take it as
-		 * IPv4 only */
+		/*
+		 * there is no differentiation between IPv4 and IPv6 in
+		 * the database so take it as IPv4 only
+		 */
 		ap->proto = OFONO_GPRS_PROTO_IP;
 
 		apndb->apns = g_slist_append(apndb->apns, ap);
@@ -220,8 +258,9 @@ static const GMarkupParser toplevel_apndb_parser = {
 	NULL,
 };
 
-static gboolean android_apndb_parse(const GMarkupParser *parser, gpointer userdata,
-				GError **error)
+static gboolean android_apndb_parse(const GMarkupParser *parser,
+					gpointer userdata,
+					GError **error)
 {
 	struct stat st;
 	char *db;
@@ -276,19 +315,16 @@ static gboolean android_apndb_parse(const GMarkupParser *parser, gpointer userda
 GSList *android_apndb_lookup_apn(const char *mcc, const char *mnc,
 			gboolean allow_duplicates, GError **error)
 {
-	struct apndb_data apndb;
+	struct apndb_data apndb = { NULL };
 	GSList *l;
 
-	memset(&apndb, 0, sizeof(apndb));
 	apndb.match_mcc = mcc;
 	apndb.match_mnc = mnc;
 	apndb.allow_duplicates = allow_duplicates;
 
-	if (android_apndb_parse(&toplevel_apndb_parser, &apndb, error) == FALSE) {
-		for (l = apndb.apns; l; l = l->next)
-			android_apndb_ap_free(l->data);
-
-		g_slist_free(apndb.apns);
+	if (android_apndb_parse(&toplevel_apndb_parser, &apndb,
+				error) == FALSE) {
+		g_slist_free_full(apndb.apns, android_apndb_ap_free);
 		apndb.apns = NULL;
 	}
 

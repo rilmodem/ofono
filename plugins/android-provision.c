@@ -4,6 +4,7 @@
  *
  *  Copyright (C) 2008-2011  Intel Corporation. All rights reserved.
  *                2013 Simon Busch <morphis@gravedo.de>
+ *  Copyright (C) 2014 Canonical Ltd.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -37,6 +38,7 @@
 #include <ofono/gprs-provision.h>
 
 #include "android-apndb.h"
+#include "mbpi.h"
 
 static int provision_get_settings(const char *mcc, const char *mnc,
 				const char *spn,
@@ -54,10 +56,11 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 	apns = android_apndb_lookup_apn(mcc, mnc, FALSE, &error);
 	if (apns == NULL) {
 		if (error != NULL) {
-			ofono_error("%s", error->message);
+			ofono_error("%s: %s", __func__, error->message);
 			g_error_free(error);
 		}
 
+		*count = 0;
 		return -ENOENT;
 	}
 
@@ -67,13 +70,12 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 
 	*settings = g_try_new0(struct ofono_gprs_provision_data, ap_count);
 	if (*settings == NULL) {
-		ofono_error("Provisioning failed: %s", g_strerror(errno));
+		ofono_error("%s: provisioning failed: %s", __func__,
+				g_strerror(errno));
 
-		for (l = apns; l; l = l->next)
-			android_apndb_ap_free(l->data);
+		g_slist_free_full(apns, android_apndb_ap_free);
 
-		g_slist_free(apns);
-
+		*count = 0;
 		return -ENOMEM;
 	}
 
@@ -87,9 +89,10 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 		DBG("Type: %s", mbpi_ap_type(ap->type));
 		DBG("Username: '%s'", ap->username);
 		DBG("Password: '%s'", ap->password);
+		DBG("Message Proxy: '%s'", ap->message_proxy);
+		DBG("Message Center: '%s'", ap->message_center);
 
-		memcpy(*settings + i, ap,
-			sizeof(struct ofono_gprs_provision_data));
+		memcpy(*settings + i, ap, sizeof(*ap));
 
 		g_free(ap);
 	}
@@ -114,6 +117,7 @@ static void android_provision_exit(void)
 	ofono_gprs_provision_driver_unregister(&android_provision_driver);
 }
 
-OFONO_PLUGIN_DEFINE(android_provision, "Android APN database Provisioning Plugin", VERSION,
+OFONO_PLUGIN_DEFINE(android_provision,
+			"Android APN database Provisioning Plugin", VERSION,
 			OFONO_PLUGIN_PRIORITY_DEFAULT,
 			android_provision_init, android_provision_exit)
