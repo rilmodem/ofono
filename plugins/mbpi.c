@@ -192,7 +192,9 @@ static void apn_end(GMarkupParseContext *context, const gchar *element_name,
 {
 	if (g_str_equal(element_name, "name") ||
 			g_str_equal(element_name, "username") ||
-			g_str_equal(element_name, "password"))
+			g_str_equal(element_name, "password") ||
+			g_str_equal(element_name, "mmsc") ||
+			g_str_equal(element_name, "mmsproxy"))
 		g_markup_parse_context_pop(context);
 }
 
