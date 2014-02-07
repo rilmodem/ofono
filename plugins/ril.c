@@ -65,6 +65,8 @@
 
 #define MAX_SIM_STATUS_RETRIES 15
 
+#define RILD_CMD_SOCKET "/dev/socket/rild"
+
 struct ril_data {
 	GRil *modem;
 	int sim_status_retries;
@@ -366,7 +368,7 @@ static int ril_enable(struct ofono_modem *modem)
 
 	DBG("");
 
-	ril->modem = g_ril_new();
+	ril->modem = g_ril_new(RILD_CMD_SOCKET);
 
 	/* NOTE: Since AT modems open a tty, and then call
 	 * g_at_chat_new(), they're able to return -EIO if

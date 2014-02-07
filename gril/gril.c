@@ -51,9 +51,6 @@
 #define COMMAND_FLAG_EXPECT_PDU			0x1
 #define COMMAND_FLAG_EXPECT_SHORT_PROMPT	0x2
 
-#define RILD_CMD_SOCKET "/dev/socket/rild"
-#define RILD_DBG_SOCKET "/dev/socket/rild-debug"
-
 struct ril_request {
 	gchar *data;
 	guint data_len;
@@ -93,7 +90,6 @@ struct ril_s {
 	GRilDisconnectFunc user_disconnect;	/* user disconnect func */
 	gpointer user_disconnect_data;		/* user disconnect data */
 	guint read_so_far;			/* Number of bytes processed */
-	gboolean connected;			/* RIL_UNSOL_CONNECTED rvcd */
 	gboolean suspended;			/* Are we suspended? */
 	GRilDebugFunc debugf;			/* debugging output function */
 	gpointer debug_data;			/* Data to pass to debug func */
@@ -294,8 +290,6 @@ static void ril_cleanup(struct ril_s *p)
 	g_queue_free(p->out_queue);
 	p->out_queue = NULL;
 
-	p->connected = FALSE;
-
 	/* Cleanup registered notifications */
 	if (p->notify_list)
 		g_hash_table_destroy(p->notify_list);
@@ -306,6 +300,13 @@ static void ril_cleanup(struct ril_s *p)
 		g_source_remove(p->timeout_source);
 		p->timeout_source = 0;
 	}
+}
+
+void g_ril_set_disconnect_function(GRil *ril, GRilDisconnectFunc disconnect,
+					gpointer user_data)
+{
+	ril->parent->user_disconnect = disconnect;
+	ril->parent->user_disconnect_data = user_data;
 }
 
 static void io_disconnect(gpointer user_data)
@@ -395,9 +396,6 @@ static void handle_unsol_req(struct ril_s *p, struct ril_msg *message)
 	p->in_notify = TRUE;
 
 	g_hash_table_iter_init(&iter, p->notify_list);
-
-	if (message->req == RIL_UNSOL_RIL_CONNECTED)
-		p->connected = TRUE;
 
 	while (g_hash_table_iter_next(&iter, &key, &value)) {
 		req_key = *((int *)key);
@@ -767,7 +765,7 @@ static gboolean node_compare_by_group(struct ril_notify_node *node,
 	return FALSE;
 }
 
-static struct ril_s *create_ril()
+static struct ril_s *create_ril(const char *sock_path)
 
 {
 	struct ril_s *ril;
@@ -786,7 +784,6 @@ static struct ril_s *create_ril()
 	ril->debugf = NULL;
 	ril->req_bytes_written = 0;
 	ril->trace = FALSE;
-	ril->connected = FALSE;
 
 	sk = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (sk < 0) {
@@ -797,7 +794,7 @@ static struct ril_s *create_ril()
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path, RILD_CMD_SOCKET, sizeof(addr.sun_path) - 1);
+	strncpy(addr.sun_path, sock_path, sizeof(addr.sun_path) - 1);
 
 	if (connect(sk, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
 		ofono_error("create_ril: can't connect to RILD: %s (%d)\n",
@@ -913,7 +910,6 @@ static guint ril_register(struct ril_s *ril, guint group,
 {
 	struct ril_notify *notify;
 	struct ril_notify_node *node;
-	struct ril_msg message;
 
 	if (ril->notify_list == NULL)
 		return 0;
@@ -939,19 +935,6 @@ static guint ril_register(struct ril_s *ril, guint group,
 	node->user_data = user_data;
 
 	notify->nodes = g_slist_prepend(notify->nodes, node);
-
-	if ((req == RIL_UNSOL_RIL_CONNECTED) && (ril->connected == TRUE)) {
-		/* fire the callback in a timer, as it won't ever fire */
-		DBG("CONNECTED already received... ");
-
-		message.req = RIL_UNSOL_RIL_CONNECTED;
-		message.unsolicited = TRUE;
-		message.buf_len = 0;
-		message.buf = NULL;
-
-		func(&message, user_data);
-	}
-
 
 	return node->id;
 }
@@ -1011,7 +994,7 @@ void g_ril_init_parcel(const struct ril_msg *message, struct parcel *rilp)
 	rilp->malformed = 0;
 }
 
-GRil *g_ril_new()
+GRil *g_ril_new(const char *sock_path)
 {
 	GRil *ril;
 
@@ -1019,7 +1002,7 @@ GRil *g_ril_new()
 	if (ril == NULL)
 		return NULL;
 
-	ril->parent = create_ril();
+	ril->parent = create_ril(sock_path);
 	if (ril->parent == NULL) {
 		g_free(ril);
 		return NULL;

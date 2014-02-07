@@ -264,6 +264,7 @@ int g_ril_unsol_parse_radio_state_changed(GRil *gril, const struct ril_msg *mess
 
 	return radio_state;
 }
+
 int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message)
 {
 	struct parcel rilp;
@@ -271,7 +272,7 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message)
 
 	g_ril_init_parcel(message, &rilp);
 
-	/* RIL_SignalStrength_v6 */
+	/* RIL_SignalStrength_v5 */
 	/* GW_SignalStrength */
 	gw_signal = parcel_r_int32(&rilp);
 	parcel_r_int32(&rilp); /* bitErrorRate */
@@ -285,12 +286,17 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message)
 	parcel_r_int32(&rilp); /* ecio */
 	parcel_r_int32(&rilp); /* signalNoiseRatio */
 
-	/* LTE_SignalStrength */
-	lte_signal = parcel_r_int32(&rilp);
-	parcel_r_int32(&rilp); /* rsrp */
-	parcel_r_int32(&rilp); /* rsrq */
-	parcel_r_int32(&rilp); /* rssnr */
-	parcel_r_int32(&rilp); /* cqi */
+	/* Present only for RIL_SignalStrength_v6 or newer */
+	if (parcel_data_avail(&rilp) > 0) {
+		/* LTE_SignalStrength */
+		lte_signal = parcel_r_int32(&rilp);
+		parcel_r_int32(&rilp); /* rsrp */
+		parcel_r_int32(&rilp); /* rsrq */
+		parcel_r_int32(&rilp); /* rssnr */
+		parcel_r_int32(&rilp); /* cqi */
+	} else {
+		lte_signal = -1;
+	}
 
 	g_ril_append_print_buf(gril, "(gw: %d, cdma: %d, evdo: %d, lte: %d)",
 				gw_signal, cdma_dbm, evdo_dbm, lte_signal);

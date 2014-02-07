@@ -46,6 +46,7 @@ unit/test-cdmasms
 unit/test-grilreply
 unit/test-grilrequest
 unit/test-grilunsol
+unit/test-mnclength
 
 tools/huawei-audio
 tools/auto-enable

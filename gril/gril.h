@@ -93,7 +93,7 @@ extern char print_buf[];
 
 void g_ril_init_parcel(const struct ril_msg *message, struct parcel *rilp);
 
-GRil *g_ril_new();
+GRil *g_ril_new(const char *sock_path);
 
 GIOChannel *g_ril_get_channel(GRil *ril);
 GRilIO *g_ril_get_io(GRil *ril);
@@ -103,7 +103,7 @@ void g_ril_unref(GRil *ril);
 
 GRil *g_ril_clone(GRil *ril);
 
-gboolean g_ril_set_disconnect_function(GRil *ril, GRilDisconnectFunc disconnect,
+void g_ril_set_disconnect_function(GRil *ril, GRilDisconnectFunc disconnect,
 					gpointer user_data);
 
 gboolean g_ril_get_trace(GRil *ril);
