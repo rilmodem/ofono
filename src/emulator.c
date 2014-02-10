@@ -54,6 +54,7 @@ struct ofono_emulator {
 	unsigned int cmee_mode : 2;
 	bool clip : 1;
 	bool ccwa : 1;
+	bool ddr_active : 1;
 };
 
 struct indicator {
@@ -895,6 +896,8 @@ fail:
 static void biev_cb(GAtServer *server, GAtServerRequestType type,
 			GAtResult *result, gpointer user_data)
 {
+	struct ofono_emulator *em = user_data;
+
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_SET:
 	{
@@ -908,7 +911,10 @@ static void biev_cb(GAtServer *server, GAtServerRequestType type,
 		if (g_at_result_iter_next_number(&iter, &hf_indicator) == FALSE)
 			goto fail;
 
-		if (hf_indicator != 1)
+		if (hf_indicator != HFP_HF_INDICATOR_ENHANCED_SAFETY)
+			goto fail;
+
+		if (em->ddr_active == FALSE)
 			goto fail;
 
 		if (g_at_result_iter_next_number(&iter, &val) == FALSE)
@@ -1010,6 +1016,8 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 						em);
 
 	if (em->type == OFONO_EMULATOR_TYPE_HFP) {
+		em->ddr_active = true;
+
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_SERVICE, 0, 1, 0,
 									FALSE);
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_CALL, 0, 1, 0,
@@ -1446,6 +1454,8 @@ void ofono_emulator_set_hf_indicator_active(struct ofono_emulator *em,
 
 	if (indicator != HFP_HF_INDICATOR_ENHANCED_SAFETY)
 		return;
+
+	em->ddr_active = active;
 
 	sprintf(buf, "+BIND: %d,%d", HFP_HF_INDICATOR_ENHANCED_SAFETY, active);
 	g_at_server_send_unsolicited(em->server, buf);
