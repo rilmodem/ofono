@@ -2112,6 +2112,13 @@ void ofono_gprs_status_notify(struct ofono_gprs *gprs, int status)
 {
 	DBG("%s status %d", __ofono_atom_get_path(gprs->atom), status);
 
+	if (status == NETWORK_REGISTRATION_STATUS_ROAMING &&
+			ofono_netreg_get_status(gprs->netreg) ==
+			NETWORK_REGISTRATION_STATUS_REGISTERED) {
+		DBG("MVNO: roaming -> registered");
+		status = NETWORK_REGISTRATION_STATUS_REGISTERED;
+	}
+
 	gprs->status = status;
 
 	if (status != NETWORK_REGISTRATION_STATUS_REGISTERED &&
