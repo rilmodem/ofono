@@ -1,0 +1,36 @@
+#!/usr/bin/python
+#
+#
+# This test ensures that basic modem information is available
+# when the modem is offline.
+
+import dbus
+
+bus = dbus.SystemBus()
+
+manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+						'org.ofono.Manager')
+
+modems = manager.GetModems()
+
+for path, properties in modems:
+	print "[ %s ]" % (path)
+
+	keys = properties.keys()
+
+	assert keys.index('Online') != "ValueError"
+	assert keys.index("Powered") != "ValueError"
+	assert keys.index("Emergency") != "ValueError"
+	assert keys.index("Lockdown") != "ValueError"
+	assert keys.index("Serial") != "ValueError"
+	assert keys.index("Revision") != "ValueError"
+	assert keys.index("Interfaces") != "ValueError"
+
+	assert properties['Online'] == 0
+	assert properties['Powered'] == 1
+	assert properties['Emergency'] == 0
+	assert properties["Lockdown"] == 0
+	assert properties["Serial"].isalnum()
+	assert properties["Revision"].isalnum() 
+
+	print "OK\n"
