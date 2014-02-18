@@ -49,6 +49,11 @@ struct reg_state_test {
 	const struct ril_msg msg;
 };
 
+struct get_preferred_network_test {
+	int preferred;
+	const struct ril_msg msg;
+};
+
 static const struct ril_msg reply_data_call_invalid_1 = {
 	.buf = "",
 	.buf_len = 0,
@@ -1469,6 +1474,30 @@ static const struct ril_msg reply_get_clir_valid_1 = {
 	.error = 0,
 };
 
+/*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_GET_PREFERRED_NETWORK_TYPE reply with the following parameters:
+ *
+ * {0}
+ */
+static const guchar reply_get_preferred_network_type_valid_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static const struct get_preferred_network_test
+		reply_get_preferred_network_type_valid_1 = {
+	.preferred = 0,
+	.msg = {
+		.buf = (gchar *) reply_get_preferred_network_type_valid_parcel1,
+		.buf_len =
+			sizeof(reply_get_preferred_network_type_valid_parcel1),
+		.unsolicited = FALSE,
+		.req = RIL_REQUEST_GET_PREFERRED_NETWORK_TYPE,
+		.serial_no = 0,
+		.error = 0,
+	}
+};
+
 static void test_reply_data_call_invalid(gconstpointer data)
 {
 	struct ofono_error error;
@@ -1674,6 +1703,15 @@ static void test_reply_get_clir_valid(gconstpointer data)
 	g_assert(reply != NULL);
 
 	g_ril_reply_free_get_clir(reply);
+}
+
+static void test_reply_get_preferred_network_type_valid(gconstpointer data)
+{
+	const struct get_preferred_network_test *test = data;
+	int type =
+		g_ril_reply_parse_get_preferred_network_type(NULL, &test->msg);
+
+	g_assert(type == test->preferred);
 }
 
 int main(int argc, char **argv)
@@ -1937,6 +1975,11 @@ int main(int argc, char **argv)
 				"valid GET_CLIR Test 1",
 				&reply_get_clir_valid_1,
 				test_reply_get_clir_valid);
+
+	g_test_add_data_func("/testgrilreply/radio-settings: "
+				"valid GET_PREFERRED_NETWORK_TYPE Test 1",
+				&reply_get_preferred_network_type_valid_1,
+				test_reply_get_preferred_network_type_valid);
 
 #endif
 

@@ -577,6 +577,21 @@ static const struct request_test_data set_clir_valid_test_1 = {
 	.parcel_size = sizeof(req_set_clir_parcel_valid_1),
 };
 
+/* set_preferred_network_type tests */
+
+const int preferred_network_type_gsm_only = PREF_NET_TYPE_GSM_ONLY;
+
+static const guchar req_set_preferred_network_type_valid_1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
+};
+
+static const struct request_test_data
+		set_preferred_network_type_valid_test_1 = {
+	.request = &preferred_network_type_gsm_only,
+	.parcel_data = req_set_preferred_network_type_valid_1,
+	.parcel_size = sizeof(req_set_preferred_network_type_valid_1),
+};
+
 /*
  * The following hexadecimal data represents a serialized Binder parcel
  * instance containing a valid RIL_REQUEST_RADIO_POWER 'OFF' message.
@@ -1004,6 +1019,21 @@ static void test_request_set_clir(gconstpointer data)
 	parcel_free(&rilp);
 }
 
+static void test_request_set_preferred_network_type(gconstpointer data)
+{
+	const struct request_test_data *test_data = data;
+	int preferred_network_type = *(int *) test_data->request;
+	struct parcel rilp;
+
+	g_ril_request_set_preferred_network_type(NULL, preferred_network_type,
+							&rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+				test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -1210,6 +1240,11 @@ int main(int argc, char **argv)
 				"valid SET_CLIR Test 1",
 				&set_clir_valid_test_1,
 				test_request_set_clir);
+
+	g_test_add_data_func("/testgrilrequest/radio-settings: "
+				"valid SET_PREFERRED_NETWORK_TYPE Test 1",
+				&set_preferred_network_type_valid_test_1,
+				test_request_set_preferred_network_type);
 
 #endif
 	return g_test_run();
