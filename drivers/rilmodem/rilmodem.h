@@ -60,3 +60,6 @@ extern void ril_call_settings_exit(void);
 
 extern void ril_call_forwarding_init(void);
 extern void ril_call_forwarding_exit(void);
+
+extern void ril_radio_settings_init(void);
+extern void ril_radio_settings_exit(void);
