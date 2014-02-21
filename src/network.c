@@ -117,6 +117,20 @@ static inline const char *network_operator_status_to_string(int status)
 	return "unknown";
 }
 
+static int get_display_status(struct ofono_netreg *netreg, int status)
+{
+	struct network_operator_data *opd = netreg->current_operator;
+
+	/* Networks in EF_SPDI are equivalent to a home network */
+	if (status == NETWORK_REGISTRATION_STATUS_ROAMING && opd != NULL &&
+			sim_spdi_lookup(netreg->spdi, opd->mcc, opd->mnc)) {
+		DBG("mcc+mnc found in SPDI, roaming -> registered");
+		status = NETWORK_REGISTRATION_STATUS_REGISTERED;
+	}
+
+	return status;
+}
+
 static char **network_operator_technologies(struct network_operator_data *opd)
 {
 	unsigned int ntechs = 0;
@@ -1038,11 +1052,14 @@ static const GDBusSignalTable network_registration_signals[] = {
 
 static void set_registration_status(struct ofono_netreg *netreg, int status)
 {
-	const char *str_status = registration_status_to_string(status);
+	const char *str_status;
 	const char *path = __ofono_atom_get_path(netreg->atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
 
-	netreg->status = status;
+	/* Status depends also on SIM files */
+	netreg->status = get_display_status(netreg, status);
+
+	str_status = registration_status_to_string(netreg->status);
 
 	ofono_dbus_signal_property_changed(conn, path,
 					OFONO_NETWORK_REGISTRATION_INTERFACE,
@@ -1295,6 +1312,9 @@ emit:
 					DBUS_TYPE_STRING, &mnc);
 		}
 	}
+
+	/* Registration status might be affected for MVNOs */
+	set_registration_status(netreg, netreg->status);
 
 	notify_status_watches(netreg);
 }
@@ -1643,7 +1663,17 @@ static void sim_spdi_read_cb(int ok, int length, int record,
 				netreg->current_operator->mnc))
 		return;
 
+	/*
+	 * SPDI contents affect the displayed operator AND whether we consider
+	 * that we are roaming or not.
+	 */
+
 	netreg_emit_operator_display_name(netreg);
+
+	/* Registration status might be affected for MVNOs */
+	set_registration_status(netreg, netreg->status);
+
+	notify_status_watches(netreg);
 }
 
 static void sim_spn_display_condition_parse(struct ofono_netreg *netreg,
