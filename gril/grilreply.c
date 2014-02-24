@@ -3,7 +3,9 @@
  *  RIL library with GLib integration
  *
  *  Copyright (C) 2008-2011  Intel Corporation. All rights reserved.
- *  Copyright (C) 2012-2013  Canonical Ltd.
+ *  Copyright (C) 2013 Jolla Ltd
+ *  Contact: Jussi Kangas <jussi.kangas@tieto.com>
+ *  Copyright (C) 2012-2014  Canonical Ltd.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -33,6 +35,7 @@
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
+#include <ofono/call-forwarding.h>
 #include <ofono/gprs-context.h>
 
 #include "common.h"
@@ -1208,6 +1211,89 @@ struct reply_clir *g_ril_reply_parse_get_clir(GRil *gril,
 
 error:
 	g_free(rclir);
+	return NULL;
+}
 
+struct ofono_call_forwarding_condition
+	*g_ril_reply_parse_query_call_fwd(GRil *gril,
+						const struct ril_msg *message,
+						unsigned int *list_size)
+{
+	struct ofono_call_forwarding_condition *list;
+	struct parcel rilp;
+	unsigned int i;
+
+	if (list_size == NULL) {
+		ofono_error("%s: list_size is NULL!", __func__);
+		goto error;
+	}
+
+	g_ril_init_parcel(message, &rilp);
+
+	if (rilp.size < sizeof(int32_t)) {
+		ofono_error("%s: malformed parcel, can't read num params",
+				__func__);
+		goto error;
+	}
+
+	*list_size = parcel_r_int32(&rilp);
+	if (*list_size == 0) {
+		/* not really an error; handled in caller */
+		goto error;
+	}
+
+	list = g_try_new0(struct ofono_call_forwarding_condition, *list_size);
+	if (list == NULL) {
+		ofono_error("%s: Out of memory", __func__);
+		goto error;
+	}
+
+	g_ril_append_print_buf(gril, "{");
+
+	for (i = 0; i < *list_size; i++) {
+		char *str;
+
+		list[i].status =  parcel_r_int32(&rilp);
+
+		parcel_r_int32(&rilp); /* skip reason */
+
+		list[i].cls = parcel_r_int32(&rilp);
+		list[i].phone_number.type = parcel_r_int32(&rilp);
+
+		str = parcel_r_string(&rilp);
+
+		if (str != NULL) {
+			strncpy(list[i].phone_number.number, str,
+				OFONO_MAX_PHONE_NUMBER_LENGTH);
+			g_free(str);
+
+			list[i].phone_number.number[
+				OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
+		}
+
+		list[i].time = parcel_r_int32(&rilp);
+
+		if (rilp.malformed) {
+			ofono_error("%s: malformed parcel", __func__);
+			g_free(list);
+			goto error;
+		}
+
+		g_ril_append_print_buf(gril, "%s [%d,%d,%d,%s,%d]",
+					print_buf,
+					list[i].status,
+					list[i].cls,
+					list[i].phone_number.type,
+					list[i].phone_number.number,
+					list[i].time);
+
+	}
+
+	g_ril_append_print_buf(gril, "%s}", print_buf);
+	g_ril_print_response(gril, message);
+
+	return list;
+
+error:
 	return NULL;
 }

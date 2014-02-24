@@ -303,4 +303,7 @@
 #define RIL_UNSOL_RIL_CONNECTED 1034
 #define RIL_UNSOL_VOICE_RADIO_TECH_CHANGED 1035
 
+/* Suplementary services Service class*/
+#define SERVICE_CLASS_NONE 0
+
 #endif /*__RIL_CONSTANTS_H*/
