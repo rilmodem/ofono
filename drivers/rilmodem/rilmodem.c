@@ -72,21 +72,3 @@ static void rilmodem_exit(void)
 
 OFONO_PLUGIN_DEFINE(rilmodem, "RIL modem driver", VERSION,
 		OFONO_PLUGIN_PRIORITY_DEFAULT, rilmodem_init, rilmodem_exit)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
