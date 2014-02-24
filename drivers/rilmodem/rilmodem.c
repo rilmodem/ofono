@@ -48,6 +48,7 @@ static int rilmodem_init(void)
 	ril_gprs_context_init();
 	ril_ussd_init();
 	ril_call_settings_init();
+	ril_call_forwarding_init();
 
 	return 0;
 }
@@ -66,7 +67,26 @@ static void rilmodem_exit(void)
 	ril_gprs_context_exit();
 	ril_ussd_exit();
 	ril_call_settings_exit();
+	ril_call_forwarding_exit();
 }
 
 OFONO_PLUGIN_DEFINE(rilmodem, "RIL modem driver", VERSION,
 		OFONO_PLUGIN_PRIORITY_DEFAULT, rilmodem_init, rilmodem_exit)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
