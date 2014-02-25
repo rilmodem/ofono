@@ -67,7 +67,7 @@ if __name__ == "__main__":
 		print("Resetting Accumulated Call Meter")
 		try:
 			cm.Reset(pin)
-		except dbus.DBusException, e:
+		except dbus.DBusException as e:
 			print("Unable to reset ACM: %s" % e)
 			sys.exit(1)
 	else:
@@ -77,7 +77,7 @@ if __name__ == "__main__":
 			elif property == 'PricePerUnit':
 				newvalue = float(newvalue)
 			cm.SetProperty(property, newvalue, pin)
-		except dbus.DBusException, e:
+		except dbus.DBusException as e:
 			print("Unable to set property: %s" % e)
 			sys.exit(1)
 

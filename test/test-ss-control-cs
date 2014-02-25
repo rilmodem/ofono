@@ -37,19 +37,19 @@ if __name__ == "__main__":
 	print("Trying invalid SS request for CLIR")
 	try:
 		print(ss.Initiate("*31#456666"))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Failed with %s - Good" % e)
 
 	print("Trying invalid SS request for CLIR")
 	try:
 		print(ss.Initiate("*31*455*4#"))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Failed with %s - Good" % e)
 
 	print("Trying invalid SS request for CLIR")
 	try:
 		print(ss.Initiate("*31**44435#"))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Failed with %s - Good" % e)
 
 	print("Query CLIP")
@@ -77,19 +77,19 @@ if __name__ == "__main__":
 	print("Trying invalid SS request for CW")
 	try:
 		print(ss.Initiate("*43#456666"))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Failed with %s - Good" % e)
 
 	print("Trying invalid SS request for CW")
 	try:
 		print(ss.Initiate("*43*455*4#"))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Failed with %s - Good" % e)
 
 	print("Trying invalid SS request for CW")
 	try:
 		print(ss.Initiate("*43**44435#"))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Failed with %s - Good" % e)
 
 	print("Query CW")

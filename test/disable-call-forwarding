@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
 	try:
 		cf.DisableAll(type, timeout = 100)
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to DisableAll %s" % e)
 		sys.exit(1);
 

@@ -238,7 +238,7 @@ class StkAgent(dbus.service.Object):
 			if key == 't':
 				raise EndSession("User wishes to terminate"
 								 " session")
-		except Exception, exc:
+		except Exception as exc:
 			print(exc)
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",

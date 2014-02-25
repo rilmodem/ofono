@@ -44,21 +44,21 @@ def stdin_handler(fd, condition, gnss, path):
 		try:
 			gnss.SendPositioningElement(dbus.String(xml))
 			print("ok")
-		except dbus.DBusException, e:
+		except dbus.DBusException as e:
 			print("Unable to send positioning element")
 
 	elif in_key == '1':
 		try:
 			gnss.RegisterPositioningRequestAgent("/test/posagent")
 			print("ok")
-		except dbus.DBusException, e:
+		except dbus.DBusException as e:
 			print("Unable to register positioning agent")
 
 	elif in_key == '2':
 		try:
 			gnss.UnregisterPositioningRequestAgent(path)
 			print("ok")
-		except dbus.DBusException, e:
+		except dbus.DBusException as e:
 			print("Unable to unregister positioning agent")
 	elif in_key == 'x':
 		sys.exit(1)

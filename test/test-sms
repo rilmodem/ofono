@@ -48,7 +48,7 @@ def message_delivery_report(sms, value):
 	try:
 		sms.SetProperty("UseDeliveryReports", dbus.Boolean(value))
 
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		if value == 1:
 			print("Unable to activate Delivery Reports - FAIL")
 
@@ -58,13 +58,13 @@ def message_delivery_report(sms, value):
 def message_service_center_address(sms, value):
 	try:
 		sms.SetProperty("ServiceCenterAddress",dbus.String(value))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to set correct Service Center Address - FAIL")
 
 def message_bearer(sms, value):
 	try:
 		sms.SetProperty("Bearer", dbus.String(value))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to set Bearer[%s] - FAIL" % (value))
 
 

@@ -60,13 +60,13 @@ if __name__ == "__main__":
 		print("Disabling all barrings")
 		try:
 			cb.DisableAll(pin)
-		except dbus.DBusException, e:
+		except dbus.DBusException as e:
 			print("Unable to Disable All barrings: ", e)
 			sys.exit(1)
 	elif (sys.argv[1] == 'passwd'):
 		try:
 			cb.ChangePassword(old_password, new_password)
-		except dbus.DBusException, e:
+		except dbus.DBusException as e:
 			print("Unable to change password: ", e)
 			sys.exit(1)
 		print("Password changed")
@@ -74,7 +74,7 @@ if __name__ == "__main__":
 	else:
 		try:
 			cb.SetProperty(property, newvalue, pin)
-		except dbus.DBusException, e:
+		except dbus.DBusException as e:
 			print("Unable to set property: ", e)
 			sys.exit(1)
 

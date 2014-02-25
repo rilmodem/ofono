@@ -22,7 +22,7 @@ ss = dbus.Interface(bus.get_object('org.ofono', modem),
 
 try:
 	ss_type, properties = ss.Initiate(ss_code, timeout=100)
-except dbus.DBusException, e:
+except dbus.DBusException as e:
 	print("Unable to perform operation: %s" % e)
 	sys.exit(1);
 

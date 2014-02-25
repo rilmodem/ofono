@@ -35,6 +35,6 @@ for path, properties in modems:
 
 	try:
 		context.SetProperty("Active", dbus.Boolean(1), timeout = 100)
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Error activating %s: %s" % (path, str(e)))
 		exit(2)

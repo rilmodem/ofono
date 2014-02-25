@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
 	try:
 		cs.SetProperty(property, newvalue)
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to set property: %s" % e)
 		sys.exit(1);
 
