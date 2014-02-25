@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import gobject
+from gi.repository import GLib
 import sys
 import os
 
@@ -124,9 +124,9 @@ def print_sms_properties(sms):
 		else:
 			print("%s Message Manager rule disabled" % (p))
 
-def stdin_handler(fd, condition, sms, value, number):
+def stdin_handler(channel, condition, sms, value, number):
 	global lock
-	in_key = os.read(fd.fileno(), 160).rstrip()
+	in_key = os.read(channel.unix_get_fd(), 160).rstrip().decode('UTF-8')
 
 	if lock == "off":
 		lock = "on"
@@ -241,7 +241,8 @@ if __name__ == "__main__":
 	print_sms_properties(sms)
 	print_menu()
 
-	gobject.io_add_watch(sys.stdin, gobject.IO_IN, stdin_handler,
-				sms, value, number)
-	mainloop = gobject.MainLoop()
+	GLib.io_add_watch(GLib.IOChannel(filedes=sys.stdin.fileno()),
+		   GLib.PRIORITY_DEFAULT, GLib.IOCondition.IN, stdin_handler,
+		   sms, value, number)
+	mainloop = GLib.MainLoop()
 	mainloop.run()

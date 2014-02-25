@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import sys
-import gobject
+from gi.repository import GLib
 
 import dbus
 import dbus.mainloop.glib
@@ -60,5 +60,5 @@ if __name__ == "__main__":
 
 	canexit = True
 
-	mainloop = gobject.MainLoop()
+	mainloop = GLib.MainLoop()
 	mainloop.run()

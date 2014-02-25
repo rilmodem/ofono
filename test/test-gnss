@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import gobject
+from gi.repository import GLib
 import sys
 import os
 
@@ -37,8 +37,8 @@ def print_menu():
 	print("[x] Exit")
 	print("-----------------------------------------------------------")
 
-def stdin_handler(fd, condition, gnss, path):
-	in_key = os.read(fd.fileno(), 8).rstrip()
+def stdin_handler(channel, condition, gnss, path):
+	in_key = os.read(channel.unix_get_fd(), 160).rstrip().decode('UTF-8')
 	if in_key == '0':
 		xml = raw_input('type the element and press enter: ')
 		try:
@@ -87,7 +87,8 @@ if __name__ == "__main__":
 
 	print_menu()
 
-	gobject.io_add_watch(sys.stdin, gobject.IO_IN, stdin_handler,
-				gnss, path)
-	mainloop = gobject.MainLoop()
+	GLib.io_add_watch(GLib.IOChannel(filedes=sys.stdin.fileno()),
+		   GLib.PRIORITY_DEFAULT, GLib.IO_IN, stdin_handler,
+		   gnss, path)
+	mainloop = GLib.MainLoop()
 	mainloop.run()
