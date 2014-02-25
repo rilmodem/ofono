@@ -17,4 +17,4 @@ radiosettings = dbus.Interface(bus.get_object('org.ofono', path),
 
 properties = radiosettings.GetProperties()
 
-print "Technology preference: %s" % (properties["TechnologyPreference"])
+print("Technology preference: %s" % (properties["TechnologyPreference"]))

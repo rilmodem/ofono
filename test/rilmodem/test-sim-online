@@ -17,7 +17,7 @@ def set_modem_online(modem, path):
 	"""Sets the modem 'Online' property.
 	"""
 
-	print "Setting modem %s online..." % path
+	print("Setting modem %s online..." % path)
 
 	modem.SetProperty("Online", dbus.Boolean(1), timeout = 120)
 
@@ -33,12 +33,12 @@ def validate_emergency_numbers():
 
 	numbers = properties["EmergencyNumbers"]
 
-	print "%s" % numbers
+	print("%s" % numbers)
 
 	for number in numbers:
 		assert number in ["08", "000", "999", "110", "112", "911", "118", "119"]
 
-	print "OK\n"
+	print("OK\n")
 
 def validate_netreg(args, path):
 	"""Validates NetworkRegistration properties.
@@ -141,7 +141,7 @@ def main(args):
 	modem = dbus.Interface(bus.get_object('org.ofono', path), 'org.ofono.Modem')
 	properties = modem.GetProperties()
 
-	print "[ %s ]" % path
+	print("[ %s ]" % path)
 
 	if is_modem_online(properties) == 0 and args.online == True:
 		set_modem_online(modem, path)

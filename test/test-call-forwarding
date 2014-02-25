@@ -6,16 +6,16 @@ import dbus
 import dbus.mainloop.glib
 
 def property_changed(property, value):
-	print "CallForwarding property %s changed to %s" % (property, value)
+	print("CallForwarding property %s changed to %s" % (property, value))
 
 def print_properties(cf):
 	properties = cf.GetProperties()
 
 	for p in properties:
 		if len(properties[p].__str__()) > 0:
-			print "%s call forwarding rule is: %s" % (p, properties[p])
+			print("%s call forwarding rule is: %s" % (p, properties[p]))
 		else:
-			print "%s call forwarding rule disabled" % (p)
+			print("%s call forwarding rule disabled" % (p))
 
 if __name__ == "__main__":
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -37,83 +37,83 @@ if __name__ == "__main__":
 	try:
 		cf.SetProperty("FoobarNoReplyTimeout", dbus.UInt16(19))
 	except dbus.DBusException, e:
-		print "Unable to set timeout - Good"
+		print("Unable to set timeout - Good")
 
 	try:
 		cf.SetProperty("VoiceNotReachableTimeout", dbus.UInt16(19))
 	except dbus.DBusException, e:
-		print "Unable to set timeout - Good"
+		print("Unable to set timeout - Good")
 
 	try:
 		cf.SetProperty("VoiceNoReplyTimeout", dbus.UInt16(19))
 	except dbus.DBusException, e:
-		print "Unable to set timeout - Good"
+		print("Unable to set timeout - Good")
 
 	try:
 		cf.SetProperty("DataNoReplyTimeout", dbus.UInt16(19))
 	except dbus.DBusException, e:
-		print "Unable to set timeout - Good"
+		print("Unable to set timeout - Good")
 
 	try:
 		cf.SetProperty("FaxNoReplyTimeout", dbus.UInt16(19))
 	except dbus.DBusException, e:
-		print "Unable to set timeout - Good"
+		print("Unable to set timeout - Good")
 
 	try:
 		cf.SetProperty("SmsNoReplyTimeout", dbus.UInt16(19))
 	except dbus.DBusException, e:
-		print "Unable to set timeout - Good"
+		print("Unable to set timeout - Good")
 
 	try:
 		cf.SetProperty("VoiceNoReply", "")
 	except dbus.DBusException, e:
-		print "Unable to erase voice no reply rule - Bad"
+		print("Unable to erase voice no reply rule - Bad")
 
 	try:
 		cf.SetProperty("VoiceNoReply", "+134444")
 	except dbus.DBusException, e:
-		print "Unable to register voice no reply rule - Bad"
+		print("Unable to register voice no reply rule - Bad")
 
 	try:
 		cf.SetProperty("VoiceNoReplyTimeout", dbus.UInt16(30))
 	except dbus.DBusException, e:
-		print "Unable to set voice no reply timeout - Bad"
+		print("Unable to set voice no reply timeout - Bad")
 
 	properties = cf.GetProperties()
 
-	print properties["VoiceNoReply"]
-	print properties["VoiceNoReplyTimeout"]
+	print(properties["VoiceNoReply"])
+	print(properties["VoiceNoReplyTimeout"])
 
 	try:
 		cf.SetProperty("VoiceUnconditional", "+155555")
 	except dbus.DBusException, e:
-		print "Unable to set Voice Unconditional - Bad"
+		print("Unable to set Voice Unconditional - Bad")
 
 	properties = cf.GetProperties()
 
-	print properties["VoiceUnconditional"]
+	print(properties["VoiceUnconditional"])
 
 	try:
 		cf.DisableAll("foobar")
 	except dbus.DBusException, e:
-		print "Unable to delete invalids - Good"
+		print("Unable to delete invalids - Good")
 
 	try:
 		cf.DisableAll("conditional")
 	except dbus.DBusException, e:
-		print "Unable to delete all conditional - Bad"
+		print("Unable to delete all conditional - Bad")
 
 	properties = cf.GetProperties()
 
-	print properties["VoiceNoReply"]
-	print properties["VoiceNoReplyTimeout"]
+	print(properties["VoiceNoReply"])
+	print(properties["VoiceNoReplyTimeout"])
 
 	try:
 		cf.DisableAll("all")
 	except dbus.DBusException, e:
-		print "Unable to delete all conditional - Bad"
+		print("Unable to delete all conditional - Bad")
 
-	print properties["VoiceUnconditional"]
+	print(properties["VoiceUnconditional"])
 
 	mainloop = gobject.MainLoop()
 	mainloop.run()

@@ -14,7 +14,7 @@ manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 modems = manager.GetModems()
 
 for path, properties in modems:
-	print "[ %s ]" % (path)
+	print("[ %s ]" % (path))
 
 	keys = properties.keys()
 
@@ -33,4 +33,4 @@ for path, properties in modems:
 	assert properties["Serial"].isalnum()
 	assert properties["Revision"].isalnum() 
 
-	print "OK\n"
+	print("OK\n")

@@ -41,7 +41,7 @@ def create_incoming_call(number, port):
 	tn.read_until("OK")
 
 	tn.write("gsm call " + number + "\n")
-	print "incoming call created"
+	print("incoming call created")
 
 	tn.read_until("OK")
 	tn.write("exit")
@@ -62,7 +62,7 @@ if __name__ == "__main__":
 	modems = manager.GetModems()
 
 	for path, properties in modems:
-		print "[ %s ]" % (path)
+		print("[ %s ]" % (path))
 
 		assert "org.ofono.VoiceCallManager" in properties["Interfaces"]
 

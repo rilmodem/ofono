@@ -15,9 +15,9 @@ elif len(sys.argv) == 2:
 	path = modems[0][0]
 	topics = sys.argv[1]
 else:
-	print "%s [PATH] topics" % (sys.argv[0])
+	print("%s [PATH] topics" % (sys.argv[0]))
 
-print "Setting cell broadcast topics for modem %s..." % path
+print("Setting cell broadcast topics for modem %s..." % path)
 cbs = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.CellBroadcast')
 

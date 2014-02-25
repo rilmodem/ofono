@@ -7,18 +7,18 @@ import dbus.mainloop.glib
 import sys
 
 def property_changed(name, value):
-	print "CallSettings property: '%s' changed to '%s'" % (name, value)
+	print("CallSettings property: '%s' changed to '%s'" % (name, value))
 
 	if canexit:
 		mainloop.quit();
 
 if __name__ == "__main__":
 	if len(sys.argv) < 3:
-		print "Usage: %s [modem] <property> <newvalue>" % (sys.argv[0])
-		print "Properties can be: VoiceCallWaiting,"
-		print "	ConnectedLineRestriction, CallingLineRestriction,"
-		print "	CallingLinePresentation, CalledLinePresentation,"
-		print "	ConnectedLinePresentation, HideCallerId"
+		print("Usage: %s [modem] <property> <newvalue>" % (sys.argv[0]))
+		print("Properties can be: VoiceCallWaiting,")
+		print("	ConnectedLineRestriction, CallingLineRestriction,")
+		print("	CallingLinePresentation, CalledLinePresentation,")
+		print("	ConnectedLinePresentation, HideCallerId")
 		sys.exit(1)
 
 	canexit = False
@@ -41,7 +41,7 @@ if __name__ == "__main__":
 		property = sys.argv[1]
 		newvalue = sys.argv[2]
 
-	print "Using modem %s" % modem
+	print("Using modem %s" % modem)
 
 	cs = dbus.Interface(bus.get_object('org.ofono', modem),
 						'org.ofono.CallSettings')
@@ -50,31 +50,31 @@ if __name__ == "__main__":
 
 	properties = cs.GetProperties()
 
-	print "Current Property values:"
-	print "Network Status of Call Waiting - Voice: %s" %\
-		(properties['VoiceCallWaiting'])
-	print "Network Status of Connected Line Restriction: %s" %\
-		(properties['ConnectedLineRestriction'])
-	print "Network Status of Calling Line Restriction: %s" %\
-		(properties['CallingLineRestriction'])
-	print "Network Status of Calling Line Presentation: %s" %\
-		(properties['CallingLinePresentation'])
-	print "Network Status of Called Line Presentation: %s" %\
-		(properties['CalledLinePresentation'])
-	print "Network Status of Connected Line Presentation: %s" %\
-		(properties['ConnectedLinePresentation'])
-	print "Hide my Caller Id: %s" % (properties['HideCallerId'])
+	print("Current Property values:")
+	print("Network Status of Call Waiting - Voice: %s" %\
+		(properties['VoiceCallWaiting']))
+	print("Network Status of Connected Line Restriction: %s" %\
+		(properties['ConnectedLineRestriction']))
+	print("Network Status of Calling Line Restriction: %s" %\
+		(properties['CallingLineRestriction']))
+	print("Network Status of Calling Line Presentation: %s" %\
+		(properties['CallingLinePresentation']))
+	print("Network Status of Called Line Presentation: %s" %\
+		(properties['CalledLinePresentation']))
+	print("Network Status of Connected Line Presentation: %s" %\
+		(properties['ConnectedLinePresentation']))
+	print("Hide my Caller Id: %s" % (properties['HideCallerId']))
 
 	try:
 		cs.SetProperty(property, newvalue)
 	except dbus.DBusException, e:
-		print "Unable to set property: ", e
+		print("Unable to set property: %s" % e)
 		sys.exit(1);
 
-	print "Setting successful"
+	print("Setting successful")
 
 	if (properties[property] == newvalue):
-		print "Setting was already set to this value"
+		print("Setting was already set to this value")
 		sys.exit(1);
 
 	canexit = True

@@ -11,16 +11,16 @@ class PushNotificationAgent(dbus.service.Object):
 	@dbus.service.method("org.ofono.PushNotificationAgent",
 					in_signature="", out_signature="")
 	def Release(self):
-		print "Release"
+		print("Release")
 		mainloop.quit()
 
 	@dbus.service.method("org.ofono.PushNotificationAgent",
 				in_signature="aya{sv}", out_signature="")
 	def ReceiveNotification(self, data, props):
 		for key in props.keys():
-			print "Key: %s, Value: %s" % (key, props[key])
+			print("Key: %s, Value: %s" % (key, props[key]))
 
-		print "Received notification of size: %d" % len(data)
+		print("Received notification of size: %d" % len(data))
 
 if __name__ == '__main__':
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -41,7 +41,7 @@ if __name__ == '__main__':
 	path = "/test/agent"
 	agent = PushNotificationAgent(bus, path)
 	pn.RegisterAgent(path)
-	print "Agent registered"
+	print("Agent registered")
 
 	mainloop = gobject.MainLoop()
 

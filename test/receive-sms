@@ -6,11 +6,11 @@ import dbus
 import dbus.mainloop.glib
 
 def incoming_message(message, details, path, interface):
-	print "%s" % (message)
+	print("%s" % (message))
 
 	for key in details:
 		val = details[key]
-		print "    %s = %s" % (key, val)
+		print("    %s = %s" % (key, val))
 
 if __name__ == '__main__':
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)

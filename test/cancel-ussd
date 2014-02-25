@@ -21,7 +21,7 @@ ussd = dbus.Interface(bus.get_object('org.ofono', path),
 properties = ussd.GetProperties()
 state = properties["State"]
 
-print "State: %s" % (state)
+print("State: %s" % (state))
 
 if state != "idle":
 	ussd.Cancel()

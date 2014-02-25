@@ -6,13 +6,13 @@ import dbus
 import dbus.mainloop.glib
 
 def property_changed(property, value):
-	print "CallBarring property %s changed to %s" % (property, value)
+	print("CallBarring property %s changed to %s" % (property, value))
 
 def print_properties(cb):
         properties = cb.GetProperties()
 
 	for p in properties:
-		print "property %s, value: %s" % (p, properties[p])
+		print("property %s, value: %s" % (p, properties[p]))
 
 if __name__ == "__main__":
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -34,61 +34,61 @@ if __name__ == "__main__":
 
 	print_properties(cb)
 
-	print "Trying invalid SS request for CB"
+	print("Trying invalid SS request for CB")
 	try:
-		print ss.Initiate("*33#456666")
+		print(ss.Initiate("*33#456666"))
 	except dbus.DBusException, e:
-		print "Failed with %s - Good" % e
+		print("Failed with %s - Good" % e)
 
-	print "Trying invalid SS request for CB"
+	print("Trying invalid SS request for CB")
 	try:
-		print ss.Initiate("*33*ABC#")
+		print(ss.Initiate("*33*ABC#"))
 	except dbus.DBusException, e:
-		print "Failed with %s - Good" % e
+		print("Failed with %s - Good" % e)
 
-	print "Trying invalid SS request for CB"
+	print("Trying invalid SS request for CB")
 	try:
-		print ss.Initiate("*33**ABC#")
+		print(ss.Initiate("*33**ABC#"))
 	except dbus.DBusException, e:
-		print "Failed with %s - Good" % e
+		print("Failed with %s - Good" % e)
 
-	print "Trying invalid SS request for CB"
+	print("Trying invalid SS request for CB")
 	try:
-		print ss.Initiate("*33***12#")
+		print(ss.Initiate("*33***12#"))
 	except dbus.DBusException, e:
-		print "Failed with %s - Good" % e
+		print("Failed with %s - Good" % e)
 
-	print "Query Outgoing All"
-	print ss.Initiate("*#33#")
+	print("Query Outgoing All")
+	print(ss.Initiate("*#33#"))
 
-	print "Query Outgoing International"
-	print ss.Initiate("*#331#")
+	print("Query Outgoing International")
+	print(ss.Initiate("*#331#"))
 
-	print "Query Outgoing except home country"
-	print ss.Initiate("*#332#")
+	print("Query Outgoing except home country")
+	print(ss.Initiate("*#332#"))
 
-	print "Query Incoming All"
-	print ss.Initiate("*#35#")
+	print("Query Incoming All")
+	print(ss.Initiate("*#35#"))
 
-	print "Query Incoming while Roaming"
-	print ss.Initiate("*#351#")
+	print("Query Incoming while Roaming")
+	print(ss.Initiate("*#351#"))
 
-	print "Query All Outgoing"
-	print ss.Initiate("*#333#")
+	print("Query All Outgoing")
+	print(ss.Initiate("*#333#"))
 
-	print "Query All Incoming"
-	print ss.Initiate("*#353#")
+	print("Query All Incoming")
+	print(ss.Initiate("*#353#"))
 
-	print "Query All"
-	print ss.Initiate("*#330#")
+	print("Query All")
+	print(ss.Initiate("*#330#"))
 
-	print "Enable Barring for Outgoing International calls for Voice"
-	print ss.Initiate("*33*3579*11#")
+	print("Enable Barring for Outgoing International calls for Voice")
+	print(ss.Initiate("*33*3579*11#"))
 
 	print_properties(cb)
 
-	print "Disable All Barrings"
-	print ss.Initiate("#330*3579#")
+	print("Disable All Barrings")
+	print(ss.Initiate("#330*3579#"))
 
 	mainloop = gobject.MainLoop()
 	mainloop.run()

@@ -12,6 +12,6 @@ else:
 	modems = manager.GetModems()
 	path = modems[0][0]
 
-print "Setting modem %s offline..." % path
+print("Setting modem %s offline..." % path)
 modem = dbus.Interface(bus.get_object('org.ofono', path), 'org.ofono.Modem')
 modem.SetProperty("Online", dbus.Boolean(0), timeout = 120)

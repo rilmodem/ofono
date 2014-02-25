@@ -13,13 +13,13 @@ else:
 	modems = manager.GetModems()
 	path = modems[0][0]
 
-print "Locking and disconnecting modem %s..." % path
+print("Locking and disconnecting modem %s..." % path)
 modem = dbus.Interface(bus.get_object('org.ofono', path),
 						'org.ofono.Modem')
 
 modem.SetProperty("Lockdown", dbus.Boolean(1))
 
-print "press ENTER to unlock the modem %s" % path
+print("press ENTER to unlock the modem %s" % path)
 sys.stdin.readline()
 
 modem.SetProperty("Lockdown", dbus.Boolean(0))

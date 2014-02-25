@@ -8,19 +8,19 @@ import dbus.mainloop.glib
 
 def property_changed(property, value):
 	if len(value.__str__()) > 0:
-		print "CF property %s changed to %s" % (property, value)
+		print("CF property %s changed to %s" % (property, value))
 	else:
-		print "CF property %s changed to disabled" % (property)
+		print("CF property %s changed to disabled" % (property))
 
 	if canexit:
 		mainloop.quit();
 
 if __name__ == "__main__":
 	if len(sys.argv) < 3:
-		print "Usage: %s <property> <value>" % (sys.argv[0])
-		print "Properties can be: VoiceUnconditional, VoiceBusy,"
-		print "	VoiceNoReply, VoiceNoReplyTimeout, VoiceNotReachable"
-		print "Value: number to or the timeout"
+		print("Usage: %s <property> <value>" % (sys.argv[0]))
+		print("Properties can be: VoiceUnconditional, VoiceBusy,")
+		print("	VoiceNoReply, VoiceNoReplyTimeout, VoiceNotReachable")
+		print("Value: number to or the timeout")
 		sys.exit(1)
 
 	property = sys.argv[1]
@@ -47,16 +47,16 @@ if __name__ == "__main__":
 			cf.SetProperty(property, dbus.UInt16(value),
 							timeout = 100)
 		except dbus.DBusException, e:
-			print "Unable SetProperty", e
+			print("Unable SetProperty %s" % e)
 			sys.exit(1);
 	else:
 		try:
 			cf.SetProperty(property, value, timeout = 100)
 		except dbus.DBusException, e:
-			print "Unable SetProperty", e
+			print("Unable SetProperty %s" % e)
 			sys.exit(1);
 
-	print "Set Property successful"
+	print("Set Property successful")
 
 	canexit = True
 

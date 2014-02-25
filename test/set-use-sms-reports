@@ -19,10 +19,10 @@ elif len(sys.argv) == 2:
 	if sys.argv[1] == "off":
 		enabled = 0
 else:
-	print "%s [PATH] on/off" % (sys.argv[0])
+	print("%s [PATH] on/off" % (sys.argv[0]))
 	sys.exit(1)
 
-print "Setting delivery report use for modem %s..." % path
+print("Setting delivery report use for modem %s..." % path)
 sms = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.MessageManager')
 
