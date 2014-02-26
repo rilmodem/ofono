@@ -9,7 +9,7 @@ def property_changed(property, value):
 	print("CallSettings property %s changed to %s" % (property, value))
 
 def print_properties(cs):
-        properties = cs.GetProperties()
+	properties = cs.GetProperties()
 
 	for p in properties:
 		print("property %s, value: %s" % (p, properties[p]))
@@ -27,7 +27,7 @@ if __name__ == "__main__":
 	cs = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
                                                         'org.ofono.CallSettings')
 
-        cs.connect_to_signal("PropertyChanged", property_changed)
+	cs.connect_to_signal("PropertyChanged", property_changed)
 
 	ss = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
 							'org.ofono.SupplementaryServices')
