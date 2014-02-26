@@ -16,7 +16,7 @@ modems = manager.GetModems()
 for path, properties in modems:
 	print("[ %s ]" % (path))
 
-	keys = properties.keys()
+	keys = list(properties.keys())
 
 	assert keys.index('Online') != "ValueError"
 	assert keys.index("Powered") != "ValueError"
