@@ -4,7 +4,7 @@ import sys
 import dbus
 
 if (len(sys.argv) < 2):
-	print "Usage: %s [modem] <ussd-string>" % (sys.argv[0])
+	print("Usage: %s [modem] <ussd-string>" % (sys.argv[0]))
 	sys.exit(1)
 
 bus = dbus.SystemBus()
@@ -27,13 +27,13 @@ ussd = dbus.Interface(bus.get_object('org.ofono', path),
 properties = ussd.GetProperties()
 state = properties["State"]
 
-print "State: %s" % (state)
+print("State: %s" % (state))
 
 if state == "idle":
 	result = ussd.Initiate(ussdstring, timeout=100)
-	print result[0] + ": " + result[1]
+	print(result[0] + ": " + result[1])
 elif state == "user-response":
-	print ussd.Respond(ussdstring, timeout=100)
+	print(ussd.Respond(ussdstring, timeout=100))
 else:
 	sys.exit(1);
 
@@ -43,15 +43,15 @@ state = properties["State"]
 if state == "idle":
 	sys.exit(0)
 
-print "State: %s" % (state)
+print("State: %s" % (state))
 
 while state == "user-response":
-	response = raw_input("Enter response: ")
+	response = input("Enter response: ")
 
-	print ussd.Respond(response, timeout=100)
+	print(ussd.Respond(response, timeout=100))
 
 	properties = ussd.GetProperties()
 	state = properties["State"]
 
 	if state != "idle":
-		print "State: %s" % (state)
+		print("State: %s" % (state))

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import dbus
@@ -27,21 +27,21 @@ for path, properties in modems:
 
 	if path == "":
 		path = connman.AddContext("internet")
-		print "Created new context %s" % (path)
+		print("Created new context %s" % (path))
 	else:
-		print "Found context %s" % (path)
+		print("Found context %s" % (path))
 
 	context = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.ConnectionContext')
 
 	if len(sys.argv) > 1:
 		context.SetProperty("AccessPointName", sys.argv[1])
-		print "Setting APN to %s" % (sys.argv[1])
+		print("Setting APN to %s" % (sys.argv[1]))
 
 	if len(sys.argv) > 2:
 		context.SetProperty("Username", sys.argv[2])
-		print "Setting username to %s" % (sys.argv[2])
+		print("Setting username to %s" % (sys.argv[2]))
 
 	if len(sys.argv) > 3:
 		context.SetProperty("Password", sys.argv[3])
-		print "Setting password to %s" % (sys.argv[3])
+		print("Setting password to %s" % (sys.argv[3]))

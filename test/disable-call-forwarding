@@ -1,24 +1,24 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
-import gobject
+from gi.repository import GLib
 
 import dbus
 import dbus.mainloop.glib
 
 def property_changed(property, value):
 	if len(value.__str__()) > 0:
-		print "CF property %s changed to %s" % (property, value)
+		print("CF property %s changed to %s" % (property, value))
 	else:
-		print "CF property %s changed to disabled" % (property)
+		print("CF property %s changed to disabled" % (property))
 
 	if canexit:
 		mainloop.quit();
 
 if __name__ == "__main__":
 	if len(sys.argv) < 2:
-		print "Usage: %s <type>" % (sys.argv[0])
-		print "Type can be: all, conditional"
+		print("Usage: %s <type>" % (sys.argv[0]))
+		print("Type can be: all, conditional")
 		sys.exit(1)
 
 	canexit = False
@@ -41,13 +41,13 @@ if __name__ == "__main__":
 
 	try:
 		cf.DisableAll(type, timeout = 100)
-	except dbus.DBusException, e:
-		print "Unable to DisableAll", e
+	except dbus.DBusException as e:
+		print("Unable to DisableAll %s" % e)
 		sys.exit(1);
 
-	print "DisableAll successful"
+	print("DisableAll successful")
 
 	canexit = True
 
-	mainloop = gobject.MainLoop()
+	mainloop = GLib.MainLoop()
 	mainloop.run()

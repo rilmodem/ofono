@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 #
 # This test ensures that basic modem information is available
@@ -14,9 +14,9 @@ manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 modems = manager.GetModems()
 
 for path, properties in modems:
-	print "[ %s ]" % (path)
+	print("[ %s ]" % (path))
 
-	keys = properties.keys()
+	keys = list(properties.keys())
 
 	assert keys.index('Online') != "ValueError"
 	assert keys.index("Powered") != "ValueError"
@@ -33,4 +33,4 @@ for path, properties in modems:
 	assert properties["Serial"].isalnum()
 	assert properties["Revision"].isalnum() 
 
-	print "OK\n"
+	print("OK\n")

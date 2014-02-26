@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import dbus
@@ -20,7 +20,7 @@ for path, properties in modems:
 	contexts = connman.GetContexts()
 
 	if (len(contexts) == 0):
-		print "No context available"
+		print("No context available")
 		sys.exit(1)
 
 	if len(sys.argv) > 1:
@@ -33,6 +33,6 @@ for path, properties in modems:
 
 	try:
 		context.SetProperty("Active", dbus.Boolean(0))
-	except dbus.DBusException, e:
-		print "Error activating %s: %s" % (path, str(e))
+	except dbus.DBusException as e:
+		print("Error activating %s: %s" % (path, str(e)))
 		exit(2)

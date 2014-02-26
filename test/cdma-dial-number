@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import dbus
@@ -16,7 +16,7 @@ else:
 	path, properties = modems[0]
 	number = sys.argv[1]
 
-print "Using modem %s" % path
+print("Using modem %s" % path)
 
 manager = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.cdma.VoiceCallManager')

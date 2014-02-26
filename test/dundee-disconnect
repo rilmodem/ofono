@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import dbus
 import sys
@@ -13,7 +13,7 @@ else:
 	devices = manager.GetDevices()
 	path = devices[0][0]
 
-print "Disonnect device %s..." % path
+print("Disonnect device %s..." % path)
 device = dbus.Interface(bus.get_object('org.ofono.dundee', path),
 						'org.ofono.dundee.Device')
 

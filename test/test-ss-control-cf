@@ -1,12 +1,12 @@
 #!/usr/bin/python
 
-import gobject
+from gi.repository import GLib
 
 import dbus
 import dbus.mainloop.glib
 
 def property_changed(property, value):
-	print "CallForwarding property %s changed to %s" % (property, value)
+	print("CallForwarding property %s changed to %s" % (property, value))
 
 def print_properties(cf):
 	properties = cf.GetProperties()
@@ -17,7 +17,7 @@ def print_properties(cf):
 		else:
 			value = "disabled"
 
-		print "%s call forwarding rule: %s" % (p, value)
+		print("%s call forwarding rule: %s" % (p, value))
 
 if __name__ == "__main__":
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -42,34 +42,34 @@ if __name__ == "__main__":
 	print_properties(cf)
 
 	# Busy To +155542, for Voice
-	print "Setting Busy Voice rule to +155542"
-	print ss.Initiate("*67*+155542*11#")
+	print("Setting Busy Voice rule to +155542")
+	print(ss.Initiate("*67*+155542*11#"))
 	print_properties(cf)
 
 	# Not Reachable to +155543, Voice
-	print "Setting Voice Not Reachable rule to +155543"
-	print ss.Initiate("**62*+155543*11#")
+	print("Setting Voice Not Reachable rule to +155543")
+	print(ss.Initiate("**62*+155543*11#"))
 
 	# Not Reachable to +155544, Voice service
-	print "Setting Voice No Reply rule to +155544, timeout=30"
-	print ss.Initiate("**61*+155544*11*30#")
+	print("Setting Voice No Reply rule to +155544, timeout=30")
+	print(ss.Initiate("**61*+155544*11*30#"))
 
 	# Unconditional to +155547, Voice
-	print "Setting Unconditional for Voice to +155545"
-	print ss.Initiate("*21*+155545*10#")
+	print("Setting Unconditional for Voice to +155545")
+	print(ss.Initiate("*21*+155545*10#"))
 
 	print_properties(cf)
 
-	print "Query all voice forwardings"
-	print ss.Initiate("*#002**11#")
+	print("Query all voice forwardings")
+	print(ss.Initiate("*#002**11#"))
 
-	print "Query no reply voice forwardings"
-	print ss.Initiate("*#61**11#")
+	print("Query no reply voice forwardings")
+	print(ss.Initiate("*#61**11#"))
 
 	# Deactivate everything
-	print "Deactivating everything"
-	print ss.Initiate("##002#")
+	print("Deactivating everything")
+	print(ss.Initiate("##002#"))
 	print_properties(cf)
 
-	mainloop = gobject.MainLoop()
+	mainloop = GLib.MainLoop()
 	mainloop.run()

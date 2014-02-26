@@ -4,7 +4,7 @@ import sys
 import dbus
 
 if len(sys.argv) < 4:
-	print "Usage: set-context-property <context> <name> <value>"
+	print("Usage: set-context-property <context> <name> <value>")
 	sys.exit(1)
 
 bus = dbus.SystemBus()
@@ -24,7 +24,7 @@ for path, properties in modems:
 	contexts = connman.GetContexts()
 
 	if (len(contexts) == 0):
-		print "No context available"
+		print("No context available")
 		sys.exit(1)
 
 	path = contexts[int(sys.argv[1])][0]
@@ -33,7 +33,7 @@ for path, properties in modems:
 
 	try:
 		context.SetProperty(sys.argv[2], sys.argv[3])
-	except dbus.DBusException, e:
-		print "Error setting context %s property %s: %s" %\
-				(path, sys.argv[2], str(e))
+	except dbus.DBusException as e:
+		print("Error setting context %s property %s: %s" %\
+				(path, sys.argv[2], str(e)))
 		exit(2)

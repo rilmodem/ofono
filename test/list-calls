@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import dbus
 
@@ -10,7 +10,7 @@ manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 modems = manager.GetModems()
 
 for path, properties in modems:
-	print "[ %s ]" % (path)
+	print("[ %s ]" % (path))
 
 	if "org.ofono.VoiceCallManager" not in properties["Interfaces"]:
 		continue
@@ -21,11 +21,11 @@ for path, properties in modems:
 	calls = mgr.GetCalls()
 
 	for path, properties in calls:
-		print "    [ %s ]" % (path)
+		print("    [ %s ]" % (path))
 
 		for key in properties.keys():
 			if key == 'Icon':
-				print "        %s = %d" % (key, properties[key])
+				print("        %s = %d" % (key, properties[key]))
 			else:
 				val = str(properties[key])
-				print "        %s = %s" % (key, val)
+				print("        %s = %s" % (key, val))

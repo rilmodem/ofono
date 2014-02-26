@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import dbus
 import sys
@@ -8,7 +8,7 @@ bus = dbus.SystemBus()
 if len(sys.argv) == 2:
 	id = sys.argv[1]
 else:
-	print "%s <icon id>" % (sys.argv[0])
+	print("%s <icon id>" % (sys.argv[0]))
 	sys.exit(0)
 
 manager = dbus.Interface(bus.get_object("org.ofono", "/"),
@@ -28,4 +28,4 @@ icon = sim.GetIcon(dbus.Byte(int(sys.argv[1])))
 xpm = ""
 for byte in icon:
 	xpm += str(byte)
-print xpm
+print(xpm)

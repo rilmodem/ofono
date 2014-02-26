@@ -15,10 +15,10 @@ elif len(sys.argv) == 2:
 	path = modems[0][0]
 	enable = int(sys.argv[1])
 else:
-	print "%s [PATH] {0|1}" % (sys.argv[0])
+	print("%s [PATH] {0|1}" % (sys.argv[0]))
 	exit(1)
 
-print "Setting TTY for modem %s..." % path
+print("Setting TTY for modem %s..." % path)
 texttelephony = dbus.Interface(bus.get_object('org.ofono', path),
 						'org.ofono.TextTelephony')
 

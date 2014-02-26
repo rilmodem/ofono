@@ -1,17 +1,17 @@
 #!/usr/bin/python
 
-import gobject
+from gi.repository import GLib
 import sys
 import dbus
 import dbus.mainloop.glib
 
 def mw_property_changed(name, value):
 	if name == 'VoicemailMessageCount':
-		print "MessageWaiting property: '%s' changed to '%d'" %\
-			(name,value)
+		print("MessageWaiting property: '%s' changed to '%d'" %\
+			(name,value))
 	else:
-		print "MessageWaiting property: '%s' changed to '%s'" %\
-			(name,value)
+		print("MessageWaiting property: '%s' changed to '%s'" %\
+			(name,value))
 
 if __name__ == "__main__":
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -30,11 +30,11 @@ if __name__ == "__main__":
 
 	properties = mw.GetProperties()
 
-	print "Voicemail waiting: %s" % (properties['VoicemailWaiting'])
-	print "Voicemail message count: %d" %\
-		(properties['VoicemailMessageCount'])
-	print "Voicemail mailbox number: %s" %\
-		(properties['VoicemailMailboxNumber'])
+	print("Voicemail waiting: %s" % (properties['VoicemailWaiting']))
+	print("Voicemail message count: %d" %\
+		(properties['VoicemailMessageCount']))
+	print("Voicemail mailbox number: %s" %\
+		(properties['VoicemailMailboxNumber']))
 
-	mainloop = gobject.MainLoop()
+	mainloop = GLib.MainLoop()
 	mainloop.run()

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import dbus
 
@@ -10,7 +10,7 @@ manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 modems = manager.GetModems()
 
 for path, properties in modems:
-	print "[ %s ]" % (path)
+	print("[ %s ]" % (path))
 
 	if "org.ofono.ConnectionManager" not in properties["Interfaces"]:
 		continue
@@ -21,7 +21,7 @@ for path, properties in modems:
 	contexts = connman.GetContexts()
 
 	for path, properties in contexts:
-		print "    [ %s ]" % (path)
+		print("    [ %s ]" % (path))
 
 		for key in properties.keys():
 			if key in ["Settings"] or key in ["IPv6.Settings"]:
@@ -39,6 +39,6 @@ for path, properties in modems:
 				val += " }"
 			else:
 				val = str(properties[key])
-			print "        %s = %s" % (key, val)
+			print("        %s = %s" % (key, val))
 
-		print
+		print()

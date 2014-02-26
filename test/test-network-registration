@@ -1,23 +1,23 @@
 #!/usr/bin/python
 
-import gobject
+from gi.repository import GLib
 import sys
 import dbus
 import dbus.mainloop.glib
 
 def network_property_changed(name, value):
-	print "Network Registration property '%s' changed to '%s'" %\
-		(name, value)
+	print("Network Registration property '%s' changed to '%s'" %\
+		(name, value))
 
 	if name == 'Name' and canexit:
 		mainloop.quit()
 
 if __name__ == "__main__":
 	if len(sys.argv) < 2:
-		print "Usage: %s [modem] <path> - Register to PLMN on <path>" %\
-			(sys.argv[0])
-		print "Usage: %s [modem] default - Register to default PLMN" %\
-			(sys.argv[0])
+		print("Usage: %s [modem] <path> - Register to PLMN on <path>" %\
+			(sys.argv[0]))
+		print("Usage: %s [modem] default - Register to default PLMN" %\
+			(sys.argv[0]))
 		sys.exit(1)
 
 	canexit = False
@@ -44,15 +44,15 @@ if __name__ == "__main__":
 
 	props = netreg.GetProperties()
 
-	print "Status is: '%s', Operator Name is: '%s'" %\
-		(props['Status'], props['Name'])
+	print("Status is: '%s', Operator Name is: '%s'" %\
+		(props['Status'], props['Name']))
 
-	if props.has_key('LocationAreaCode') and props.has_key('CellId'):
-		print "Location: '%d', Cell: '%d'" %\
-			(props['LocationAreaCode'], props['CellId'])
+	if 'LocationAreaCode' in props and 'CellId' in props:
+		print("Location: '%d', Cell: '%d'" %\
+			(props['LocationAreaCode'], props['CellId']))
 
-	if props.has_key('Technology'):
-		print "Technology: '%s'" % (props['Technology'])
+	if 'Technology' in props:
+		print("Technology: '%s'" % (props['Technology']))
 
 	try:
 		if plmn == 'default':
@@ -61,11 +61,11 @@ if __name__ == "__main__":
 			obj = bus.get_object('org.ofono', plmn);
 			op = dbus.Interface(obj, 'org.ofono.NetworkOperator')
 			op.Register()
-	except dbus.DBusException, e:
-		print "Unable to register: ", e
+	except dbus.DBusException as e:
+		print("Unable to register: %s" % e)
 		sys.exit(1)
 
 	canexit = True
 
-	mainloop = gobject.MainLoop()
+	mainloop = GLib.MainLoop()
 	mainloop.run()

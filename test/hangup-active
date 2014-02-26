@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import dbus
@@ -18,7 +18,7 @@ calls = manager.GetCalls()
 
 for path, properties in calls:
 		state = properties["State"]
-		print "[ %s ] %s" % (path, state)
+		print("[ %s ] %s" % (path, state))
 
 		if state != "active":
 			continue

@@ -20,4 +20,4 @@ if __name__ == "__main__":
 	phonebook = dbus.Interface(bus.get_object('org.ofono', path),
 				'org.ofono.Phonebook')
 
-	print phonebook.Import(timeout=100)
+	print(phonebook.Import(timeout=100))

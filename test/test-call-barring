@@ -1,20 +1,20 @@
 #!/usr/bin/python
 
-import gobject
+from gi.repository import GLib
 import sys
 import dbus
 import dbus.mainloop.glib
 
 
 def property_changed(name, value):
-	print "CallBarring property: '%s' changed to '%s'" % (name, str(value))
+	print("CallBarring property: '%s' changed to '%s'" % (name, str(value)))
 	if canexit:
 		mainloop.quit()
 
 def print_useage(s):
-	print "Usage: %s <property> <newvalue> <password>" % (s)
-	print "Usage: %s disableall <password>" % (s)
-	print "Usage: %s passwd <old_password> <new_password>" % (s)
+	print("Usage: %s <property> <newvalue> <password>" % (s))
+	print("Usage: %s disableall <password>" % (s))
+	print("Usage: %s passwd <old_password> <new_password>" % (s))
 	sys.exit(1);
 
 if __name__ == "__main__":
@@ -51,34 +51,34 @@ if __name__ == "__main__":
 
 	properties = cb.GetProperties()
 
-	print "Barring settings for Incoming Voice calls: %s" %\
-		(properties['VoiceIncoming'])
-	print "Barring settings for Outgoing Calls: %s" %\
-		(properties['VoiceOutgoing'])
+	print("Barring settings for Incoming Voice calls: %s" %\
+		(properties['VoiceIncoming']))
+	print("Barring settings for Outgoing Calls: %s" %\
+		(properties['VoiceOutgoing']))
 
 	if (sys.argv[1] == 'disableall'):
-		print "Disabling all barrings"
+		print("Disabling all barrings")
 		try:
 			cb.DisableAll(pin)
-		except dbus.DBusException, e:
-			print "Unable to Disable All barrings: ", e
+		except dbus.DBusException as e:
+			print("Unable to Disable All barrings: ", e)
 			sys.exit(1)
 	elif (sys.argv[1] == 'passwd'):
 		try:
 			cb.ChangePassword(old_password, new_password)
-		except dbus.DBusException, e:
-			print "Unable to change password: ", e
+		except dbus.DBusException as e:
+			print("Unable to change password: ", e)
 			sys.exit(1)
-		print "Password changed"
+		print("Password changed")
 		sys.exit(0)
 	else:
 		try:
 			cb.SetProperty(property, newvalue, pin)
-		except dbus.DBusException, e:
-			print "Unable to set property: ", e
+		except dbus.DBusException as e:
+			print("Unable to set property: ", e)
 			sys.exit(1)
 
 	canexit = True
 
-	mainloop = gobject.MainLoop()
+	mainloop = GLib.MainLoop()
 	mainloop.run()

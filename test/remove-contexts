@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import dbus
 
@@ -20,4 +20,4 @@ for path, properties in modems:
 
 	for path, properties in contexts:
 		connman.RemoveContext(path)
-		print"Removed: [ %s ]" % (path)
+		print("Removed: [ %s ]" % (path))

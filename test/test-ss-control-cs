@@ -1,18 +1,18 @@
 #!/usr/bin/python
 
-import gobject
+from gi.repository import GLib
 
 import dbus
 import dbus.mainloop.glib
 
 def property_changed(property, value):
-	print "CallSettings property %s changed to %s" % (property, value)
+	print("CallSettings property %s changed to %s" % (property, value))
 
 def print_properties(cs):
-        properties = cs.GetProperties()
+	properties = cs.GetProperties()
 
 	for p in properties:
-		print "property %s, value: %s" % (p, properties[p])
+		print("property %s, value: %s" % (p, properties[p]))
 
 if __name__ == "__main__":
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -27,90 +27,90 @@ if __name__ == "__main__":
 	cs = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
                                                         'org.ofono.CallSettings')
 
-        cs.connect_to_signal("PropertyChanged", property_changed)
+	cs.connect_to_signal("PropertyChanged", property_changed)
 
 	ss = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
 							'org.ofono.SupplementaryServices')
 
 	print_properties(cs)
 
-	print "Trying invalid SS request for CLIR"
+	print("Trying invalid SS request for CLIR")
 	try:
-		print ss.Initiate("*31#456666")
-	except dbus.DBusException, e:
-		print "Failed with %s - Good" % e
+		print(ss.Initiate("*31#456666"))
+	except dbus.DBusException as e:
+		print("Failed with %s - Good" % e)
 
-	print "Trying invalid SS request for CLIR"
+	print("Trying invalid SS request for CLIR")
 	try:
-		print ss.Initiate("*31*455*4#")
-	except dbus.DBusException, e:
-		print "Failed with %s - Good" % e
+		print(ss.Initiate("*31*455*4#"))
+	except dbus.DBusException as e:
+		print("Failed with %s - Good" % e)
 
-	print "Trying invalid SS request for CLIR"
+	print("Trying invalid SS request for CLIR")
 	try:
-		print ss.Initiate("*31**44435#")
-	except dbus.DBusException, e:
-		print "Failed with %s - Good" % e
+		print(ss.Initiate("*31**44435#"))
+	except dbus.DBusException as e:
+		print("Failed with %s - Good" % e)
 
-	print "Query CLIP"
-	print ss.Initiate("*#30#")
+	print("Query CLIP")
+	print(ss.Initiate("*#30#"))
 
-	print "Query CNAP"
-	print ss.Initiate("*#300#")
+	print("Query CNAP")
+	print(ss.Initiate("*#300#"))
 
-	print "Query COLP"
-	print ss.Initiate("*#76#")
+	print("Query COLP")
+	print(ss.Initiate("*#76#"))
 
-	print "Query CLIR"
-	print ss.Initiate("*#31#")
+	print("Query CLIR")
+	print(ss.Initiate("*#31#"))
 
-	print "Activate CLIR"
-	print ss.Initiate("*31#")
+	print("Activate CLIR")
+	print(ss.Initiate("*31#"))
 
 	print_properties(cs)
 
-	print "Deactivate CLIR"
-	print ss.Initiate("#31#")
+	print("Deactivate CLIR")
+	print(ss.Initiate("#31#"))
 
 	print_properties(cs)
 
-	print "Trying invalid SS request for CW"
+	print("Trying invalid SS request for CW")
 	try:
-		print ss.Initiate("*43#456666")
-	except dbus.DBusException, e:
-		print "Failed with %s - Good" % e
+		print(ss.Initiate("*43#456666"))
+	except dbus.DBusException as e:
+		print("Failed with %s - Good" % e)
 
-	print "Trying invalid SS request for CW"
+	print("Trying invalid SS request for CW")
 	try:
-		print ss.Initiate("*43*455*4#")
-	except dbus.DBusException, e:
-		print "Failed with %s - Good" % e
+		print(ss.Initiate("*43*455*4#"))
+	except dbus.DBusException as e:
+		print("Failed with %s - Good" % e)
 
-	print "Trying invalid SS request for CW"
+	print("Trying invalid SS request for CW")
 	try:
-		print ss.Initiate("*43**44435#")
-	except dbus.DBusException, e:
-		print "Failed with %s - Good" % e
+		print(ss.Initiate("*43**44435#"))
+	except dbus.DBusException as e:
+		print("Failed with %s - Good" % e)
 
-	print "Query CW"
-	print ss.Initiate("*#43#")
+	print("Query CW")
+	print(ss.Initiate("*#43#"))
 
-	print "Query CW, only Voice"
-	print ss.Initiate("*#43*11#")
+	print("Query CW, only Voice")
+	print(ss.Initiate("*#43*11#"))
 
-	print "Query CW, only Fax"
-	print ss.Initiate("*#43*13#")
+	print("Query CW, only Fax")
+	print(ss.Initiate("*#43*13#"))
 
-	print "Disable CW for everything"
-	print ss.Initiate("#43#");
+	print("Disable CW for everything")
+	print(ss.Initiate("#43#"));
 
 	print_properties(cs)
 
-	print "Enable CW for Voice"
-	print ss.Initiate("*43*11#")
+	print("Enable CW for Voice")
+	print(ss.Initiate("*43*11#"))
 
 	print_properties(cs)
 
-	mainloop = gobject.MainLoop()
+	mainloop = GLib.MainLoop()
 	mainloop.run()
 

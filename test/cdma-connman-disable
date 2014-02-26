@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import dbus
 import sys
@@ -13,7 +13,7 @@ else:
 	modems = manager.GetModems()
 	path = modems[0][0]
 
-print "Disconnecting CDMA Packet Data Service on modem %s..." % path
+print("Disconnecting CDMA Packet Data Service on modem %s..." % path)
 cm = dbus.Interface(bus.get_object('org.ofono', path),
 		'org.ofono.cdma.ConnectionManager')
 

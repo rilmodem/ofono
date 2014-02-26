@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import gobject
+from gi.repository import GLib
 import sys
 import os
 
@@ -15,51 +15,51 @@ class PositioningAgent(dbus.service.Object):
 	@dbus.service.method(AGENT_INTERFACE,
 					in_signature="", out_signature="")
 	def Release(self):
-		print "Release"
+		print("Release")
 		mainloop.quit()
 
 	@dbus.service.method(AGENT_INTERFACE,
 					in_signature="s", out_signature="")
 	def Request(self, xml):
-		print "positioning data: %s" % (xml)
+		print("positioning data: %s" % (xml))
 
 	@dbus.service.method(AGENT_INTERFACE,
 					in_signature="", out_signature="")
 	def ResetAssistanceData(self):
-		print "Reset Assistance Data request received"
+		print("Reset Assistance Data request received")
 
 def print_menu():
-	print "Select test case"
-	print "-----------------------------------------------------------"
-	print "[0] SendPositioningElement"
-	print "[1] RegisterPositioningRequestAgent"
-	print "[2] UnregisterPositioningRequestAgent"
-	print "[x] Exit"
-	print "-----------------------------------------------------------"
+	print("Select test case")
+	print("-----------------------------------------------------------")
+	print("[0] SendPositioningElement")
+	print("[1] RegisterPositioningRequestAgent")
+	print("[2] UnregisterPositioningRequestAgent")
+	print("[x] Exit")
+	print("-----------------------------------------------------------")
 
-def stdin_handler(fd, condition, gnss, path):
-	in_key = os.read(fd.fileno(), 8).rstrip()
+def stdin_handler(channel, condition, gnss, path):
+	in_key = os.read(channel.unix_get_fd(), 160).rstrip().decode('UTF-8')
 	if in_key == '0':
-		xml = raw_input('type the element and press enter: ')
+		xml = input('type the element and press enter: ')
 		try:
 			gnss.SendPositioningElement(dbus.String(xml))
-			print "ok"
-		except dbus.DBusException, e:
-			print "Unable to send positioning element"
+			print("ok")
+		except dbus.DBusException as e:
+			print("Unable to send positioning element")
 
 	elif in_key == '1':
 		try:
 			gnss.RegisterPositioningRequestAgent("/test/posagent")
-			print "ok"
-		except dbus.DBusException, e:
-			print "Unable to register positioning agent"
+			print("ok")
+		except dbus.DBusException as e:
+			print("Unable to register positioning agent")
 
 	elif in_key == '2':
 		try:
 			gnss.UnregisterPositioningRequestAgent(path)
-			print "ok"
-		except dbus.DBusException, e:
-			print "Unable to unregister positioning agent"
+			print("ok")
+		except dbus.DBusException as e:
+			print("Unable to unregister positioning agent")
 	elif in_key == 'x':
 		sys.exit(1)
 
@@ -87,7 +87,8 @@ if __name__ == "__main__":
 
 	print_menu()
 
-	gobject.io_add_watch(sys.stdin, gobject.IO_IN, stdin_handler,
-				gnss, path)
-	mainloop = gobject.MainLoop()
+	GLib.io_add_watch(GLib.IOChannel(filedes=sys.stdin.fileno()),
+		   GLib.PRIORITY_DEFAULT, GLib.IO_IN, stdin_handler,
+		   gnss, path)
+	mainloop = GLib.MainLoop()
 	mainloop.run()

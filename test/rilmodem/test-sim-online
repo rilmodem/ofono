@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 #
 # This test ensures that basic modem information is available
@@ -17,7 +17,7 @@ def set_modem_online(modem, path):
 	"""Sets the modem 'Online' property.
 	"""
 
-	print "Setting modem %s online..." % path
+	print("Setting modem %s online..." % path)
 
 	modem.SetProperty("Online", dbus.Boolean(1), timeout = 120)
 
@@ -27,18 +27,18 @@ def validate_emergency_numbers():
 			'org.ofono.VoiceCallManager')
 
 	properties = voice.GetProperties()
-	keys = properties.keys()
+	keys = list(properties.keys())
 
 	assert keys.index("EmergencyNumbers") != "ValueError"
 
 	numbers = properties["EmergencyNumbers"]
 
-	print "%s" % numbers
+	print("%s" % numbers)
 
 	for number in numbers:
 		assert number in ["08", "000", "999", "110", "112", "911", "118", "119"]
 
-	print "OK\n"
+	print("OK\n")
 
 def validate_netreg(args, path):
 	"""Validates NetworkRegistration properties.
@@ -49,7 +49,7 @@ def validate_netreg(args, path):
 				'org.ofono.NetworkRegistration')
 
 	properties = netreg.GetProperties()
-	keys = properties.keys()
+	keys = list(properties.keys())
 
 	assert keys.index("Status") != "ValueError"
 
@@ -141,13 +141,13 @@ def main(args):
 	modem = dbus.Interface(bus.get_object('org.ofono', path), 'org.ofono.Modem')
 	properties = modem.GetProperties()
 
-	print "[ %s ]" % path
+	print("[ %s ]" % path)
 
 	if is_modem_online(properties) == 0 and args.online == True:
 		set_modem_online(modem, path)
 		time.sleep(5)
 
-	keys = properties.keys()
+	keys = list(properties.keys())
 
 	assert keys.index("Features") != "ValueError"
 	assert keys.index("Emergency") != "ValueError"
@@ -192,7 +192,7 @@ def main(args):
 				'org.ofono.SimManager')
 
 	properties = simmanager.GetProperties()
-	keys = properties.keys()
+	keys = list(properties.keys())
 
 	assert keys.index("Retries") != "ValueError"
 	assert keys.index("FixedDialing") != "ValueError"
