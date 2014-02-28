@@ -38,13 +38,13 @@
 #include <ofono/voicecall.h>
 
 #include "gril.h"
-#include "grilutil.h"
 #include "grilrequest.h"
 #include "grilreply.h"
 #include "grilunsol.h"
 
 #include "common.h"
 #include "rilmodem.h"
+#include "voicecall.h"
 
 /* Amount of ms we wait between CLCC calls */
 #define POLL_CLCC_INTERVAL 300
@@ -55,20 +55,6 @@
 
 /* To use with change_state_req::affected_types */
 #define AFFECTED_STATES_ALL 0x3F
-
-struct voicecall_data {
-	GSList *calls;
-	/* Call local hangup indicator, one bit per call (1 << call_id) */
-	unsigned int local_release;
-	unsigned int clcc_source;
-	GRil *ril;
-	unsigned int vendor;
-	unsigned char flags;
-	ofono_voicecall_cb_t cb;
-	void *data;
-	gchar *tone_queue;
-	gboolean tone_pending;
-};
 
 struct release_id_req {
 	struct ofono_voicecall *vc;
@@ -97,14 +83,14 @@ struct hold_before_dial_req {
 	enum ofono_clir_option dial_clir;
 };
 
-static void send_one_dtmf(struct voicecall_data *vd);
-static void clear_dtmf_queue(struct voicecall_data *vd);
+static void send_one_dtmf(struct ril_voicecall_data *vd);
+static void clear_dtmf_queue(struct ril_voicecall_data *vd);
 
 static void lastcause_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct lastcause_req *reqdata = user_data;
 	struct ofono_voicecall *vc = reqdata->vc;
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 	enum ofono_disconnect_reason reason;
 
 	reason = g_ril_reply_parse_call_fail_cause(vd->ril, message);
@@ -117,7 +103,7 @@ static void lastcause_cb(struct ril_msg *message, gpointer user_data)
 static void clcc_poll_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 	int reqid = RIL_REQUEST_LAST_CALL_FAIL_CAUSE;
 	GSList *calls;
 	GSList *n, *o;
@@ -224,10 +210,10 @@ static void clcc_poll_cb(struct ril_msg *message, gpointer user_data)
 	vd->local_release = 0;
 }
 
-static gboolean poll_clcc(gpointer user_data)
+gboolean ril_poll_clcc(gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 
 	g_ril_send(vd->ril, RIL_REQUEST_GET_CURRENT_CALLS, NULL,
 			clcc_poll_cb, vc, NULL);
@@ -240,7 +226,7 @@ static gboolean poll_clcc(gpointer user_data)
 static void generic_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct change_state_req *req = user_data;
-	struct voicecall_data *vd = ofono_voicecall_get_data(req->vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(req->vc);
 	struct ofono_error error;
 
 	if (message->error == RIL_E_SUCCESS) {
@@ -277,7 +263,7 @@ static int ril_template(const guint rreq, struct ofono_voicecall *vc,
 			GRilResponseFunc func, unsigned int affected_types,
 			gpointer pdata, ofono_voicecall_cb_t cb, void *data)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct change_state_req *req = g_try_new0(struct change_state_req, 1);
 	int ret;
 
@@ -305,7 +291,7 @@ static void rild_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	struct ofono_voicecall *vc = cbd->user;
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 	ofono_voicecall_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
@@ -321,7 +307,7 @@ static void rild_cb(struct ril_msg *message, gpointer user_data)
 	/* CLCC will update the oFono call list with proper ids  */
 	if (!vd->clcc_source)
 		vd->clcc_source = g_timeout_add(POLL_CLCC_INTERVAL,
-						poll_clcc, vc);
+						ril_poll_clcc, vc);
 
 	/* we cannot answer just yet since we don't know the call id */
 	vd->cb = cb;
@@ -338,7 +324,7 @@ static void dial(struct ofono_voicecall *vc,
 			enum ofono_clir_option clir, ofono_voicecall_cb_t cb,
 			void *data)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct cb_data *cbd = cb_data_new(cb, data, vc);
 	struct parcel rilp;
 
@@ -356,7 +342,7 @@ static void hold_before_dial_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	struct hold_before_dial_req *req = cbd->user;
-	struct voicecall_data *vd = ofono_voicecall_get_data(req->vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(req->vc);
 	ofono_voicecall_cb_t cb = cbd->cb;
 
 	if (message->error != RIL_E_SUCCESS) {
@@ -373,12 +359,11 @@ static void hold_before_dial_cb(struct ril_msg *message, gpointer user_data)
 	g_free(req);
 }
 
-static void ril_dial(struct ofono_voicecall *vc,
-			const struct ofono_phone_number *ph,
-			enum ofono_clir_option clir, ofono_voicecall_cb_t cb,
-			void *data)
+void ril_dial(struct ofono_voicecall *vc, const struct ofono_phone_number *ph,
+		enum ofono_clir_option clir, ofono_voicecall_cb_t cb,
+		void *data)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 	int current_active = 0;
 	struct ofono_call *call;
 	GSList *l;
@@ -422,10 +407,10 @@ static void ril_dial(struct ofono_voicecall *vc,
 	}
 }
 
-static void ril_hangup_all(struct ofono_voicecall *vc,
-				ofono_voicecall_cb_t cb, void *data)
+void ril_hangup_all(struct ofono_voicecall *vc, ofono_voicecall_cb_t cb,
+			void *data)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct parcel rilp;
 	struct ofono_error error;
 	struct ofono_call *call;
@@ -462,10 +447,10 @@ static void ril_hangup_all(struct ofono_voicecall *vc,
 	cb(&error, data);
 }
 
-static void ril_hangup_specific(struct ofono_voicecall *vc,
-		int id, ofono_voicecall_cb_t cb, void *data)
+void ril_hangup_specific(struct ofono_voicecall *vc,
+				int id, ofono_voicecall_cb_t cb, void *data)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct parcel rilp;
 
 	DBG("Hanging up call with id %d", id);
@@ -477,26 +462,23 @@ static void ril_hangup_specific(struct ofono_voicecall *vc,
 			AFFECTED_STATES_ALL, &rilp, cb, data);
 }
 
-static void ril_call_state_notify(struct ril_msg *message, gpointer user_data)
+void ril_call_state_notify(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 
-	if (message->req != RIL_UNSOL_RESPONSE_CALL_STATE_CHANGED)
-		goto error;
+	g_ril_print_unsol_no_args(vd->ril, message);
 
 	/* Just need to request the call list again */
-	poll_clcc(vc);
+	ril_poll_clcc(vc);
 
 	return;
-
-error:
-	ofono_error("Unable to notify about call state changes");
 }
 
 static void ril_ss_notify(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct unsol_supp_svc_notif *unsol;
 
 	unsol = g_ril_unsol_parse_supp_svc_notif(vd->ril,  message);
@@ -519,8 +501,7 @@ static void ril_ss_notify(struct ril_msg *message, gpointer user_data)
 	g_ril_unsol_free_supp_svc_notif(unsol);
 }
 
-static void ril_answer(struct ofono_voicecall *vc,
-			ofono_voicecall_cb_t cb, void *data)
+void ril_answer(struct ofono_voicecall *vc, ofono_voicecall_cb_t cb, void *data)
 {
 	DBG("Answering current call");
 
@@ -530,7 +511,7 @@ static void ril_answer(struct ofono_voicecall *vc,
 
 static void ril_send_dtmf_cb(struct ril_msg *message, gpointer user_data)
 {
-	struct voicecall_data *vd = user_data;
+	struct ril_voicecall_data *vd = user_data;
 
 	if (message->error == RIL_E_SUCCESS) {
 		/* Remove sent DTMF character from queue */
@@ -551,7 +532,7 @@ static void ril_send_dtmf_cb(struct ril_msg *message, gpointer user_data)
 	}
 }
 
-static void send_one_dtmf(struct voicecall_data *vd)
+static void send_one_dtmf(struct ril_voicecall_data *vd)
 {
 	struct parcel rilp;
 
@@ -569,10 +550,10 @@ static void send_one_dtmf(struct voicecall_data *vd)
 	vd->tone_pending = TRUE;
 }
 
-static void ril_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
-		ofono_voicecall_cb_t cb, void *data)
+void ril_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
+			ofono_voicecall_cb_t cb, void *data)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct ofono_error error;
 
 	DBG("Queue '%s'", dtmf);
@@ -590,23 +571,23 @@ static void ril_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 	cb(&error, data);
 }
 
-static void clear_dtmf_queue(struct voicecall_data *vd)
+static void clear_dtmf_queue(struct ril_voicecall_data *vd)
 {
 	g_free(vd->tone_queue);
 	vd->tone_queue = g_strnfill(MAX_DTMF_BUFFER + 1, '\0');
 	vd->tone_pending = FALSE;
 }
 
-static void ril_create_multiparty(struct ofono_voicecall *vc,
-			ofono_voicecall_cb_t cb, void *data)
+void ril_create_multiparty(struct ofono_voicecall *vc,
+				ofono_voicecall_cb_t cb, void *data)
 {
 	ril_template(RIL_REQUEST_CONFERENCE, vc, generic_cb, 0, NULL, cb, data);
 }
 
-static void ril_private_chat(struct ofono_voicecall *vc, int id,
+void ril_private_chat(struct ofono_voicecall *vc, int id,
 			ofono_voicecall_cb_t cb, void *data)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct parcel rilp;
 
 	g_ril_request_separate_conn(vd->ril, id, &rilp);
@@ -616,36 +597,36 @@ static void ril_private_chat(struct ofono_voicecall *vc, int id,
 			generic_cb, 0, &rilp, cb, data);
 }
 
-static void ril_swap_without_accept(struct ofono_voicecall *vc,
-			ofono_voicecall_cb_t cb, void *data)
+void ril_swap_without_accept(struct ofono_voicecall *vc,
+				ofono_voicecall_cb_t cb, void *data)
 {
 	ril_template(RIL_REQUEST_SWITCH_HOLDING_AND_ACTIVE, vc,
 			generic_cb, 0, NULL, cb, data);
 }
 
-static void ril_hold_all_active(struct ofono_voicecall *vc,
-			ofono_voicecall_cb_t cb, void *data)
+void ril_hold_all_active(struct ofono_voicecall *vc,
+				ofono_voicecall_cb_t cb, void *data)
 {
 	ril_template(RIL_REQUEST_SWITCH_HOLDING_AND_ACTIVE, vc,
 			generic_cb, 0, NULL, cb, data);
 }
 
-static void ril_release_all_held(struct ofono_voicecall *vc,
-					ofono_voicecall_cb_t cb, void *data)
+void ril_release_all_held(struct ofono_voicecall *vc,
+				ofono_voicecall_cb_t cb, void *data)
 {
 	ril_template(RIL_REQUEST_HANGUP_WAITING_OR_BACKGROUND, vc,
 			generic_cb, 0, NULL, cb, data);
 }
 
-static void ril_release_all_active(struct ofono_voicecall *vc,
-					ofono_voicecall_cb_t cb, void *data)
+void ril_release_all_active(struct ofono_voicecall *vc,
+				ofono_voicecall_cb_t cb, void *data)
 {
 	ril_template(RIL_REQUEST_HANGUP_FOREGROUND_RESUME_BACKGROUND, vc,
 			generic_cb, 0, NULL, cb, data);
 }
 
-static void ril_set_udub(struct ofono_voicecall *vc,
-					ofono_voicecall_cb_t cb, void *data)
+void ril_set_udub(struct ofono_voicecall *vc,
+			ofono_voicecall_cb_t cb, void *data)
 {
 	ril_template(RIL_REQUEST_HANGUP_WAITING_OR_BACKGROUND, vc,
 			generic_cb, 0, NULL, cb, data);
@@ -654,7 +635,7 @@ static void ril_set_udub(struct ofono_voicecall *vc,
 static gboolean enable_supp_svc(gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct parcel rilp;
 
 	g_ril_request_set_supp_svc_notif(vd->ril, &rilp);
@@ -669,11 +650,11 @@ static gboolean enable_supp_svc(gpointer user_data)
 static gboolean ril_delayed_register(gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 	ofono_voicecall_register(vc);
 
 	/* Initialize call list */
-	poll_clcc(vc);
+	ril_poll_clcc(vc);
 
 	/* Unsol when call state changes */
 	g_ril_register(vd->ril, RIL_UNSOL_RESPONSE_CALL_STATE_CHANGED,
@@ -690,16 +671,10 @@ static gboolean ril_delayed_register(gpointer user_data)
 	return FALSE;
 }
 
-static int ril_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
-				void *data)
+void ril_voicecall_start(GRil *ril, struct ofono_voicecall *vc,
+				unsigned int vendor,
+				struct ril_voicecall_data *vd)
 {
-	GRil *ril = data;
-	struct voicecall_data *vd;
-
-	vd = g_try_new0(struct voicecall_data, 1);
-	if (vd == NULL)
-		return -ENOMEM;
-
 	vd->ril = g_ril_clone(ril);
 	vd->vendor = vendor;
 	vd->cb = NULL;
@@ -717,13 +692,26 @@ static int ril_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	 * call register in the callback; we use an idle event instead.
 	 */
 	g_idle_add(ril_delayed_register, vc);
+}
+
+int ril_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
+			void *data)
+{
+	GRil *ril = data;
+	struct ril_voicecall_data *vd;
+
+	vd = g_try_new0(struct ril_voicecall_data, 1);
+	if (vd == NULL)
+		return -ENOMEM;
+
+	ril_voicecall_start(ril, vc, vendor, vd);
 
 	return 0;
 }
 
-static void ril_voicecall_remove(struct ofono_voicecall *vc)
+void ril_voicecall_remove(struct ofono_voicecall *vc)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 
 	if (vd->clcc_source)
 		g_source_remove(vd->clcc_source);

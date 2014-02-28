@@ -36,6 +36,7 @@
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/netreg.h>
+#include <ofono/spn-table.h>
 
 #include "common.h"
 #include "gril.h"
@@ -154,6 +155,31 @@ static void ril_registration_status(struct ofono_netreg *netreg,
 	}
 }
 
+static void set_oper_name(const struct reply_operator *reply,
+				struct ofono_network_operator *op)
+{
+	const char *spn = NULL;
+
+	/* Use SPN list if we do not have name */
+	if (strcmp(reply->numeric, reply->lalpha) == 0) {
+		spn = __ofono_spn_table_get_spn(reply->numeric);
+		if (spn != NULL) {
+			DBG("using spn override %s", spn);
+			strncpy(op->name, spn, OFONO_MAX_OPERATOR_NAME_LENGTH);
+		}
+	}
+
+	if (spn == NULL) {
+		/* Try to use long by default */
+		if (reply->lalpha)
+			strncpy(op->name, reply->lalpha,
+				OFONO_MAX_OPERATOR_NAME_LENGTH);
+		else if (reply->salpha)
+			strncpy(op->name, reply->salpha,
+				OFONO_MAX_OPERATOR_NAME_LENGTH);
+	}
+}
+
 static void ril_cops_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -171,11 +197,7 @@ static void ril_cops_cb(struct ril_msg *message, gpointer user_data)
 	if ((reply = g_ril_reply_parse_operator(nd->ril, message)) == NULL)
 		goto error;
 
-	/* Try to use long by default */
-	if (reply->lalpha)
-		strncpy(op.name, reply->lalpha, OFONO_MAX_OPERATOR_NAME_LENGTH);
-	else if (reply->salpha)
-		strncpy(op.name, reply->salpha, OFONO_MAX_OPERATOR_NAME_LENGTH);
+	set_oper_name(reply, &op);
 
 	extract_mcc_mnc(reply->numeric, op.mcc, op.mnc);
 
@@ -237,19 +259,11 @@ static void ril_cops_list_cb(struct ril_msg *message, gpointer user_data)
 	for (l = reply->list; l; l = l->next) {
 		operator = l->data;
 
-		/* Try to use long by default */
-		if (operator->lalpha)
-			strncpy(ops[i].name, operator->lalpha,
-					OFONO_MAX_OPERATOR_NAME_LENGTH);
-		else
-			strncpy(ops[i].name, operator->salpha,
-					OFONO_MAX_OPERATOR_NAME_LENGTH);
+		set_oper_name(operator, &ops[i]);
 
 		extract_mcc_mnc(operator->numeric, ops[i].mcc, ops[i].mnc);
 
-		/* FIXME: need to fix this for CDMA */
-		/* Use GSM as default, as RIL doesn't pass that info to us */
-		ops[i].tech = ACCESS_TECHNOLOGY_GSM;
+		ops[i].tech = operator->tech;
 
 		/* Set the proper status  */
 		if (!strcmp(operator->status, "unknown"))

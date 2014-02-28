@@ -23,6 +23,8 @@
 #define RILUTIL_H
 
 #include <stdio.h>
+#include <modem.h>
+#include <sim.h>
 
 /* TODO: create a table lookup*/
 #define PREFIX_30_NETMASK "255.255.255.252"
@@ -83,6 +85,12 @@ enum perso_state {
 	PERSOSUBSTATE_SIM_CORPORATE_PUK,
 	PERSOSUBSTATE_SIM_SERVICE_PROVIDER_PUK,
 	PERSOSUBSTATE_SIM_SIM_PUK,
+};
+
+struct ril_sim_data {
+	struct ofono_modem *modem;
+	GRil *gril;
+	ofono_sim_state_event_cb_t ril_state_watch;
 };
 
 typedef void (*ril_util_sim_inserted_cb_t)(gboolean present, void *userdata);

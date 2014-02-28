@@ -80,6 +80,8 @@ struct sim_data {
 	enum ofono_sim_password_type passwd_type;
 	int retries[OFONO_SIM_PASSWORD_INVALID];
 	enum ofono_sim_password_type passwd_state;
+	struct ofono_modem *modem;
+	ofono_sim_state_event_cb_t ril_state_watch;
 };
 
 static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
@@ -507,6 +509,12 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 			/* First status request, after sim_probe() */
 			ofono_sim_register(sim);
 			sd->sim_registered = TRUE;
+
+			if (sd->ril_state_watch != NULL &&
+					!ofono_sim_add_state_watch(sim,
+							sd->ril_state_watch,
+							sd->modem, NULL))
+				ofono_error("Error registering ril sim watch");
 		} else {
 			/* status request afer entering PIN */
 			/*
@@ -725,7 +733,8 @@ static gboolean ril_sim_register(gpointer user)
 static int ril_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 				void *data)
 {
-	GRil *ril = data;
+	struct ril_sim_data *ril_data = data;
+	GRil *ril = ril_data->gril;
 	struct sim_data *sd;
 	int i;
 
@@ -737,6 +746,8 @@ static int ril_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 	sd->passwd_state = OFONO_SIM_PASSWORD_NONE;
 	sd->passwd_type = OFONO_SIM_PASSWORD_NONE;
 	sd->sim_registered = FALSE;
+	sd->modem = ril_data->modem;
+	sd->ril_state_watch = ril_data->ril_state_watch;
 
 	/*
 	 * The number of retries is unreliable in the current RIL

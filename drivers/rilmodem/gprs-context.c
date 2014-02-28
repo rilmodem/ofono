@@ -242,7 +242,12 @@ static void ril_gprs_context_activate_primary(struct ofono_gprs_context *gc,
 	request.apn = g_strdup(ctx->apn);
 	request.username = g_strdup(ctx->username);
 	request.password = g_strdup(ctx->password);
-	request.auth_type = RIL_AUTH_BOTH;
+
+	if (g_ril_vendor(gcd->ril) == OFONO_RIL_VENDOR_MTK)
+		request.auth_type = RIL_AUTH_NONE;
+	else
+		request.auth_type = RIL_AUTH_BOTH;
+
 	request.protocol = ctx->proto;
 
 	if (g_ril_request_setup_data_call(gcd->ril,
@@ -347,9 +352,6 @@ static void ril_gprs_context_deactivate_primary(struct ofono_gprs_context *gc,
 		ofono_error("Couldn't build DEACTIVATE_DATA_CALL request.");
 		goto error;
 	}
-
-	/* TODO: this should be folded into g_ril_request_deactivate_data_call()!!! */
-	g_ril_append_print_buf(gcd->ril, "(%d,0)", request.cid);
 
 	ret = g_ril_send(gcd->ril, RIL_REQUEST_DEACTIVATE_DATA_CALL, &rilp,
 				ril_deactivate_data_call_cb, cbd, g_free);
