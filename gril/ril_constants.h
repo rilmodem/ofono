@@ -62,6 +62,11 @@
 #define RADIO_STATE_UNAVAILABLE 1
 #define RADIO_STATE_ON 10
 
+/* Deprecated, but still used by some modems */
+#define RADIO_STATE_SIM_NOT_READY 2
+#define RADIO_STATE_SIM_LOCKED_OR_ABSENT 3
+#define RADIO_STATE_SIM_READY 4
+
 /* Radio technologies */
 #define RADIO_TECH_UNKNOWN 0
 #define RADIO_TECH_GPRS 1

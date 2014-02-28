@@ -178,6 +178,12 @@ struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
 	struct reply_avail_ops *reply = NULL;
 	unsigned int num_ops, num_strings;
 	unsigned int i;
+	int strings_per_opt;
+
+	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+		strings_per_opt = 5;
+	else
+		strings_per_opt = 4;
 
 	/*
 	 * Minimum message length is 4:
@@ -194,17 +200,17 @@ struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
 	g_ril_init_parcel(message, &rilp);
 	g_ril_append_print_buf(gril, "{");
 
-	/* Number of operators at the list (4 strings for every operator) */
+	/* Number of operators at the list */
 	num_strings = (unsigned int) parcel_r_int32(&rilp);
-	if (num_strings % 4) {
+	if (num_strings % strings_per_opt) {
 		ofono_error("%s: invalid QUERY_AVAIL_NETWORKS reply: "
-				"num_strings (%d) MOD 4 != 0",
+				"num_strings (%d) MOD %d != 0",
 				__func__,
-				num_strings);
+				num_strings, strings_per_opt);
 		goto error;
 	}
 
-	num_ops = num_strings / 4;
+	num_ops = num_strings / strings_per_opt;
 	DBG("noperators = %d", num_ops);
 
 	reply = g_try_new0(struct reply_avail_ops, 1);
@@ -226,6 +232,21 @@ struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
 		operator->salpha = parcel_r_string(&rilp);
 		operator->numeric = parcel_r_string(&rilp);
 		operator->status = parcel_r_string(&rilp);
+
+		/*
+		 * MTK: additional string with technology: 2G/3G are the only
+		 * valid values currently.
+		 */
+		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
+			char *tech = parcel_r_string(&rilp);
+			if (strcmp(tech, "3G") == 0)
+				operator->tech = ACCESS_TECHNOLOGY_UTRAN;
+			else
+				operator->tech = ACCESS_TECHNOLOGY_GSM;
+			g_free(tech);
+		} else {
+			operator->tech = ACCESS_TECHNOLOGY_GSM;
+		}
 
 		if (operator->lalpha == NULL && operator->salpha == NULL) {
 			ofono_error("%s: operator (%s) doesn't specify names",
@@ -259,12 +280,13 @@ struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
 
 		g_ril_append_print_buf(gril,
 					"%s [lalpha=%s, salpha=%s, "
-					" numeric=%s status=%s]",
+					" numeric=%s status=%s tech=%d]",
 					print_buf,
 					operator->lalpha,
 					operator->salpha,
 					operator->numeric,
-					operator->status);
+					operator->status,
+					operator->tech);
 	}
 
 	g_ril_append_print_buf(gril, "%s}", print_buf);

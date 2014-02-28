@@ -36,6 +36,7 @@ struct reply_operator {
 	char *salpha;
 	char *numeric;
 	char *status;
+	int tech;
 };
 
 struct reply_avail_ops {
