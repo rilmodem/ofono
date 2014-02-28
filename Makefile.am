@@ -19,7 +19,7 @@ pkginclude_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/cdma-connman.h include/gnss.h \
 			include/private-network.h include/cdma-netreg.h \
 			include/cdma-provision.h include/handsfree.h \
-			include/sim-mnclength.h
+			include/sim-mnclength.h include/spn-table.h
 
 nodist_pkginclude_HEADERS = include/version.h
 
@@ -120,8 +120,27 @@ builtin_sources += plugins/rildev.c
 builtin_modules += ril
 builtin_sources += plugins/ril.c
 
+builtin_modules += mtk
+builtin_sources += plugins/mtk.c
+
+builtin_modules += androidspntable
+builtin_sources += plugins/android-spn-table.c
+
+builtin_modules += mtkmodem
+builtin_sources += drivers/mtkmodem/mtkmodem.h \
+			drivers/mtkmodem/mtkmodem.c \
+			drivers/mtkmodem/mtkutil.h \
+			drivers/mtkmodem/mtkutil.c \
+			drivers/mtkmodem/mtkrequest.h \
+			drivers/mtkmodem/mtkrequest.c \
+			drivers/mtkmodem/mtkunsol.h \
+			drivers/mtkmodem/mtkunsol.c \
+			drivers/mtkmodem/voicecall.c \
+			drivers/mtkmodem/gprs.c
+
 builtin_modules += rilmodem
 builtin_sources += drivers/rilmodem/rilmodem.h \
+			drivers/rilmodem/vendor.h \
 			drivers/rilmodem/rilmodem.c \
 			drivers/rilmodem/devinfo.c \
 			drivers/rilmodem/network-registration.c \
@@ -541,7 +560,7 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
 			src/cdma-smsutil.h src/cdma-smsutil.c \
 			src/cdma-sms.c src/private-network.c src/cdma-netreg.c \
 			src/cdma-provision.c src/handsfree.c \
-			src/sim-mnclength.c
+			src/sim-mnclength.c src/spn-table.c
 
 src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ -ldl
 
