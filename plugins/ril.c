@@ -56,12 +56,12 @@
 
 #include "ofono.h"
 
-#include <gril.h>
 #include <grilreply.h>
 #include <grilrequest.h>
 #include <grilunsol.h>
 
 #include "drivers/rilmodem/rilmodem.h"
+#include "drivers/rilmodem/vendor.h"
 
 #define MAX_SIM_STATUS_RETRIES 15
 
@@ -247,10 +247,15 @@ static void ril_remove(struct ofono_modem *modem)
 static void ril_pre_sim(struct ofono_modem *modem)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
+	struct ril_sim_data sim_data;
 
 	DBG("");
 
-	ril->sim = ofono_sim_create(modem, 0, RILMODEM, ril->modem);
+	sim_data.gril = ril->modem;
+	sim_data.modem = modem;
+	sim_data.ril_state_watch = NULL;
+
+	ril->sim = ofono_sim_create(modem, 0, RILMODEM, &sim_data);
 	g_assert(ril->sim != NULL);
 }
 
@@ -354,7 +359,8 @@ static void ril_connected(struct ril_msg *message, gpointer user_data)
 	struct ofono_modem *modem = (struct ofono_modem *) user_data;
 	struct ril_data *ril = ofono_modem_get_data(modem);
 
-        ofono_info("[UNSOL]< %s", ril_unsol_request_to_string(message->req));
+        ofono_info("[UNSOL]< %s", g_ril_unsol_request_to_string(ril->modem,
+								message->req));
 
 	/* TODO: need a disconnect function to restart things! */
 	ril->connected = TRUE;
@@ -364,13 +370,11 @@ static void ril_connected(struct ril_msg *message, gpointer user_data)
 	ofono_modem_set_powered(modem, TRUE);
 }
 
-static int ril_enable(struct ofono_modem *modem)
+static int create_gril(struct ofono_modem *modem)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
 
-	DBG("");
-
-	ril->modem = g_ril_new(RILD_CMD_SOCKET);
+	ril->modem = g_ril_new(RILD_CMD_SOCKET, OFONO_RIL_VENDOR_AOSP);
 
 	/* NOTE: Since AT modems open a tty, and then call
 	 * g_at_chat_new(), they're able to return -EIO if
@@ -396,6 +400,20 @@ static int ril_enable(struct ofono_modem *modem)
 
 	g_ril_register(ril->modem, RIL_UNSOL_RESPONSE_RADIO_STATE_CHANGED,
 			ril_radio_state_changed, modem);
+
+	return 0;
+}
+
+static int ril_enable(struct ofono_modem *modem)
+{
+	struct ril_data *ril = ofono_modem_get_data(modem);
+	int ret;
+
+	DBG("");
+
+	ret = create_gril(modem);
+	if (ret < 0)
+		return ret;
 
 	ofono_devinfo_create(modem, 0, RILMODEM, ril->modem);
 

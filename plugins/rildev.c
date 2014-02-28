@@ -30,6 +30,7 @@
 
 #include <glib.h>
 #include <string.h>
+#include <stdio.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
@@ -38,19 +39,16 @@
 
 static GSList *modem_list;
 
-static int detect_init(void)
+static int create_rilmodem(const char *ril_type, int slot)
 {
-	int retval;
 	struct ofono_modem *modem;
-	const char *ril_type;
+	char dev_name[64];
+	int retval;
 
-	if ((ril_type = getenv("OFONO_RIL_DEVICE")) == NULL)
-		ril_type = "ril";
-
-	ofono_info("RILDEV Detected modem type %s", ril_type);
+	snprintf(dev_name, sizeof(dev_name), "ril_%d", slot);
 
 	/* Currently there is only one ril implementation, create always */
-	modem = ofono_modem_create("ril_0", ril_type);
+	modem = ofono_modem_create(dev_name, ril_type);
 	if (modem == NULL) {
 		DBG("ofono_modem_create failed for type %s", ril_type);
 		return -ENODEV;
@@ -58,9 +56,14 @@ static int detect_init(void)
 
 	modem_list = g_slist_prepend(modem_list, modem);
 
+	ofono_modem_set_integer(modem, "Slot", slot);
+
 	/* This causes driver->probe() to be called... */
-	retval = ofono_modem_register(modem);
-	DBG("ofono_modem_register returned: %d", retval);
+	if ((retval = ofono_modem_register(modem)) != 0) {
+		ofono_error("%s: ofono_modem_register returned: %d",
+				__func__, retval);
+		return retval;
+	}
 
 	/*
 	 * kickstart the modem:
@@ -77,6 +80,36 @@ static int detect_init(void)
 	 * - ofono_modem_set_powered()
 	 */
 	ofono_modem_reset(modem);
+
+	return 0;
+}
+
+static int detect_init(void)
+{
+	const char *ril_type;
+	const char *multi_sim;
+	int num_slots = 1;
+	int i;
+
+	if ((ril_type = getenv("OFONO_RIL_DEVICE")) == NULL)
+		ril_type = "ril";
+
+	/* Check for multi-SIM support */
+	if ((multi_sim = getenv("OFONO_RIL_NUM_SIM_SLOTS")) != NULL &&
+			*multi_sim != '\0') {
+		int env_slots;
+		char *endp;
+
+		env_slots = (int) strtoul(multi_sim, &endp, 10);
+		if (*endp == '\0')
+			num_slots = env_slots;
+	}
+
+	ofono_info("RILDEV detected modem type %s, %d SIM slot(s)",
+			ril_type, num_slots);
+
+	for (i = 0; i < num_slots; ++i)
+		create_rilmodem(ril_type, i);
 
 	return 0;
 }
