@@ -72,6 +72,7 @@ static void read_watcher_destroy_notify(gpointer user_data)
 	io->read_handler = NULL;
 	io->read_data = NULL;
 
+	g_io_channel_unref(io->channel);
 	io->channel = NULL;
 
 	if (io->destroyed)
