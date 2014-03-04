@@ -8,8 +8,13 @@ bus = dbus.SystemBus()
 if len(sys.argv) == 2:
 	path = sys.argv[1]
 else:
-	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+	try:
+		manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 			'org.ofono.Manager')
+	except dbus.exceptions.DBusException as e:
+	       print ("Can't access org.ofono on DBus: {}".format(e))
+	       exit(1)
+
 	modems = manager.GetModems()
 	path = modems[0][0]
 
@@ -17,4 +22,8 @@ print("Connecting modem %s..." % path)
 modem = dbus.Interface(bus.get_object('org.ofono', path),
 						'org.ofono.Modem')
 
-modem.SetProperty("Powered", dbus.Boolean(1), timeout = 120)
+try:
+	modem.SetProperty("Powered", dbus.Boolean(1), timeout = 120)
+except dbus.exceptions.DBusException as e:
+	print("Can't set modem 'Powered': {}".format(e))
+	exit(1)
