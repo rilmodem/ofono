@@ -2,6 +2,7 @@
 
 from gi.repository import GLib
 
+import argparse
 import dbus
 import dbus.mainloop.glib
 
@@ -17,7 +18,41 @@ def print_properties(cf):
 		else:
 			print("%s call forwarding rule disabled" % (p))
 
-if __name__ == "__main__":
+def parse_arguments():
+	"""Parses command-line arguments.
+	"""
+
+	parser = argparse.ArgumentParser(description="test-call-forwarding script")
+
+	parser.add_argument("-m",
+			"--modem",
+			dest="modem",
+			help="""Specifies the modem to run the
+			call-forwarding tests against""",
+			default=""
+			)
+	parser.add_argument("--noreply-num",
+			dest="noreply_num",
+			help="""Specify a forwarding number for
+			the no-reply condition""",
+			default="+134444",
+			)
+	parser.add_argument("--uncond-num",
+			dest="uncond_num",
+			help="""Specify an unconditional forwarding number""",
+			default="+155555",
+			)
+	parser.add_argument("--noreply-timeout",
+			dest="noreply_timeout",
+			help="""Specify a no-reply timeout""",
+			default=-1,
+			)
+
+	return parser.parse_args()
+
+
+def main(args):
+
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
 	bus = dbus.SystemBus()
@@ -27,7 +62,15 @@ if __name__ == "__main__":
 
 	modems = manager.GetModems()
 
-	cf = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
+        if (args.modem == ""):
+                modem = modems[0][0]
+
+        if (args.noreply_timeout == -1):
+                noreply_timeout = dbus.UInt16(30)
+        else:
+                noreply_timeout = dbus.UInt16(args.noreply_timeout)
+
+	cf = dbus.Interface(bus.get_object('org.ofono', modem),
 				'org.ofono.CallForwarding')
 
 	cf.connect_to_signal("PropertyChanged", property_changed)
@@ -70,12 +113,12 @@ if __name__ == "__main__":
 		print("Unable to erase voice no reply rule - Bad")
 
 	try:
-		cf.SetProperty("VoiceNoReply", "+134444")
+		cf.SetProperty("VoiceNoReply", args.noreply_num)
 	except dbus.DBusException as e:
 		print("Unable to register voice no reply rule - Bad")
 
 	try:
-		cf.SetProperty("VoiceNoReplyTimeout", dbus.UInt16(30))
+		cf.SetProperty("VoiceNoReplyTimeout", noreply_timeout)
 	except dbus.DBusException as e:
 		print("Unable to set voice no reply timeout - Bad")
 
@@ -85,7 +128,7 @@ if __name__ == "__main__":
 	print(properties["VoiceNoReplyTimeout"])
 
 	try:
-		cf.SetProperty("VoiceUnconditional", "+155555")
+		cf.SetProperty("VoiceUnconditional", args.uncond_num)
 	except dbus.DBusException as e:
 		print("Unable to set Voice Unconditional - Bad")
 
@@ -117,3 +160,7 @@ if __name__ == "__main__":
 
 	mainloop = GLib.MainLoop()
 	mainloop.run()
+
+if __name__ == "__main__":
+	args = parse_arguments()
+	main(args)

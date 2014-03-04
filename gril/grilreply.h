@@ -3,7 +3,7 @@
  *  RIL library with GLib integration
  *
  *  Copyright (C) 2008-2011  Intel Corporation. All rights reserved.
- *  Copyright (C) 2012-2013  Canonical Ltd.
+ *  Copyright (C) 2012-2014  Canonical Ltd.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -160,6 +160,10 @@ void g_ril_reply_free_get_clir(struct reply_clir *rclir);
 struct reply_clir *g_ril_reply_parse_get_clir(GRil *gril,
 						const struct ril_msg *message);
 
+struct ofono_call_forwarding_condition
+	*g_ril_reply_parse_query_call_fwd(GRil *gril,
+						const struct ril_msg *message,
+						unsigned int *list_size);
 #ifdef __cplusplus
 }
 #endif

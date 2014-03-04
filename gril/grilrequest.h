@@ -3,7 +3,7 @@
  *  RIL library with GLib integration
  *
  *  Copyright (C) 2008-2011  Intel Corporation. All rights reserved.
- *  Copyright (C) 2012-2013  Canonical Ltd.
+ *  Copyright (C) 2012-2014  Canonical Ltd.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -32,6 +32,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct req_call_fwd {
+	int action;
+	int type;
+	int cls;
+	const struct ofono_phone_number *number;
+	int time;
+};
 
 struct req_deactivate_data_call {
 	gint cid;
@@ -195,6 +203,9 @@ void g_ril_request_query_call_waiting(GRil *gril,
 
 void g_ril_request_set_clir(GRil *gril,
 				int mode,
+				struct parcel *rilp);
+
+void g_ril_request_call_fwd(GRil *gril, const struct req_call_fwd *req,
 				struct parcel *rilp);
 
 #ifdef __cplusplus

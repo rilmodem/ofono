@@ -279,6 +279,8 @@ static void ril_post_sim(struct ofono_modem *modem)
 	mw = ofono_message_waiting_create(modem);
 	if (mw)
 		ofono_message_waiting_register(mw);
+
+	ofono_call_forwarding_create(modem, 0, RILMODEM, ril->modem);
 }
 
 static void ril_post_online(struct ofono_modem *modem)
