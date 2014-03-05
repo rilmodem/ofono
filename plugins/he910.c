@@ -203,7 +203,6 @@ static void cfun_enable_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	 */
 	g_at_chat_send(data->chat, "AT#AUTOATT=0", none_prefix,
 				NULL, NULL, NULL);
-
 }
 
 static int he910_enable(struct ofono_modem *modem)
