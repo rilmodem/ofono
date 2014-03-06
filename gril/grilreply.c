@@ -1415,3 +1415,72 @@ end:
 
 	return retries;
 }
+
+int *g_ril_reply_parse_retries(GRil *gril, const struct ril_msg *message,
+				enum ofono_sim_password_type passwd_type)
+{
+	struct parcel rilp;
+	int i, numint;
+	int *retries = g_try_malloc0(sizeof(int) * OFONO_SIM_PASSWORD_INVALID);
+
+	if (retries == NULL) {
+		ofono_error("%s: out of memory", __func__);
+		goto no_data;
+	}
+
+	for (i = 0; i < OFONO_SIM_PASSWORD_INVALID; ++i)
+		retries[i] = -1;
+
+	g_ril_init_parcel(message, &rilp);
+
+	/* maguro: no data is returned */
+	if (parcel_data_avail(&rilp) == 0)
+		goto no_data;
+
+	numint = parcel_r_int32(&rilp);
+
+	switch (g_ril_vendor(gril)) {
+	case OFONO_RIL_VENDOR_AOSP:
+		/*
+		 * The number of retries is valid only when a wrong password has
+		 * been introduced in Nexus 4. TODO: check Nexus 5 behaviour.
+		 */
+		if (message->error == RIL_E_PASSWORD_INCORRECT)
+			retries[passwd_type] = parcel_r_int32(&rilp);
+
+		g_ril_append_print_buf(gril, "{%d}", retries[passwd_type]);
+		break;
+	case OFONO_RIL_VENDOR_MTK:
+		if (numint != 4) {
+			ofono_error("%s: wrong format", __func__);
+			goto no_data;
+		}
+
+		retries[OFONO_SIM_PASSWORD_SIM_PIN] = parcel_r_int32(&rilp);
+		retries[OFONO_SIM_PASSWORD_SIM_PIN2] = parcel_r_int32(&rilp);
+		retries[OFONO_SIM_PASSWORD_SIM_PUK] = parcel_r_int32(&rilp);
+		retries[OFONO_SIM_PASSWORD_SIM_PUK2] = parcel_r_int32(&rilp);
+
+		g_ril_append_print_buf(gril,
+					"{pin %d, pin2 %d, puk %d, puk2 %d}",
+					retries[OFONO_SIM_PASSWORD_SIM_PIN],
+					retries[OFONO_SIM_PASSWORD_SIM_PIN2],
+					retries[OFONO_SIM_PASSWORD_SIM_PUK],
+					retries[OFONO_SIM_PASSWORD_SIM_PUK2]);
+		break;
+	}
+
+	if (rilp.malformed) {
+		ofono_error("%s: malformed parcel", __func__);
+		goto no_data;
+	}
+
+	g_ril_print_response(gril, message);
+
+	return retries;
+
+no_data:
+	g_free(retries);
+
+	return NULL;
+}

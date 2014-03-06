@@ -24,6 +24,7 @@
 #define __GRILREPLY_H
 
 #include <ofono/types.h>
+#include <ofono/sim.h>
 
 #include "gril.h"
 
@@ -174,6 +175,9 @@ int g_ril_reply_parse_query_facility_lock(GRil *gril,
 
 int g_ril_reply_parse_set_facility_lock(GRil *gril,
 					const struct ril_msg *message);
+
+int *g_ril_reply_parse_retries(GRil *gril, const struct ril_msg *message,
+				enum ofono_sim_password_type passwd_type);
 
 #ifdef __cplusplus
 }
