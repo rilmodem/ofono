@@ -729,6 +729,7 @@ static void ril_pin_change_state_cb(struct ril_msg *message, gpointer user_data)
 	ofono_sim_lock_unlock_cb_t cb = cbd->cb;
 	struct ofono_sim *sim = cbd->data;
 	struct sim_data *sd = cbd->user;
+	int *retries;
 	/*
 	 * There is no reason to ask SIM status until
 	 * unsolicited sim status change indication
@@ -738,12 +739,16 @@ static void ril_pin_change_state_cb(struct ril_msg *message, gpointer user_data)
 	DBG("Enter password: type %d, result %d",
 		sd->passwd_type, message->error);
 
+	retries = g_ril_reply_parse_retries(sd->ril, message, sd->passwd_type);
+	if (retries != NULL) {
+		memcpy(sd->retries, retries, sizeof(sd->retries));
+		g_free(retries);
+	}
+
 	/* TODO: re-bfactor to not use macro for FAILURE;
 	   doesn't return error! */
 	if (message->error == RIL_E_SUCCESS) {
 		CALLBACK_WITH_SUCCESS(cb, cbd->data);
-		g_ril_print_response_no_args(sd->ril, message);
-
 	} else {
 		CALLBACK_WITH_FAILURE(cb, cbd->data);
 		/*
@@ -897,12 +902,6 @@ static int ril_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 	sd->modem = ril_data->modem;
 	sd->ril_state_watch = ril_data->ril_state_watch;
 
-	/*
-	 * The number of retries is unreliable in the current RIL
-	 * implementation of Google devices (Galaxy Nexus and Nexus 4 return
-	 * always 0 and 1 respectively in ENTER_SIM_PIN/PUK), so we never
-	 * refresh this value after calling those RIL requests.
-	 */
 	for (i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++)
 		sd->retries[i] = -1;
 
