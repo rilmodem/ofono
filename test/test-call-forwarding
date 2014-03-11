@@ -36,47 +36,47 @@ if __name__ == "__main__":
 
 	try:
 		cf.SetProperty("FoobarNoReplyTimeout", dbus.UInt16(19))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to set timeout - Good")
 
 	try:
 		cf.SetProperty("VoiceNotReachableTimeout", dbus.UInt16(19))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to set timeout - Good")
 
 	try:
 		cf.SetProperty("VoiceNoReplyTimeout", dbus.UInt16(19))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to set timeout - Good")
 
 	try:
 		cf.SetProperty("DataNoReplyTimeout", dbus.UInt16(19))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to set timeout - Good")
 
 	try:
 		cf.SetProperty("FaxNoReplyTimeout", dbus.UInt16(19))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to set timeout - Good")
 
 	try:
 		cf.SetProperty("SmsNoReplyTimeout", dbus.UInt16(19))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to set timeout - Good")
 
 	try:
 		cf.SetProperty("VoiceNoReply", "")
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to erase voice no reply rule - Bad")
 
 	try:
 		cf.SetProperty("VoiceNoReply", "+134444")
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to register voice no reply rule - Bad")
 
 	try:
 		cf.SetProperty("VoiceNoReplyTimeout", dbus.UInt16(30))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to set voice no reply timeout - Bad")
 
 	properties = cf.GetProperties()
@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
 	try:
 		cf.SetProperty("VoiceUnconditional", "+155555")
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to set Voice Unconditional - Bad")
 
 	properties = cf.GetProperties()
@@ -95,12 +95,12 @@ if __name__ == "__main__":
 
 	try:
 		cf.DisableAll("foobar")
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to delete invalids - Good")
 
 	try:
 		cf.DisableAll("conditional")
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to delete all conditional - Bad")
 
 	properties = cf.GetProperties()
@@ -110,7 +110,7 @@ if __name__ == "__main__":
 
 	try:
 		cf.DisableAll("all")
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to delete all conditional - Bad")
 
 	print(properties["VoiceUnconditional"])

@@ -103,7 +103,7 @@ def set_topics(cbs):
 		try:
 			print("Setting Cell Broadcast topics...")
 			cbs.SetProperty("Topics", topics);
-		except dbus.DBusException, e:
+		except dbus.DBusException as e:
 			print("Unable to set topic: %s" % e)
 
 	print("-----------------------------------------------------------")

@@ -46,13 +46,13 @@ if __name__ == "__main__":
 		try:
 			cf.SetProperty(property, dbus.UInt16(value),
 							timeout = 100)
-		except dbus.DBusException, e:
+		except dbus.DBusException as e:
 			print("Unable SetProperty %s" % e)
 			sys.exit(1);
 	else:
 		try:
 			cf.SetProperty(property, value, timeout = 100)
-		except dbus.DBusException, e:
+		except dbus.DBusException as e:
 			print("Unable SetProperty %s" % e)
 			sys.exit(1);
 

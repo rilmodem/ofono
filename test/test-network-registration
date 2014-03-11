@@ -61,7 +61,7 @@ if __name__ == "__main__":
 			obj = bus.get_object('org.ofono', plmn);
 			op = dbus.Interface(obj, 'org.ofono.NetworkOperator')
 			op.Register()
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Unable to register: %s" % e)
 		sys.exit(1)
 

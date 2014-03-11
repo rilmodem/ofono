@@ -37,25 +37,25 @@ if __name__ == "__main__":
 	print("Trying invalid SS request for CB")
 	try:
 		print(ss.Initiate("*33#456666"))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Failed with %s - Good" % e)
 
 	print("Trying invalid SS request for CB")
 	try:
 		print(ss.Initiate("*33*ABC#"))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Failed with %s - Good" % e)
 
 	print("Trying invalid SS request for CB")
 	try:
 		print(ss.Initiate("*33**ABC#"))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Failed with %s - Good" % e)
 
 	print("Trying invalid SS request for CB")
 	try:
 		print(ss.Initiate("*33***12#"))
-	except dbus.DBusException, e:
+	except dbus.DBusException as e:
 		print("Failed with %s - Good" % e)
 
 	print("Query Outgoing All")
