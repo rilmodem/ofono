@@ -47,11 +47,11 @@ if __name__ == "__main__":
 	print("Status is: '%s', Operator Name is: '%s'" %\
 		(props['Status'], props['Name']))
 
-	if props.has_key('LocationAreaCode') and props.has_key('CellId'):
+	if 'LocationAreaCode' in props and 'CellId' in props:
 		print("Location: '%d', Cell: '%d'" %\
 			(props['LocationAreaCode'], props['CellId']))
 
-	if props.has_key('Technology'):
+	if 'Technology' in props:
 		print("Technology: '%s'" % (props['Technology']))
 
 	try:

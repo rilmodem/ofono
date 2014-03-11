@@ -24,39 +24,39 @@ if __name__ == "__main__":
 
 	properties = modem.GetProperties()
 
-	if properties.has_key('Name'):
+	if 'Name' in properties:
 		print("Name: %s" % (properties['Name']))
 
-	if properties.has_key('Manufacturer'):
+	if 'Manufacturer' in properties:
 		print("Manufacturer: %s" % (properties['Manufacturer']))
 
-	if properties.has_key('Model'):
+	if 'Model' in properties:
 		print("Model: %s" % (properties['Model']))
 
-	if properties.has_key('Revision'):
+	if 'Revision' in properties:
 		print("Revision: %s" % (properties['Revision']))
 
-	if properties.has_key('Serial'):
+	if 'Serial' in properties:
 		print("Serial: %s" % (properties['Serial']))
 
-	if properties.has_key('Powered'):
+	if 'Powered' in properties:
 		print("Powered: %s" % (properties['Powered']))
 
-	if properties.has_key('Online'):
+	if 'Online' in properties:
 		print("Online: %s" % (properties['Online']))
 
-	if properties.has_key('Lockdown'):
+	if 'Lockdown' in properties:
 		print("Lockdown: %s" % (properties['Lockdown']))
 
-	if properties.has_key('Emergency'):
+	if 'Emergency' in properties:
 		print("Emergency: %s" % (properties['Emergency']))
 
-	if properties.has_key('Features'):
+	if 'Features' in properties:
 		print("Features:")
 		for feature in properties["Features"]:
 			print("    [ %s ]" % (feature))
 
-	if properties.has_key('Interfaces'):
+	if 'Interfaces' in properties:
 		print("Interfaces:")
 		for interface in properties["Interfaces"]:
 			print("    [ %s ]" % (interface))
