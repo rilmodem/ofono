@@ -4,7 +4,7 @@ import sys
 import dbus
 
 if (len(sys.argv) < 2):
-	print "Usage: %s [modem] icon_id" % (sys.argv[0])
+	print("Usage: %s [modem] icon_id" % (sys.argv[0]))
 	sys.exit(1)
 
 bus = dbus.SystemBus()
@@ -21,7 +21,7 @@ elif (len(sys.argv) == 3):
 	modem = sys.argv[1]
 	icon = sys.argv[2]
 
-print "Using modem %s" % modem
+print("Using modem %s" % modem)
 
 sim = dbus.Interface(bus.get_object('org.ofono', modem),
 						'org.ofono.SimManager')

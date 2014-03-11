@@ -27,4 +27,4 @@ for path, properties in modems:
 			val = str(properties[key])
 			print("        %s = %s" % (key, val))
 
-		print()
+		print('')

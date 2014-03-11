@@ -9,10 +9,10 @@ def property_changed(property, value):
 	print("CallBarring property %s changed to %s" % (property, value))
 
 def print_properties(cb):
-	properties = cb.GetProperties()
+        properties = cb.GetProperties()
 
 	for p in properties:
-	    print("property %s, value: %s" % (p, properties[p]))
+		print("property %s, value: %s" % (p, properties[p]))
 
 if __name__ == "__main__":
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -27,7 +27,7 @@ if __name__ == "__main__":
 	cb = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
                                                         'org.ofono.CallBarring')
 
-	cb.connect_to_signal("PropertyChanged", property_changed)
+        cb.connect_to_signal("PropertyChanged", property_changed)
 
 	ss = dbus.Interface(bus.get_object('org.ofono', modems[0]),
 							'org.ofono.SupplementaryServices')

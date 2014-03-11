@@ -8,11 +8,15 @@ bus = dbus.SystemBus()
 manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 						'org.ofono.Manager')
 
-modems = manager.GetModems()
-
 if (len(sys.argv) == 1):
+	path = None
 	modems = manager.GetModems()
-	path = modems[0][0]
+	for path_i, properties in modems:
+		if "org.ofono.VoiceCallManager" in properties["Interfaces"]:
+			path = path_i
+			break
+	if (path is None):
+		exit(2)
 elif (len(sys.argv) == 2):
 	path = sys.argv[1]
 else:

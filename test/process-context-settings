@@ -51,4 +51,4 @@ for path, properties in modems:
 				cmd = "route add -host " + i
 				cmd +=" dev " + interface
 				os.system(cmd);
-		print()
+		print('')

@@ -7,20 +7,25 @@ bus = dbus.SystemBus()
 
 manager = dbus.Interface(bus.get_object('org.ofono', '/'), 'org.ofono.Manager')
 
-if (len(sys.argv) == 1):
-	modems = manager.GetModems()
-	modem = modems[0][0]
-	context_idx = 0
-elif (len(sys.argv) == 2):
-	modems = manager.GetModems()
-	modem = modems[0][0]
-	context_idx = int(sys.argv[1]) - 1
-elif (len(sys.argv) == 3):
+if (len(sys.argv) == 3):
 	modem = sys.argv[1]
 	context_idx = int(sys.argv[2]) - 1
 else:
-	print("Usage: %s [modem] [context_number]" % (sys.argv[0]))
-	sys.exit(1)
+	modem = None
+	modems = manager.GetModems()
+	for path, properties in modems:
+		if "org.ofono.ConnectionManager" in properties["Interfaces"]:
+			modem = path
+			break
+	if (modem is None):
+		exit(2)
+	if (len(sys.argv) == 1):
+		context_idx = 0
+	elif (len(sys.argv) == 2):
+		context_idx = int(sys.argv[1]) - 1
+	else:
+		print("Usage: %s [modem] [context_number]" % (sys.argv[0]))
+		exit(1)
 
 modemapi = dbus.Interface(bus.get_object('org.ofono', modem), 'org.ofono.Modem')
 properties = modemapi.GetProperties()
@@ -48,4 +53,3 @@ try:
 except dbus.DBusException as e:
 	print("Error deactivating %s: %s" % (path, str(e)))
 	exit(2)
-

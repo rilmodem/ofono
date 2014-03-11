@@ -34,5 +34,5 @@ for entry in operators:
 			val = str(properties[key])
 		print("    %s = %s" % (key, val))
 
-	print()
+	print('')
 
