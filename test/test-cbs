@@ -3,7 +3,7 @@
 import dbus
 import dbus.mainloop.glib
 import sys
-import gobject
+from gi.repository import GLib
 import os
 
 def print_menu():
@@ -127,8 +127,8 @@ def get_serving_cell_name(netReg):
 			\nBase Station CBS not available.")
 	print("-----------------------------------------------------------")
 
-def stdin_handler(fd, condition, cbs, netReg):
-	in_key = os.read(fd.fileno(), 160).rstrip()
+def stdin_handler(channel, condition, cbs, netReg):
+	in_key = os.read(channel.unix_get_fd(), 160).rstrip().decode('UTF-8')
 
 	if in_key == '0':
 		set_cbs_state(cbs, True)
@@ -181,8 +181,9 @@ if __name__ == "__main__":
 
 	print_menu()
 
-	gobject.io_add_watch(sys.stdin, gobject.IO_IN, stdin_handler, cbs, \
-				netReg)
+	GLib.io_add_watch(GLib.IOChannel(filedes=sys.stdin.fileno()),
+		   GLib.PRIORITY_DEFAULT, GLib.IO_IN, stdin_handler, cbs, \
+		   netReg)
 
-	mainloop = gobject.MainLoop()
+	mainloop = GLib.MainLoop()
 	mainloop.run()
