@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import dbus
 import dbus.mainloop.glib
@@ -78,7 +78,7 @@ def set_topics(cbs):
 	invalidData = False;
 	index = 0
 
-	topics = raw_input('Enter the topic ID(s) you want to register to: ')
+	topics = input('Enter the topic ID(s) you want to register to: ')
 
 	while index < len(topics):
 		if topics[index] == ',' or topics[index] == '-':

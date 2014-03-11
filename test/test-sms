@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
 from gi.repository import GLib
@@ -132,7 +132,7 @@ def stdin_handler(channel, condition, sms, value, number):
 		lock = "on"
 		if in_key == '0':
 			print_send_sms_menu()
-			sms_type = raw_input('Select SMS type: ')
+			sms_type = input('Select SMS type: ')
 
 			if sms_type == '1':
 				message_send(sms, number, value)
@@ -150,49 +150,49 @@ def stdin_handler(channel, condition, sms, value, number):
 
 		elif in_key == '1':
 			message_delivery_report(sms, 1)
-			send_msg = raw_input('Send test message[y/n]?: ')
+			send_msg = input('Send test message[y/n]?: ')
 			if send_msg == 'y':
 				message_send(sms, number, ("(1)" + value +
 						": UseDeliveryReports[TRUE]"))
 
 		elif in_key == '2':
 			message_delivery_report(sms, 0)
-			send_msg = raw_input('Send test message[y/n]?: ')
+			send_msg = input('Send test message[y/n]?: ')
 			if send_msg == 'y':
 				message_send(sms, number, ("(2) " + value +
 						": UseDeliveryReports[FALSE]"))
 
 		elif in_key == '3':
 			message_service_center_address(sms, SCA)
-			send_msg = raw_input('Send test message[y/n]?: ')
+			send_msg = input('Send test message[y/n]?: ')
 			if send_msg == 'y':
 				message_send(sms, number, ("(3) " + value +
 						": ServiceCenterAddress"))
 
 		elif in_key == '4':
 			message_bearer(sms, "ps-only")
-			send_msg = raw_input('Send test message[y/n]?: ')
+			send_msg = input('Send test message[y/n]?: ')
 			if send_msg == 'y':
 				message_send(sms, number, ("(4) " + value +
 						": Bearer[ps-only]"))
 
 		elif in_key == '5':
 			message_bearer(sms, "cs-only")
-			send_msg = raw_input('Send test message[y/n]?: ')
+			send_msg = input('Send test message[y/n]?: ')
 			if send_msg == 'y':
 				message_send(sms, number, ("(5) " + value +
 						": Bearer[cs-only]"))
 
 		elif in_key == '6':
 			message_bearer(sms, "ps-preferred")
-			send_msg = raw_input('Send test message[y/n]?: ')
+			send_msg = input('Send test message[y/n]?: ')
 			if send_msg == 'y':
 				message_send(sms, number, ("(6) " + value +
 						": Bearer[ps-preferred]"))
 
 		elif in_key == '7':
 			message_bearer(sms, "cs-preferred")
-			send_msg = raw_input('Send test message[y/n]?: ')
+			send_msg = input('Send test message[y/n]?: ')
 			if send_msg == 'y':
 				message_send(sms,number, ("(7) " + value +
 						": Bearer[cs-preferred]"))

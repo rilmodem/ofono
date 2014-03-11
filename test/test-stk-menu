@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from gi.repository import GLib
 
@@ -57,7 +57,7 @@ class StkAgent(dbus.service.Object):
 			index += 1
 
 		print("\nDefault: %d" % (default))
-		select = raw_input("Enter Selection (t, b):")
+		select = input("Enter Selection (t, b):")
 
 		if select == 'b':
 			raise GoBack("User wishes to go back")
@@ -74,7 +74,7 @@ class StkAgent(dbus.service.Object):
 		print("DisplayText (%s)" % (title))
 		print("Icon: (%d)" % (icon))
 		print("Urgent: (%d)" % (urgent))
-		key = raw_input("Press return to clear ('t' terminates, "
+		key = input("Press return to clear ('t' terminates, "
 						"'b' goes back, 'n' busy, "
 						"'w' return and wait):")
 
@@ -107,7 +107,7 @@ class StkAgent(dbus.service.Object):
 		print("Hide typing: (%s)" % (hide_typing))
 		print("Enter characters, min: %d, max: %d:" % (min_chars,
 								max_chars))
-		userin = raw_input("")
+		userin = input("")
 
 		return userin
 
@@ -121,7 +121,7 @@ class StkAgent(dbus.service.Object):
 		print("Hide typing: (%s)" % (hide_typing))
 		print("Enter digits, min: %d, max: %d:" % (min_chars,
 								max_chars))
-		userin = raw_input("'t' terminates, 'b' goes back:")
+		userin = input("'t' terminates, 'b' goes back:")
 
 		if userin == 'b':
 			raise GoBack("User wishes to go back")
@@ -135,7 +135,7 @@ class StkAgent(dbus.service.Object):
 	def RequestKey(self, title, icon):
 		print("Title: (%s)" % (title))
 		print("Icon: (%d)" % (icon))
-		key = raw_input("Enter Key (t, b):")
+		key = input("Enter Key (t, b):")
 
 		if key == 'b':
 			raise GoBack("User wishes to go back")
@@ -149,7 +149,7 @@ class StkAgent(dbus.service.Object):
 	def RequestDigit(self, title, icon):
 		print("Title: (%s)" % (title))
 		print("Icon: (%d)" % (icon))
-		key = raw_input("Enter Digit (t, b):")
+		key = input("Enter Digit (t, b):")
 
 		if key == 'b':
 			raise GoBack("User wishes to go back")
@@ -163,7 +163,7 @@ class StkAgent(dbus.service.Object):
 	def RequestQuickDigit(self, title, icon):
 		print("Title: (%s)" % (title))
 		print("Icon: (%d)" % (icon))
-		key = raw_input("Quick digit (0-9, *, #, t, b):")
+		key = input("Quick digit (0-9, *, #, t, b):")
 
 		if key == 'b':
 			raise GoBack("User wishes to go back")
@@ -177,7 +177,7 @@ class StkAgent(dbus.service.Object):
 	def RequestConfirmation(self, title, icon):
 		print("Title: (%s)" % (title))
 		print("Icon: (%d)" % (icon))
-		key = raw_input("Enter Confirmation (t, b, y, n):")
+		key = input("Enter Confirmation (t, b, y, n):")
 
 		if key == 'b':
 			raise GoBack("User wishes to go back")
@@ -193,7 +193,7 @@ class StkAgent(dbus.service.Object):
 	def ConfirmCallSetup(self, info, icon):
 		print("Information: (%s)" % (info))
 		print("Icon: (%d)" % (icon))
-		key = raw_input("Enter Confirmation (t, y, n):")
+		key = input("Enter Confirmation (t, y, n):")
 
 		if key == 't':
 			raise EndSession("User wishes to terminate session")
@@ -208,7 +208,7 @@ class StkAgent(dbus.service.Object):
 		print("Information: (%s)" % (info))
 		print("Icon: (%d)" % (icon))
 		print("URL (%s)" % (url))
-		key = raw_input("Enter Confirmation (y, n):")
+		key = input("Enter Confirmation (y, n):")
 
 		if key == 'y':
 			return True
@@ -231,7 +231,7 @@ class StkAgent(dbus.service.Object):
 		signal.alarm(5)
 
 		try:
-			key = raw_input("Press return to end before end of"
+			key = input("Press return to end before end of"
 							 " single tone (t):")
 			signal.alarm(0)
 
@@ -249,7 +249,7 @@ class StkAgent(dbus.service.Object):
 		print("LoopTone: %s" % (tone))
 		print("Text: %s" % (text))
 		print("Icon: %d" % (icon))
-		key = raw_input("Press return to end before timeout "
+		key = input("Press return to end before timeout "
 				"('t' terminates, 'w' return and wait):")
 
 		if key == 'w':
@@ -278,7 +278,7 @@ class StkAgent(dbus.service.Object):
 	def DisplayAction(self, text, icon):
 		print("Text: (%s)" % (text))
 		print("Icon: (%d)" % (icon))
-		key = raw_input("Press 't' to terminate the session ")
+		key = input("Press 't' to terminate the session ")
 
 		if key == 't':
 			raise EndSession("User wishes to terminate session")
@@ -288,7 +288,7 @@ class StkAgent(dbus.service.Object):
 	def ConfirmOpenChannel(self, info, icon):
 		print("Open channel confirmation: (%s)" % (info))
 		print("Icon: (%d)" % (icon))
-		key = raw_input("Enter Confirmation (t, y, n):")
+		key = input("Enter Confirmation (t, y, n):")
 
 		if key == 't':
 			raise EndSession("User wishes to terminate session")
@@ -298,7 +298,7 @@ class StkAgent(dbus.service.Object):
 			return False
 
 _dbus2py = {
-	dbus.String : unicode,
+	dbus.String : str,
 	dbus.UInt32 : int,
 	dbus.Int32 : int,
 	dbus.Int16 : int,
@@ -395,7 +395,7 @@ if __name__ == '__main__':
 		except:
 			pass
 
-		select = int(raw_input("Enter Selection: "))
+		select = int(input("Enter Selection: "))
 		stk.SelectItem(select, path)
 	elif mode == 'agent':
 		path = "/test/agent"

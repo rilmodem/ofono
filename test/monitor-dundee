@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from gi.repository import GLib
 
@@ -6,7 +6,7 @@ import dbus
 import dbus.mainloop.glib
 
 _dbus2py = {
-	dbus.String : unicode,
+	dbus.String : str,
 	dbus.UInt32 : int,
 	dbus.Int32 : int,
 	dbus.Int16 : int,

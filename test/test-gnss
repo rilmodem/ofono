@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from gi.repository import GLib
 import sys
@@ -40,7 +40,7 @@ def print_menu():
 def stdin_handler(channel, condition, gnss, path):
 	in_key = os.read(channel.unix_get_fd(), 160).rstrip().decode('UTF-8')
 	if in_key == '0':
-		xml = raw_input('type the element and press enter: ')
+		xml = input('type the element and press enter: ')
 		try:
 			gnss.SendPositioningElement(dbus.String(xml))
 			print("ok")

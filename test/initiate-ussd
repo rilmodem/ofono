@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import dbus
@@ -45,7 +45,7 @@ if state == "idle":
 print("State: %s" % (state))
 
 while state == "user-response":
-	response = raw_input("Enter response: ")
+	response = input("Enter response: ")
 
 	result = ussd.Respond(response, timeout=100)
 
