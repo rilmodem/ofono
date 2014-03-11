@@ -21,4 +21,4 @@ manager = dbus.Interface(bus.get_object('org.ofono', path),
 mpty = manager.CreateMultiparty()
 
 for path in mpty:
-	print path
+	print(path)

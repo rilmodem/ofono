@@ -15,10 +15,10 @@ elif len(sys.argv) == 2:
 	path = modems[0][0]
 	number = sys.argv[1]
 else:
-	print "%s [PATH] <number>" % (sys.argv[0])
+	print("%s [PATH] <number>" % (sys.argv[0]))
 	exit(1)
 
-print "Setting MSISDN for modem %s..." % path
+print("Setting MSISDN for modem %s..." % path)
 sim = dbus.Interface(bus.get_object('org.ofono', path), 'org.ofono.SimManager')
 
 sim.SetProperty("SubscriberNumbers", [number]);

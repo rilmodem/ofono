@@ -11,34 +11,34 @@ class SmartMessagingAgent(dbus.service.Object):
 	@dbus.service.method("org.ofono.SmartMessagingAgent",
 					in_signature="", out_signature="")
 	def Release(self):
-		print "Release"
+		print("Release")
 		mainloop.quit()
 
 	@dbus.service.method("org.ofono.SmartMessagingAgent",
 				in_signature="aya{sv}", out_signature="")
 	def ReceiveBusinessCard(self, data, props):
 		for key in props.keys():
-			print "Key: %s, Value: %s" % (key, props[key])
+			print("Key: %s, Value: %s" % (key, props[key]))
 
 		string = ""
 		for byte in data:
 			string += str(byte)
 
-		print "Received Business Card:"
-		print string
+		print("Received Business Card:")
+		print(string)
 
 	@dbus.service.method("org.ofono.SmartMessagingAgent",
 				in_signature="aya{sv}", out_signature="")
 	def ReceiveAppointment(self, data, props):
 		for key in props.keys():
-			print "Key: %s, Value: %s" % (key, props[key])
+			print("Key: %s, Value: %s" % (key, props[key]))
 
 		string = ""
 		for byte in data:
 			string += str(byte)
 
-		print "Received Appointment:"
-		print string
+		print("Received Appointment:")
+		print(string)
 
 if __name__ == '__main__':
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -59,7 +59,7 @@ if __name__ == '__main__':
 	path = "/test/agent"
 	agent = SmartMessagingAgent(bus, path)
 	pn.RegisterAgent(path)
-	print "Agent registered"
+	print("Agent registered")
 
 	mainloop = gobject.MainLoop()
 

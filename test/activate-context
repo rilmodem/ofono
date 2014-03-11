@@ -20,7 +20,7 @@ for path, properties in modems:
 	contexts = connman.GetContexts()
 
 	if (len(contexts) == 0):
-		print "No context available"
+		print("No context available")
 		sys.exit(1)
 
 	connman.SetProperty("Powered", dbus.Boolean(1))
@@ -36,5 +36,5 @@ for path, properties in modems:
 	try:
 		context.SetProperty("Active", dbus.Boolean(1), timeout = 100)
 	except dbus.DBusException, e:
-		print "Error activating %s: %s" % (path, str(e))
+		print("Error activating %s: %s" % (path, str(e)))
 		exit(2)

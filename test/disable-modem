@@ -13,7 +13,7 @@ else:
 	modems = manager.GetModems()
 	path = modems[0][0]
 
-print "Disconnecting modem %s..." % path
+print("Disconnecting modem %s..." % path)
 modem = dbus.Interface(bus.get_object('org.ofono', path),
 						'org.ofono.Modem')
 

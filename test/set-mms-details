@@ -26,18 +26,18 @@ for path, properties in modems:
 			break
 
 	if path == "":
-		print "No MMS context"
+		print("No MMS context")
 		exit(1)
 
 	context = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.ConnectionContext')
 
 	if len(sys.argv) < 3:
-		print "Usage: %s <proxy> <center>" % (sys.argv[0])
+		print("Usage: %s <proxy> <center>" % (sys.argv[0]))
 		exit(1)
 
 	context.SetProperty("MessageProxy", sys.argv[1])
-	print "Setting MMS Proxy to %s" % (sys.argv[1])
+	print("Setting MMS Proxy to %s" % (sys.argv[1]))
 
 	context.SetProperty("MessageCenter", sys.argv[2])
-	print "Setting MMSC to %s" % (sys.argv[2])
+	print("Setting MMSC to %s" % (sys.argv[2]))

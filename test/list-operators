@@ -11,7 +11,7 @@ manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 modems = manager.GetModems()
 
 for path, properties in modems:
-	print "[ %s ]" % (path)
+	print("[ %s ]" % (path))
 
 	if "org.ofono.NetworkRegistration" not in properties["Interfaces"]:
 		continue
@@ -25,7 +25,7 @@ for path, properties in modems:
 		operators = netreg.GetOperators()
 
 	for path, properties in operators:
-		print "    [ %s ]" % (path)
+		print("    [ %s ]" % (path))
 
 		for key in properties.keys():
 			if key in ["Technologies"]:
@@ -34,6 +34,6 @@ for path, properties in modems:
 					val += i + " "
 			else:
 				val = str(properties[key])
-			print "        %s = %s" % (key, val)
+			print("        %s = %s" % (key, val))
 
-		print
+		print('')

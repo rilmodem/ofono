@@ -10,7 +10,7 @@ manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 modems = manager.GetModems()
 
 for path, properties in modems:
-	print "[ %s ]" % (path)
+	print("[ %s ]" % (path))
 
 	if "org.ofono.MessageManager" not in properties["Interfaces"]:
 		continue
@@ -21,10 +21,10 @@ for path, properties in modems:
 	contexts = connman.GetMessages()
 
 	for path, properties in contexts:
-		print "    [ %s ]" % (path)
+		print("    [ %s ]" % (path))
 
 		for key in properties.keys():
 			val = str(properties[key])
-			print "        %s = %s" % (key, val)
+			print("        %s = %s" % (key, val))
 
-		print
+		print('')

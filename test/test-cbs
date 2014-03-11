@@ -7,69 +7,69 @@ import gobject
 import os
 
 def print_menu():
-	print "Select test case"
-	print "----------------------------------------------------------------"
-	print "[0] Activate cbs"
-	print "[1] Deactivate cbs"
-	print "[2] Get cbs properties"
-	print "[3] Set/Register topics"
-	print "        If several - give topics separated with comma. \
-		\n        E.g. 20,50-51,60"
-	print "[4] Clear/Unregister topics"
-	print "[5] NetReg Base Station - Get current serving cell"
-	print "[x] Exit"
-	print "----------------------------------------------------------------"
+	print("Select test case")
+	print("----------------------------------------------------------------")
+	print("[0] Activate cbs")
+	print("[1] Deactivate cbs")
+	print("[2] Get cbs properties")
+	print("[3] Set/Register topics")
+	print("        If several - give topics separated with comma. \
+		\n        E.g. 20,50-51,60")
+	print("[4] Clear/Unregister topics")
+	print("[5] NetReg Base Station - Get current serving cell")
+	print("[x] Exit")
+	print("----------------------------------------------------------------")
 
 def property_changed(property, value):
 	if value == "" and property == "Topics":
-		print "User selected Topics have been cleared. \
-			\nRegistered for emergency topics only."
+		print("User selected Topics have been cleared. \
+			\nRegistered for emergency topics only.")
 	else:
-		print "Cell Broadcast property %s is changed to %s" % (property, value)
-	print "\nPress ENTER to continue"
+		print("Cell Broadcast property %s is changed to %s" % (property, value))
+	print("\nPress ENTER to continue")
 
 def incoming_broadcast(text, topic):
-	print "Broadcast msg: %s \n Topic channel: %s" % (text, topic)
-	print "\nPress ENTER to continue"
+	print("Broadcast msg: %s \n Topic channel: %s" % (text, topic))
+	print("\nPress ENTER to continue")
 
 def emergency_broadcast(text, properties):
 	emergType = properties["EmergencyType"]
 	emergAlert = properties["EmergencyAlert"]
 
-	print "Broadcast msg: %s \n\t Type: %s \n\t Alert: %s \n\t Popup: %s" \
-		% (text, emergType, emergAlert, popup)
+	print("Broadcast msg: %s \n\t Type: %s \n\t Alert: %s \n\t Popup: %s" \
+		% (text, emergType, emergAlert, popup))
 
 	if properties["Popup"] == True:
-		print "Popup required."
+		print("Popup required.")
 
-	print "\nPress ENTER to continue"
+	print("\nPress ENTER to continue")
 
 def set_cbs_state(cbs, state):
 	if state == True:
-		print "Activating cell broadcast..."
+		print("Activating cell broadcast...")
 		cbs.SetProperty("Powered", dbus.Boolean(1))
 	else:
-		print "Deactivating cell broadcast..."
+		print("Deactivating cell broadcast...")
 		cbs.SetProperty("Powered", dbus.Boolean(0))
-	print "-----------------------------------------------------------"
+	print("-----------------------------------------------------------")
 
 def print_cbs_properties(cbs):
 	properties = cbs.GetProperties()
-	print "---------------------PROPERTIES----------------------------"
+	print("---------------------PROPERTIES----------------------------")
 	for p in properties:
 		if len(properties[p].__str__()) > 0:
 			if p == "Powered":
 				if properties[p] == True:
-					print "Cell Broadcast is Activated."
+					print("Cell Broadcast is Activated.")
 				else:
-					print "Cell Broadcast is Deactivated."
+					print("Cell Broadcast is Deactivated.")
 			elif p == "Topics":
-				print "Currently set CBS %s are: %s" \
-					% (p, properties[p])
+				print("Currently set CBS %s are: %s" \
+					% (p, properties[p]))
 				topics_available = True
 		else:
-			print "Cell Broadcast %s value empty" % (p)
-	print "-----------------------------------------------------------"
+			print("Cell Broadcast %s value empty" % (p))
+	print("-----------------------------------------------------------")
 
 def set_topics(cbs):
 	print_cbs_properties(cbs)
@@ -86,27 +86,27 @@ def set_topics(cbs):
 		elif topics[index] >= '0' and topics[index] <= '9':
 			topicTemp = topicTemp + topics[index]
 		else:
-			print "Invalid char. \"%s\" entered. Topic not set." \
-				% (topics[index])
+			print("Invalid char. \"%s\" entered. Topic not set." \
+				% (topics[index]))
 			invalidData = True
 			break
 
 		if topicTemp:
 			if int(topicTemp) > 999:
 				invalidData = True
-				print "Invalid Topic ID %s (range 0-999). \
-					\nCould not register." % topicTemp
+				print("Invalid Topic ID %s (range 0-999). \
+					\nCould not register." % topicTemp)
 
 		index = index + 1
 
 	if invalidData == False:
 		try:
-			print "Setting Cell Broadcast topics..."
+			print("Setting Cell Broadcast topics...")
 			cbs.SetProperty("Topics", topics);
 		except dbus.DBusException, e:
-			print "Unable to set topic: ", e
+			print("Unable to set topic: %s" % e)
 
-	print "-----------------------------------------------------------"
+	print("-----------------------------------------------------------")
 
 def get_serving_cell_name(netReg):
 	wasFound = False;
@@ -115,17 +115,17 @@ def get_serving_cell_name(netReg):
 	for p in properties:
 		if p == "BaseStation":
 			if len(properties[p].__str__()) > 0:
-				print "Current serving cell name: %s" \
-					% (properties["BaseStation"])
+				print("Current serving cell name: %s" \
+					% (properties["BaseStation"]))
 				wasFound = True;
 			else:
-				print "Current Serving cell name empty. \
-					Base Station CBS not available."
+				print("Current Serving cell name empty. \
+					Base Station CBS not available.")
 
 	if wasFound == False:
-		print "Base Station parameter not found. \
-			\nBase Station CBS not available."
-	print "-----------------------------------------------------------"
+		print("Base Station parameter not found. \
+			\nBase Station CBS not available.")
+	print("-----------------------------------------------------------")
 
 def stdin_handler(fd, condition, cbs, netReg):
 	in_key = os.read(fd.fileno(), 160).rstrip()
@@ -151,7 +151,7 @@ def stdin_handler(fd, condition, cbs, netReg):
 	elif in_key == 'x':
 		sys.exit(1)
 
-	print '\n' * 2
+	print('\n' * 2)
 	print_menu()
 
 	return True
@@ -177,7 +177,7 @@ if __name__ == "__main__":
 	cbs.connect_to_signal("IncomingBroadcast", incoming_broadcast)
 	cbs.connect_to_signal("EmergencyBroadcast", emergency_broadcast)
 
-	print '\n' * 2
+	print('\n' * 2)
 
 	print_menu()
 

@@ -23,7 +23,7 @@ for path, properties in modems:
 		if properties["Active"] == dbus.Boolean(0):
 			continue
 
-		print "Configuring %s" % (path)
+		print("Configuring %s" % (path))
 
 		settings = properties["Settings"]
 
@@ -35,20 +35,20 @@ for path, properties in modems:
 			gateway = "0.0.0.0";
 
 		if settings["Method"] == "dhcp":
-			print "    Run DHCP on interface %s" % (interface)
+			print("    Run DHCP on interface %s" % (interface))
 		else:
-			print "    Interface is %s" % (interface)
-			print "    IP address is %s" % (address)
-			print "    Gateway is %s" % (gateway)
+			print("    Interface is %s" % (interface))
+			print("    IP address is %s" % (address))
+			print("    Gateway is %s" % (gateway))
 
 			cmd = "ifconfig " + interface + " " + address
 			cmd += " netmask 255.255.255.255"
 			os.system(cmd);
 
 			for i in settings["DomainNameServers"]:
-				print "    Nameserver is %s" % (i)
+				print("    Nameserver is %s" % (i))
 
 				cmd = "route add -host " + i
 				cmd +=" dev " + interface
 				os.system(cmd);
-		print
+		print('')

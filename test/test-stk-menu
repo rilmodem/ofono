@@ -34,7 +34,7 @@ class StkAgent(dbus.service.Object):
 		return False
 
 	def call_added(self, path, properties):
-		print "call added %s" % (path)
+		print("call added %s" % (path))
 		if (self.timeout_id > 0):
 			gobject.source_remove(self.timeout_id)
 			self.timeout_callback()
@@ -42,21 +42,21 @@ class StkAgent(dbus.service.Object):
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 					in_signature="", out_signature="")
 	def Release(self):
-		print "Release"
+		print("Release")
 		if self.exit_on_release:
 			mainloop.quit()
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 				in_signature="sya(sy)n", out_signature="y")
 	def RequestSelection(self, title, icon, items, default):
-		print "Title: (%s)" % (title)
-		print "Icon: (%d)" % (icon)
+		print("Title: (%s)" % (title))
+		print("Icon: (%d)" % (icon))
 		index = 0
 		for item in items:
-			print "%d. %s (icon: %d)" % (index, item[0], item[1])
+			print("%d. %s (icon: %d)" % (index, item[0], item[1]))
 			index += 1
 
-		print "\nDefault: %d" % (default)
+		print("\nDefault: %d" % (default))
 		select = raw_input("Enter Selection (t, b):")
 
 		if select == 'b':
@@ -71,9 +71,9 @@ class StkAgent(dbus.service.Object):
 					async_callbacks=("reply_func",
 								"error_func"))
 	def DisplayText(self, title, icon, urgent, reply_func, error_func):
-		print "DisplayText (%s)" % (title)
-		print "Icon: (%d)" % (icon)
-		print "Urgent: (%d)" % (urgent)
+		print("DisplayText (%s)" % (title))
+		print("Icon: (%d)" % (icon))
+		print("Urgent: (%d)" % (urgent))
 		key = raw_input("Press return to clear ('t' terminates, "
 						"'b' goes back, 'n' busy, "
 						"'w' return and wait):")
@@ -91,7 +91,7 @@ class StkAgent(dbus.service.Object):
 			raise Busy("User wishes to simulate busy screen")
 
 		if (seconds > 0):
-			print "Waiting for %d seconds" % (seconds)
+			print("Waiting for %d seconds" % (seconds))
 
 		self.timeout_reply_handler = reply_func
 		self.timeout_id = gobject.timeout_add_seconds(seconds,
@@ -101,12 +101,12 @@ class StkAgent(dbus.service.Object):
 				in_signature="sysyyb", out_signature="s")
 	def RequestInput(self, title, icon, default, min_chars, max_chars,
 				hide_typing):
-		print "Title: (%s)" % (title)
-		print "Icon: (%d)" % (icon)
-		print "Default: (%s)" % (default)
-		print "Hide typing: (%s)" % (hide_typing)
-		print "Enter characters, min: %d, max: %d:" % (min_chars,
-								max_chars)
+		print("Title: (%s)" % (title))
+		print("Icon: (%d)" % (icon))
+		print("Default: (%s)" % (default))
+		print("Hide typing: (%s)" % (hide_typing))
+		print("Enter characters, min: %d, max: %d:" % (min_chars,
+								max_chars))
 		userin = raw_input("")
 
 		return userin
@@ -115,12 +115,12 @@ class StkAgent(dbus.service.Object):
 				in_signature="sysyyb", out_signature="s")
 	def RequestDigits(self, title, icon, default, min_chars, max_chars,
 				hide_typing):
-		print "Title: (%s)" % (title)
-		print "Icon: (%d)" % (icon)
-		print "Default: (%s)" % (default)
-		print "Hide typing: (%s)" % (hide_typing)
-		print "Enter digits, min: %d, max: %d:" % (min_chars,
-								max_chars)
+		print("Title: (%s)" % (title))
+		print("Icon: (%d)" % (icon))
+		print("Default: (%s)" % (default))
+		print("Hide typing: (%s)" % (hide_typing))
+		print("Enter digits, min: %d, max: %d:" % (min_chars,
+								max_chars))
 		userin = raw_input("'t' terminates, 'b' goes back:")
 
 		if userin == 'b':
@@ -133,8 +133,8 @@ class StkAgent(dbus.service.Object):
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 				in_signature="sy", out_signature="s")
 	def RequestKey(self, title, icon):
-		print "Title: (%s)" % (title)
-		print "Icon: (%d)" % (icon)
+		print("Title: (%s)" % (title))
+		print("Icon: (%d)" % (icon))
 		key = raw_input("Enter Key (t, b):")
 
 		if key == 'b':
@@ -147,8 +147,8 @@ class StkAgent(dbus.service.Object):
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 				in_signature="sy", out_signature="s")
 	def RequestDigit(self, title, icon):
-		print "Title: (%s)" % (title)
-		print "Icon: (%d)" % (icon)
+		print("Title: (%s)" % (title))
+		print("Icon: (%d)" % (icon))
 		key = raw_input("Enter Digit (t, b):")
 
 		if key == 'b':
@@ -161,8 +161,8 @@ class StkAgent(dbus.service.Object):
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 				in_signature="sy", out_signature="s")
 	def RequestQuickDigit(self, title, icon):
-		print "Title: (%s)" % (title)
-		print "Icon: (%d)" % (icon)
+		print("Title: (%s)" % (title))
+		print("Icon: (%d)" % (icon))
 		key = raw_input("Quick digit (0-9, *, #, t, b):")
 
 		if key == 'b':
@@ -175,8 +175,8 @@ class StkAgent(dbus.service.Object):
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 				in_signature="sy", out_signature="b")
 	def RequestConfirmation(self, title, icon):
-		print "Title: (%s)" % (title)
-		print "Icon: (%d)" % (icon)
+		print("Title: (%s)" % (title))
+		print("Icon: (%d)" % (icon))
 		key = raw_input("Enter Confirmation (t, b, y, n):")
 
 		if key == 'b':
@@ -191,8 +191,8 @@ class StkAgent(dbus.service.Object):
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 				in_signature="sy", out_signature="b")
 	def ConfirmCallSetup(self, info, icon):
-		print "Information: (%s)" % (info)
-		print "Icon: (%d)" % (icon)
+		print("Information: (%s)" % (info))
+		print("Icon: (%d)" % (icon))
 		key = raw_input("Enter Confirmation (t, y, n):")
 
 		if key == 't':
@@ -205,9 +205,9 @@ class StkAgent(dbus.service.Object):
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 				in_signature="sys", out_signature="b")
 	def ConfirmLaunchBrowser(self, info, icon, url):
-		print "Information: (%s)" % (info)
-		print "Icon: (%d)" % (icon)
-		print "URL (%s)" % (url)
+		print("Information: (%s)" % (info))
+		print("Icon: (%d)" % (icon))
+		print("URL (%s)" % (url))
 		key = raw_input("Enter Confirmation (y, n):")
 
 		if key == 'y':
@@ -218,14 +218,14 @@ class StkAgent(dbus.service.Object):
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 					in_signature="", out_signature="")
 	def Cancel(self):
-		print "Cancel"
+		print("Cancel")
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 					in_signature="ssy", out_signature="")
 	def PlayTone(self, tone, text, icon):
-		print "PlayTone: %s" % (tone)
-		print "Text: %s" % (text)
-		print "Icon: %d" % (icon)
+		print("PlayTone: %s" % (tone))
+		print("Text: %s" % (text))
+		print("Icon: %d" % (icon))
 
 		signal.signal(signal.SIGALRM, handler)
 		signal.alarm(5)
@@ -239,16 +239,16 @@ class StkAgent(dbus.service.Object):
 				raise EndSession("User wishes to terminate"
 								 " session")
 		except Exception, exc:
-			print exc
+			print(exc)
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 					in_signature="ssy", out_signature="",
 					async_callbacks=("reply_func",
 								"error_func"))
 	def LoopTone(self, tone, text, icon, reply_func, error_func):
-		print "LoopTone: %s" % (tone)
-		print "Text: %s" % (text)
-		print "Icon: %d" % (icon)
+		print("LoopTone: %s" % (tone))
+		print("Text: %s" % (text))
+		print("Icon: %d" % (icon))
 		key = raw_input("Press return to end before timeout "
 				"('t' terminates, 'w' return and wait):")
 
@@ -261,7 +261,7 @@ class StkAgent(dbus.service.Object):
 			raise EndSession("User wishes to terminate session")
 
 		if (seconds > 0):
-			print "Waiting for %d seconds" % (seconds)
+			print("Waiting for %d seconds" % (seconds))
 
 		self.timeout_reply_handler = reply_func
 		self.timeout_id = gobject.timeout_add_seconds(seconds,
@@ -270,14 +270,14 @@ class StkAgent(dbus.service.Object):
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 					in_signature="sy", out_signature="")
 	def DisplayActionInformation(self, text, icon):
-		print "Text: %s" % (text)
-		print "Icon: %d" % (icon)
+		print("Text: %s" % (text))
+		print("Icon: %d" % (icon))
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 					in_signature="sy", out_signature="")
 	def DisplayAction(self, text, icon):
-		print "Text: (%s)" % (text)
-		print "Icon: (%d)" % (icon)
+		print("Text: (%s)" % (text))
+		print("Icon: (%d)" % (icon))
 		key = raw_input("Press 't' to terminate the session ")
 
 		if key == 't':
@@ -286,8 +286,8 @@ class StkAgent(dbus.service.Object):
 	@dbus.service.method("org.ofono.SimToolkitAgent",
 					in_signature="sy", out_signature="b")
 	def ConfirmOpenChannel(self, info, icon):
-		print "Open channel confirmation: (%s)" % (info)
-		print "Icon: (%d)" % (icon)
+		print("Open channel confirmation: (%s)" % (info))
+		print("Icon: (%d)" % (icon))
 		key = raw_input("Enter Confirmation (t, y, n):")
 
 		if key == 't':
@@ -346,7 +346,7 @@ def pretty(d):
 	return str(d)
 
 def property_changed(name, value):
-	print "SimToolKit property: %s changed to '%s'" % (name, pretty(value))
+	print("SimToolKit property: %s changed to '%s'" % (name, pretty(value)))
 
 if __name__ == '__main__':
 	if len(sys.argv) == 2:
@@ -376,15 +376,15 @@ if __name__ == '__main__':
 
 	if mode == 'menu':
 		if "MainMenuTitle" in properties:
-			print "Main Menu:"
-			print "%s" % (properties["MainMenuTitle"])
-			print "\n"
+			print("Main Menu:")
+			print("%s" % (properties["MainMenuTitle"]))
+			print("\n")
 
 		if "MainMenu" in properties:
-			print "Items:"
+			print("Items:")
 			index = 0
 			for item in properties["MainMenu"]:
-				print "%d. %s" % (index, item[0])
+				print("%d. %s" % (index, item[0]))
 				index += 1
 
 		path = "/test/agent"
@@ -408,9 +408,9 @@ if __name__ == '__main__':
 
 		stk.RegisterAgent(path)
 
-		print "Default Agent registered - Waiting for STK command..."
+		print("Default Agent registered - Waiting for STK command...")
 	else:
-		print "%s [menu|agent]" % (sys.argv[0])
+		print("%s [menu|agent]" % (sys.argv[0]))
 		exit(0)
 
 	mainloop = gobject.MainLoop()

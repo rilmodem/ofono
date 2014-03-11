@@ -13,7 +13,7 @@ else:
 	modems = manager.GetModems()
 	path = modems[0][0]
 
-print "Scanning operators on modem %s..." % path
+print("Scanning operators on modem %s..." % path)
 netreg = dbus.Interface(bus.get_object('org.ofono', path),
 				'org.ofono.NetworkRegistration')
 
@@ -23,7 +23,7 @@ for entry in operators:
 	path = entry[0]
 	properties = entry[1]
 
-	print "[ %s ]" % (path)
+	print("[ %s ]" % (path))
 
 	for key in properties.keys():
 		if key in ["Technologies"]:
@@ -32,7 +32,7 @@ for entry in operators:
 				val += i + " "
 		else:
 			val = str(properties[key])
-		print "    %s = %s" % (key, val)
+		print("    %s = %s" % (key, val))
 
-	print
+	print('')
 

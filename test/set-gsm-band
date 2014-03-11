@@ -15,10 +15,10 @@ elif len(sys.argv) == 2:
 	path = modems[0][0]
 	band = sys.argv[1]
 else:
-	print "%s [PATH] band" % (sys.argv[0])
+	print("%s [PATH] band" % (sys.argv[0]))
 	exit(1)
 
-print "Setting gsm band for modem %s..." % path
+print("Setting gsm band for modem %s..." % path)
 radiosettings = dbus.Interface(bus.get_object('org.ofono', path),
 						'org.ofono.RadioSettings')
 

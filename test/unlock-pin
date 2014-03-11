@@ -17,10 +17,10 @@ elif len(sys.argv) == 3:
 	pin_type = sys.argv[1]
 	pin = sys.argv[2]
 else:
-	print "%s [PATH] pin_type pin" % (sys.argv[0])
+	print("%s [PATH] pin_type pin" % (sys.argv[0]))
 	sys.exit(0)
 
-print "Unlock %s %s for modem %s..." % (pin_type, pin, path)
+print("Unlock %s %s for modem %s..." % (pin_type, pin, path))
 
 simmanager = dbus.Interface(bus.get_object('org.ofono', path),
 				'org.ofono.SimManager')

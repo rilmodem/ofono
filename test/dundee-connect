@@ -13,7 +13,7 @@ else:
 	devices = manager.GetDevices()
 	path = devices[0][0]
 
-print "Connect device %s..." % path
+print("Connect device %s..." % path)
 device = dbus.Interface(bus.get_object('org.ofono.dundee', path),
 						'org.ofono.dundee.Device')
 

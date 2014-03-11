@@ -6,7 +6,7 @@ import dbus
 import dbus.mainloop.glib
 
 def property_changed(name, value):
-	print "Modem property %s changed to %s" % (name, value)
+	print("Modem property %s changed to %s" % (name, value))
 
 if __name__ == "__main__":
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -25,41 +25,41 @@ if __name__ == "__main__":
 	properties = modem.GetProperties()
 
 	if properties.has_key('Name'):
-		print "Name: %s" % (properties['Name'])
+		print("Name: %s" % (properties['Name']))
 
 	if properties.has_key('Manufacturer'):
-		print "Manufacturer: %s" % (properties['Manufacturer'])
+		print("Manufacturer: %s" % (properties['Manufacturer']))
 
 	if properties.has_key('Model'):
-		print "Model: %s" % (properties['Model'])
+		print("Model: %s" % (properties['Model']))
 
 	if properties.has_key('Revision'):
-		print "Revision: %s" % (properties['Revision'])
+		print("Revision: %s" % (properties['Revision']))
 
 	if properties.has_key('Serial'):
-		print "Serial: %s" % (properties['Serial'])
+		print("Serial: %s" % (properties['Serial']))
 
 	if properties.has_key('Powered'):
-		print "Powered: %s" % (properties['Powered'])
+		print("Powered: %s" % (properties['Powered']))
 
 	if properties.has_key('Online'):
-		print "Online: %s" % (properties['Online'])
+		print("Online: %s" % (properties['Online']))
 
 	if properties.has_key('Lockdown'):
-		print "Lockdown: %s" % (properties['Lockdown'])
+		print("Lockdown: %s" % (properties['Lockdown']))
 
 	if properties.has_key('Emergency'):
-		print "Emergency: %s" % (properties['Emergency'])
+		print("Emergency: %s" % (properties['Emergency']))
 
 	if properties.has_key('Features'):
-		print "Features:"
+		print("Features:")
 		for feature in properties["Features"]:
-			print "    [ %s ]" % (feature)
+			print("    [ %s ]" % (feature))
 
 	if properties.has_key('Interfaces'):
-		print "Interfaces:"
+		print("Interfaces:")
 		for interface in properties["Interfaces"]:
-			print "    [ %s ]" % (interface)
+			print("    [ %s ]" % (interface))
 
 	mainloop = gobject.MainLoop()
 	mainloop.run()

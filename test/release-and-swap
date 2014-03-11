@@ -10,7 +10,7 @@ manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 modems = manager.GetModems()
 
 for path, properties in modems:
-	print "[ %s ]" % (path)
+	print("[ %s ]" % (path))
 
 	if "org.ofono.VoiceCallManager" not in properties["Interfaces"]:
 		continue

@@ -24,4 +24,4 @@ for path, properties in modems:
 
 	connman.SetProperty("RoamingAllowed", allowed)
 
-	print "Setting %s to RoamingAllowed=%d" % (path, allowed)
+	print("Setting %s to RoamingAllowed=%d" % (path, allowed))

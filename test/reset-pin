@@ -14,9 +14,9 @@ elif len(sys.argv) == 4:
 	path = modems[0][0]
 	puk_type, puk, pin = sys.argv[1:]
 else:
-	print "%s [PATH] puk_type puk pin" % (sys.argv[0])
+	print("%s [PATH] puk_type puk pin" % (sys.argv[0]))
 
-print "Reset pin for modem %s..." % path
+print("Reset pin for modem %s..." % path)
 simmanager = dbus.Interface(bus.get_object('org.ofono', path),
 				'org.ofono.SimManager')
 
