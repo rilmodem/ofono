@@ -1297,3 +1297,37 @@ struct ofono_call_forwarding_condition
 error:
 	return NULL;
 }
+
+int g_ril_reply_parse_get_preferred_network_type(GRil *gril,
+						const struct ril_msg *message)
+{
+	struct parcel rilp;
+	int numint, net_type;
+
+	g_ril_init_parcel(message, &rilp);
+
+	numint = parcel_r_int32(&rilp);
+	if (numint != 1) {
+		ofono_error("%s: Wrong format", __func__);
+		goto error;
+	}
+
+	net_type = parcel_r_int32(&rilp);
+	if (net_type < 0 || net_type > PREF_NET_TYPE_LTE_ONLY) {
+		ofono_error("%s: unknown network type", __func__);
+		goto error;		
+	}
+
+	if (rilp.malformed) {
+		ofono_error("%s: malformed parcel", __func__);
+		goto error;		
+	}
+
+	g_ril_append_print_buf(gril, "{%d}", net_type);
+	g_ril_print_response(gril, message);
+
+	return net_type;
+
+error:
+	return -1;
+}

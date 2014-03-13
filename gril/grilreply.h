@@ -164,6 +164,10 @@ struct ofono_call_forwarding_condition
 	*g_ril_reply_parse_query_call_fwd(GRil *gril,
 						const struct ril_msg *message,
 						unsigned int *list_size);
+
+int g_ril_reply_parse_get_preferred_network_type(GRil *gril,
+						const struct ril_msg *message);
+
 #ifdef __cplusplus
 }
 #endif

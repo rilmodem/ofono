@@ -208,6 +208,9 @@ void g_ril_request_set_clir(GRil *gril,
 void g_ril_request_call_fwd(GRil *gril, const struct req_call_fwd *req,
 				struct parcel *rilp);
 
+void g_ril_request_set_preferred_network_type(GRil *gril, int net_type,
+						struct parcel *rilp);
+
 #ifdef __cplusplus
 }
 #endif
