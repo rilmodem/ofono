@@ -54,6 +54,8 @@ struct ofono_handsfree_driver {
 
 void ofono_handsfree_set_ag_features(struct ofono_handsfree *hf,
 					unsigned int ag_features);
+void ofono_handsfree_set_ag_chld_features(struct ofono_handsfree *hf,
+					unsigned int ag_chld_features);
 void ofono_handsfree_set_inband_ringing(struct ofono_handsfree *hf,
 						ofono_bool_t enabled);
 void ofono_handsfree_voice_recognition_notify(struct ofono_handsfree *hf,
