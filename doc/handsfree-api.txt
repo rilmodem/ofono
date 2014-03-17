@@ -45,6 +45,12 @@ Properties	array{string} Features [readonly]
 				"voice-recognition"
 				"attach-voice-tag"
 				"echo-canceling-and-noise-reduction"
+				"three-way-calling"
+				"release-all-held"
+				"release-specified-active-call"
+				"private-chat"
+				"create-multiparty"
+				"transfer"
 
 		boolean InbandRinging [readonly]
 
