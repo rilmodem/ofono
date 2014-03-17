@@ -45,6 +45,17 @@ enum hfp_hf_feature {
 	HFP_HF_FEATURE_CODEC_NEGOTIATION =	0x80,
 };
 
+/* HFP AG supported call hold and multiparty services bitmap. Bluetooth HFP 1.6 spec page 76 */
+enum hfp_ag_chld_feature {
+	HFP_AG_CHLD_0 =		0x1,
+	HFP_AG_CHLD_1 =		0x2,
+	HFP_AG_CHLD_1x =	0x4,
+	HFP_AG_CHLD_2 =		0x8,
+	HFP_AG_CHLD_2x =	0x10,
+	HFP_AG_CHLD_3 =		0x20,
+	HFP_AG_CHLD_4 =		0x40,
+};
+
 enum hfp_sdp_hf_features {
 	HFP_SDP_HF_FEATURE_ECNR =			0x1,
 	HFP_SDP_HF_FEATURE_3WAY =			0x2,
