@@ -2138,7 +2138,7 @@ unsigned char *sms_decode_datagram(GSList *sms_list, long *out_len)
 
 	for (l = sms_list; l; l = l->next) {
 		guint8 taken = 0;
-		guint8 udl;
+		guint8 udl = 0;
 		const guint8 *ud;
 		struct sms_udh_iter iter;
 
@@ -2169,7 +2169,7 @@ unsigned char *sms_decode_datagram(GSList *sms_list, long *out_len)
 	len = 0;
 	for (l = sms_list; l; l = l->next) {
 		guint8 taken = 0;
-		guint8 udl;
+		guint8 udl = 0;
 		const guint8 *ud;
 		struct sms_udh_iter iter;
 
@@ -2220,8 +2220,8 @@ char *sms_decode_text(GSList *sms_list)
 
 	for (l = sms_list; l; l = l->next) {
 		guint8 taken = 0;
-		guint8 dcs;
-		guint8 udl;
+		guint8 dcs = 0;
+		guint8 udl = 0;
 		enum sms_charset charset;
 		int udl_in_bytes;
 		const guint8 *ud;
@@ -3000,7 +3000,7 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 	struct id_table_node *node;
 	gboolean delivered;
 	gboolean pending;
-	unsigned char *msgid;
+	unsigned char *msgid = 0;
 	int i;
 
 	/* We ignore temporary or tempfinal status reports */
