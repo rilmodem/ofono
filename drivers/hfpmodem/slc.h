@@ -19,14 +19,6 @@
  *
  */
 
-#define AG_CHLD_0	0x01
-#define AG_CHLD_1	0x02
-#define AG_CHLD_1x	0x04
-#define AG_CHLD_2	0x08
-#define AG_CHLD_2x	0x10
-#define AG_CHLD_3	0x20
-#define AG_CHLD_4	0x40
-
 enum hfp_indicator {
 	HFP_INDICATOR_SERVICE = 0,
 	HFP_INDICATOR_CALL,

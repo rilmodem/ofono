@@ -37,6 +37,7 @@
 #include <ofono/voicecall.h>
 
 #include "common.h"
+#include "hfp.h"
 
 #include "hfpmodem.h"
 #include "slc.h"
@@ -447,7 +448,7 @@ static void hfp_hold_all_active(struct ofono_voicecall *vc,
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 
-	if (vd->ag_mpty_features & AG_CHLD_2) {
+	if (vd->ag_mpty_features & HFP_AG_CHLD_2) {
 		hfp_template("AT+CHLD=2", vc, generic_cb, 0, cb, data);
 		return;
 	}
@@ -461,7 +462,7 @@ static void hfp_release_all_held(struct ofono_voicecall *vc,
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	unsigned int held_status = 1 << CALL_STATUS_HELD;
 
-	if (vd->ag_mpty_features & AG_CHLD_0) {
+	if (vd->ag_mpty_features & HFP_AG_CHLD_0) {
 		hfp_template("AT+CHLD=0", vc, generic_cb, held_status,
 				cb, data);
 		return;
@@ -476,7 +477,7 @@ static void hfp_set_udub(struct ofono_voicecall *vc,
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	unsigned int incoming_or_waiting = 1 << CALL_STATUS_WAITING;
 
-	if (vd->ag_mpty_features & AG_CHLD_0) {
+	if (vd->ag_mpty_features & HFP_AG_CHLD_0) {
 		hfp_template("AT+CHLD=0", vc, generic_cb, incoming_or_waiting,
 				cb, data);
 		return;
@@ -528,7 +529,7 @@ static void hfp_release_all_active(struct ofono_voicecall *vc,
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 
-	if (vd->ag_mpty_features & AG_CHLD_1) {
+	if (vd->ag_mpty_features & HFP_AG_CHLD_1) {
 		hfp_template("AT+CHLD=1", vc, release_all_active_cb, 0x1, cb,
 									data);
 		return;
@@ -559,7 +560,7 @@ static void hfp_release_specific(struct ofono_voicecall *vc, int id,
 	struct release_id_req *req = NULL;
 	char buf[32];
 
-	if (!(vd->ag_mpty_features & AG_CHLD_1x))
+	if (!(vd->ag_mpty_features & HFP_AG_CHLD_1x))
 		goto error;
 
 	req = g_try_new0(struct release_id_req, 1);
@@ -590,7 +591,7 @@ static void hfp_private_chat(struct ofono_voicecall *vc, int id,
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	char buf[32];
 
-	if (vd->ag_mpty_features & AG_CHLD_2x) {
+	if (vd->ag_mpty_features & HFP_AG_CHLD_2x) {
 		snprintf(buf, sizeof(buf), "AT+CHLD=2%d", id);
 
 		hfp_template(buf, vc, generic_cb, 0, cb, data);
@@ -606,7 +607,7 @@ static void hfp_create_multiparty(struct ofono_voicecall *vc,
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 
-	if (vd->ag_mpty_features & AG_CHLD_3) {
+	if (vd->ag_mpty_features & HFP_AG_CHLD_3) {
 		hfp_template("AT+CHLD=3", vc, generic_cb, 0, cb, data);
 
 		return;
@@ -625,7 +626,7 @@ static void hfp_transfer(struct ofono_voicecall *vc,
 	 */
 	unsigned int transfer = 0x1 | 0x2 | 0x4 | 0x8;
 
-	if (vd->ag_mpty_features & AG_CHLD_4) {
+	if (vd->ag_mpty_features & HFP_AG_CHLD_4) {
 		hfp_template("AT+CHLD=4", vc, generic_cb, transfer, cb, data);
 
 		return;

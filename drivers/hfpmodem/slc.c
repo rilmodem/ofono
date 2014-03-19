@@ -128,19 +128,19 @@ static void chld_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	while (g_at_result_iter_next_unquoted_string(&iter, &str)) {
 		if (!strcmp(str, "0"))
-			ag_mpty_feature |= AG_CHLD_0;
+			ag_mpty_feature |= HFP_AG_CHLD_0;
 		else if (!strcmp(str, "1"))
-			ag_mpty_feature |= AG_CHLD_1;
+			ag_mpty_feature |= HFP_AG_CHLD_1;
 		else if (!strcmp(str, "1x"))
-			ag_mpty_feature |= AG_CHLD_1x;
+			ag_mpty_feature |= HFP_AG_CHLD_1x;
 		else if (!strcmp(str, "2"))
-			ag_mpty_feature |= AG_CHLD_2;
+			ag_mpty_feature |= HFP_AG_CHLD_2;
 		else if (!strcmp(str, "2x"))
-			ag_mpty_feature |= AG_CHLD_2x;
+			ag_mpty_feature |= HFP_AG_CHLD_2x;
 		else if (!strcmp(str, "3"))
-			ag_mpty_feature |= AG_CHLD_3;
+			ag_mpty_feature |= HFP_AG_CHLD_3;
 		else if (!strcmp(str, "4"))
-			ag_mpty_feature |= AG_CHLD_4;
+			ag_mpty_feature |= HFP_AG_CHLD_4;
 	}
 
 	if (!g_at_result_iter_close_list(&iter))
