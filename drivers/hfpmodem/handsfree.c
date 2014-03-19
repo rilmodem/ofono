@@ -49,7 +49,7 @@ static const char *bvra_prefix[] = { "+BVRA:", NULL };
 struct hf_data {
 	GAtChat *chat;
 	unsigned int ag_features;
-	unsigned int ag_mpty_features;
+	unsigned int ag_chld_features;
 	int battchg_index;
 	guint register_source;
 };
@@ -140,7 +140,7 @@ static gboolean hfp_handsfree_register(gpointer user_data)
 		ofono_handsfree_set_inband_ringing(hf, TRUE);
 
 	ofono_handsfree_set_ag_features(hf, hd->ag_features);
-	ofono_handsfree_set_ag_chld_features(hf, hd->ag_mpty_features);
+	ofono_handsfree_set_ag_chld_features(hf, hd->ag_chld_features);
 	ofono_handsfree_register(hf);
 
 	return FALSE;
@@ -156,7 +156,7 @@ static int hfp_handsfree_probe(struct ofono_handsfree *hf,
 	hd = g_new0(struct hf_data, 1);
 	hd->chat = g_at_chat_clone(info->chat);
 	hd->ag_features = info->ag_features;
-	hd->ag_mpty_features = info->ag_mpty_features;
+	hd->ag_chld_features = info->ag_mpty_features;
 
 	ofono_handsfree_set_data(hf, hd);
 
