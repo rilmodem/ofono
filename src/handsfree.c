@@ -50,7 +50,7 @@ struct ofono_handsfree {
 	ofono_bool_t voice_recognition;
 	ofono_bool_t voice_recognition_pending;
 	unsigned int ag_features;
-	unsigned int ag_mpty_features;
+	unsigned int ag_chld_features;
 	unsigned char battchg;
 
 	const struct ofono_handsfree_driver *driver;
@@ -59,7 +59,8 @@ struct ofono_handsfree {
 	DBusMessage *pending;
 };
 
-static const char **ag_features_list(unsigned int features, unsigned int mpty_features)
+static const char **ag_features_list(unsigned int features,
+					unsigned int chld_features)
 {
 	static const char *list[10];
 	unsigned int i = 0;
@@ -76,19 +77,19 @@ static const char **ag_features_list(unsigned int features, unsigned int mpty_fe
 	if (features & HFP_AG_FEATURE_ATTACH_VOICE_TAG)
 		list[i++] = "attach-voice-tag";
 
-	if (mpty_features & HFP_AG_CHLD_0)
+	if (chld_features & HFP_AG_CHLD_0)
 		list[i++] = "release-all-held";
 
-	if (mpty_features & HFP_AG_CHLD_1x)
+	if (chld_features & HFP_AG_CHLD_1x)
 		list[i++] = "release-specified-active-call";
 
-	if (mpty_features & HFP_AG_CHLD_2x)
+	if (chld_features & HFP_AG_CHLD_2x)
 		list[i++] = "private-chat";
 
-	if (mpty_features & HFP_AG_CHLD_3)
+	if (chld_features & HFP_AG_CHLD_3)
 		list[i++] = "create-multiparty";
 
-	if (mpty_features & HFP_AG_CHLD_4)
+	if (chld_features & HFP_AG_CHLD_4)
 		list[i++] = "transfer";
 
 	list[i] = NULL;
@@ -145,12 +146,12 @@ void ofono_handsfree_set_ag_features(struct ofono_handsfree *hf,
 }
 
 void ofono_handsfree_set_ag_chld_features(struct ofono_handsfree *hf,
-					unsigned int ag_mpty_features)
+					unsigned int ag_chld_features)
 {
 	if (hf == NULL)
 		return;
 
-	hf->ag_mpty_features = ag_mpty_features;
+	hf->ag_chld_features = ag_chld_features;
 }
 
 void ofono_handsfree_battchg_notify(struct ofono_handsfree *hf,
@@ -209,7 +210,7 @@ static DBusMessage *handsfree_get_properties(DBusConnection *conn,
 	ofono_dbus_dict_append(&dict, "VoiceRecognition", DBUS_TYPE_BOOLEAN,
 				&voice_recognition);
 
-	features = ag_features_list(hf->ag_features, hf->ag_mpty_features);
+	features = ag_features_list(hf->ag_features, hf->ag_chld_features);
 	ofono_dbus_dict_append_array(&dict, "Features", DBUS_TYPE_STRING,
 					&features);
 
