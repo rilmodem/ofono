@@ -3,6 +3,7 @@
  *  oFono - Open Source Telephony
  *
  *  Copyright (C) 2008-2011  Intel Corporation. All rights reserved.
+ *  Copyright (C) 2014  Canonical Ltd.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -710,9 +711,10 @@ static void pri_reset_context_settings(struct pri_context *ctx)
 
 	pri_context_signal_settings(ctx, signal_ipv4, signal_ipv6);
 
-	if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS) {
+	if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS)
 		pri_set_ipv4_addr(interface, NULL);
 
+	if (ctx->proxy_host != NULL) {
 		g_free(ctx->proxy_host);
 		ctx->proxy_host = NULL;
 		ctx->proxy_port = 0;
@@ -772,7 +774,7 @@ static void append_context_properties(struct pri_context *ctx,
 	ofono_dbus_dict_append(dict, "Password", DBUS_TYPE_STRING,
 				&strvalue);
 
-	if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS) {
+	if (ctx->message_center != NULL) {
 		strvalue = ctx->message_proxy;
 		ofono_dbus_dict_append(dict, "MessageProxy",
 					DBUS_TYPE_STRING, &strvalue);
@@ -1226,7 +1228,8 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 		return pri_set_name(ctx, conn, msg, str);
 	}
 
-	if (ctx->type != OFONO_GPRS_CONTEXT_TYPE_MMS)
+	if (ctx->type != OFONO_GPRS_CONTEXT_TYPE_MMS ||
+		ctx->type != OFONO_GPRS_CONTEXT_TYPE_INTERNET)
 		return __ofono_error_invalid_args(msg);
 
 	if (!strcmp(property, "MessageProxy")) {
@@ -1722,7 +1725,7 @@ static void write_context_settings(struct ofono_gprs *gprs,
 	g_key_file_set_string(gprs->settings, context->key, "Protocol",
 				gprs_proto_to_string(context->context.proto));
 
-	if (context->type == OFONO_GPRS_CONTEXT_TYPE_MMS) {
+	if (context->message_center != NULL) {
 		g_key_file_set_string(gprs->settings, context->key,
 					"MessageProxy",
 					context->message_proxy);
@@ -2730,7 +2733,9 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	if (strlen(apn) > OFONO_GPRS_MAX_APN_LENGTH)
 		goto error;
 
-	if (type == OFONO_GPRS_CONTEXT_TYPE_MMS) {
+	if (type == OFONO_GPRS_CONTEXT_TYPE_MMS ||
+		type == OFONO_GPRS_CONTEXT_TYPE_INTERNET) {
+
 		msgproxy = g_key_file_get_string(gprs->settings, group,
 						"MessageProxy", NULL);
 
@@ -2918,7 +2923,9 @@ static void provision_context(const struct ofono_gprs_provision_data *ap,
 	strcpy(context->context.apn, ap->apn);
 	context->context.proto = ap->proto;
 
-	if (ap->type == OFONO_GPRS_CONTEXT_TYPE_MMS) {
+	if (ap->type == OFONO_GPRS_CONTEXT_TYPE_MMS ||
+		ap->type == OFONO_GPRS_CONTEXT_TYPE_INTERNET) {
+
 		if (ap->message_proxy != NULL)
 			strcpy(context->message_proxy, ap->message_proxy);
 
