@@ -20,7 +20,7 @@
  *
  */
 
-void android_apndb_ap_free(struct ofono_gprs_provision_data *data);
+void android_apndb_ap_free(gpointer data);
 
 GSList *android_apndb_lookup_apn(const char *mcc, const char *mnc,
 			gboolean allow_duplicates, GError **error);
