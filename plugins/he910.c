@@ -171,7 +171,6 @@ static void he910_qss_notify(GAtResult *result, gpointer user_data)
 static void qss_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
-	struct he910_data *data = ofono_modem_get_data(modem);
 	int status, mode;
 	GAtResultIter iter;
 
