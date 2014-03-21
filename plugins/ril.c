@@ -271,8 +271,17 @@ static void ril_post_sim(struct ofono_modem *modem)
 	gprs = ofono_gprs_create(modem, 0, RILMODEM, ril->modem);
 	gc = ofono_gprs_context_create(modem, 0, RILMODEM, ril->modem);
 
-	if (gprs && gc) {
-		DBG("calling gprs_add_context");
+	if (gc) {
+		ofono_gprs_context_set_type(gc,
+					OFONO_GPRS_CONTEXT_TYPE_INTERNET);
+		ofono_gprs_add_context(gprs, gc);
+	}
+
+	gc = ofono_gprs_context_create(modem, 0, RILMODEM, ril->modem);
+
+	if (gc) {
+		ofono_gprs_context_set_type(gc,
+					OFONO_GPRS_CONTEXT_TYPE_MMS);
 		ofono_gprs_add_context(gprs, gc);
 	}
 
