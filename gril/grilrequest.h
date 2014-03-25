@@ -86,6 +86,35 @@ struct req_sim_read_record {
 	int length;
 };
 
+struct req_sim_write_binary {
+	guint app_type;
+	gchar *aid_str;
+	int fileid;
+	const unsigned char *path;
+	unsigned int path_len;
+	int start;
+	int length;
+	const unsigned char *data;
+};
+
+enum req_record_access_mode {
+	GRIL_REC_ACCESS_MODE_CURRENT,
+	GRIL_REC_ACCESS_MODE_ABSOLUTE,
+	GRIL_REC_ACCESS_MODE_NEXT,
+	GRIL_REC_ACCESS_MODE_PREVIOUS,
+};
+
+struct req_sim_write_record {
+	guint app_type;
+	gchar *aid_str;
+	int fileid;
+	const unsigned char *path;
+	unsigned int path_len;
+	enum req_record_access_mode mode;
+	int record;
+	int length;
+	const unsigned char *data;
+};
 
 struct req_pin_change_state {
 	const gchar *aid_str;
@@ -128,6 +157,14 @@ gboolean g_ril_request_sim_read_binary(GRil *gril,
 
 gboolean g_ril_request_sim_read_record(GRil *gril,
 					const struct req_sim_read_record *req,
+					struct parcel *rilp);
+
+gboolean g_ril_request_sim_write_binary(GRil *gril,
+					const struct req_sim_write_binary *req,
+					struct parcel *rilp);
+
+gboolean g_ril_request_sim_write_record(GRil *gril,
+					const struct req_sim_write_record *req,
 					struct parcel *rilp);
 
 void g_ril_request_read_imsi(GRil *gril,
