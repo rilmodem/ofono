@@ -1194,6 +1194,7 @@ static void shutdown_control_channel(void)
 static int phonesim_init(void)
 {
 	int err;
+
 	err = ofono_modem_driver_register(&phonesim_driver);
 	if (err < 0)
 		return err;
