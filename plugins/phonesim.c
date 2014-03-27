@@ -1072,6 +1072,7 @@ static int phonesim_init(void)
 {
 	int err;
 	char *conf_override = getenv("OFONO_PHONESIM_CONFIG");
+
 	err = ofono_modem_driver_register(&phonesim_driver);
 	if (err < 0)
 		return err;
