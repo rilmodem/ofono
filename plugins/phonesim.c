@@ -1156,7 +1156,7 @@ static DBusMessage *control_reset(DBusConnection *conn,
 
 static const GDBusMethodTable control_methods[] = {
 	{ GDBUS_METHOD("Add",
-		GDBUS_ARGS({ "name", "s" }, {"address", "s"}, {"port", "s"}),
+		GDBUS_ARGS({"name", "s"}, {"address", "s"}, {"port", "s"}),
 		NULL,
 		control_add) },
 	{ GDBUS_METHOD("RemoveAll",
