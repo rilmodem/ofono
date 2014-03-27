@@ -1071,7 +1071,7 @@ done:
 static int phonesim_init(void)
 {
 	int err;
-
+	char *conf_override = getenv("OFONO_PHONESIM_CONFIG");
 	err = ofono_modem_driver_register(&phonesim_driver);
 	if (err < 0)
 		return err;
@@ -1081,7 +1081,10 @@ static int phonesim_init(void)
 	ofono_gprs_context_driver_register(&context_driver);
 	ofono_ctm_driver_register(&ctm_driver);
 
-	parse_config(CONFIGDIR "/phonesim.conf");
+	if (conf_override)
+		parse_config(conf_override);
+	else
+		parse_config(CONFIGDIR "/phonesim.conf");
 
 	return 0;
 }
