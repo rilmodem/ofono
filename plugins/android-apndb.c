@@ -51,21 +51,23 @@
 struct apndb_data {
 	const char *match_mcc;
 	const char *match_mnc;
+	const char *match_imsi;
+	const char *match_spn;
 	GSList *apns;
-	gboolean match_found;
 	gboolean allow_duplicates;
+	gboolean mvno_found;
 };
 
 void android_apndb_ap_free(gpointer data)
 {
-	struct ofono_gprs_provision_data *ap = data;
+	struct apndb_provision_data *ap = data;
 
-	g_free(ap->name);
-	g_free(ap->apn);
-	g_free(ap->username);
-	g_free(ap->password);
-	g_free(ap->message_proxy);
-	g_free(ap->message_center);
+	g_free(ap->gprs_data.name);
+	g_free(ap->gprs_data.apn);
+	g_free(ap->gprs_data.username);
+	g_free(ap->gprs_data.password);
+	g_free(ap->gprs_data.message_proxy);
+	g_free(ap->gprs_data.message_center);
 
 	g_free(ap);
 }
@@ -88,6 +90,33 @@ static void android_apndb_g_set_error(GMarkupParseContext *context,
 	va_end(ap);
 
 	g_prefix_error(error, "%s:%d ", ANDROID_APN_DATABASE, line_number);
+}
+
+static gboolean imsi_match(const char *imsi, const char *match)
+{
+	gboolean result = FALSE;
+	size_t imsi_len = strlen(imsi);
+	size_t match_len = strlen(match);
+	unsigned int i;
+
+	DBG("imsi %s match %s", imsi, match);
+
+	if (imsi_len != match_len)
+		goto done;
+
+	for (i = 0; i < imsi_len; i++) {
+		if (*(imsi + i) == *(match + i))
+			continue;
+		else if (*(match + i) == 'x')
+			continue;
+		else
+			goto done;
+	}
+
+	result = TRUE;
+
+done:
+	return result;
 }
 
 static enum ofono_gprs_context_type determine_apn_type(const char *types)
@@ -174,7 +203,7 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 					gpointer userdata, GError **error)
 {
 	struct apndb_data *apndb = userdata;
-	struct ofono_gprs_provision_data *ap = NULL;
+	struct apndb_provision_data *ap = NULL;
 	int i;
 	const gchar *carrier = NULL;
 	const gchar *mcc = NULL;
@@ -187,6 +216,8 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 	const gchar *mmsproxy = NULL;
 	const gchar *mmsport = NULL;
 	const gchar *mmscenter = NULL;
+	const gchar *mvnomatch = NULL;
+	const gchar *mvnotype = NULL;
 	enum ofono_gprs_proto proto = OFONO_GPRS_PROTO_IP;
 	enum ofono_gprs_context_type type;
 
@@ -237,6 +268,10 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 			mmsproxy = attribute_values[i];
 		else if (g_str_equal(attribute_names[i], "mmsport"))
 			mmsport = attribute_values[i];
+		else if (g_str_equal(attribute_names[i], "mvno_match_data"))
+			mvnomatch = attribute_values[i];
+		else if (g_str_equal(attribute_names[i], "mvno_type"))
+			mvnotype = attribute_values[i];
 	}
 
 	if (apn == NULL) {
@@ -253,16 +288,44 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 	}
 
 	if (protocol != NULL) {
-		if (g_str_equal(attribute_names[i], "IP")) {
+		if (g_str_equal(protocol, "IP")) {
 			proto = OFONO_GPRS_PROTO_IP;
-		} else if (g_str_equal(attribute_names[i], "IPV6")) {
+		} else if (g_str_equal(protocol, "IPV6")) {
 			proto = OFONO_GPRS_PROTO_IPV6;
-		} else if (g_str_equal(attribute_names[i], "IPV4V6")) {
+		} else if (g_str_equal(protocol, "IPV4V6")) {
 			proto = OFONO_GPRS_PROTO_IPV4V6;
 		} else {
 			ofono_error("%s: APN %s has invalid protocol=%s"
 					"attribute", __func__, carrier,
 					protocol);
+			return;
+		}
+	}
+
+	if (mvnotype != NULL && mvnomatch != NULL) {
+
+		if (g_str_equal(mvnotype, "imsi")) {
+			DBG("APN %s is mvno_type 'imsi'", carrier);
+
+			if (imsi_match(apndb->match_imsi, mvnomatch) == FALSE) {
+				DBG("Skipping MVNO 'imsi' APN %s with"
+					" match_data: %s",
+					carrier, mvnomatch);
+				return;
+			}
+		} else if (g_str_equal(mvnotype, "spn")) {
+			DBG("APN %s is mvno_type 'spn'", carrier);
+
+			if (g_str_equal(mvnomatch, apndb->match_spn) == FALSE) {
+				DBG("Skipping mvno 'spn' APN %s with"
+					" match_data: %s",
+					carrier, mvnomatch);
+				return;
+			}
+
+		} else if (g_str_equal(mvnotype, "gid")) {
+			ofono_warn("%s: APN %s is unsupported mvno_type 'gid'",
+					__func__, carrier);
 			return;
 		}
 	}
@@ -275,29 +338,29 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 		return;
 	}
 
-	ap = g_try_new0(struct ofono_gprs_provision_data, 1);
+	ap = g_try_new0(struct apndb_provision_data, 1);
 	if (ap == NULL) {
 		ofono_error("%s: out-of-memory trying to provision APN - %s",
 				__func__, carrier);
 		return;
 	}
 
-	ap->type = type;
+	ap->gprs_data.type = type;
 
 	if (carrier != NULL)
-		ap->name = g_strdup(carrier);
+		ap->gprs_data.name = g_strdup(carrier);
 
 	if (apn != NULL)
-		ap->apn = g_strdup(apn);
+		ap->gprs_data.apn = g_strdup(apn);
 
 	if (username != NULL)
-		ap->username = g_strdup(username);
+		ap->gprs_data.username = g_strdup(username);
 
 	if (password != NULL)
-		ap->password = g_strdup(password);
+		ap->gprs_data.password = g_strdup(password);
 
 	if (mmscenter != NULL)
-		ap->message_center = g_strdup(mmscenter);
+		ap->gprs_data.message_center = g_strdup(mmscenter);
 
 	if (mmsproxy != NULL) {
 		char *tmp = android_apndb_sanitize_ipv4_address(mmsproxy);
@@ -305,15 +368,20 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 			mmsproxy = tmp;
 
 		if (mmsport != NULL)
-			ap->message_proxy = g_strdup_printf("%s:%s", mmsproxy,
-								mmsport);
+			ap->gprs_data.message_proxy =
+				g_strdup_printf("%s:%s", mmsproxy, mmsport);
 		else
-			ap->message_proxy = g_strdup(mmsproxy);
+			ap->gprs_data.message_proxy = g_strdup(mmsproxy);
 
 		g_free(tmp);
 	}
 
-	ap->proto = proto;
+	ap->gprs_data.proto = proto;
+
+	if (mvnotype != NULL) {
+		ap->mvno = TRUE;
+		apndb->mvno_found = TRUE;
+	}
 
 	apndb->apns = g_slist_append(apndb->apns, ap);
 }
@@ -387,19 +455,23 @@ static gboolean android_apndb_parse(const GMarkupParser *parser,
 }
 
 GSList *android_apndb_lookup_apn(const char *mcc, const char *mnc,
-			gboolean allow_duplicates, GError **error)
+			const char *spn, const char *imsi,
+			gboolean *mvno_found, GError **error)
 {
 	struct apndb_data apndb = { NULL };
 
 	apndb.match_mcc = mcc;
 	apndb.match_mnc = mnc;
-	apndb.allow_duplicates = allow_duplicates;
+	apndb.match_spn = spn;
+	apndb.match_imsi = imsi;
 
 	if (android_apndb_parse(&toplevel_apndb_parser, &apndb,
 				error) == FALSE) {
 		g_slist_free_full(apndb.apns, android_apndb_ap_free);
 		apndb.apns = NULL;
 	}
+
+	*mvno_found = apndb.mvno_found;
 
 	return apndb.apns;
 }
