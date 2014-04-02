@@ -139,10 +139,9 @@ static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
 	}
 
 	if ((sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92 && sw1 != 0x9f) ||
-		(sw1 == 0x90 && sw2 != 0x00)) {
+			(sw1 == 0x90 && sw2 != 0x00)) {
 		ofono_error("Error reply, invalid values: sw1: %02x sw2: %02x",
 				sw1, sw2);
-		memset(&error, 0, sizeof(error));
 
 		/* TODO: fix decode_ril_error to take type & error */
 
@@ -265,6 +264,53 @@ error:
 	cb(&error, NULL, 0, cbd->data);
 }
 
+static void ril_file_write_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_sim_write_cb_t cb = cbd->cb;
+	struct sim_data *sd = cbd->user;
+	struct reply_sim_io *reply;
+	int sw1, sw2;
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: RILD reply failure: %s",
+				__func__, ril_error_to_string(message->error));
+		goto error;
+	}
+
+	if ((reply = g_ril_reply_parse_sim_io(sd->ril, message))
+			== NULL) {
+		ofono_error("%s: Can't parse SIM IO response", __func__);
+		goto error;
+	}
+
+	sw1 = reply->sw1;
+	sw2 = reply->sw2;
+
+	g_ril_reply_free_sim_io(reply);
+
+	if ((sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92 && sw1 != 0x9f) ||
+			(sw1 == 0x90 && sw2 != 0x00)) {
+		struct ofono_error error;
+
+		ofono_error("%s: error sw1 %02x sw2 %02x", __func__, sw1, sw2);
+
+		error.type = OFONO_ERROR_TYPE_SIM;
+		error.error = (sw1 << 8) | sw2;
+
+		cb(&error, cbd->data);
+
+		return;
+	}
+
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+
+	return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
+}
+
 static void ril_sim_read_binary(struct ofono_sim *sim, int fileid,
 				int start, int length,
 				const unsigned char *path, unsigned int path_len,
@@ -354,6 +400,108 @@ error:
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
 	}
+}
+
+static void ril_sim_update_binary(struct ofono_sim *sim, int fileid,
+					int start, int length,
+					const unsigned char *value,
+					const unsigned char *path,
+					unsigned int path_len,
+					ofono_sim_write_cb_t cb, void *data)
+{
+	struct sim_data *sd = ofono_sim_get_data(sim);
+	struct cb_data *cbd = cb_data_new(cb, data, sd);
+	struct parcel rilp;
+	struct req_sim_write_binary req;
+	guint ret = 0;
+
+	DBG("file 0x%04x", fileid);
+
+	req.app_type = sd->app_type;
+	req.aid_str = sd->aid_str;
+	req.fileid = fileid;
+	req.path = path;
+	req.path_len = path_len;
+	req.start = start;
+	req.length = length;
+	req.data = value;
+
+	if (!g_ril_request_sim_write_binary(sd->ril, &req, &rilp)) {
+		ofono_error("%s: Couldn't build SIM write request", __func__);
+		goto error;
+	}
+
+	ret = g_ril_send(sd->ril, RIL_REQUEST_SIM_IO, &rilp,
+				ril_file_write_cb, cbd, g_free);
+
+error:
+	if (ret == 0) {
+		g_free(cbd);
+		CALLBACK_WITH_FAILURE(cb, data);
+	}
+}
+
+static void update_record(struct ofono_sim *sim, int fileid,
+				enum req_record_access_mode mode,
+				int record, int length,
+				const unsigned char *value,
+				const unsigned char *path,
+				unsigned int path_len,
+				ofono_sim_write_cb_t cb, void *data)
+{
+	struct sim_data *sd = ofono_sim_get_data(sim);
+	struct cb_data *cbd = cb_data_new(cb, data, sd);
+	struct parcel rilp;
+	struct req_sim_write_record req;
+	guint ret = 0;
+
+	DBG("file 0x%04x", fileid);
+
+	req.app_type = sd->app_type;
+	req.aid_str = sd->aid_str;
+	req.fileid = fileid;
+	req.path = path;
+	req.path_len = path_len;
+	req.mode = mode;
+	req.record = record;
+	req.length = length;
+	req.data = value;
+
+	if (!g_ril_request_sim_write_record(sd->ril, &req, &rilp)) {
+		ofono_error("%s: Couldn't build SIM write request", __func__);
+		goto error;
+	}
+
+	ret = g_ril_send(sd->ril, RIL_REQUEST_SIM_IO, &rilp,
+				ril_file_write_cb, cbd, g_free);
+
+error:
+	if (ret == 0) {
+		g_free(cbd);
+		CALLBACK_WITH_FAILURE(cb, data);
+	}
+}
+
+static void ril_sim_update_record(struct ofono_sim *sim, int fileid,
+					int record, int length,
+					const unsigned char *value,
+					const unsigned char *path,
+					unsigned int path_len,
+					ofono_sim_write_cb_t cb, void *data)
+{
+	update_record(sim, fileid, GRIL_REC_ACCESS_MODE_ABSOLUTE, record,
+			length, value, path, path_len, cb, data);
+}
+
+static void ril_sim_update_cyclic(struct ofono_sim *sim, int fileid,
+					int length, const unsigned char *value,
+					const unsigned char *path,
+					unsigned int path_len,
+					ofono_sim_write_cb_t cb, void *data)
+{
+	/* Only mode valid for cyclic files is PREVIOUS */
+	update_record(sim, fileid, GRIL_REC_ACCESS_MODE_PREVIOUS, 0,
+			length, value, path, path_len, cb, data);
 }
 
 static void ril_imsi_cb(struct ril_msg *message, gpointer user_data)
@@ -785,13 +933,16 @@ static struct ofono_sim_driver driver = {
 	.read_file_transparent	= ril_sim_read_binary,
 	.read_file_linear	= ril_sim_read_record,
 	.read_file_cyclic	= ril_sim_read_record,
+	.write_file_transparent	= ril_sim_update_binary,
+	.write_file_linear	= ril_sim_update_record,
+	.write_file_cyclic	= ril_sim_update_cyclic,
  	.read_imsi		= ril_read_imsi,
 	.query_passwd_state	= ril_query_passwd_state,
 	.send_passwd		= ril_pin_send,
-	.lock			= ril_pin_change_state,
+	.query_pin_retries	= ril_query_pin_retries,
 	.reset_passwd		= ril_pin_send_puk,
 	.change_passwd		= ril_change_passwd,
-	.query_pin_retries	= ril_query_pin_retries,
+	.lock			= ril_pin_change_state,
 /*
  * TODO: Implmenting PIN/PUK support requires defining
  * the following driver methods.
@@ -801,15 +952,7 @@ static struct ofono_sim_driver driver = {
  * presence of query_passwd_state, and if null, then the
  * function sim_initialize_after_pin() is called.
  *
- *	.query_pin_retries	= ril_pin_retries_query,
  *	.query_locked		= ril_pin_query_enabled,
- *
- * TODO: Implementing SIM write file IO support requires
- * the following functions to be defined.
- *
- *	.write_file_transparent	= ril_sim_update_binary,
- *	.write_file_linear	= ril_sim_update_record,
- *	.write_file_cyclic	= ril_sim_update_cyclic,
  */
 };
 

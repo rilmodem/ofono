@@ -411,7 +411,7 @@ gboolean g_ril_request_sim_read_record(GRil *gril,
 
 	g_ril_append_print_buf(gril,
 				"(cmd=0x%.2X,efid=0x%.4X,",
-				CMD_GET_RESPONSE,
+				CMD_READ_RECORD,
 				req->fileid);
 
 	if (set_path(gril, req->app_type, rilp, req->fileid,
@@ -424,6 +424,113 @@ gboolean g_ril_request_sim_read_record(GRil *gril,
 	parcel_w_string(rilp, NULL);       /* data; only req'd for writes */
 	parcel_w_string(rilp, NULL);       /* pin2; only req'd for writes */
 	parcel_w_string(rilp, req->aid_str); /* AID (Application ID) */
+
+	return TRUE;
+
+error:
+	return FALSE;
+}
+
+gboolean g_ril_request_sim_write_binary(GRil *gril,
+					const struct req_sim_write_binary *req,
+					struct parcel *rilp)
+{
+	char *hex_data;
+	int p1, p2;
+
+	parcel_init(rilp);
+	parcel_w_int32(rilp, CMD_UPDATE_BINARY);
+	parcel_w_int32(rilp, req->fileid);
+
+	g_ril_append_print_buf(gril, "(cmd=0x%02X,efid=0x%04X,",
+				CMD_UPDATE_BINARY, req->fileid);
+
+	if (set_path(gril, req->app_type, rilp, req->fileid,
+			req->path, req->path_len) == FALSE)
+		goto error;
+
+	p1 = req->start >> 8;
+	p2 = req->start & 0xff;
+	hex_data = encode_hex(req->data, req->length, 0);
+
+	parcel_w_int32(rilp, p1);		/* P1 */
+	parcel_w_int32(rilp, p2);		/* P2 */
+	parcel_w_int32(rilp, req->length);	/* P3 (Lc) */
+	parcel_w_string(rilp, hex_data);	/* data */
+	parcel_w_string(rilp, NULL);		/* pin2; only for FDN/BDN */
+	parcel_w_string(rilp, req->aid_str);	/* AID (Application ID) */
+
+	g_ril_append_print_buf(gril,
+				"%s%d,%d,%d,%s,pin2=(null),aid=%s)",
+				print_buf,
+				p1,
+				p2,
+				req->length,
+				hex_data,
+				req->aid_str);
+
+	g_free(hex_data);
+
+	return TRUE;
+
+error:
+	return FALSE;
+}
+
+static int get_sim_record_access_p2(enum req_record_access_mode mode)
+{
+	switch (mode) {
+	case GRIL_REC_ACCESS_MODE_CURRENT:
+		return 4;
+	case GRIL_REC_ACCESS_MODE_ABSOLUTE:
+		return 4;
+	case GRIL_REC_ACCESS_MODE_NEXT:
+		return 2;
+	case GRIL_REC_ACCESS_MODE_PREVIOUS:
+		return 3;
+	}
+
+	return -1;
+}
+
+gboolean g_ril_request_sim_write_record(GRil *gril,
+					const struct req_sim_write_record *req,
+					struct parcel *rilp)
+{
+	char *hex_data;
+	int p2;
+
+	parcel_init(rilp);
+	parcel_w_int32(rilp, CMD_UPDATE_RECORD);
+	parcel_w_int32(rilp, req->fileid);
+
+	g_ril_append_print_buf(gril, "(cmd=0x%02X,efid=0x%04X,",
+				CMD_UPDATE_RECORD, req->fileid);
+
+	if (set_path(gril, req->app_type, rilp, req->fileid,
+			req->path, req->path_len) == FALSE)
+		goto error;
+
+	p2 = get_sim_record_access_p2(req->mode);
+	hex_data = encode_hex(req->data, req->length, 0);
+
+	parcel_w_int32(rilp, req->record);	/* P1 */
+	parcel_w_int32(rilp, p2);		/* P2 (access mode) */
+	parcel_w_int32(rilp, req->length);	/* P3 (Lc) */
+	parcel_w_string(rilp, hex_data);	/* data */
+	parcel_w_string(rilp, NULL);		/* pin2; only for FDN/BDN */
+	parcel_w_string(rilp, req->aid_str);	/* AID (Application ID) */
+
+	g_ril_append_print_buf(gril,
+				"%s%d,%d,%d,%s,pin2=(null),aid=%s)",
+				print_buf,
+				req->record,
+				p2,
+				req->length,
+				hex_data,
+				req->aid_str);
+
+	g_free(hex_data);
 
 	return TRUE;
 
