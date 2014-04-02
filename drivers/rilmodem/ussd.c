@@ -51,19 +51,32 @@ struct ussd_data {
 	GRil *ril;
 };
 
-static void ril_ussd_cb(struct ril_msg *message, gpointer user_data)
+static gboolean request_success(gpointer data)
 {
-	struct cb_data *cbd = user_data;
-	struct ofono_ussd *ussd = cbd->user;
-	struct ussd_data *ud = ofono_ussd_get_data(ussd);
+	struct cb_data *cbd = data;
 	ofono_ussd_cb_t cb = cbd->cb;
 
-	if (message->error == RIL_E_SUCCESS) {
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	g_free(cbd);
+
+	return FALSE;
+}
+
+static void ril_ussd_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_ussd *ussd = user_data;
+	struct ussd_data *ud = ofono_ussd_get_data(ussd);
+
+	/*
+	 * We fake an ON_USSD event if there was an error sending the request,
+	 * as core will be waiting for one to respond to the Initiate() call.
+	 * Note that we already made the callback (see ril_ussd_request()).
+	 */
+	if (message->error == RIL_E_SUCCESS)
 		g_ril_print_response_no_args(ud->ril, message);
-		CALLBACK_WITH_SUCCESS(cb, cbd->data);
-	} else {
-		CALLBACK_WITH_FAILURE(cb, cbd->data);
-	}
+	else
+		ofono_ussd_notify(ussd, OFONO_USSD_STATUS_NOT_SUPPORTED,
+					0, NULL, 0);
 }
 
 static void ril_ussd_request(struct ofono_ussd *ussd, int dcs,
@@ -93,8 +106,8 @@ static void ril_ussd_request(struct ofono_ussd *ussd, int dcs,
 							&rilp);
 
 				ret = g_ril_send(ud->ril, RIL_REQUEST_SEND_USSD,
-							&rilp, ril_ussd_cb, cbd,
-							g_free);
+							&rilp, ril_ussd_cb,
+							ussd, NULL);
 			}
 
 			g_free(unpacked_buf);
@@ -104,9 +117,18 @@ static void ril_ussd_request(struct ofono_ussd *ussd, int dcs,
 		}
 	}
 
+	/*
+	 * We do not wait for the SEND_USSD reply to do the callback, as some
+	 * networks send it after sending one or more ON_USSD events. From the
+	 * ofono core perspective, Initiate() does not return until one ON_USSD
+	 * event is received: making here a successful callback just makes the
+	 * core wait for that event.
+	 */
 	if (ret <= 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, data);
+	} else {
+		g_idle_add(request_success, cbd);
 	}
 }
 static void ril_ussd_cancel_cb(struct ril_msg *message, gpointer user_data)
