@@ -2953,7 +2953,7 @@ static void provision_contexts(struct ofono_gprs *gprs, const char *mcc,
 	int count;
 	int i;
 
-	if (__ofono_gprs_provision_get_settings(mcc, mnc, spn,
+	if (__ofono_gprs_provision_get_settings(mcc, mnc, spn, gprs->imsi,
 						&settings, &count) == FALSE) {
 		ofono_warn("Provisioning failed");
 		return;

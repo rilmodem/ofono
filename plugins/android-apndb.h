@@ -4,6 +4,7 @@
  *
  *  Copyright (C) 2008-2011  Intel Corporation. All rights reserved.
  *                2013 Simon Busch <morphis@gravedo.de>
+ *  Copyright (C) 2014 Canonical Ltd.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -20,7 +21,13 @@
  *
  */
 
+struct apndb_provision_data {
+	struct ofono_gprs_provision_data gprs_data;
+	gboolean mvno;
+};
+
 void android_apndb_ap_free(gpointer data);
 
 GSList *android_apndb_lookup_apn(const char *mcc, const char *mnc,
-			gboolean allow_duplicates, GError **error);
+			const char *spn, const char *imsi,
+			gboolean *mvno_found, GError **error);

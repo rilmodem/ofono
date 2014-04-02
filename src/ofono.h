@@ -494,6 +494,7 @@ void __ofono_nettime_info_received(struct ofono_modem *modem,
 #include <ofono/gprs-provision.h>
 ofono_bool_t __ofono_gprs_provision_get_settings(const char *mcc,
 				const char *mnc, const char *spn,
+				const char *imsi,
 				struct ofono_gprs_provision_data **settings,
 				int *count);
 void __ofono_gprs_provision_free_settings(
