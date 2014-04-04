@@ -302,6 +302,8 @@ void ril_post_sim(struct ofono_modem *modem)
 		ofono_message_waiting_register(mw);
 
 	ofono_call_forwarding_create(modem, ril->vendor, RILMODEM, ril->modem);
+
+	ofono_phonebook_create(modem, ril->vendor, RILMODEM, modem);
 }
 
 void ril_post_online(struct ofono_modem *modem)
