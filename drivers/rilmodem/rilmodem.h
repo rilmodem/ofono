@@ -66,3 +66,6 @@ extern void ril_radio_settings_exit(void);
 
 extern void ril_call_barring_init(void);
 extern void ril_call_barring_exit(void);
+
+extern void ril_phonebook_init(void);
+extern void ril_phonebook_exit(void);
