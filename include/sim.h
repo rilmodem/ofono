@@ -104,6 +104,11 @@ typedef void (*ofono_sim_state_event_cb_t)(enum ofono_sim_state new_state,
 typedef void (*ofono_sim_file_read_cb_t)(int ok, int total_length, int record,
 					const unsigned char *data,
 					int record_length, void *userdata);
+
+typedef void (*ofono_sim_read_info_cb_t)(int ok, unsigned char file_status,
+					int total_length, int record_length,
+					void *userdata);
+
 typedef void (*ofono_sim_file_changed_cb_t)(int id, void *userdata);
 
 typedef void (*ofono_sim_file_write_cb_t)(int ok, void *userdata);
@@ -220,7 +225,8 @@ void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted);
 struct ofono_sim_context *ofono_sim_context_create(struct ofono_sim *sim);
 void ofono_sim_context_free(struct ofono_sim_context *context);
 
-/* This will queue an operation to read all available records with id from the
+/*
+ * This will queue an operation to read all available records with id from the
  * SIM.  Callback cb will be called every time a record has been read, or once
  * if an error has occurred.  For transparent files, the callback will only
  * be called once.
@@ -230,6 +236,22 @@ void ofono_sim_context_free(struct ofono_sim_context *context);
 int ofono_sim_read(struct ofono_sim_context *context, int id,
 			enum ofono_sim_file_structure expected,
 			ofono_sim_file_read_cb_t cb, void *data);
+
+int ofono_sim_read_path(struct ofono_sim_context *context, int id,
+			enum ofono_sim_file_structure expected_type,
+			const unsigned char *path, unsigned int path_len,
+			ofono_sim_file_read_cb_t cb, void *data);
+
+int ofono_sim_read_info(struct ofono_sim_context *context, int id,
+			enum ofono_sim_file_structure expected_type,
+			const unsigned char *path, unsigned int pth_len,
+			ofono_sim_read_info_cb_t cb, void *data);
+
+int ofono_sim_read_record(struct ofono_sim_context *context, int id,
+				enum ofono_sim_file_structure expected_type,
+				int record, int record_length,
+				const unsigned char *path, unsigned int pth_len,
+				ofono_sim_file_read_cb_t cb, void *data);
 
 int ofono_sim_write(struct ofono_sim_context *context, int id,
 			ofono_sim_file_write_cb_t cb,
