@@ -774,7 +774,8 @@ static void append_context_properties(struct pri_context *ctx,
 	ofono_dbus_dict_append(dict, "Password", DBUS_TYPE_STRING,
 				&strvalue);
 
-	if (ctx->message_center != NULL) {
+	if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS ||
+		(ctx->message_center && strlen(ctx->message_center) > 0)) {
 		strvalue = ctx->message_proxy;
 		ofono_dbus_dict_append(dict, "MessageProxy",
 					DBUS_TYPE_STRING, &strvalue);
@@ -1725,7 +1726,9 @@ static void write_context_settings(struct ofono_gprs *gprs,
 	g_key_file_set_string(gprs->settings, context->key, "Protocol",
 				gprs_proto_to_string(context->context.proto));
 
-	if (context->message_center != NULL) {
+	if (context->type == OFONO_GPRS_CONTEXT_TYPE_MMS ||
+		(context->message_center && strlen(context->message_center) > 0)) {
+
 		g_key_file_set_string(gprs->settings, context->key,
 					"MessageProxy",
 					context->message_proxy);
