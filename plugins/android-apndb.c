@@ -31,6 +31,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include <glib.h>
@@ -359,10 +360,10 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 	if (password != NULL)
 		ap->gprs_data.password = g_strdup(password);
 
-	if (mmscenter != NULL)
+	if (mmscenter != NULL && strlen(mmscenter) > 0)
 		ap->gprs_data.message_center = g_strdup(mmscenter);
 
-	if (mmsproxy != NULL) {
+	if (mmsproxy != NULL && strlen(mmsproxy) > 0) {
 		char *tmp = android_apndb_sanitize_ipv4_address(mmsproxy);
 		if (tmp != NULL)
 			mmsproxy = tmp;
@@ -409,12 +410,16 @@ static gboolean android_apndb_parse(const GMarkupParser *parser,
 	int fd;
 	GMarkupParseContext *context;
 	gboolean ret;
+	const char *apndb_path;
 
-	fd = open(ANDROID_APN_DATABASE, O_RDONLY);
+	if ((apndb_path = getenv("OFONO_APNDB_PATH")) == NULL)
+		apndb_path = ANDROID_APN_DATABASE;
+
+	fd = open(apndb_path, O_RDONLY);
 	if (fd < 0) {
 		g_set_error(error, G_FILE_ERROR,
 				g_file_error_from_errno(errno),
-				"open(%s) failed: %s", ANDROID_APN_DATABASE,
+				"open(%s) failed: %s", apndb_path,
 				g_strerror(errno));
 		return FALSE;
 	}
@@ -423,7 +428,7 @@ static gboolean android_apndb_parse(const GMarkupParser *parser,
 		close(fd);
 		g_set_error(error, G_FILE_ERROR,
 				g_file_error_from_errno(errno),
-				"fstat(%s) failed: %s", ANDROID_APN_DATABASE,
+				"fstat(%s) failed: %s", apndb_path,
 				g_strerror(errno));
 		return FALSE;
 	}
@@ -433,7 +438,7 @@ static gboolean android_apndb_parse(const GMarkupParser *parser,
 		close(fd);
 		g_set_error(error, G_FILE_ERROR,
 				g_file_error_from_errno(errno),
-				"mmap(%s) failed: %s", ANDROID_APN_DATABASE,
+				"mmap(%s) failed: %s", apndb_path,
 				g_strerror(errno));
 		return FALSE;
 	}
