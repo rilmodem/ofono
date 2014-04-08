@@ -63,6 +63,16 @@ struct get_preferred_network_test {
 	const struct ril_msg msg;
 };
 
+struct query_facility_lock_test {
+	int status;
+	const struct ril_msg msg;
+};
+
+struct set_facility_lock_test {
+	int retries;
+	const struct ril_msg msg;
+};
+
 static const struct ril_msg reply_data_call_invalid_1 = {
 	.buf = "",
 	.buf_len = 0,
@@ -1507,6 +1517,65 @@ static const get_preferred_network_test
 	}
 };
 
+/*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_QUERY_FACILITY_LOCK reply with the following parameters:
+ *
+ * {0}
+ */
+static const guchar reply_query_facility_lock_valid_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static const struct query_facility_lock_test
+				reply_query_facility_lock_valid_1 = {
+	.status = 0,
+	.msg = {
+		.buf = (gchar *) reply_query_facility_lock_valid_parcel1,
+		.buf_len = sizeof(reply_query_facility_lock_valid_parcel1),
+		.unsolicited = FALSE,
+		.req = RIL_REQUEST_QUERY_FACILITY_LOCK,
+		.serial_no = 0,
+		.error = 0,
+	}
+};
+
+/*
+ * The following structure contains test data for a valid
+ * RIL_REQUEST_SET_FACILITY_LOCK reply with no parameters.
+ */
+static const struct set_facility_lock_test reply_set_facility_lock_valid_1 = {
+	.retries = -1,
+	.msg = {
+		.buf = NULL,
+		.buf_len = 0,
+		.unsolicited = FALSE,
+		.req = RIL_REQUEST_SET_FACILITY_LOCK,
+		.serial_no = 0,
+		.error = 0,
+	}
+};
+
+/*
+ * The following structure contains test data for a valid
+ * RIL_REQUEST_SET_FACILITY_LOCK reply with parameter {2}
+ */
+static const guchar reply_set_facility_lock_valid_parcel2[] = {
+	0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00
+};
+
+static const struct set_facility_lock_test reply_set_facility_lock_valid_2 = {
+	.retries = 2,
+	.msg = {
+		.buf = (gchar *) reply_set_facility_lock_valid_parcel2,
+		.buf_len = sizeof(reply_set_facility_lock_valid_parcel2),
+		.unsolicited = FALSE,
+		.req = RIL_REQUEST_SET_FACILITY_LOCK,
+		.serial_no = 0,
+		.error = 0,
+	}
+};
+
 static void test_reply_data_call_invalid(gconstpointer data)
 {
 	struct ofono_error error;
@@ -1721,6 +1790,22 @@ static void test_reply_get_preferred_network_type_valid(gconstpointer data)
 		g_ril_reply_parse_get_preferred_network_type(NULL, &test->msg);
 
 	g_assert(type == test->preferred);
+}
+
+static void test_reply_query_facility_lock_valid(gconstpointer data)
+{
+	const struct query_facility_lock_test *test = data;
+	int status = g_ril_reply_parse_query_facility_lock(NULL, &test->msg);
+
+	g_assert(status == test->status);
+}
+
+static void test_reply_set_facility_lock_valid(gconstpointer data)
+{
+	const struct set_facility_lock_test *test = data;
+	int retries = g_ril_reply_parse_set_facility_lock(NULL, &test->msg);
+
+	g_assert(retries == test->retries);
 }
 #endif
 
@@ -1990,6 +2075,21 @@ int main(int argc, char **argv)
 				"valid GET_PREFERRED_NETWORK_TYPE Test 1",
 				&reply_get_preferred_network_type_valid_1,
 				test_reply_get_preferred_network_type_valid);
+
+	g_test_add_data_func("/testgrilreply/call-barring: "
+				"valid QUERY_FACILITY_LOCK Test 1",
+				&reply_query_facility_lock_valid_1,
+				test_reply_query_facility_lock_valid);
+
+	g_test_add_data_func("/testgrilreply/call-barring: "
+				"valid SET_FACILITY_LOCK Test 1",
+				&reply_set_facility_lock_valid_1,
+				test_reply_set_facility_lock_valid);
+
+	g_test_add_data_func("/testgrilreply/call-barring: "
+				"valid SET_FACILITY_LOCK Test 2",
+				&reply_set_facility_lock_valid_2,
+				test_reply_set_facility_lock_valid);
 
 #endif
 

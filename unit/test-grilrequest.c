@@ -687,6 +687,84 @@ static const struct request_test_data
 	.parcel_size = sizeof(req_set_preferred_network_type_valid_1),
 };
 
+/* query_facility_lock tests */
+
+struct request_test_query_facility_lock_data {
+	const char *facility;
+	int services;
+	const guchar *parcel_data;
+	gsize parcel_size;
+};
+
+static const guchar req_query_facility_lock_valid_1[] = {
+	0x04, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x41, 0x00, 0x4f, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x30, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff
+};
+
+static const struct request_test_query_facility_lock_data
+		query_facility_lock_valid_test_1 = {
+	.facility = "AO",
+	.services = SERVICE_CLASS_NONE,
+	.parcel_data = req_query_facility_lock_valid_1,
+	.parcel_size = sizeof(req_query_facility_lock_valid_1),
+};
+
+/* set_facility_lock tests */
+
+struct request_test_set_facility_lock_data {
+	const char *facility;
+	int enable;
+	const char *passwd;
+	int services;
+	const guchar *parcel_data;
+	gsize parcel_size;
+};
+
+static const guchar req_set_facility_lock_valid_1[] = {
+	0x05, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x4f, 0x00, 0x49, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x30, 0x00, 0x00, 0x00,
+	0x04, 0x00, 0x00, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x30, 0x00, 0x00, 0x00,
+	0xff, 0xff, 0xff, 0xff
+};
+
+static const struct request_test_set_facility_lock_data
+		set_facility_lock_valid_test_1 = {
+	.facility = "OI",
+	.enable = 0,
+	.passwd = "0000",
+	.services = SERVICE_CLASS_NONE,
+	.parcel_data = req_set_facility_lock_valid_1,
+	.parcel_size = sizeof(req_set_facility_lock_valid_1),
+};
+
+/* change_barring_password tests */
+
+struct request_test_change_barring_password_data {
+	const char *facility;
+	const char *old_passwd;
+	const char *new_passwd;
+	const guchar *parcel_data;
+	gsize parcel_size;
+};
+
+static const guchar req_change_barring_password_valid_1[] = {
+	0x03, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x41, 0x00, 0x42, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x31, 0x00, 0x31, 0x00,
+	0x31, 0x00, 0x31, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00,
+	0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static const struct request_test_change_barring_password_data
+		change_barring_password_valid_test_1 = {
+	.facility = "AB",
+	.old_passwd = "1111",
+	.new_passwd = "0000",
+	.parcel_data = req_change_barring_password_valid_1,
+	.parcel_size = sizeof(req_change_barring_password_valid_1),
+};
+
 /*
  * The following hexadecimal data represents a serialized Binder parcel
  * instance containing a valid RIL_REQUEST_RADIO_POWER 'OFF' message.
@@ -1160,6 +1238,51 @@ static void test_request_set_preferred_network_type(gconstpointer data)
 
 	parcel_free(&rilp);
 }
+
+static void test_request_query_facility_lock(gconstpointer data)
+{
+	const struct request_test_query_facility_lock_data *test_data = data;
+	struct parcel rilp;
+
+	g_ril_request_query_facility_lock(NULL, test_data->facility, "",
+						test_data->services, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+				test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
+static void test_request_set_facility_lock(gconstpointer data)
+{
+	const struct request_test_set_facility_lock_data *test_data = data;
+	struct parcel rilp;
+
+	g_ril_request_set_facility_lock(NULL, test_data->facility,
+					test_data->enable, test_data->passwd,
+					test_data->services, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+				test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
+static void test_request_change_barring_password(gconstpointer data)
+{
+	const struct request_test_change_barring_password_data *test_data =
+									data;
+	struct parcel rilp;
+
+	g_ril_request_change_barring_password(NULL, test_data->facility,
+						test_data->old_passwd,
+						test_data->new_passwd, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+				test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
 #endif
 
 int main(int argc, char **argv)
@@ -1383,6 +1506,21 @@ int main(int argc, char **argv)
 				"valid SET_PREFERRED_NETWORK_TYPE Test 1",
 				&set_preferred_network_type_valid_test_1,
 				test_request_set_preferred_network_type);
+
+	g_test_add_data_func("/testgrilrequest/call-barring: "
+				"valid QUERY_FACILITY_LOCK Test 1",
+				&query_facility_lock_valid_test_1,
+				test_request_query_facility_lock);
+
+	g_test_add_data_func("/testgrilrequest/call-barring: "
+				"valid SET_FACILITY_LOCK Test 1",
+				&set_facility_lock_valid_test_1,
+				test_request_set_facility_lock);
+
+	g_test_add_data_func("/testgrilrequest/call-barring: "
+				"valid CHANGE_BARRING_PASSWORD Test 1",
+				&change_barring_password_valid_test_1,
+				test_request_change_barring_password);
 
 #endif
 	return g_test_run();
