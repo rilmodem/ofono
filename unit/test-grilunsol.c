@@ -42,6 +42,14 @@
  * once more tests are added.
  */
 
+/*
+ * As all our architectures are little-endian except for
+ * PowerPC, and the Binder wire-format differs slightly
+ * depending on endian-ness, the following guards against test
+ * failures when run on PowerPC.
+ */
+#if BYTE_ORDER == LITTLE_ENDIAN
+
 typedef struct signal_strength_test signal_strength_test;
 struct signal_strength_test {
 	int strength;
@@ -303,6 +311,7 @@ static void test_unsol_on_ussd_valid(gconstpointer data)
 	g_assert(unsol != NULL);
 	g_ril_unsol_free_ussd(unsol);
 }
+#endif
 
 int main(int argc, char **argv)
 {
@@ -315,6 +324,7 @@ int main(int argc, char **argv)
  * failures when run on PowerPC.
  */
 #if BYTE_ORDER == LITTLE_ENDIAN
+
 	g_test_add_data_func("/testgrilunsol/gprs-context: "
 				"invalid DATA_CALL_LIST_CHANGED Test 1",
 				&unsol_data_call_list_changed_invalid_1,

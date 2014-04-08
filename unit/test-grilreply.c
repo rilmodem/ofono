@@ -42,6 +42,14 @@
  * once more tests are added.
  */
 
+/*
+ * As all our architectures are little-endian except for
+ * PowerPC, and the Binder wire-format differs slightly
+ * depending on endian-ness, the following guards against test
+ * failures when run on PowerPC.
+ */
+#if BYTE_ORDER == LITTLE_ENDIAN
+
 typedef struct reg_state_test reg_state_test;
 struct reg_state_test {
 	int status;
@@ -49,6 +57,7 @@ struct reg_state_test {
 	const struct ril_msg msg;
 };
 
+typedef struct get_preferred_network_test get_preferred_network_test;
 struct get_preferred_network_test {
 	int preferred;
 	const struct ril_msg msg;
@@ -1484,7 +1493,7 @@ static const guchar reply_get_preferred_network_type_valid_parcel1[] = {
 	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-static const struct get_preferred_network_test
+static const get_preferred_network_test
 		reply_get_preferred_network_type_valid_1 = {
 	.preferred = 0,
 	.msg = {
@@ -1707,12 +1716,13 @@ static void test_reply_get_clir_valid(gconstpointer data)
 
 static void test_reply_get_preferred_network_type_valid(gconstpointer data)
 {
-	const struct get_preferred_network_test *test = data;
+	const get_preferred_network_test *test = data;
 	int type =
 		g_ril_reply_parse_get_preferred_network_type(NULL, &test->msg);
 
 	g_assert(type == test->preferred);
 }
+#endif
 
 int main(int argc, char **argv)
 {
