@@ -36,12 +36,18 @@ typedef void (*ofono_handsfree_cb_t)(const struct ofono_error *error,
 typedef void (*ofono_handsfree_phone_cb_t)(const struct ofono_error *error,
 					const struct ofono_phone_number *number,
 					void *data);
+typedef void (*ofono_handsfree_cnum_query_cb_t)(const struct ofono_error *error,
+				int total,
+				const struct ofono_phone_number *numbers,
+				void *data);
 
 struct ofono_handsfree_driver {
 	const char *name;
 	int (*probe)(struct ofono_handsfree *hf, unsigned int vendor,
 			void *data);
 	void (*remove)(struct ofono_handsfree *hf);
+	void (*cnum_query)(struct ofono_handsfree *hf,
+				ofono_handsfree_cnum_query_cb_t cb, void *data);
 	void (*request_phone_number) (struct ofono_handsfree *hf,
 					ofono_handsfree_phone_cb_t cb,
 					void *data);
