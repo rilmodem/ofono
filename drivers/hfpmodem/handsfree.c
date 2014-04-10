@@ -43,8 +43,6 @@
 #include "hfp.h"
 #include "slc.h"
 
-#define OFONO_HANDSFREE_CNUM_SERVICE_VOICE 4
-
 static const char *binp_prefix[] = { "+BINP:", NULL };
 static const char *bvra_prefix[] = { "+BVRA:", NULL };
 
@@ -149,18 +147,14 @@ static void cnum_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (num == 0)
 		goto out;
 
-	list = g_new(struct ofono_phone_number, num);
+	list = g_new0(struct ofono_phone_number, num);
 
 	g_at_result_iter_init(&iter, result);
 
 	for (num = 0; g_at_result_iter_next(&iter, "+CNUM:"); ) {
 		const char *number;
-		int len;
 		int service;
 		int type;
-
-		list[num].number[0] = '\0';
-		list[num].type = 129;
 
 		if (!g_at_result_iter_skip_next(&iter))
 			continue;
@@ -177,17 +171,17 @@ static void cnum_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		if (!g_at_result_iter_next_number(&iter, &service))
 			continue;
 
-		if (service == OFONO_HANDSFREE_CNUM_SERVICE_VOICE) {
-			len = strlen(number);
-			if (len > OFONO_MAX_PHONE_NUMBER_LENGTH)
-				len = OFONO_MAX_PHONE_NUMBER_LENGTH;
-			strncpy(list[num].number, number, len);
-			list[num].number[len] = '\0';
-			list[num].type = type;
+		/* We are only interested in Voice services */
+		if (service != 4)
+			continue;
 
-			DBG("cnum_notify:%s", list[num].number);
-			num++;
-		}
+		strncpy(list[num].number, number,
+				OFONO_MAX_PHONE_NUMBER_LENGTH);
+		list[num].number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
+		list[num].type = type;
+
+		DBG("cnum_notify:%s", list[num].number);
+		num++;
 	}
 
 out:
