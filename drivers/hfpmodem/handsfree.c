@@ -191,8 +191,8 @@ out:
 
 }
 
-static void at_cnum_query(struct ofono_handsfree *hf,
-			ofono_handsfree_cnum_query_cb_t cb, void *data)
+static void hfp_cnum_query(struct ofono_handsfree *hf,
+				ofono_handsfree_cnum_query_cb_t cb, void *data)
 {
 	struct hf_data *hd = ofono_handsfree_get_data(hf);
 	struct cb_data *cbd = cb_data_new(cb, data);
@@ -364,7 +364,7 @@ static struct ofono_handsfree_driver driver = {
 	.name			= "hfpmodem",
 	.probe			= hfp_handsfree_probe,
 	.remove			= hfp_handsfree_remove,
-	.cnum_query		= at_cnum_query,
+	.cnum_query		= hfp_cnum_query,
 	.request_phone_number	= hfp_request_phone_number,
 	.voice_recognition	= hfp_voice_recognition,
 	.disable_nrec		= hfp_disable_nrec,
