@@ -181,11 +181,6 @@ void ofono_handsfree_battchg_notify(struct ofono_handsfree *hf,
 					&level);
 }
 
-static gboolean ofono_handsfree_is_busy(struct ofono_handsfree *hf)
-{
-	return hf->pending ? TRUE : FALSE;
-}
-
 static void append_subscriber_numbers(GSList *subscriber_numbers,
 						DBusMessageIter *iter)
 {
@@ -321,7 +316,7 @@ static DBusMessage *handsfree_get_properties(DBusConnection *conn,
 {
 	struct ofono_handsfree *hf = data;
 
-	if (ofono_handsfree_is_busy(hf))
+	if (hf->pending != NULL)
 		return __ofono_error_busy(msg);
 
 	if (hf->flags & HANDSFREE_FLAG_CACHED)
