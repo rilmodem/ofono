@@ -298,17 +298,18 @@ out:
 
 static void query_cnum(struct ofono_handsfree *hf)
 {
-	if (hf->driver->cnum_query == NULL) {
-		if (hf->pending) {
-			DBusMessage *reply =
-				generate_get_properties_reply(hf, hf->pending);
-			__ofono_dbus_pending_reply(&hf->pending, reply);
-		}
+	DBusMessage *reply;
 
+	if (hf->driver->cnum_query != NULL) {
+		hf->driver->cnum_query(hf, hf_cnum_callback, hf);
 		return;
 	}
 
-	hf->driver->cnum_query(hf, hf_cnum_callback, hf);
+	if (hf->pending == NULL)
+		return;
+
+	reply = generate_get_properties_reply(hf, hf->pending);
+	__ofono_dbus_pending_reply(&hf->pending, reply);
 }
 
 static DBusMessage *handsfree_get_properties(DBusConnection *conn,
