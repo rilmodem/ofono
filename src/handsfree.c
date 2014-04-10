@@ -191,7 +191,6 @@ static void ofono_append_subscriber_numbers(GSList *subscriber_numbers,
 {
 	DBusMessageIter entry;
 	DBusMessageIter variant, array;
-	int i;
 	GSList *l;
 	const char *subscriber_number_string;
 	char arraysig[3];
@@ -210,7 +209,7 @@ static void ofono_append_subscriber_numbers(GSList *subscriber_numbers,
 	dbus_message_iter_open_container(&variant, DBUS_TYPE_ARRAY,
 					DBUS_TYPE_STRING_AS_STRING, &array);
 
-	for (i = 0, l = subscriber_numbers; l; l = l->next, i++) {
+	for (l = subscriber_numbers; l; l = l->next) {
 		subscriber_number_string = phone_number_to_string(l->data);
 		dbus_message_iter_append_basic(&array, DBUS_TYPE_STRING,
 						&subscriber_number_string);
