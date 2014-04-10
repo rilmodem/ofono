@@ -187,7 +187,7 @@ static gboolean ofono_handsfree_is_busy(struct ofono_handsfree *hf)
 }
 
 static void ofono_append_subscriber_numbers(GSList *subscriber_numbers,
-				DBusMessageIter *iter)
+						DBusMessageIter *iter)
 {
 	DBusMessageIter entry;
 	DBusMessageIter variant, array;
@@ -213,7 +213,7 @@ static void ofono_append_subscriber_numbers(GSList *subscriber_numbers,
 	for (i = 0, l = subscriber_numbers; l; l = l->next, i++) {
 		subscriber_number_string = phone_number_to_string(l->data);
 		dbus_message_iter_append_basic(&array, DBUS_TYPE_STRING,
-					&subscriber_number_string);
+						&subscriber_number_string);
 	}
 
 	dbus_message_iter_close_container(&variant, &array);
@@ -297,8 +297,8 @@ out:
 	hf->flags |= HANDSFREE_FLAG_CACHED;
 
 	if (hf->pending) {
-		DBusMessage *reply = generate_get_properties_reply(
-							hf, hf->pending);
+		DBusMessage *reply =
+			generate_get_properties_reply(hf, hf->pending);
 		__ofono_dbus_pending_reply(&hf->pending, reply);
 	}
 }
@@ -307,10 +307,11 @@ static void query_cnum(struct ofono_handsfree *hf)
 {
 	if (hf->driver->cnum_query == NULL) {
 		if (hf->pending) {
-			DBusMessage *reply = generate_get_properties_reply(
-							hf, hf->pending);
+			DBusMessage *reply =
+				generate_get_properties_reply(hf, hf->pending);
 			__ofono_dbus_pending_reply(&hf->pending, reply);
 		}
+
 		return;
 	}
 
