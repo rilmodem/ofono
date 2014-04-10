@@ -186,7 +186,7 @@ static gboolean ofono_handsfree_is_busy(struct ofono_handsfree *hf)
 	return hf->pending ? TRUE : FALSE;
 }
 
-static void ofono_append_subscriber_numbers(GSList *subscriber_numbers,
+static void append_subscriber_numbers(GSList *subscriber_numbers,
 						DBusMessageIter *iter)
 {
 	DBusMessageIter entry;
@@ -260,7 +260,7 @@ static DBusMessage *generate_get_properties_reply(struct ofono_handsfree *hf,
 				&hf->battchg);
 
 	if (hf->subscriber_numbers)
-		ofono_append_subscriber_numbers(hf->subscriber_numbers, &dict);
+		append_subscriber_numbers(hf->subscriber_numbers, &dict);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
