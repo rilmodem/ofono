@@ -185,6 +185,12 @@ const char *ril_radio_state_to_string(int radio_state)
 		return "OFF";
 	case RADIO_STATE_UNAVAILABLE:
 		return "UNAVAILABLE";
+	case RADIO_STATE_SIM_NOT_READY:
+		return "SIM_NOT_READY";
+	case RADIO_STATE_SIM_LOCKED_OR_ABSENT:
+		return "SIM_LOCKED_OR_ABSENT";
+	case RADIO_STATE_SIM_READY:
+		return "SIM_READY";
 	case RADIO_STATE_ON:
 		return "ON";
 	default:

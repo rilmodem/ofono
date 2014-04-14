@@ -700,22 +700,25 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 		modem_change_state(modem, MODEM_STATE_PRE_SIM);
 		break;
 	case OFONO_SIM_STATE_READY:
-		modem_change_state(modem, MODEM_STATE_OFFLINE);
+		/* Avoid state regressions */
+		if (modem->modem_state != MODEM_STATE_ONLINE) {
+			modem_change_state(modem, MODEM_STATE_OFFLINE);
 
-		/*
-		 * If we don't have the set_online method, also proceed
-		 * straight to the online state
-		 */
-		if (modem->driver->set_online == NULL)
-			set_online(modem, TRUE);
+			/*
+			 * If we don't have the set_online method, also proceed
+			 * straight to the online state
+			 */
+			if (modem->driver->set_online == NULL)
+				set_online(modem, TRUE);
 
-		if (modem->online == TRUE)
-			modem_change_state(modem, MODEM_STATE_ONLINE);
-		else if (modem->get_online)
-			modem->driver->set_online(modem, 1, common_online_cb,
-							modem);
+			if (modem->online == TRUE)
+				modem_change_state(modem, MODEM_STATE_ONLINE);
+			else if (modem->get_online)
+				modem->driver->set_online(modem, 1,
+						common_online_cb, modem);
 
-		modem->get_online = FALSE;
+			modem->get_online = FALSE;
+		}
 
 		break;
 	}

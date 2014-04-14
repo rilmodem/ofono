@@ -55,12 +55,13 @@ static void ril_csca_set_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_sms_sca_set_cb_t cb = cbd->cb;
+	struct sms_data *sd = cbd->user;
 
 	if (message->error == RIL_E_SUCCESS) {
 		CALLBACK_WITH_SUCCESS(cb, cbd->data);
 	} else {
 		ofono_error("%s RILD reply failure: %s",
-			ril_request_id_to_string(message->req),
+			g_ril_request_id_to_string(sd->ril, message->req),
 			ril_error_to_string(message->error));
 		CALLBACK_WITH_FAILURE(cb, cbd->data);
 	}
@@ -93,8 +94,8 @@ static void ril_csca_query_cb(struct ril_msg *message, gpointer user_data)
 
 	if (message->error != RIL_E_SUCCESS) {
 		ofono_error("%s RILD reply failure: %s",
-				ril_request_id_to_string(message->req),
-				ril_error_to_string(message->error));
+			g_ril_request_id_to_string(sd->ril, message->req),
+			ril_error_to_string(message->error));
 		CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
 		return;
 	}
