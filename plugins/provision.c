@@ -39,7 +39,7 @@
 
 static int provision_get_settings(const char *mcc, const char *mnc,
 				const char *spn,
-				const char *imsi,
+				const char *imsi, const char *gid1,
 				struct ofono_gprs_provision_data **settings,
 				int *count)
 {
@@ -49,8 +49,8 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 	int ap_count;
 	int i;
 
-	ofono_info("Provisioning for MCC %s, MNC %s, SPN '%s', IMSI '%s'", mcc,
-			mnc, spn, imsi);
+	ofono_info("Provisioning for MCC %s, MNC %s, SPN '%s', IMSI '%s', "
+			"GID1 '%s'", mcc, mnc, spn, imsi, gid1);
 
 	/*
 	 * TODO: review with upstream.  Default behavior was to

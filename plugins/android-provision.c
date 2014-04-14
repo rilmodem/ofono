@@ -114,7 +114,7 @@ done:
 
 static int provision_get_settings(const char *mcc, const char *mnc,
 				const char *spn,
-				const char *imsi,
+				const char *imsi, const char *gid1,
 				struct ofono_gprs_provision_data **settings,
 				int *count)
 {
@@ -126,11 +126,11 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 	unsigned int ap_count;
 	unsigned int i;
 
-	DBG("Provisioning for MCC %s, MNC %s, SPN %s imsi %s", mcc, mnc,
-		spn, imsi);
+	ofono_info("Provisioning for MCC %s, MNC %s, SPN '%s', IMSI '%s', "
+			"GID1 '%s'", mcc, mnc, spn, imsi, gid1);
 
-	apns = android_apndb_lookup_apn(mcc, mnc, spn, imsi, &mvno_found,
-					&error);
+	apns = android_apndb_lookup_apn(mcc, mnc, spn, imsi, gid1,
+					&mvno_found, &error);
 	if (apns == NULL) {
 		if (error != NULL) {
 			ofono_error("%s: apndb_lookup error -%s for mcc %s"

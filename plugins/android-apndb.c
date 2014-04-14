@@ -54,6 +54,7 @@ struct apndb_data {
 	const char *match_mnc;
 	const char *match_imsi;
 	const char *match_spn;
+	const char *match_gid1;
 	GSList *apns;
 	gboolean allow_duplicates;
 	gboolean mvno_found;
@@ -325,9 +326,18 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 			}
 
 		} else if (g_str_equal(mvnotype, "gid")) {
-			ofono_warn("%s: APN %s is unsupported mvno_type 'gid'",
-					__func__, carrier);
-			return;
+			int match_len = strlen(mvnomatch);
+
+			DBG("APN %s is mvno_type 'gid'", carrier);
+
+			/* Check initial part of GID1 against match data */
+			if (g_ascii_strncasecmp(mvnomatch, apndb->match_gid1,
+						match_len) != 0) {
+				DBG("Skipping mvno 'gid' APN %s with"
+					" match_data: %s",
+					carrier, mvnomatch);
+				return;
+			}
 		}
 	}
 
@@ -460,7 +470,7 @@ static gboolean android_apndb_parse(const GMarkupParser *parser,
 }
 
 GSList *android_apndb_lookup_apn(const char *mcc, const char *mnc,
-			const char *spn, const char *imsi,
+			const char *spn, const char *imsi, const char *gid1,
 			gboolean *mvno_found, GError **error)
 {
 	struct apndb_data apndb = { NULL };
@@ -469,6 +479,7 @@ GSList *android_apndb_lookup_apn(const char *mcc, const char *mnc,
 	apndb.match_mnc = mnc;
 	apndb.match_spn = spn;
 	apndb.match_imsi = imsi;
+	apndb.match_gid1 = gid1;
 
 	if (android_apndb_parse(&toplevel_apndb_parser, &apndb,
 				error) == FALSE) {

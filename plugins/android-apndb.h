@@ -29,5 +29,5 @@ struct apndb_provision_data {
 void android_apndb_ap_free(gpointer data);
 
 GSList *android_apndb_lookup_apn(const char *mcc, const char *mnc,
-			const char *spn, const char *imsi,
+			const char *spn, const char *imsi, const char *gid1,
 			gboolean *mvno_found, GError **error);
