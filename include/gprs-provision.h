@@ -43,7 +43,7 @@ struct ofono_gprs_provision_driver {
 	const char *name;
 	int priority;
 	int (*get_settings)(const char *mcc, const char *mnc, const char *spn,
-				const char *imsi,
+				const char *imsi, const char *gid1,
 				struct ofono_gprs_provision_data **settings,
 				int *count);
 };

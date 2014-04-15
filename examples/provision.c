@@ -38,7 +38,7 @@
 
 static int example_provision_get_settings(const char *mcc, const char *mnc,
 				const char *spn,
-				const char *imsi,
+				const char *imsi, const char *gid1,
 				struct ofono_gprs_provision_data **settings,
 				int *count)
 {
@@ -46,8 +46,8 @@ static int example_provision_get_settings(const char *mcc, const char *mnc,
 	*count = 0;
 	*settings = NULL;
 
-	ofono_debug("Finding settings for MCC %s, MNC %s, SPN '%s' IMSI '%s'",
-			mcc, mnc, spn, imsi);
+	ofono_info("Provisioning for MCC %s, MNC %s, SPN '%s', IMSI '%s', "
+			"GID1 '%s'", mcc, mnc, spn, imsi, gid1);
 
 	if (strcmp(mcc, "246") != 0 || strcmp(mnc, "81") != 0 ||
 						g_strcmp0(spn, "oFono") != 0)
