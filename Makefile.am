@@ -725,7 +725,10 @@ unit_tests = unit/test-common unit/test-util unit/test-idmap \
 				unit/test-grilrequest \
 				unit/test-grilreply \
 				unit/test-grilunsol \
-				unit/test-mnclength
+				unit/test-mnclength \
+				unit/test-mtkrequest \
+				unit/test-mtkreply \
+				unit/test-mtkunsol
 
 noinst_PROGRAMS = $(unit_tests) \
 			unit/test-sms-root unit/test-mux unit/test-caif
@@ -794,6 +797,26 @@ unit_test_grilunsol_SOURCES = unit/test-grilunsol.c $(gril_sources) \
 				src/common.c gatchat/ringbuffer.c
 unit_test_grilunsol_LDADD = @GLIB_LIBS@ -ldl
 unit_objects += $(unit_test_grilunsol_OBJECTS)
+
+unit_test_mtkrequest_SOURCES = unit/test-mtkrequest.c $(gril_sources) \
+				drivers/mtkmodem/mtkrequest.c \
+				src/log.c src/util.c src/simutil.c \
+				src/common.c gatchat/ringbuffer.c
+unit_test_mtkrequest_LDADD = @GLIB_LIBS@ -ldl
+unit_objects += $(unit_test_mtkrequest_OBJECTS)
+
+unit_test_mtkreply_SOURCES = unit/test-mtkreply.c $(gril_sources) \
+				src/log.c src/util.c src/simutil.c \
+				src/common.c gatchat/ringbuffer.c
+unit_test_mtkreply_LDADD = @GLIB_LIBS@ -ldl
+unit_objects += $(unit_test_mtkreply_OBJECTS)
+
+unit_test_mtkunsol_SOURCES = unit/test-mtkunsol.c $(gril_sources) \
+				drivers/mtkmodem/mtkunsol.c \
+				src/log.c src/util.c src/simutil.c \
+				src/common.c gatchat/ringbuffer.c
+unit_test_mtkunsol_LDADD = @GLIB_LIBS@ -ldl
+unit_objects += $(unit_test_mtkunsol_OBJECTS)
 
 unit_test_mnclength_SOURCES = unit/test-mnclength.c plugins/mnclength.c \
 				src/log.c src/sim-mnclength.c
