@@ -127,26 +127,6 @@ static gboolean ril_get_status_retry(gpointer user_data)
 	return FALSE;
 }
 
-static void drop_all_data_calls(GRil *gril, int max_cids)
-{
-	int cid;
-
-	for (cid = 1; cid <= max_cids; ++cid) {
-		struct req_deactivate_data_call request;
-		struct parcel rilp;
-		struct ofono_error error;
-
-		request.cid = cid;
-		request.reason = RIL_DEACTIVATE_DATA_CALL_NO_REASON;
-
-		g_ril_request_deactivate_data_call(gril, &request,
-							&rilp, &error);
-
-		g_ril_send(gril, RIL_REQUEST_DEACTIVATE_DATA_CALL,
-				&rilp, NULL, NULL, NULL);
-	}
-}
-
 static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -225,19 +205,11 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 				ril_gprs_state_change, gprs);
 
 		if (reply->max_cids == 0)
-			gd->max_cids = 1;
+			gd->max_cids = RIL_MAX_NUM_ACTIVE_DATA_CALLS;
 		else if (reply->max_cids < RIL_MAX_NUM_ACTIVE_DATA_CALLS)
 			gd->max_cids = reply->max_cids;
 		else
 			gd->max_cids = RIL_MAX_NUM_ACTIVE_DATA_CALLS;
-
-		/*
-		 * We disconnect from previous calls here, which might be needed
-		 * because of a previous ofono abort, as MTK rild does not
-		 * disconnect the calls even after the ril socket is closed.
-		 */
-		if (g_ril_vendor(gd->ril) == OFONO_RIL_VENDOR_MTK)
-			drop_all_data_calls(gd->ril, gd->max_cids);
 
 		DBG("Setting max cids to %d", gd->max_cids);
 		ofono_gprs_set_cid_range(gprs, 1, gd->max_cids);
@@ -315,6 +287,90 @@ void ril_gprs_registration_status(struct ofono_gprs *gprs,
 	}
 }
 
+static void drop_data_call_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_gprs *gprs = user_data;
+	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
+
+	if (message->error == RIL_E_SUCCESS)
+		g_ril_print_response_no_args(gd->ril, message);
+	else
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+
+	if (--(gd->pending_deact_req) == 0)
+		ril_gprs_registration_status(gprs, NULL, NULL);
+}
+
+static int drop_data_call(struct ofono_gprs *gprs, int cid)
+{
+	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
+	struct req_deactivate_data_call request;
+	struct parcel rilp;
+	struct ofono_error error;
+
+	request.cid = cid;
+	request.reason = RIL_DEACTIVATE_DATA_CALL_NO_REASON;
+
+	g_ril_request_deactivate_data_call(gd->ril, &request, &rilp, &error);
+
+	if (g_ril_send(gd->ril, RIL_REQUEST_DEACTIVATE_DATA_CALL,
+			&rilp, drop_data_call_cb, gprs, NULL) == 0) {
+		ofono_error("%s: send failed", __func__);
+		return -1;
+	}
+
+	return 0;
+}
+
+static void get_active_data_calls_cb(struct ril_msg *message,
+					gpointer user_data)
+{
+	struct ofono_gprs *gprs = user_data;
+	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
+	struct unsol_data_call_list *reply = NULL;
+	GSList *iterator;
+	struct data_call *call;
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+		goto end;
+	}
+
+	/* reply can be NULL when there are no existing data calls */
+	reply = g_ril_unsol_parse_data_call_list(gd->ril, message);
+	if (reply == NULL)
+		goto end;
+
+	/*
+	 * We disconnect from previous calls here, which might be needed
+	 * because of a previous ofono abort, as some rild implementations do
+	 * not disconnect the calls even after the ril socket is closed.
+	 */
+	for (iterator = reply->call_list; iterator; iterator = iterator->next) {
+		call = iterator->data;
+		DBG("Standing data call with cid %d", call->cid);
+		if (drop_data_call(gprs, call->cid) == 0)
+			++(gd->pending_deact_req);
+	}
+
+	g_ril_unsol_free_data_call_list(reply);
+
+end:
+	if (gd->pending_deact_req == 0)
+		ril_gprs_registration_status(gprs, NULL, NULL);
+}
+
+static void get_active_data_calls(struct ofono_gprs *gprs)
+{
+	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
+
+	if (g_ril_send(gd->ril, RIL_REQUEST_DATA_CALL_LIST, NULL,
+			get_active_data_calls_cb, gprs, NULL) == 0)
+		ofono_error("%s: send failed", __func__);
+}
+
 void ril_gprs_start(GRil *ril, struct ofono_gprs *gprs,
 			struct ril_gprs_data *gd)
 {
@@ -329,7 +385,7 @@ void ril_gprs_start(GRil *ril, struct ofono_gprs *gprs,
 
 	ofono_gprs_set_data(gprs, gd);
 
-	ril_gprs_registration_status(gprs, NULL, NULL);
+	get_active_data_calls(gprs);
 }
 
 int ril_gprs_probe(struct ofono_gprs *gprs, unsigned int vendor, void *data)
