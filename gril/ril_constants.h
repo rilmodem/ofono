@@ -42,6 +42,22 @@
 #define RIL_E_MODE_NOT_SUPPORTED 13
 #define RIL_E_FDN_CHECK_FAILURE 14
 #define RIL_E_ILLEGAL_SIM_OR_ME 15
+/*
+ * Following error codes are actually Qualcomm-specific, but as they are used by
+ * our reference platform, we consider them valid for vendor
+ * OFONO_RIL_VENDOR_AOSP. The definition comes from cyanogenmod ril.h, which in
+ * turn copied it from codeaurora.
+ */
+#define RIL_E_DIAL_MODIFIED_TO_USSD 17
+#define RIL_E_DIAL_MODIFIED_TO_SS 18
+#define RIL_E_DIAL_MODIFIED_TO_DIAL 19
+#define RIL_E_USSD_MODIFIED_TO_DIAL 20
+#define RIL_E_USSD_MODIFIED_TO_SS 21
+#define RIL_E_USSD_MODIFIED_TO_USSD 22
+#define RIL_E_SS_MODIFIED_TO_DIAL 23
+#define RIL_E_SS_MODIFIED_TO_USSD 24
+#define RIL_E_SS_MODIFIED_TO_SS 25
+#define RIL_E_SUBSCRIPTION_NOT_SUPPORTED 26
 
 /* Preferred network types */
 #define PREF_NET_TYPE_GSM_WCDMA 0

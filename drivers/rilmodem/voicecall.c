@@ -295,7 +295,13 @@ static void rild_cb(struct ril_msg *message, gpointer user_data)
 	ofono_voicecall_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
-	if (message->error == RIL_E_SUCCESS) {
+	/*
+	 * DIAL_MODIFIED_TO_DIAL means redirection. The call we will see when
+	 * polling will have a different called number.
+	 */
+	if (message->error == RIL_E_SUCCESS ||
+			(g_ril_vendor(vd->ril) == OFONO_RIL_VENDOR_AOSP &&
+			message->error == RIL_E_DIAL_MODIFIED_TO_DIAL)) {
 		decode_ril_error(&error, "OK");
 	} else {
 		decode_ril_error(&error, "FAIL");
