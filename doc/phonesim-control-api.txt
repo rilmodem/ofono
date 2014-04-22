@@ -1,0 +1,34 @@
+Phonesim control hierarchy
+
+==========================
+
+Service		org.ofono
+Interface	org.ofono.phonesim.Manager
+Object path	/
+
+Methods		Add(string name, string address, string port)
+
+			Instantiates a new modem in phonesim with the given
+			specifications.
+
+			RemoveAll()
+
+			Removes all modems from phonesim.
+
+			Reset()
+			
+			Removes all modems and instantiates all those modems listed
+			in the configuration file. Equivalent to stopping and
+			restarting the daemon.
+
+Examples
+
+To add a new phonesim modem on the fly do the following:
+
+- Start new phonesim instance
+  * ./phonesim -p 12346 your_very_own.xml
+- Call the [interface].Add("myname", "127.0.0.1", "12346")
+  * dbus-send --system --print-reply --dest=org.ofono / \
+    org.ofono.phonesim.Manager.Add string:myname string:127.0.0.1 string:12346
+  * dbus-send --system --print-reply --dest=org.ofono \
+    /myname org.ofono.Modem.SetProperty string:Powered variant:boolean:true
