@@ -133,7 +133,7 @@ static enum ofono_gprs_context_type determine_apn_type(const char *types)
 	 * - mms
 	 */
 
-	if (g_str_equal(types, "mms"))
+	if (g_strcmp0(types, "mms") == 0)
 		return OFONO_GPRS_CONTEXT_TYPE_MMS;
 	else if (g_str_has_prefix(types, "default"))
 		return OFONO_GPRS_CONTEXT_TYPE_INTERNET;
@@ -223,15 +223,15 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 	enum ofono_gprs_proto proto = OFONO_GPRS_PROTO_IP;
 	enum ofono_gprs_context_type type;
 
-	if (!g_str_equal(element_name, "apn"))
+	if (g_strcmp0(element_name, "apn") != 0)
 		return;
 
 	for (i = 0; attribute_names[i]; i++) {
-		if (g_str_equal(attribute_names[i], "carrier"))
+		if (g_strcmp0(attribute_names[i], "carrier") == 0)
 			carrier = attribute_values[i];
-		else if (g_str_equal(attribute_names[i], "mcc"))
+		else if (g_strcmp0(attribute_names[i], "mcc") == 0)
 			mcc = attribute_values[i];
-		else if (g_str_equal(attribute_names[i], "mnc"))
+		else if (g_strcmp0(attribute_names[i], "mnc") == 0)
 			mnc = attribute_values[i];
 	}
 
@@ -249,30 +249,30 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 		return;
 	}
 
-	if (g_str_equal(mcc, apndb->match_mcc) == FALSE ||
-		g_str_equal(mnc, apndb->match_mnc) == FALSE)
+	if (g_strcmp0(mcc, apndb->match_mcc) != 0 ||
+		g_strcmp0(mnc, apndb->match_mnc) != 0)
 		return;
 
 	for (i = 0; attribute_names[i]; i++) {
-		if (g_str_equal(attribute_names[i], "apn"))
+		if (g_strcmp0(attribute_names[i], "apn") == 0)
 			apn = attribute_values[i];
-		else if (g_str_equal(attribute_names[i], "user"))
+		else if (g_strcmp0(attribute_names[i], "user") == 0)
 			username = attribute_values[i];
-		else if (g_str_equal(attribute_names[i], "password"))
+		else if (g_strcmp0(attribute_names[i], "password") == 0)
 			password = attribute_values[i];
-		else if (g_str_equal(attribute_names[i], "type"))
+		else if (g_strcmp0(attribute_names[i], "type") == 0)
 			types = attribute_values[i];
-		else if (g_str_equal(attribute_names[i], "protocol"))
+		else if (g_strcmp0(attribute_names[i], "protocol") == 0)
 			protocol = attribute_values[i];
-		else if (g_str_equal(attribute_names[i], "mmsc"))
+		else if (g_strcmp0(attribute_names[i], "mmsc") == 0)
 			mmscenter = attribute_values[i];
-		else if (g_str_equal(attribute_names[i], "mmsproxy"))
+		else if (g_strcmp0(attribute_names[i], "mmsproxy") == 0)
 			mmsproxy = attribute_values[i];
-		else if (g_str_equal(attribute_names[i], "mmsport"))
+		else if (g_strcmp0(attribute_names[i], "mmsport") == 0)
 			mmsport = attribute_values[i];
-		else if (g_str_equal(attribute_names[i], "mvno_match_data"))
+		else if (g_strcmp0(attribute_names[i], "mvno_match_data") == 0)
 			mvnomatch = attribute_values[i];
-		else if (g_str_equal(attribute_names[i], "mvno_type"))
+		else if (g_strcmp0(attribute_names[i], "mvno_type") == 0)
 			mvnotype = attribute_values[i];
 	}
 
@@ -290,11 +290,11 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 	}
 
 	if (protocol != NULL) {
-		if (g_str_equal(protocol, "IP")) {
+		if (g_strcmp0(protocol, "IP") == 0) {
 			proto = OFONO_GPRS_PROTO_IP;
-		} else if (g_str_equal(protocol, "IPV6")) {
+		} else if (g_strcmp0(protocol, "IPV6") == 0) {
 			proto = OFONO_GPRS_PROTO_IPV6;
-		} else if (g_str_equal(protocol, "IPV4V6")) {
+		} else if (g_strcmp0(protocol, "IPV4V6") == 0) {
 			proto = OFONO_GPRS_PROTO_IPV4V6;
 		} else {
 			ofono_error("%s: APN %s has invalid protocol=%s"
@@ -306,36 +306,37 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 
 	if (mvnotype != NULL && mvnomatch != NULL) {
 
-		if (g_str_equal(mvnotype, "imsi")) {
+		if (g_strcmp0(mvnotype, "imsi") == 0) {
 			DBG("APN %s is mvno_type 'imsi'", carrier);
 
-			if (imsi_match(apndb->match_imsi, mvnomatch) == FALSE) {
+			if (apndb->match_imsi == NULL ||
+					imsi_match(apndb->match_imsi,
+							mvnomatch) == FALSE) {
 				DBG("Skipping MVNO 'imsi' APN %s with"
-					" match_data: %s",
-					carrier, mvnomatch);
+					" match_data: %s", carrier, mvnomatch);
 				return;
 			}
-		} else if (g_str_equal(mvnotype, "spn")) {
+		} else if (g_strcmp0(mvnotype, "spn") == 0) {
 			DBG("APN %s is mvno_type 'spn'", carrier);
 
-			if (g_str_equal(mvnomatch, apndb->match_spn) == FALSE) {
+			if (g_strcmp0(mvnomatch, apndb->match_spn) != 0) {
 				DBG("Skipping mvno 'spn' APN %s with"
-					" match_data: %s",
-					carrier, mvnomatch);
+					" match_data: %s", carrier, mvnomatch);
 				return;
 			}
 
-		} else if (g_str_equal(mvnotype, "gid")) {
+		} else if (g_strcmp0(mvnotype, "gid") == 0) {
 			int match_len = strlen(mvnomatch);
 
 			DBG("APN %s is mvno_type 'gid'", carrier);
 
 			/* Check initial part of GID1 against match data */
-			if (g_ascii_strncasecmp(mvnomatch, apndb->match_gid1,
-						match_len) != 0) {
+			if (apndb->match_gid1 == NULL ||
+					g_ascii_strncasecmp(mvnomatch,
+							apndb->match_gid1,
+							match_len) != 0) {
 				DBG("Skipping mvno 'gid' APN %s with"
-					" match_data: %s",
-					carrier, mvnomatch);
+					" match_data: %s", carrier, mvnomatch);
 				return;
 			}
 		}

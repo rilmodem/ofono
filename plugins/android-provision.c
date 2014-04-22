@@ -82,7 +82,8 @@ static unsigned int filter_apns(GSList **apns, GSList *mbpi_apns,
 			if (ap->gprs_data.apn != NULL &&
 				ap->gprs_data.type ==
 				OFONO_GPRS_CONTEXT_TYPE_INTERNET &&
-				g_str_equal(ap2->apn, ap->gprs_data.apn)) {
+				g_strcmp0(ap2->apn, ap->gprs_data.apn) == 0) {
+
 				found = TRUE;
 				break;
 			}
