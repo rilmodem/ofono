@@ -1303,7 +1303,6 @@ static const get_preferred_network_test
 	}
 };
 
-<<<<<<< HEAD
 /*
  * The following hexadecimal data contains the event data of a valid
  * RIL_REQUEST_QUERY_FACILITY_LOCK reply with the following parameters:
