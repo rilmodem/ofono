@@ -2289,11 +2289,10 @@ char *sms_decode_text(GSList *sms_list)
 			 * Header is odd, the maximum length of the whole TP-UD
 			 * field is 139 octets
 			 */
-			gssize num_ucs2_chars = (udl_in_bytes - taken) >> 1;
-			num_ucs2_chars = num_ucs2_chars << 1;
+			gssize num_octects = (udl_in_bytes - taken) & ~1u;
 
-			converted = g_convert(from, num_ucs2_chars,
-						"UTF-8//TRANSLIT", "UCS-2BE",
+			converted = g_convert(from, num_octects,
+						"UTF-8//TRANSLIT", "UTF-16BE",
 						NULL, NULL, NULL);
 		}
 
@@ -3561,7 +3560,7 @@ GSList *sms_text_prepare_with_alphabet(const char *to, const char *utf8,
 	if (gsm_encoded == NULL) {
 		gsize converted;
 
-		ucs2_encoded = g_convert(utf8, -1, "UCS-2BE//TRANSLIT", "UTF-8",
+		ucs2_encoded = g_convert(utf8, -1, "UTF-16BE//TRANSLIT", "UTF-8",
 						NULL, &converted, NULL);
 		written = converted;
 	}
