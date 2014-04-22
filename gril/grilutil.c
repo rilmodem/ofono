@@ -43,6 +43,8 @@
 #define PROTO_IPV6_STR "IPV6"
 #define PROTO_IPV4V6_STR "IPV4V6"
 
+static char temp_str[32];
+
 const char *ril_ofono_protocol_to_ril_string(guint protocol)
 {
 	char *result;
@@ -206,6 +208,53 @@ const char *ril_radio_state_to_string(int radio_state)
 		return "ON";
 	default:
 		return "<INVALID>";
+	}
+}
+
+const char *ril_radio_tech_to_string(int radio_tech)
+{
+	switch (radio_tech) {
+	case RADIO_TECH_UNKNOWN:
+		return "UNKNOWN";
+	case RADIO_TECH_GPRS:
+		return "GPRS";
+	case RADIO_TECH_EDGE:
+		return	"EDGE";
+	case RADIO_TECH_UMTS:
+		return "UMTS";
+	case RADIO_TECH_IS95A:
+		return "IS95A";
+	case RADIO_TECH_IS95B:
+		return "IS95B";
+	case RADIO_TECH_1xRTT:
+		return "1xRTT";
+	case RADIO_TECH_EVDO_0:
+		return "EVDO_0";
+	case RADIO_TECH_EVDO_A:
+		return "EVDO_A";
+	case RADIO_TECH_HSDPA:
+		return "HSDPA";
+	case RADIO_TECH_HSUPA:
+		return "HSUPA";
+	case RADIO_TECH_HSPA:
+		return "HSPA";
+	case RADIO_TECH_EVDO_B:
+		return "EVDO_B";
+	case RADIO_TECH_EHRPD:
+		return "EHRPD";
+	case RADIO_TECH_LTE:
+		return "LTE";
+	case RADIO_TECH_HSPAP:
+		return "HSPAP";
+	case RADIO_TECH_GSM:
+		return "GSM";
+	default:
+		if (g_snprintf(temp_str, sizeof(temp_str),
+				"<INVALID (%d)>",
+				radio_tech))
+			return temp_str;
+		else
+			return "<INVALID>";
 	}
 }
 
@@ -471,6 +520,66 @@ const char *ril_unsol_request_to_string(int request)
         case RIL_UNSOL_RIL_CONNECTED: return "UNSOL_RIL_CONNECTED";
         default:
 		return "<unknown request>";
+	}
+}
+
+const char *ril_pdp_fail_to_string(int status)
+{
+	switch(status) {
+	case PDP_FAIL_NONE:
+		return "NONE";
+	case PDP_FAIL_OPERATOR_BARRED:
+		return "OPERATOR_BARRED";
+	case PDP_FAIL_INSUFFICIENT_RESOURCES:
+		return "INSUFFICIENT_RESOURCES";
+	case PDP_FAIL_MISSING_UKNOWN_APN:
+		return "MISSING_UKNOWN_APN";
+	case PDP_FAIL_UNKNOWN_PDP_ADDRESS_TYPE:
+		return "UNKNOWN_PDP_ADDRESS_TYPE";
+	case PDP_FAIL_USER_AUTHENTICATION:
+		return "USER_AUTHENTICATION";
+	case PDP_FAIL_ACTIVATION_REJECT_GGSN:
+		return "ACTIVATION_REJECT_GGSN";
+	case PDP_FAIL_ACTIVATION_REJECT_UNSPECIFIED:
+		return "ACTIVATION_REJECT_UNSPECIFIED";
+	case PDP_FAIL_SERVICE_OPTION_NOT_SUPPORTED:
+		return "SERVICE_OPTION_NOT_SUPPORTED";
+	case PDP_FAIL_SERVICE_OPTION_NOT_SUBSCRIBED:
+		return "SERVICE_OPTION_NOT_SUBSCRIBED";
+	case PDP_FAIL_SERVICE_OPTION_OUT_OF_ORDER:
+		return "SERVICE_OPTION_OUT_OF_ORDER";
+	case PDP_FAIL_NSAPI_IN_USE:
+		return "NSAPI_IN_USE";
+	case PDP_FAIL_REGULAR_DEACTIVATION:
+		return "REGULAR_DEACTIVATION";
+	case PDP_FAIL_ONLY_IPV4_ALLOWED:
+		return "ONLY_IPV4_ALLOWED";
+	case PDP_FAIL_ONLY_IPV6_ALLOWED:
+		return "ONLY_IPV6_ALLOWED";
+	case PDP_FAIL_ONLY_SINGLE_BEARER_ALLOWED:
+		return "ONLY_SINGLE_BEARER_ALLOWED";
+	case PDP_FAIL_PROTOCOL_ERRORS:
+		return "PROTOCOL_ERRORS";
+	case PDP_FAIL_VOICE_REGISTRATION_FAIL:
+		return "VOICE_REGISTRATION_FAIL";
+	case PDP_FAIL_DATA_REGISTRATION_FAIL:
+		return "DATA_REGISTRATION_FAIL";
+	case PDP_FAIL_SIGNAL_LOST:
+		return "SIGNAL_LOST";
+	case PDP_FAIL_PREF_RADIO_TECH_CHANGED:
+		return "PREF_RADIO_TECH_CHANGED";
+	case PDP_FAIL_RADIO_POWER_OFF:
+		return "RADIO_POWER_OFF";
+	case PDP_FAIL_TETHERED_CALL_ACTIVE:
+		return "TETHERED_CALL_ACTIVE";
+	case PDP_FAIL_ERROR_UNSPECIFIED:
+		return "ERROR_UNSPECIFIED";
+	default:
+		if (g_snprintf(temp_str, sizeof(temp_str),
+				"<UNKNOWN (%d)>", status))
+			return temp_str;
+		else
+			return "<UNKNOWN>";
 	}
 }
 

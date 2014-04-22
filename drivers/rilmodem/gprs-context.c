@@ -97,16 +97,16 @@ static void ril_gprs_context_call_list_changed(struct ril_msg *message,
 	for (iterator = unsol->call_list; iterator; iterator = iterator->next) {
 		call = (struct data_call *) iterator->data;
 
-		if (call->cid == gcd->active_rild_cid && 
+		if (call->cid == gcd->active_rild_cid &&
 		    gcd->state != STATE_IDLE) {
 			DBG("Found current call in call list: %d", call->cid);
 			active_cid_found = TRUE;
 
 			if (call->active == 0) {
-				DBG("call->status is DISCONNECTED for cid: %d", 
+				DBG("call->status is DISCONNECTED for cid: %d",
 					call->cid);
 				disconnect = TRUE;
-				ofono_gprs_context_deactivated(gc, 
+				ofono_gprs_context_deactivated(gc,
 						       gcd->active_ctx_cid);
 			}
 
@@ -149,7 +149,7 @@ static void ril_setup_data_call_cb(struct ril_msg *message, gpointer user_data)
 	gcd->active_rild_cid = reply->cid;
 
 	if (error.type != OFONO_ERROR_TYPE_NO_ERROR) {
-		/* parsing failed, need to actually disconnect */	  
+		/* parsing failed, need to actually disconnect */
 		disconnect_context(gc);
 		goto error;
 	}

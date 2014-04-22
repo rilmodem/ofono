@@ -31,22 +31,20 @@
 extern "C" {
 #endif
 
-struct unsol_data_call_list {
-	guint version;
-	guint num;
-	GSList *call_list;
+struct ril_data_call {
+	guint status;
+	gint cid;
+	guint active;
+	guint protocol;
+	char *ifname;
+	gchar *ip_addr;
+	gchar **dns_addrs;
+	gchar **gateways;
 };
 
-struct data_call {
-    guint status;
-    guint retry;
-    gint cid;
-    guint active;
-    char *type;
-    char *ifname;
-    char *addresses;
-    char *dnses;
-    char *gateways;
+struct ril_data_call_list {
+	guint version;
+	GSList *calls;
 };
 
 struct unsol_sms_data {
@@ -66,10 +64,11 @@ struct unsol_ussd {
 	char *message;
 };
 
-void g_ril_unsol_free_data_call_list(struct unsol_data_call_list *unsol);
+void g_ril_unsol_free_data_call_list(struct ril_data_call_list *data_call_list);
 
-struct unsol_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
-					const struct ril_msg *message);
+
+struct ril_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
+						const struct ril_msg *message);
 
 char *g_ril_unsol_parse_nitz(GRil *gril, const struct ril_msg *message);
 

@@ -50,8 +50,8 @@
 
 static gint data_call_compare(gconstpointer a, gconstpointer b)
 {
-	const struct data_call *ca = a;
-	const struct data_call *cb = b;
+	const struct ril_data_call *ca = a;
+	const struct ril_data_call *cb = b;
 
 	if (ca->cid < cb->cid)
 		return -1;
@@ -64,52 +64,168 @@ static gint data_call_compare(gconstpointer a, gconstpointer b)
 
 static void free_data_call(gpointer data, gpointer user_data)
 {
-	struct data_call *call = data;
+	struct ril_data_call *call = data;
 
 	if (call) {
-		g_free(call->type);
 		g_free(call->ifname);
-		g_free(call->addresses);
-		g_free(call->dnses);
+		g_free(call->ip_addr);
+		g_free(call->dns_addrs);
 		g_free(call->gateways);
 		g_free(call);
 	}
 }
 
-void g_ril_unsol_free_data_call_list(struct unsol_data_call_list *unsol)
+void g_ril_unsol_free_data_call_list(struct ril_data_call_list *call_list)
 {
-	if (unsol) {
-		g_slist_foreach(unsol->call_list, (GFunc) free_data_call, NULL);
-		g_slist_free(unsol->call_list);
-		g_free(unsol);
+	if (call_list) {
+		g_slist_foreach(call_list->calls, (GFunc) free_data_call, NULL);
+		g_slist_free(call_list->calls);
+		g_free(call_list);
 	}
 }
 
-/*
- * This function handles both RIL_UNSOL_DATA_CALL_LIST_CHANGED events and
- * replies to RIL_REQUEST_DATA_CALL_LIST, as both have the same payload.
- */
-struct unsol_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
-					const struct ril_msg *message)
+static gboolean handle_settings(struct ril_data_call *call, char *type,
+				char *ifname, char *raw_ip_addrs,
+				char *raw_dns, char *raw_gws)
 {
-	struct data_call *call;
+	gboolean result = FALSE;
+	int protocol;
+	char **dns_addrs = NULL, **gateways = NULL;
+	char **ip_addrs = NULL, **split_ip_addr = NULL;
+
+	protocol = ril_protocol_string_to_ofono_protocol(type);
+	if (protocol < 0) {
+		ofono_error("%s: invalid type(protocol) specified: %s",
+				__func__, type);
+		goto done;
+	}
+
+	if (ifname == NULL || strlen(ifname) == 0) {
+		ofono_error("%s: no interface specified: %s",
+				__func__, ifname);
+		goto done;
+	}
+
+	/* Split DNS addresses */
+	if (raw_dns)
+		dns_addrs = g_strsplit(raw_dns, " ", 3);
+
+	if (dns_addrs == NULL || g_strv_length(dns_addrs) == 0) {
+		ofono_error("%s: no DNS: %s", __func__, raw_dns);
+		goto done;
+	}
+
+	/*
+	 * RILD can return multiple addresses; oFono only supports
+	 * setting a single IPv4 gateway.
+	 */
+	if (raw_gws)
+		gateways = g_strsplit(raw_gws, " ", 3);
+
+	if (gateways == NULL || g_strv_length(gateways) == 0) {
+		ofono_error("%s: no gateways: %s", __func__, raw_gws);
+		goto done;
+	}
+
+	/* TODO:
+	 * RILD can return multiple addresses; oFono only supports
+	 * setting a single IPv4 address.  At this time, we only
+	 * use the first address.  It's possible that a RIL may
+	 * just specify the end-points of the point-to-point
+	 * connection, in which case this code will need to
+	 * changed to handle such a device.
+	 *
+	 * For now split into a maximum of three, and only use
+	 * the first address for the remaining operations.
+	 */
+	if (raw_ip_addrs)
+		ip_addrs = g_strsplit(raw_ip_addrs, " ", 3);
+
+	if (ip_addrs == NULL || g_strv_length(ip_addrs) == 0) {
+		ofono_error("%s: no IP address: %s", __func__, raw_ip_addrs);
+		goto done;
+	}
+
+	DBG("num ip addrs is: %d", g_strv_length(ip_addrs));
+
+	if (g_strv_length(ip_addrs) > 1)
+		ofono_warn("%s: more than one IP addr returned: %s", __func__,
+				raw_ip_addrs);
+	/*
+	 * Note - the address may optionally include a prefix size
+	 * ( Eg. "/30" ).  As this confuses NetworkManager, we
+	 * explicitly strip any prefix after calculating the netmask.
+	 */
+	split_ip_addr = g_strsplit(ip_addrs[0], "/", 2);
+
+	if (split_ip_addr == NULL || g_strv_length(split_ip_addr) == 0) {
+		ofono_error("%s: invalid IP address field returned: %s",
+				__func__, ip_addrs[0]);
+		goto done;
+	}
+
+	call->protocol = protocol;
+	call->ifname = g_strdup(ifname);
+	call->ip_addr = g_strdup(split_ip_addr[0]);
+	call->dns_addrs = g_strdupv(dns_addrs);
+	call->gateways = g_strdupv(gateways);
+
+	result = TRUE;
+
+done:
+	if (dns_addrs)
+		g_strfreev(dns_addrs);
+
+	if (gateways)
+		g_strfreev(gateways);
+
+	if (ip_addrs)
+		g_strfreev(ip_addrs);
+
+	if (split_ip_addr)
+		g_strfreev(split_ip_addr);
+
+
+	return result;
+}
+
+/*
+ * This function handles RIL_UNSOL_DATA_CALL_LIST_CHANGED messages,
+ * as well as RIL_REQUEST_DATA_CALL_LIST/SETUP_DATA_CALL replies, as
+ * all have the same payload.
+ */
+struct ril_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
+						const struct ril_msg *message)
+{
+	struct ril_data_call *call;
 	struct parcel rilp;
-	struct unsol_data_call_list *reply = NULL;
-	unsigned int i;
+	struct ril_data_call_list *reply = NULL;
+	unsigned int active, cid, i, num_calls, retry, status;
+	char *type = NULL, *ifname = NULL, *raw_addrs = NULL;
+	char *raw_dns = NULL, *raw_gws = NULL;
+
+	DBG("");
 
 	/* Can happen for RIL_REQUEST_DATA_CALL_LIST replies */
 	if (message->buf_len < MIN_DATA_CALL_LIST_SIZE) {
-		g_ril_append_print_buf(gril, "{");
-		goto end;
+		if (message->req == RIL_REQUEST_SETUP_DATA_CALL) {
+			ofono_error("%s: message too small: %d",
+					__func__,
+					(int) message->buf_len);
+			goto error;
+		} else {
+			g_ril_append_print_buf(gril, "{");
+			goto done;
+		}
+	}
+
+	reply = g_try_new0(struct ril_data_call_list, 1);
+	if (reply == NULL) {
+		ofono_error("%s: out of memory", __func__);
+		goto error;
 	}
 
 	g_ril_init_parcel(message, &rilp);
-
-	reply =	g_try_new0(struct unsol_data_call_list, 1);
-	if (reply == NULL) {
-		ofono_error("%s: OOM allocating reply", __func__);
-		goto end;
-	}
 
 	/*
 	 * ril.h documents the reply to a RIL_REQUEST_DATA_CALL_LIST
@@ -118,55 +234,73 @@ struct unsol_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
 	 * to start.
 	 */
 	reply->version = parcel_r_int32(&rilp);
-	reply->num = parcel_r_int32(&rilp);
+	num_calls = parcel_r_int32(&rilp);
 
 	g_ril_append_print_buf(gril,
 				"{version=%d,num=%d",
 				reply->version,
-				reply->num);
+				num_calls);
 
-	for (i = 0; i < reply->num; i++) {
-		call = g_new0(struct data_call, 1);
+	for (i = 0; i < num_calls; i++) {
+		status = parcel_r_int32(&rilp);
+		retry = parcel_r_int32(&rilp);          /* ignore */
+		cid = parcel_r_int32(&rilp);
+		active = parcel_r_int32(&rilp);
+		type = parcel_r_string(&rilp);
+		ifname = parcel_r_string(&rilp);
+		raw_addrs = parcel_r_string(&rilp);
+		raw_dns = parcel_r_string(&rilp);
+		raw_gws = parcel_r_string(&rilp);
 
-		call->status = parcel_r_int32(&rilp);
-		call->retry = parcel_r_int32(&rilp);
-		call->cid = parcel_r_int32(&rilp);
-		call->active = parcel_r_int32(&rilp);
-
-		call->type = parcel_r_string(&rilp);
-		call->ifname = parcel_r_string(&rilp);
-		call->addresses = parcel_r_string(&rilp);
-		call->dnses = parcel_r_string(&rilp);
-		call->gateways = parcel_r_string(&rilp);
+		/* malformed check */
+		if (rilp.malformed) {
+			ofono_error("%s: malformed parcel received", __func__);
+			goto error;
+		}
 
 		g_ril_append_print_buf(gril,
 					"%s [status=%d,retry=%d,cid=%d,"
 					"active=%d,type=%s,ifname=%s,"
 					"address=%s,dns=%s,gateways=%s]",
 					print_buf,
-					call->status,
-					call->retry,
-					call->cid,
-					call->active,
-					call->type,
-					call->ifname,
-					call->addresses,
-					call->dnses,
-					call->gateways);
+					status,
+					retry,
+					cid,
+					active,
+					type,
+					ifname,
+					raw_addrs,
+					raw_dns,
+					raw_gws);
 
-		reply->call_list =
-			g_slist_insert_sorted(reply->call_list,
-						call,
+		call = g_try_new0(struct ril_data_call, 1);
+		if (call == NULL) {
+			ofono_error("%s: out of memory", __func__);
+			goto error;
+		}
+
+		call->status = status;
+		call->cid = cid;
+		call->active = active;
+
+		if (message->req == RIL_REQUEST_SETUP_DATA_CALL &&
+			status == PDP_FAIL_NONE &&
+			handle_settings(call, type, ifname, raw_addrs,
+					raw_dns, raw_gws) == FALSE)
+			goto error;
+
+		g_free(type);
+		g_free(ifname);
+		g_free(raw_addrs);
+		g_free(raw_dns);
+		g_free(raw_gws);
+
+		reply->calls =
+			g_slist_insert_sorted(reply->calls, call,
 						data_call_compare);
 	}
 
-	if (rilp.malformed) {
-		ofono_error("%s: malformed parcel", __func__);
-		g_ril_unsol_free_data_call_list(reply);
-		reply = NULL;
-	}
-
-end:
+done:
 	g_ril_append_print_buf(gril, "%s}", print_buf);
 
 	if (message->unsolicited)
@@ -175,6 +309,16 @@ end:
 		g_ril_print_response(gril, message);
 
 	return reply;
+
+error:
+	g_free(type);
+	g_free(ifname);
+	g_free(raw_addrs);
+	g_free(raw_dns);
+	g_free(raw_gws);
+	g_ril_unsol_free_data_call_list(reply);
+
+	return NULL;
 }
 
 char *g_ril_unsol_parse_nitz(GRil *gril, const struct ril_msg *message)
