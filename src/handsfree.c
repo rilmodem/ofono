@@ -189,6 +189,7 @@ static void append_subscriber_numbers(GSList *subscriber_numbers,
 	GSList *l;
 	const char *subscriber_number_string;
 	char arraysig[3];
+	const char *key = "SubscriberNumbers";
 
 	arraysig[0] = DBUS_TYPE_ARRAY;
 	arraysig[1] = DBUS_TYPE_STRING;
@@ -197,7 +198,7 @@ static void append_subscriber_numbers(GSList *subscriber_numbers,
 	dbus_message_iter_open_container(iter, DBUS_TYPE_DICT_ENTRY,
 					NULL, &entry);
 	dbus_message_iter_append_basic(&entry, DBUS_TYPE_STRING,
-					"SubscriberNumbers");
+					&key);
 	dbus_message_iter_open_container(&entry, DBUS_TYPE_VARIANT,
 					arraysig, &variant);
 	dbus_message_iter_open_container(&variant, DBUS_TYPE_ARRAY,
