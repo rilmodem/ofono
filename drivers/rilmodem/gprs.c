@@ -61,6 +61,45 @@
  *    the concept of suspended GPRS is not exposed by RILD.
  */
 
+static int ril_tech_to_bearer_tech(int ril_tech)
+{
+	/*
+	 * This code handles the mapping between the RIL_RadioTechnology
+	 * and packet bearer values ( see <curr_bearer> values - 27.007
+	 * Section 7.29 ).
+	 */
+
+	switch (ril_tech) {
+	case RADIO_TECH_GSM:
+	case RADIO_TECH_UNKNOWN:
+		return PACKET_BEARER_NONE;
+	case RADIO_TECH_GPRS:
+		return PACKET_BEARER_GPRS;
+	case RADIO_TECH_EDGE:
+		return PACKET_BEARER_EGPRS;
+	case RADIO_TECH_UMTS:
+		return PACKET_BEARER_UMTS;
+	case RADIO_TECH_HSDPA:
+		return PACKET_BEARER_HSDPA;
+	case RADIO_TECH_HSUPA:
+		return PACKET_BEARER_HSUPA;
+	case RADIO_TECH_HSPAP:
+	case RADIO_TECH_HSPA:
+		/*
+		 * HSPAP is HSPA+; which ofono doesn't define;
+		 * so, if differentiating HSPA and HSPA+ is
+		 * important, then ofono needs to be patched,
+		 * and we probably also need to introduce a
+		 * new indicator icon.
+		 */
+		return PACKET_BEARER_HSUPA_HSDPA;
+	case RADIO_TECH_LTE:
+		return PACKET_BEARER_EPS;
+	default:
+		return PACKET_BEARER_NONE;
+	}
+}
+
 static void ril_gprs_state_change(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_gprs *gprs = user_data;
@@ -236,7 +275,7 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 					NETWORK_REGISTRATION_STATUS_ROAMING)) {
 			DBG("calling ofono_gprs_detached_notify()");
 			ofono_gprs_detached_notify(gprs);
-			reply->tech = PACKET_BEARER_NONE;
+			reply->tech = RADIO_TECH_UNKNOWN;
 		} else {
 			DBG("calling ofono_gprs_status_notify()");
 			ofono_gprs_status_notify(gprs, reply->status);
@@ -245,7 +284,9 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 
 	if (gd->tech != reply->tech) {
 		gd->tech = reply->tech;
-		ofono_gprs_bearer_notify(gprs, reply->tech);
+
+		ofono_gprs_bearer_notify(gprs,
+					ril_tech_to_bearer_tech(reply->tech));
 	}
 
 	if (cb)
@@ -328,9 +369,9 @@ static void get_active_data_calls_cb(struct ril_msg *message,
 {
 	struct ofono_gprs *gprs = user_data;
 	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
-	struct unsol_data_call_list *reply = NULL;
+	struct ril_data_call_list *call_list = NULL;
 	GSList *iterator;
-	struct data_call *call;
+	struct ril_data_call *call;
 
 	if (message->error != RIL_E_SUCCESS) {
 		ofono_error("%s: RIL error %s", __func__,
@@ -339,8 +380,8 @@ static void get_active_data_calls_cb(struct ril_msg *message,
 	}
 
 	/* reply can be NULL when there are no existing data calls */
-	reply = g_ril_unsol_parse_data_call_list(gd->ril, message);
-	if (reply == NULL)
+	call_list = g_ril_unsol_parse_data_call_list(gd->ril, message);
+	if (call_list == NULL)
 		goto end;
 
 	/*
@@ -348,14 +389,14 @@ static void get_active_data_calls_cb(struct ril_msg *message,
 	 * because of a previous ofono abort, as some rild implementations do
 	 * not disconnect the calls even after the ril socket is closed.
 	 */
-	for (iterator = reply->call_list; iterator; iterator = iterator->next) {
+	for (iterator = call_list->calls; iterator; iterator = iterator->next) {
 		call = iterator->data;
 		DBG("Standing data call with cid %d", call->cid);
 		if (drop_data_call(gprs, call->cid) == 0)
 			++(gd->pending_deact_req);
 	}
 
-	g_ril_unsol_free_data_call_list(reply);
+	g_ril_unsol_free_data_call_list(call_list);
 
 end:
 	if (gd->pending_deact_req == 0)
@@ -378,7 +419,7 @@ void ril_gprs_start(GRil *ril, struct ofono_gprs *gprs,
 	gd->ofono_attached = FALSE;
 	gd->max_cids = 0;
 	gd->rild_status = -1;
-	gd->tech = -1;
+	gd->tech = RADIO_TECH_UNKNOWN;
 	/* AOSP RILD tracks data network state together with voice */
 	gd->state_changed_unsol =
 		RIL_UNSOL_RESPONSE_VOICE_NETWORK_STATE_CHANGED;

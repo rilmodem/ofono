@@ -64,6 +64,45 @@ static void ril_registration_status(struct ofono_netreg *netreg,
 					ofono_netreg_status_cb_t cb,
 					void *data);
 
+static int ril_tech_to_access_tech(int ril_tech)
+{
+	/*
+	 * This code handles the mapping between the RIL_RadioTechnology
+	 * and ofono's access technology values ( see <Act> values - 27.007
+	 * Section 7.3 ).
+	 */
+
+	switch(ril_tech) {
+	case RADIO_TECH_UNKNOWN:
+		return -1;
+	case RADIO_TECH_GSM:
+	case RADIO_TECH_GPRS:
+		return ACCESS_TECHNOLOGY_GSM;
+	case RADIO_TECH_EDGE:
+		return ACCESS_TECHNOLOGY_GSM_EGPRS;
+	case RADIO_TECH_UMTS:
+		return ACCESS_TECHNOLOGY_UTRAN;
+	case RADIO_TECH_HSDPA:
+		return ACCESS_TECHNOLOGY_UTRAN_HSDPA;
+	case RADIO_TECH_HSUPA:
+		return ACCESS_TECHNOLOGY_UTRAN_HSUPA;
+	case RADIO_TECH_HSPAP:
+	case RADIO_TECH_HSPA:
+		/* HSPAP is HSPA+; which ofono doesn't define;
+		 * so, if differentiating HSPA and HSPA+ is
+		 * important, then ofono needs to be patched,
+		 * and we probably also need to introduce a
+		 * new indicator icon.
+		 */
+
+		return ACCESS_TECHNOLOGY_UTRAN_HSDPA_HSUPA;
+	case RADIO_TECH_LTE:
+		return ACCESS_TECHNOLOGY_EUTRAN;
+	default:
+		return -1;
+	}
+}
+
 static void extract_mcc_mnc(const char *str, char *mcc, char *mnc)
 {
 	/* Three digit country code */
@@ -99,7 +138,7 @@ static void ril_creg_cb(struct ril_msg *message, gpointer user_data)
 				reply->status,
 				reply->lac,
 				reply->ci,
-				reply->tech,
+				ril_tech_to_access_tech(reply->tech),
 				cbd->data);
 
 	g_free(reply);
@@ -203,7 +242,7 @@ static void ril_cops_cb(struct ril_msg *message, gpointer user_data)
 
 	/* Set to current */
 	op.status = OPERATOR_STATUS_CURRENT;
-	op.tech = nd->tech;
+	op.tech = ril_tech_to_access_tech(nd->tech);
 
 	CALLBACK_WITH_SUCCESS(cb, &op, cbd->data);
 
@@ -263,7 +302,7 @@ static void ril_cops_list_cb(struct ril_msg *message, gpointer user_data)
 
 		extract_mcc_mnc(operator->numeric, ops[i].mcc, ops[i].mnc);
 
-		ops[i].tech = operator->tech;
+		ops[i].tech = ril_tech_to_access_tech(operator->tech);
 
 		/* Set the proper status  */
 		if (!strcmp(operator->status, "unknown"))
@@ -470,7 +509,7 @@ static int ril_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 
 	nd->ril = g_ril_clone(ril);
 	nd->vendor = vendor;
-	nd->tech = -1;
+	nd->tech = RADIO_TECH_UNKNOWN;
 	nd->time.sec = -1;
 	nd->time.min = -1;
 	nd->time.hour = -1;
