@@ -248,6 +248,19 @@ void g_ril_request_call_fwd(GRil *gril, const struct req_call_fwd *req,
 void g_ril_request_set_preferred_network_type(GRil *gril, int net_type,
 						struct parcel *rilp);
 
+void g_ril_request_query_facility_lock(GRil *gril, const char *facility,
+					const char *password, int services,
+					struct parcel *rilp);
+
+void g_ril_request_set_facility_lock(GRil *gril, const char *facility,
+					int enable, const char *passwd,
+					int services, struct parcel *rilp);
+
+void g_ril_request_change_barring_password(GRil *gril, const char *facility,
+						const char *old_passwd,
+						const char *new_passwd,
+						struct parcel *rilp);
+
 #ifdef __cplusplus
 }
 #endif

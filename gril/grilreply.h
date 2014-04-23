@@ -169,6 +169,12 @@ struct ofono_call_forwarding_condition
 int g_ril_reply_parse_get_preferred_network_type(GRil *gril,
 						const struct ril_msg *message);
 
+int g_ril_reply_parse_query_facility_lock(GRil *gril,
+						const struct ril_msg *message);
+
+int g_ril_reply_parse_set_facility_lock(GRil *gril,
+					const struct ril_msg *message);
+
 #ifdef __cplusplus
 }
 #endif
