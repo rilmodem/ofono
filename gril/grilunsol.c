@@ -85,29 +85,31 @@ void g_ril_unsol_free_data_call_list(struct unsol_data_call_list *unsol)
 	}
 }
 
+/*
+ * This function handles both RIL_UNSOL_DATA_CALL_LIST_CHANGED events and
+ * replies to RIL_REQUEST_DATA_CALL_LIST, as both have the same payload.
+ */
 struct unsol_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
-					const struct ril_msg *message,
-					struct ofono_error *error)
+					const struct ril_msg *message)
 {
 	struct data_call *call;
 	struct parcel rilp;
-	struct unsol_data_call_list *reply =
-		g_new0(struct unsol_data_call_list, 1);
+	struct unsol_data_call_list *reply = NULL;
 	unsigned int i;
 
-	DBG("");
-
-	OFONO_NO_ERROR(error);
-
+	/* Can happen for RIL_REQUEST_DATA_CALL_LIST replies */
 	if (message->buf_len < MIN_DATA_CALL_LIST_SIZE) {
-		ofono_error("%s: message too small: %d",
-				__func__,
-				(int) message->buf_len);
-		OFONO_EINVAL(error);
-		goto error;
+		g_ril_append_print_buf(gril, "{");
+		goto end;
 	}
 
 	g_ril_init_parcel(message, &rilp);
+
+	reply =	g_try_new0(struct unsol_data_call_list, 1);
+	if (reply == NULL) {
+		ofono_error("%s: OOM allocating reply", __func__);
+		goto end;
+	}
 
 	/*
 	 * ril.h documents the reply to a RIL_REQUEST_DATA_CALL_LIST
@@ -119,7 +121,7 @@ struct unsol_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
 	reply->num = parcel_r_int32(&rilp);
 
 	g_ril_append_print_buf(gril,
-				"(version=%d,num=%d",
+				"{version=%d,num=%d",
 				reply->version,
 				reply->num);
 
@@ -158,10 +160,20 @@ struct unsol_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
 						data_call_compare);
 	}
 
-	g_ril_append_print_buf(gril, "%s}", print_buf);
-	g_ril_print_unsol(gril, message);
+	if (rilp.malformed) {
+		ofono_error("%s: malformed parcel", __func__);
+		g_ril_unsol_free_data_call_list(reply);
+		reply = NULL;
+	}
 
-error:
+end:
+	g_ril_append_print_buf(gril, "%s}", print_buf);
+
+	if (message->unsolicited)
+		g_ril_print_unsol(gril, message);
+	else
+		g_ril_print_response(gril, message);
+
 	return reply;
 }
 

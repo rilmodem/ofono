@@ -814,6 +814,10 @@ static struct ril_s *create_ril(const char *sock_path)
 	ril->req_bytes_written = 0;
 	ril->trace = FALSE;
 
+	/* sock_path is allowed to be NULL for unit tests */
+	if (sock_path == NULL)
+		return ril;
+
 	sk = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (sk < 0) {
 		ofono_error("create_ril: can't create unix socket: %s (%d)\n",

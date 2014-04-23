@@ -86,14 +86,11 @@ static void ril_gprs_context_call_list_changed(struct ril_msg *message,
 	gboolean active_cid_found = FALSE;
 	gboolean disconnect = FALSE;
 	GSList *iterator = NULL;
-	struct ofono_error error;
 
-	DBG("");
+	unsol = g_ril_unsol_parse_data_call_list(gcd->ril, message);
 
-	unsol = g_ril_unsol_parse_data_call_list(gcd->ril, message, &error);
-
-	if (error.type != OFONO_ERROR_TYPE_NO_ERROR)
-		goto error;
+	if (unsol == NULL)
+		goto end;
 
 	DBG("number of call in call_list_changed is: %d", unsol->num);
 
@@ -123,7 +120,7 @@ static void ril_gprs_context_call_list_changed(struct ril_msg *message,
 		set_context_disconnected(gcd);
 	}
 
-error:
+end:
 	g_ril_unsol_free_data_call_list(unsol);
 }
 

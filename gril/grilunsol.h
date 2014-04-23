@@ -69,8 +69,7 @@ struct unsol_ussd {
 void g_ril_unsol_free_data_call_list(struct unsol_data_call_list *unsol);
 
 struct unsol_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
-					const struct ril_msg *message,
-					struct ofono_error *error);
+					const struct ril_msg *message);
 
 char *g_ril_unsol_parse_nitz(GRil *gril, const struct ril_msg *message);
 

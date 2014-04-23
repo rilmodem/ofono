@@ -248,28 +248,19 @@ static const struct ril_msg unsol_on_ussd_valid_1 = {
 
 static void test_unsol_data_call_list_changed_invalid(gconstpointer data)
 {
-	struct ofono_error error;
 	struct unsol_data_call_list *unsol;
 
-	unsol = g_ril_unsol_parse_data_call_list(NULL, data, &error);
-	g_assert(unsol != NULL);
-	g_ril_unsol_free_data_call_list(unsol);
-
-	g_assert(error.type == OFONO_ERROR_TYPE_FAILURE &&
-			error.error == -EINVAL);
+	unsol = g_ril_unsol_parse_data_call_list(NULL, data);
+	g_assert(unsol == NULL);
 }
 
 static void test_unsol_data_call_list_changed_valid(gconstpointer data)
 {
-	struct ofono_error error;
 	struct unsol_data_call_list *unsol;
 
-	unsol = g_ril_unsol_parse_data_call_list(NULL, data, &error);
+	unsol = g_ril_unsol_parse_data_call_list(NULL, data);
 	g_assert(unsol != NULL);
 	g_ril_unsol_free_data_call_list(unsol);
-
-	g_assert(error.type == OFONO_ERROR_TYPE_NO_ERROR &&
-			error.error == 0);
 }
 
 static void test_signal_strength_valid(gconstpointer data)
