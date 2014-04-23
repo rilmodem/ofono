@@ -2206,17 +2206,16 @@ static inline int sms_text_capacity_gsm(int max, int offset)
 char *sms_decode_text(GSList *sms_list)
 {
 	GSList *l;
-	GString *str;
+	GString *str = NULL;
+	GByteArray *utf16 = NULL;
 	const struct sms *sms;
 	int guess_size = g_slist_length(sms_list);
-	char *utf8;
+	char *text = NULL;
 
 	if (guess_size == 1)
 		guess_size = 160;
 	else
 		guess_size = (guess_size - 1) * 160;
-
-	str = g_string_sized_new(guess_size);
 
 	for (l = sms_list; l; l = l->next) {
 		guint8 taken = 0;
@@ -2226,7 +2225,6 @@ char *sms_decode_text(GSList *sms_list)
 		int udl_in_bytes;
 		const guint8 *ud;
 		struct sms_udh_iter iter;
-		char *converted;
 
 		sms = l->data;
 
@@ -2253,6 +2251,7 @@ char *sms_decode_text(GSList *sms_list)
 			guint8 locking_shift = 0;
 			guint8 single_shift = 0;
 			int max_chars = sms_text_capacity_gsm(udl, taken);
+			char *converted;
 
 			if (unpack_7bit_own_buf(ud + taken,
 						udl_in_bytes - taken,
@@ -2281,8 +2280,14 @@ char *sms_decode_text(GSList *sms_list)
 								NULL, NULL, 0,
 								locking_shift,
 								single_shift);
+			if (converted) {
+				if (str == NULL)
+					str = g_string_sized_new(guess_size);
+
+				g_string_append(str, converted);
+				g_free(converted);
+			}
 		} else {
-			const gchar *from = (const gchar *) (ud + taken);
 			/*
 			 * According to the spec: A UCS2 character shall not be
 			 * split in the middle; if the length of the User Data
@@ -2291,20 +2296,23 @@ char *sms_decode_text(GSList *sms_list)
 			 */
 			gssize num_octects = (udl_in_bytes - taken) & ~1u;
 
-			converted = g_convert(from, num_octects,
-						"UTF-8//TRANSLIT", "UTF-16BE",
-						NULL, NULL, NULL);
-		}
+			if (utf16 == NULL)
+				utf16 = g_byte_array_sized_new(guess_size);
 
-		if (converted) {
-			g_string_append(str, converted);
-			g_free(converted);
+			g_byte_array_append(utf16, ud + taken, num_octects);
 		}
 	}
 
-	utf8 = g_string_free(str, FALSE);
+	if (str != NULL) {
+		text = g_string_free(str, FALSE);
+	} else if (utf16 != NULL) {
+		text = g_convert((gchar *) utf16->data, utf16->len,
+					"UTF-8//TRANSLIT", "UTF-16BE",
+					NULL, NULL, NULL);
+		g_byte_array_free(utf16, TRUE);
+	}
 
-	return utf8;
+	return text;
 }
 
 static int sms_serialize(unsigned char *buf, const struct sms *sms)
