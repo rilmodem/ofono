@@ -35,6 +35,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
+#include <unistd.h>
 
 #include <glib.h>
 
@@ -50,6 +51,9 @@
 
 #define COMMAND_FLAG_EXPECT_PDU			0x1
 #define COMMAND_FLAG_EXPECT_SHORT_PROMPT	0x2
+
+#define	RADIO_GID 1001
+#define	RADIO_UID 1001
 
 struct ril_request {
 	gchar *data;
@@ -794,6 +798,17 @@ static gboolean node_compare_by_group(struct ril_notify_node *node,
 	return FALSE;
 }
 
+static void set_process_id(gid_t gid, uid_t uid)
+{
+	if (setegid(gid) < 0)
+		ofono_error("%s: setegid(%d) failed: %s (%d)",
+				__func__, gid, strerror(errno), errno);
+
+	if (seteuid(uid) < 0)
+		ofono_error("%s: seteuid(%d) failed: %s (%d)",
+				__func__, uid, strerror(errno), errno);
+}
+
 static struct ril_s *create_ril(const char *sock_path)
 
 {
@@ -829,11 +844,17 @@ static struct ril_s *create_ril(const char *sock_path)
 	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path, sock_path, sizeof(addr.sun_path) - 1);
 
+	/* RIL expects user radio to connect to the socket */
+	set_process_id(RADIO_GID, RADIO_UID);
+
 	if (connect(sk, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
 		ofono_error("create_ril: can't connect to RILD: %s (%d)\n",
 				strerror(errno), errno);
 		goto error;
 	}
+
+	/* Switch back to root */
+	set_process_id(0, 0);
 
 	io = g_io_channel_unix_new(sk);
 	if (io == NULL) {
