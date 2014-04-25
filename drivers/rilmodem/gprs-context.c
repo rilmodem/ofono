@@ -59,19 +59,21 @@ struct gprs_context_data {
 	gint active_ctx_cid;
 	gint active_rild_cid;
 	enum state state;
+	guint call_list_id;
 	char *apn;
 };
 
 static void ril_gprs_context_deactivate_primary(struct ofono_gprs_context *gc,
 						unsigned int id,
-						ofono_gprs_context_cb_t cb, void *data);
+						ofono_gprs_context_cb_t cb,
+						void *data);
 
 static void set_context_disconnected(struct gprs_context_data *gcd)
 {
 	DBG("");
 
-	gcd->active_ctx_cid = 0;
-	gcd->active_rild_cid = 0;
+	gcd->active_ctx_cid = -1;
+	gcd->active_rild_cid = -1;
 	gcd->state = STATE_IDLE;
 	g_free(gcd->apn);
 	gcd->apn = NULL;
@@ -97,19 +99,18 @@ static void ril_gprs_context_call_list_changed(struct ril_msg *message,
 	if (call_list == NULL)
 		return;
 
-	DBG("number of call in call_list_changed is: %d",
-		g_slist_length(call_list->calls));
+	DBG("*gc: %p num calls: %d", gc, g_slist_length(call_list->calls));
 
 	for (iterator = call_list->calls; iterator; iterator = iterator->next) {
 		call = (struct ril_data_call *) iterator->data;
 
-		if (call->cid == gcd->active_rild_cid &&
-		    gcd->state != STATE_IDLE) {
-			DBG("Found current call in call list: %d", call->cid);
+		if ((call->cid == gcd->active_rild_cid) &&
+			gcd->state != STATE_IDLE) {
 			active_cid_found = TRUE;
+			DBG("found call - cid: %d", call->cid);
 
 			if (call->active == 0) {
-				DBG("call->status is DISCONNECTED for cid: %d",
+				DBG("call !active; notify disconnect: %d",
 					call->cid);
 				disconnect = TRUE;
 				ofono_gprs_context_deactivated(gc,
@@ -120,8 +121,10 @@ static void ril_gprs_context_call_list_changed(struct ril_msg *message,
 		}
 	}
 
-	if (disconnect || active_cid_found == FALSE) {
-		DBG("Clearing active context");
+	if (disconnect == TRUE || active_cid_found == FALSE) {
+		DBG("Clearing active context; disconnect: %d"
+			" active_cid_found: %d",
+			disconnect, active_cid_found);
 
 		set_context_disconnected(gcd);
 	}
@@ -137,6 +140,8 @@ static void ril_setup_data_call_cb(struct ril_msg *message, gpointer user_data)
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct ril_data_call *call = NULL;
 	struct ril_data_call_list *call_list = NULL;
+
+	DBG("*gc: %p", gc);
 
 	if (message->error != RIL_E_SUCCESS) {
 		ofono_error("%s: setup data call failed for apn: %s - %s",
@@ -155,7 +160,8 @@ static void ril_setup_data_call_cb(struct ril_msg *message, gpointer user_data)
 	}
 
 	if (g_slist_length(call_list->calls) != 1) {
-		ofono_error("%s: setup_data_call reply for apn: %s, includes %d calls",
+		ofono_error("%s: setup_data_call reply for apn: %s,"
+				" includes %d calls",
 				__func__, gcd->apn,
 				g_slist_length(call_list->calls));
 
@@ -189,6 +195,12 @@ static void ril_setup_data_call_cb(struct ril_msg *message, gpointer user_data)
 
 	g_ril_unsol_free_data_call_list(call_list);
 
+	/* activate listener for data call changed events.... */
+	gcd->call_list_id =
+		g_ril_register(gcd->ril,
+				RIL_UNSOL_DATA_CALL_LIST_CHANGED,
+				ril_gprs_context_call_list_changed, gc);
+
 	CALLBACK_WITH_SUCCESS(cb, cbd->data);
 	return;
 
@@ -199,12 +211,13 @@ error:
 }
 
 static void ril_gprs_context_activate_primary(struct ofono_gprs_context *gc,
-						const struct ofono_gprs_primary_context *ctx,
-						ofono_gprs_context_cb_t cb, void *data)
+				const struct ofono_gprs_primary_context *ctx,
+				ofono_gprs_context_cb_t cb, void *data)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct ofono_modem *modem = ofono_gprs_context_get_modem(gc);
-	struct ofono_atom *gprs_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_GPRS);
+	struct ofono_atom *gprs_atom =
+		__ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_GPRS);
 	struct ofono_gprs *gprs = NULL;
 	struct ril_gprs_data *gd = NULL;
 	struct cb_data *cbd = cb_data_new(cb, data, gc);
@@ -212,8 +225,6 @@ static void ril_gprs_context_activate_primary(struct ofono_gprs_context *gc,
 	struct parcel rilp;
 	struct ofono_error error;
 	int ret = 0;
-
-	DBG("Activating contex: %d", ctx->cid);
 
 	g_assert(gprs_atom != NULL);
 	gprs = __ofono_atom_get_data(gprs_atom);
@@ -225,7 +236,8 @@ static void ril_gprs_context_activate_primary(struct ofono_gprs_context *gc,
 	 * 0: CDMA 1: GSM/UMTS, 2...
 	 * anything 2+ is a RadioTechnology value +2
 	 */
-	DBG("Current data tech is: %d", gd->tech);
+	DBG("*gc: %p activating cid: %d; curr_tech: %d", gc, ctx->cid,
+		gd->tech);
 
 	if (gd->tech == RADIO_TECH_UNKNOWN) {
 		ofono_error("%s: radio tech for apn: %s UNKNOWN!", __func__,
@@ -283,7 +295,8 @@ error:
 	}
 }
 
-static void ril_deactivate_data_call_cb(struct ril_msg *message, gpointer user_data)
+static void ril_deactivate_data_call_cb(struct ril_msg *message,
+					gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_gprs_context_cb_t cb = cbd->cb;
@@ -291,7 +304,7 @@ static void ril_deactivate_data_call_cb(struct ril_msg *message, gpointer user_d
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	gint active_ctx_cid;
 
-	DBG("");
+	DBG("*gc: %p", gc);
 
 	/* Reply has no data... */
 	if (message->error == RIL_E_SUCCESS) {
@@ -321,8 +334,8 @@ static void ril_deactivate_data_call_cb(struct ril_msg *message, gpointer user_d
 }
 
 static void ril_gprs_context_deactivate_primary(struct ofono_gprs_context *gc,
-						unsigned int id,
-						ofono_gprs_context_cb_t cb, void *data)
+					unsigned int id,
+					ofono_gprs_context_cb_t cb, void *data)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *cbd = NULL;
@@ -331,7 +344,8 @@ static void ril_gprs_context_deactivate_primary(struct ofono_gprs_context *gc,
 	struct ofono_error error;
 	int ret = 0;
 
-	DBG("cid: %d active_rild_cid: %d", id, gcd->active_rild_cid);
+	DBG("*gc: %p cid: %d active_rild_cid: %d", gc, id,
+		gcd->active_rild_cid);
 
 	if (gcd->state == STATE_IDLE || gcd->state == STATE_DISABLING) {
 		/* nothing to do */
@@ -347,6 +361,11 @@ static void ril_gprs_context_deactivate_primary(struct ofono_gprs_context *gc,
 	cbd = cb_data_new(cb, data, gc);
 
 	gcd->state = STATE_DISABLING;
+	if (g_ril_unregister(gcd->ril, gcd->call_list_id) == FALSE) {
+		ofono_warn("%s: couldn't remove call_list listener"
+				" for apn: %s.",
+				__func__, gcd->apn);
+	}
 
 	request.cid = gcd->active_rild_cid;
 	request.reason = RIL_DEACTIVATE_DATA_CALL_NO_REASON;
@@ -378,7 +397,7 @@ error:
 static void ril_gprs_context_detach_shutdown(struct ofono_gprs_context *gc,
 						unsigned int id)
 {
-	DBG("cid: %d", id);
+	DBG("*gc: %p cid: %d", gc, id);
 
 	ril_gprs_context_deactivate_primary(gc, 0, NULL, NULL);
 }
@@ -389,17 +408,18 @@ static int ril_gprs_context_probe(struct ofono_gprs_context *gc,
 	GRil *ril = data;
 	struct gprs_context_data *gcd;
 
+	DBG("*gc: %p", gc);
+
 	gcd = g_try_new0(struct gprs_context_data, 1);
 	if (gcd == NULL)
 		return -ENOMEM;
 
 	gcd->ril = g_ril_clone(ril);
 	set_context_disconnected(gcd);
+	gcd->call_list_id = -1;
 
 	ofono_gprs_context_set_data(gc, gcd);
 
-	g_ril_register(gcd->ril, RIL_UNSOL_DATA_CALL_LIST_CHANGED,
-			ril_gprs_context_call_list_changed, gc);
 	return 0;
 }
 
@@ -407,7 +427,7 @@ static void ril_gprs_context_remove(struct ofono_gprs_context *gc)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 
-	DBG("");
+	DBG("*gc: %p", gc);
 
 	if (gcd->state != STATE_IDLE) {
 		ril_gprs_context_detach_shutdown(gc, 0);
