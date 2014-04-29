@@ -44,6 +44,12 @@
  */
 #if BYTE_ORDER == LITTLE_ENDIAN
 
+struct sim_password_test {
+	int retries;
+	enum ofono_sim_password_type passwd_type;
+	const struct ril_msg msg;
+};
+
 /*
  * The following hexadecimal data contains the event data of a valid
  * MTK-specific RIL_REQUEST_AVAILABLE_NETWORKS with the following parameters:
@@ -69,6 +75,28 @@ static const struct ril_msg mtk_reply_avail_ops_valid_1 = {
 	.error = 0,
 };
 
+/*
+ * The following structure contains test data for a valid
+ * RIL_REQUEST_ENTER_SIM_PIN reply with parameters {3,3,10,10}
+ */
+static const guchar mtk_reply_enter_sim_pin_valid_parcel1[] = {
+	0x04, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
+	0x0A, 0x00, 0x00, 0x00, 0x0A, 0x00, 0x00, 0x00
+};
+
+static const struct sim_password_test mtk_reply_enter_sim_pin_valid_1 = {
+	.retries = 3,
+	.passwd_type = OFONO_SIM_PASSWORD_SIM_PIN,
+	.msg = {
+		.buf = (gchar *) mtk_reply_enter_sim_pin_valid_parcel1,
+		.buf_len = sizeof(mtk_reply_enter_sim_pin_valid_parcel1),
+		.unsolicited = FALSE,
+		.req = RIL_REQUEST_ENTER_SIM_PIN,
+		.serial_no = 0,
+		.error = RIL_E_SUCCESS,
+	}
+};
+
 static void test_mtk_reply_avail_ops_valid(gconstpointer data)
 {
 	struct reply_avail_ops *reply;
@@ -77,6 +105,20 @@ static void test_mtk_reply_avail_ops_valid(gconstpointer data)
 	reply = g_ril_reply_parse_avail_ops(gril, data);
 	g_assert(reply != NULL);
 
+	g_ril_unref(gril);
+}
+
+static void test_mtk_reply_enter_sim_pin_valid(gconstpointer data)
+{
+	GRil *gril = g_ril_new(NULL, OFONO_RIL_VENDOR_MTK);
+	const struct sim_password_test *test = data;
+	int *retries = g_ril_reply_parse_retries(gril, &test->msg,
+							test->passwd_type);
+
+	g_assert(retries != NULL);
+	g_assert(retries[test->passwd_type] == test->retries);
+
+	g_free(retries);
 	g_ril_unref(gril);
 }
 
@@ -98,6 +140,11 @@ int main(int argc, char **argv)
 				"valid QUERY_AVAIL_OPS Test 1",
 				&mtk_reply_avail_ops_valid_1,
 				test_mtk_reply_avail_ops_valid);
+
+	g_test_add_data_func("/testmtkreply/sim: "
+				"valid ENTER_SIM_PIN Test 1",
+				&mtk_reply_enter_sim_pin_valid_1,
+				test_mtk_reply_enter_sim_pin_valid);
 
 #endif	/* LITTLE_ENDIAN */
 
