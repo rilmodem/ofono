@@ -73,6 +73,12 @@ struct set_facility_lock_test {
 	const struct ril_msg msg;
 };
 
+struct sim_password_test {
+	int retries;
+	enum ofono_sim_password_type passwd_type;
+	const struct ril_msg msg;
+};
+
 static const struct ril_msg reply_data_call_invalid_1 = {
 	.buf = "",
 	.buf_len = 0,
@@ -1576,6 +1582,48 @@ static const struct set_facility_lock_test reply_set_facility_lock_valid_2 = {
 	}
 };
 
+/*
+ * The following structure contains test data for a valid
+ * RIL_REQUEST_ENTER_SIM_PIN reply with parameter {0}
+ */
+static const guchar reply_enter_sim_pin_valid_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static const struct sim_password_test reply_enter_sim_pin_valid_1 = {
+	.retries = -1,
+	.passwd_type = OFONO_SIM_PASSWORD_SIM_PIN,
+	.msg = {
+		.buf = (gchar *) reply_enter_sim_pin_valid_parcel1,
+		.buf_len = sizeof(reply_enter_sim_pin_valid_parcel1),
+		.unsolicited = FALSE,
+		.req = RIL_REQUEST_ENTER_SIM_PIN,
+		.serial_no = 0,
+		.error = RIL_E_SUCCESS,
+	}
+};
+
+/*
+ * The following structure contains test data for a valid
+ * RIL_REQUEST_ENTER_SIM_PIN reply with parameter {2}
+ */
+static const guchar reply_enter_sim_pin_valid_parcel2[] = {
+	0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00
+};
+
+static const struct sim_password_test reply_enter_sim_pin_valid_2 = {
+	.retries = 2,
+	.passwd_type = OFONO_SIM_PASSWORD_SIM_PIN,
+	.msg = {
+		.buf = (gchar *) reply_enter_sim_pin_valid_parcel2,
+		.buf_len = sizeof(reply_enter_sim_pin_valid_parcel2),
+		.unsolicited = FALSE,
+		.req = RIL_REQUEST_ENTER_SIM_PIN,
+		.serial_no = 0,
+		.error = RIL_E_PASSWORD_INCORRECT,
+	}
+};
+
 static void test_reply_data_call_invalid(gconstpointer data)
 {
 	struct ofono_error error;
@@ -1807,6 +1855,19 @@ static void test_reply_set_facility_lock_valid(gconstpointer data)
 
 	g_assert(retries == test->retries);
 }
+
+static void test_reply_enter_sim_pin_valid(gconstpointer data)
+{
+	const struct sim_password_test *test = data;
+	int *retries = g_ril_reply_parse_retries(NULL, &test->msg,
+							test->passwd_type);
+
+	g_assert(retries != NULL);
+	g_assert(retries[test->passwd_type] == test->retries);
+
+	g_free(retries);
+}
+
 #endif
 
 int main(int argc, char **argv)
@@ -2090,6 +2151,16 @@ int main(int argc, char **argv)
 				"valid SET_FACILITY_LOCK Test 2",
 				&reply_set_facility_lock_valid_2,
 				test_reply_set_facility_lock_valid);
+
+	g_test_add_data_func("/testgrilreply/sim: "
+				"valid ENTER_SIM_PIN Test 1",
+				&reply_enter_sim_pin_valid_1,
+				test_reply_enter_sim_pin_valid);
+
+	g_test_add_data_func("/testgrilreply/sim: "
+				"valid ENTER_SIM_PIN Test 2",
+				&reply_enter_sim_pin_valid_2,
+				test_reply_enter_sim_pin_valid);
 
 #endif
 
