@@ -1089,6 +1089,11 @@ static struct sms_concat_data shakespeare_test = {
 	.segments = 2,
 };
 
+static struct sms_concat_data surr_pair_split_test = {
+	.str = "😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱😱",
+	.segments = 2,
+};
+
 /* The string in this test should be padded at the end.  This confuses some
  * decoders which do not use udl properly
  */
@@ -1716,6 +1721,9 @@ int main(int argc, char **argv)
 
 	g_test_add_data_func("/testsms/Test Prepare Concat",
 			&shakespeare_test, test_prepare_concat);
+
+	g_test_add_data_func("/testsms/Test Prepare Concat UTF-16 surrog pairs",
+				&surr_pair_split_test, test_prepare_concat);
 
 	memset(long_string, 'a', 152*30);
 	memset(long_string + 152*30, 'b', 152);
