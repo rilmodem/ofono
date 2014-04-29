@@ -79,225 +79,6 @@ struct sim_password_test {
 	const struct ril_msg msg;
 };
 
-static const struct ril_msg reply_data_call_invalid_1 = {
-	.buf = "",
-	.buf_len = 0,
-};
-
-/*
- * The following hexadecimal data equates te the following
- * RIL_REQUEST_SETUP_DATA_CALL reply parameters:
- *
- * {version=2,num=2 [status=0,retry=-1,cid=0,active=2,type=IP}
- * Parcel is truncated, as num=2 should trigger a failure.
- */
-static const guchar reply_data_call_invalid_parcel2[] = {
-	0x07, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
-	0x02, 0x00, 0x00, 0x00, 0x49, 0x00, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-static const struct ril_msg reply_data_call_invalid_2 = {
-	.buf = (gchar *) &reply_data_call_invalid_parcel2,
-	.buf_len = sizeof(reply_data_call_invalid_parcel2),
-};
-
-/*
- * The following hexadecimal data is a binary representation of
- * a parcel containing an invalid RIL_REQUEST_SETUP_DATA_CALL reply
- * with a NULL string specified cfor 'type':
- *
- * {version=7,num=1 [status=0,retry=-1,cid=0,active=2,type=NULL
- * ifname=rmnet_usb0,address=10.181.235.154/30,
- * dns=172.16.145.103 172.16.145.103,gateways=10.181.235.153]}
- */
-static const guchar reply_data_call_invalid_parcel3[] = {
-	0x07, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
-	0xff, 0xff, 0xff, 0xff,
-	0x0a, 0x00, 0x00, 0x00, 0x72, 0x00, 0x6d, 0x00, 0x6e, 0x00, 0x65, 0x00,
-	0x74, 0x00, 0x5f, 0x00, 0x75, 0x00, 0x73, 0x00, 0x62, 0x00, 0x30, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0x31, 0x00, 0x30, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x38, 0x00, 0x31, 0x00, 0x2e, 0x00, 0x32, 0x00,
-	0x33, 0x00, 0x35, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x35, 0x00, 0x34, 0x00,
-	0x2f, 0x00, 0x33, 0x00, 0x30, 0x00, 0x00, 0x00, 0x1d, 0x00, 0x00, 0x00,
-	0x31, 0x00, 0x37, 0x00, 0x32, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x36, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x34, 0x00, 0x35, 0x00, 0x2e, 0x00, 0x31, 0x00,
-	0x30, 0x00, 0x33, 0x00, 0x20, 0x00, 0x31, 0x00, 0x37, 0x00, 0x32, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x36, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x34, 0x00,
-	0x35, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x30, 0x00, 0x33, 0x00, 0x00, 0x00,
-	0x0e, 0x00, 0x00, 0x00, 0x31, 0x00, 0x30, 0x00, 0x2e, 0x00, 0x31, 0x00,
-	0x38, 0x00, 0x31, 0x00, 0x2e, 0x00, 0x32, 0x00, 0x33, 0x00, 0x35, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x35, 0x00, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-static const struct ril_msg reply_data_call_invalid_3 = {
-	.buf = (gchar *) &reply_data_call_invalid_parcel3,
-	.buf_len = sizeof(reply_data_call_invalid_parcel3),
-};
-
-/*
- * The following hexadecimal data is a binary representation of
- * a parcel containing an invalid RIL_REQUEST_SETUP_DATA_CALL reply
- * with a NULL string specified for 'ifname':
- *
- * {version=7,num=1 [status=0,retry=-1,cid=0,active=2,type=IP
- * ifname=NULL,address=10.181.235.154/30,
- * dns=172.16.145.103 172.16.145.103,gateways=10.181.235.153]}
- */
-static const guchar reply_data_call_invalid_parcel4[] = {
-	0x07, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
-	0x02, 0x00, 0x00, 0x00, 0x49, 0x00, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0xff, 0xff, 0xff, 0xff, 0x11, 0x00, 0x00, 0x00, 0x31, 0x00, 0x30, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x38, 0x00, 0x31, 0x00, 0x2e, 0x00, 0x32, 0x00,
-	0x33, 0x00, 0x35, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x35, 0x00, 0x34, 0x00,
-	0x2f, 0x00, 0x33, 0x00, 0x30, 0x00, 0x00, 0x00, 0x1d, 0x00, 0x00, 0x00,
-	0x31, 0x00, 0x37, 0x00, 0x32, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x36, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x34, 0x00, 0x35, 0x00, 0x2e, 0x00, 0x31, 0x00,
-	0x30, 0x00, 0x33, 0x00, 0x20, 0x00, 0x31, 0x00, 0x37, 0x00, 0x32, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x36, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x34, 0x00,
-	0x35, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x30, 0x00, 0x33, 0x00, 0x00, 0x00,
-	0x0e, 0x00, 0x00, 0x00, 0x31, 0x00, 0x30, 0x00, 0x2e, 0x00, 0x31, 0x00,
-	0x38, 0x00, 0x31, 0x00, 0x2e, 0x00, 0x32, 0x00, 0x33, 0x00, 0x35, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x35, 0x00, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-static const struct ril_msg reply_data_call_invalid_4 = {
-	.buf = (gchar *) &reply_data_call_invalid_parcel4,
-	.buf_len = sizeof(reply_data_call_invalid_parcel4),
-};
-
-/*
- * The following hexadecimal data is a binary representation of
- * a parcel containing an invalid RIL_REQUEST_SETUP_DATA_CALL reply
- * with a NULL string specified for 'address':
- *
- * {version=7,num=1 [status=0,retry=-1,cid=0,active=2,type=IP
- * ifname=rmnet_usb0,address=NULL,
- * dns=172.16.145.103 172.16.145.103,gateways=10.181.235.153]}
- */
-static const guchar reply_data_call_invalid_parcel5[] = {
-	0x07, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
-	0x02, 0x00, 0x00, 0x00, 0x49, 0x00, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x0a, 0x00, 0x00, 0x00, 0x72, 0x00, 0x6d, 0x00, 0x6e, 0x00, 0x65, 0x00,
-	0x74, 0x00, 0x5f, 0x00, 0x75, 0x00, 0x73, 0x00, 0x62, 0x00, 0x30, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x1d, 0x00, 0x00, 0x00,
-	0x31, 0x00, 0x37, 0x00, 0x32, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x36, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x34, 0x00, 0x35, 0x00, 0x2e, 0x00, 0x31, 0x00,
-	0x30, 0x00, 0x33, 0x00, 0x20, 0x00, 0x31, 0x00, 0x37, 0x00, 0x32, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x36, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x34, 0x00,
-	0x35, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x30, 0x00, 0x33, 0x00, 0x00, 0x00,
-	0x0e, 0x00, 0x00, 0x00, 0x31, 0x00, 0x30, 0x00, 0x2e, 0x00, 0x31, 0x00,
-	0x38, 0x00, 0x31, 0x00, 0x2e, 0x00, 0x32, 0x00, 0x33, 0x00, 0x35, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x35, 0x00, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-static const struct ril_msg reply_data_call_invalid_5 = {
-	.buf = (gchar *) &reply_data_call_invalid_parcel5,
-	.buf_len = sizeof(reply_data_call_invalid_parcel5),
-};
-
-/*
- * The following hexadecimal data represents a serialized Binder parcel
- * instance containing an invalid RIL_REQUEST_SETUP_DATA_CALL reply
- * with a NULL string specified for 'gateways':
- *
- * {version=7,num=1 [status=0,retry=-1,cid=0,active=2,type=IP
- * ifname=rmnet_usb0,address=10.181.235.154/30,
- * dns=172.16.145.103 172.16.145.103,gateways=NULL]}
- */
-static const guchar reply_data_call_invalid_parcel6[] = {
-	0x07, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
-	0x02, 0x00, 0x00, 0x00, 0x49, 0x00, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x0a, 0x00, 0x00, 0x00, 0x72, 0x00, 0x6d, 0x00, 0x6e, 0x00, 0x65, 0x00,
-	0x74, 0x00, 0x5f, 0x00, 0x75, 0x00, 0x73, 0x00, 0x62, 0x00, 0x30, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0x31, 0x00, 0x30, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x38, 0x00, 0x31, 0x00, 0x2e, 0x00, 0x32, 0x00,
-	0x33, 0x00, 0x35, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x35, 0x00, 0x34, 0x00,
-	0x2f, 0x00, 0x33, 0x00, 0x30, 0x00, 0x00, 0x00, 0x1d, 0x00, 0x00, 0x00,
-	0x31, 0x00, 0x37, 0x00, 0x32, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x36, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x34, 0x00, 0x35, 0x00, 0x2e, 0x00, 0x31, 0x00,
-	0x30, 0x00, 0x33, 0x00, 0x20, 0x00, 0x31, 0x00, 0x37, 0x00, 0x32, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x36, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x34, 0x00,
-	0x35, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x30, 0x00, 0x33, 0x00, 0x00, 0x00,
-	0xff, 0xff, 0xff, 0xff
-};
-
-static const struct ril_msg reply_data_call_invalid_6 = {
-	.buf = (gchar *) &reply_data_call_invalid_parcel6,
-	.buf_len = sizeof(reply_data_call_invalid_parcel6),
-};
-
-/*
- * The following hexadecimal data represents a serialized Binder parcel
- * instance containing an invalid RIL_REQUEST_SETUP_DATA_CALL reply with
- * with a NULL string specified for 'dns':
- *
- * {version=7,num=1 [status=0,retry=-1,cid=0,active=2,type=IP
- * ifname=rmnet_usb0,address=10.181.235.154/30,
- * dns=NULL,gateways=10.181.235.153]}
- */
-static const guchar reply_data_call_invalid_parcel7[] = {
-	0x07, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
-	0x02, 0x00, 0x00, 0x00, 0x49, 0x00, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x0a, 0x00, 0x00, 0x00, 0x72, 0x00, 0x6d, 0x00, 0x6e, 0x00, 0x65, 0x00,
-	0x74, 0x00, 0x5f, 0x00, 0x75, 0x00, 0x73, 0x00, 0x62, 0x00, 0x30, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0x31, 0x00, 0x30, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x38, 0x00, 0x31, 0x00, 0x2e, 0x00, 0x32, 0x00,
-	0x33, 0x00, 0x35, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x35, 0x00, 0x34, 0x00,
-	0x2f, 0x00, 0x33, 0x00, 0x30, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
-	0x0e, 0x00, 0x00, 0x00, 0x31, 0x00, 0x30, 0x00, 0x2e, 0x00, 0x31, 0x00,
-	0x38, 0x00, 0x31, 0x00, 0x2e, 0x00, 0x32, 0x00, 0x33, 0x00, 0x35, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x35, 0x00, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-static const struct ril_msg reply_data_call_invalid_7 = {
-	.buf = (gchar *) &reply_data_call_invalid_parcel7,
-	.buf_len = sizeof(reply_data_call_invalid_parcel7),
-};
-
-/*
- * The following hexadecimal data represents a serialized Binder parcel
- * instance containing a valid RIL_REQUEST_SETUP_DATA_CALL reply with the
- * following parameters:
- *
- * {version=7,num=1 [status=0,retry=-1,cid=0,active=2,type=IP,
- * ifname=rmnet_usb0,address=10.181.235.154/30,
- * dns=172.16.145.103 172.16.145.103,gateways=10.181.235.153]}
- */
-static const guchar reply_data_call_valid_parcel1[] = {
-	0x07, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
-	0x02, 0x00, 0x00, 0x00, 0x49, 0x00, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x0a, 0x00, 0x00, 0x00, 0x72, 0x00, 0x6d, 0x00, 0x6e, 0x00, 0x65, 0x00,
-	0x74, 0x00, 0x5f, 0x00, 0x75, 0x00, 0x73, 0x00, 0x62, 0x00, 0x30, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0x31, 0x00, 0x30, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x38, 0x00, 0x31, 0x00, 0x2e, 0x00, 0x32, 0x00,
-	0x33, 0x00, 0x35, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x35, 0x00, 0x34, 0x00,
-	0x2f, 0x00, 0x33, 0x00, 0x30, 0x00, 0x00, 0x00, 0x1d, 0x00, 0x00, 0x00,
-	0x31, 0x00, 0x37, 0x00, 0x32, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x36, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x34, 0x00, 0x35, 0x00, 0x2e, 0x00, 0x31, 0x00,
-	0x30, 0x00, 0x33, 0x00, 0x20, 0x00, 0x31, 0x00, 0x37, 0x00, 0x32, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x36, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x34, 0x00,
-	0x35, 0x00, 0x2e, 0x00, 0x31, 0x00, 0x30, 0x00, 0x33, 0x00, 0x00, 0x00,
-	0x0e, 0x00, 0x00, 0x00, 0x31, 0x00, 0x30, 0x00, 0x2e, 0x00, 0x31, 0x00,
-	0x38, 0x00, 0x31, 0x00, 0x2e, 0x00, 0x32, 0x00, 0x33, 0x00, 0x35, 0x00,
-	0x2e, 0x00, 0x31, 0x00, 0x35, 0x00, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-static const struct ril_msg reply_data_call_valid_1 = {
-	.buf = (gchar *) &reply_data_call_valid_parcel1,
-	.buf_len = sizeof(reply_data_call_valid_parcel1),
-	.unsolicited = FALSE,
-	.req = RIL_REQUEST_SETUP_DATA_CALL,
-	.serial_no = 0,
-	.error = 0,
-};
-
 /* Invalid RIL_REQUEST_DATA_REGISTRATION_STATE: buffer too small */
 static const struct ril_msg reply_data_reg_state_invalid_1 = {
 	.buf = "XYZ",
@@ -329,7 +110,7 @@ static const struct ril_msg reply_data_reg_state_invalid_2 = {
  * The following hex data represents a RIL_REQUEST_DATA_REGISTRATION_STATE
  * reply with a null status parameter:
  *
- * {(null),1b3f,07eaf3dc,hspa,(null),20}
+ * {(null),1b3f,07eaf3dc,HSPA,(null),20}
  */
 static const guchar reply_data_reg_state_invalid_parcel3[] = {
 	0x06, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x04, 0x00, 0x00, 0x00,
@@ -354,9 +135,9 @@ static const struct ril_msg reply_data_reg_state_invalid_3 = {
  * The following hex data represents a valid RIL_REQUEST_DATA_REGISTRATION_STATE
  * reply with the following parameters:
  *
- * RADIO_TECH_UNKNOWN (0) -> none
+ * RADIO_TECH_UNKNOWN (0)
  *
- * {registered,1b3f,07eaf3dc,none,(null),20}
+ * {registered,1b3f,07eaf3dc,UNKNOWN,(null),20}
  */
 static const guchar reply_data_reg_state_valid_parcel1[] = {
 	0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x31, 0x00, 0x00, 0x00,
@@ -370,7 +151,7 @@ static const guchar reply_data_reg_state_valid_parcel1[] = {
 
 static const reg_state_test data_reg_valid_1 = {
 	.status = NETWORK_REGISTRATION_STATUS_REGISTERED,
-	.tech = PACKET_BEARER_NONE,
+	.tech = RADIO_TECH_UNKNOWN,
 	.msg = {
 		.buf = (gchar *) &reply_data_reg_state_valid_parcel1,
 		.buf_len = sizeof(reply_data_reg_state_valid_parcel1),
@@ -385,9 +166,9 @@ static const reg_state_test data_reg_valid_1 = {
  * The following hex data represents a valid RIL_REQUEST_DATA_REGISTRATION_STATE
  * reply with the following parameters:
  *
- * RADIO_TECH_GSM (16) -> none
+ * RADIO_TECH_GSM (16)
  *
- * {registered,1b3f,07eaf3dc,none,(null),20}
+ * {registered,1b3f,07eaf3dc,GSM,(null),20}
  */
 static const guchar reply_data_reg_state_valid_parcel2[] = {
 	0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x31, 0x00, 0x00, 0x00,
@@ -401,7 +182,7 @@ static const guchar reply_data_reg_state_valid_parcel2[] = {
 
 static const reg_state_test data_reg_valid_2 = {
 	.status = NETWORK_REGISTRATION_STATUS_REGISTERED,
-	.tech = PACKET_BEARER_NONE,
+	.tech = RADIO_TECH_GSM,
 	.msg = {
 		.buf = (gchar *) &reply_data_reg_state_valid_parcel2,
 		.buf_len = sizeof(reply_data_reg_state_valid_parcel2),
@@ -416,9 +197,9 @@ static const reg_state_test data_reg_valid_2 = {
  * The following hex data represents a valid RIL_REQUEST_DATA_REGISTRATION_STATE
  * reply with the following parameters:
  *
- * RADIO_TECH_GPRS (1) -> gprs
+ * RADIO_TECH_GPRS (1)
  *
- * {registered,1b3f,07eaf3dc,gprs,(null),20}
+ * {registered,1b3f,07eaf3dc,GPRS,(null),20}
  */
 static const guchar reply_data_reg_state_valid_parcel3[] = {
 	0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x31, 0x00, 0x00, 0x00,
@@ -432,7 +213,7 @@ static const guchar reply_data_reg_state_valid_parcel3[] = {
 
 static const reg_state_test data_reg_valid_3 = {
 	.status = NETWORK_REGISTRATION_STATUS_REGISTERED,
-	.tech = PACKET_BEARER_GPRS,
+	.tech = RADIO_TECH_GPRS,
 	.msg = {
 		.buf = (gchar *) &reply_data_reg_state_valid_parcel3,
 		.buf_len = sizeof(reply_data_reg_state_valid_parcel3),
@@ -447,9 +228,9 @@ static const reg_state_test data_reg_valid_3 = {
  * The following hex data represents a valid RIL_REQUEST_DATA_REGISTRATION_STATE
  * reply with the following parameters:
  *
- * RADIO_TECH_EDGE (2) -> edge
+ * RADIO_TECH_EDGE (2)
  *
- * {registered,1b3f,07eaf3dc,edge,(null),20}
+ * {registered,1b3f,07eaf3dc,EDGE,(null),20}
  */
 static const guchar reply_data_reg_state_valid_parcel4[] = {
 	0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x31, 0x00, 0x00, 0x00,
@@ -463,7 +244,7 @@ static const guchar reply_data_reg_state_valid_parcel4[] = {
 
 static const reg_state_test data_reg_valid_4 = {
 	.status = NETWORK_REGISTRATION_STATUS_REGISTERED,
-	.tech = PACKET_BEARER_EGPRS,
+	.tech = RADIO_TECH_EDGE,
 	.msg = {
 		.buf = (gchar *) &reply_data_reg_state_valid_parcel4,
 		.buf_len = sizeof(reply_data_reg_state_valid_parcel4),
@@ -478,9 +259,9 @@ static const reg_state_test data_reg_valid_4 = {
  * The following hex data represents a valid RIL_REQUEST_DATA_REGISTRATION_STATE
  * reply with the following parameters:
  *
- * RADIO_TECH_UMTS (3) -> umts
+ * RADIO_TECH_UMTS (3)
  *
- * {registered,1b3f,07eaf3dc,umts,(null),20}
+ * {registered,1b3f,07eaf3dc,UMTS,(null),20}
  */
 static const guchar reply_data_reg_state_valid_parcel5[] = {
 	0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x31, 0x00, 0x00, 0x00,
@@ -494,7 +275,7 @@ static const guchar reply_data_reg_state_valid_parcel5[] = {
 
 static const reg_state_test data_reg_valid_5 = {
 	.status = NETWORK_REGISTRATION_STATUS_REGISTERED,
-	.tech = PACKET_BEARER_UMTS,
+	.tech = RADIO_TECH_UMTS,
 	.msg = {
 		.buf = (gchar *) &reply_data_reg_state_valid_parcel5,
 		.buf_len = sizeof(reply_data_reg_state_valid_parcel5),
@@ -509,9 +290,9 @@ static const reg_state_test data_reg_valid_5 = {
  * The following hex data represents a valid RIL_REQUEST_DATA_REGISTRATION_STATE
  * reply with the following parameters:
  *
- * RADIO_TECH_HSDPA (9) -> hsdpa
+ * RADIO_TECH_HSDPA (9)
  *
- * {registered,1b3f,07eaf3dc,hsdpa,(null),20}
+ * {registered,1b3f,07eaf3dc,HSDPA,(null),20}
  */
 static const guchar reply_data_reg_state_valid_parcel6[] = {
 	0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x31, 0x00, 0x00, 0x00,
@@ -525,7 +306,7 @@ static const guchar reply_data_reg_state_valid_parcel6[] = {
 
 static const reg_state_test data_reg_valid_6 = {
 	.status = NETWORK_REGISTRATION_STATUS_REGISTERED,
-	.tech = PACKET_BEARER_HSDPA,
+ 	.tech = RADIO_TECH_HSDPA,
 	.msg = {
 		.buf = (gchar *) &reply_data_reg_state_valid_parcel6,
 		.buf_len = sizeof(reply_data_reg_state_valid_parcel6),
@@ -540,9 +321,9 @@ static const reg_state_test data_reg_valid_6 = {
  * The following hex data represents a valid RIL_REQUEST_DATA_REGISTRATION_STATE
  * reply with the following parameters:
  *
- * RADIO_TECH_HSUPA (10) -> hsupa
+ * RADIO_TECH_HSUPA (10)
  *
- * {registered,1b3f,07eaf3dc,hsupa,(null),20}
+ * {registered,1b3f,07eaf3dc,HSUPA,(null),20}
  */
 static const guchar reply_data_reg_state_valid_parcel7[] = {
 	0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x31, 0x00, 0x00, 0x00,
@@ -556,7 +337,7 @@ static const guchar reply_data_reg_state_valid_parcel7[] = {
 
 static const reg_state_test data_reg_valid_7 = {
 	.status = NETWORK_REGISTRATION_STATUS_REGISTERED,
-	.tech = PACKET_BEARER_HSUPA,
+	.tech = RADIO_TECH_HSUPA,
 	.msg = {
 		.buf = (gchar *) &reply_data_reg_state_valid_parcel7,
 		.buf_len = sizeof(reply_data_reg_state_valid_parcel7),
@@ -571,9 +352,9 @@ static const reg_state_test data_reg_valid_7 = {
  * The following hex data represents a valid RIL_REQUEST_DATA_REGISTRATION_STATE
  * reply with the following parameters:
  *
- * RADIO_TECH_HSPA (11) -> hspa
+ * RADIO_TECH_HSPA (11)
  *
- * {registered,1b3f,07eaf3dc,hspa,(null),20}
+ * {registered,1b3f,07eaf3dc,HSPA,(null),20}
  */
 static const guchar reply_data_reg_state_valid_parcel8[] = {
 	0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x31, 0x00, 0x00, 0x00,
@@ -588,7 +369,7 @@ static const guchar reply_data_reg_state_valid_parcel8[] = {
 
 static const reg_state_test data_reg_valid_8 = {
 	.status = NETWORK_REGISTRATION_STATUS_REGISTERED,
-	.tech = PACKET_BEARER_HSUPA_HSDPA,
+	.tech = RADIO_TECH_HSPA,
 	.msg = {
 		.buf = (gchar *) &reply_data_reg_state_valid_parcel8,
 		.buf_len = sizeof(reply_data_reg_state_valid_parcel8),
@@ -603,9 +384,9 @@ static const reg_state_test data_reg_valid_8 = {
  * The following hex data represents a valid RIL_REQUEST_DATA_REGISTRATION_STATE
  * reply with the following parameters:
  *
- * RADIO_TECH_LTE (14) -> lte
+ * RADIO_TECH_LTE (14)
  *
- * {registered,1b3f,07eaf3dc,lte,(null),20}
+ * {registered,1b3f,07eaf3dc,LTE,(null),20}
  */
 static const guchar reply_data_reg_state_valid_parcel9[] = {
 	0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x31, 0x00, 0x00, 0x00,
@@ -620,7 +401,7 @@ static const guchar reply_data_reg_state_valid_parcel9[] = {
 
 static const reg_state_test data_reg_valid_9 = {
 	.status = NETWORK_REGISTRATION_STATUS_REGISTERED,
-	.tech = PACKET_BEARER_EPS,
+	.tech = RADIO_TECH_LTE,
 	.msg = {
 		.buf = (gchar *) &reply_data_reg_state_valid_parcel9,
 		.buf_len = sizeof(reply_data_reg_state_valid_parcel9),
@@ -635,12 +416,12 @@ static const reg_state_test data_reg_valid_9 = {
  * The following hex data represents a valid RIL_REQUEST_DATA_REGISTRATION_STATE
  * reply with the following parameters:
  *
- * RADIO_TECH_HSPAP (15) -> hspa
+ * RADIO_TECH_HSPAP (15)
  *
  * Note, as ofono currently doesn't define a bearer enum that represents HSPA+,
  * it's currently mapped to HSPA.
  *
- * {registered,1b3f,07eaf3dc,hspa,(null),20}
+ * {registered,1b3f,07eaf3dc,HSPAP,(null),20}
  */
 static const guchar reply_data_reg_state_valid_parcel10[] = {
 	0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x31, 0x00, 0x00, 0x00,
@@ -655,7 +436,7 @@ static const guchar reply_data_reg_state_valid_parcel10[] = {
 
 static const reg_state_test data_reg_valid_10 = {
 	.status = NETWORK_REGISTRATION_STATUS_REGISTERED,
-	.tech = PACKET_BEARER_HSUPA_HSDPA,
+	.tech = RADIO_TECH_HSPAP,
 	.msg = {
 		.buf = (gchar *) &reply_data_reg_state_valid_parcel10,
 		.buf_len = sizeof(reply_data_reg_state_valid_parcel10),
@@ -676,9 +457,9 @@ static const reg_state_test data_reg_valid_10 = {
  * The following hex data represents a valid
  * RIL_REQUEST_VOICE_REGISTRATION_STATE reply with the following parameters:
  *
- * RADIO_TECH_UMTS (3) -> umts
+ * RADIO_TECH_UMTS (3)
  *
- * {registered,1b3f,07eaf3dc,umts,(null),(null)}
+ * {registered,1b3f,07eaf3dc,UMTS,(null),(null)}
  */
 static const guchar reply_voice_reg_state_valid_parcel1[] = {
 	0x0f, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x31, 0x00, 0x00, 0x00,
@@ -695,7 +476,7 @@ static const guchar reply_voice_reg_state_valid_parcel1[] = {
 
 static const reg_state_test voice_reg_valid_1 = {
 	.status = NETWORK_REGISTRATION_STATUS_REGISTERED,
-	.tech = ACCESS_TECHNOLOGY_UTRAN,
+	.tech = RADIO_TECH_UMTS,
 	.msg = {
 		.buf = (gchar *) &reply_voice_reg_state_valid_parcel1,
 		.buf_len = sizeof(reply_voice_reg_state_valid_parcel1),
@@ -711,9 +492,9 @@ static const reg_state_test voice_reg_valid_1 = {
  * RIL_REQUEST_VOICE_REGISTRATION_STATE reply with the following parameters:
  *
  *
- * RADIO_TECH_GPRS (1) -> gsm
+ * RADIO_TECH_GPRS (1)
  *
- * {unregistered,1b3f,07eaf3dc,gsm,(null),(null)}
+ * {unregistered,1b3f,07eaf3dc,GPRS,(null),(null)}
  */
 static const guchar reply_voice_reg_state_valid_parcel2[] = {
 	0x0f, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x30, 0x00, 0x00, 0x00,
@@ -730,7 +511,7 @@ static const guchar reply_voice_reg_state_valid_parcel2[] = {
 
 static const reg_state_test voice_reg_valid_2 = {
 	.status = (int) NETWORK_REGISTRATION_STATUS_NOT_REGISTERED,
-	.tech = ACCESS_TECHNOLOGY_GSM,
+	.tech = RADIO_TECH_GPRS,
 	.msg = {
 		.buf = (gchar *) &reply_voice_reg_state_valid_parcel2,
 		.buf_len = sizeof(reply_voice_reg_state_valid_parcel2),
@@ -745,9 +526,9 @@ static const reg_state_test voice_reg_valid_2 = {
  * The following hex data represents a valid
  * RIL_REQUEST_VOICE_REGISTRATION_STATE reply with the following parameters:
  *
- * RADIO_TECH_GSM (16) -> gsm
+ * RADIO_TECH_GSM (16)
  *
- * {searching,1b3f,07eaf3dc,gsm,(null),(null)}
+ * {searching,1b3f,07eaf3dc,GSM,(null),(null)}
  */
 static const guchar reply_voice_reg_state_valid_parcel3[] = {
 	0x0f, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0x00,
@@ -765,7 +546,7 @@ static const guchar reply_voice_reg_state_valid_parcel3[] = {
 
 static const reg_state_test voice_reg_valid_3 = {
 	.status = NETWORK_REGISTRATION_STATUS_SEARCHING,
-	.tech = ACCESS_TECHNOLOGY_GSM,
+	.tech = RADIO_TECH_GSM,
 	.msg = {
 		.buf = (gchar *) &reply_voice_reg_state_valid_parcel3,
 		.buf_len = sizeof(reply_voice_reg_state_valid_parcel3),
@@ -780,9 +561,9 @@ static const reg_state_test voice_reg_valid_3 = {
  * The following hex data represents a valid
  * RIL_REQUEST_VOICE_REGISTRATION_STATE reply with the following parameters:
  *
- * RADIO_TECH_EDGE (2) -> edge
+ * RADIO_TECH_EDGE (2)
  *
- * {denied,1b3f,07eaf3dc,edge,(null),(null)}
+ * {denied,1b3f,07eaf3dc,EDGE,(null),(null)}
  */
 static const guchar reply_voice_reg_state_valid_parcel4[] = {
 	0x0f, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x33, 0x00, 0x00, 0x00,
@@ -799,7 +580,7 @@ static const guchar reply_voice_reg_state_valid_parcel4[] = {
 
 static const reg_state_test voice_reg_valid_4 = {
 	.status = NETWORK_REGISTRATION_STATUS_DENIED,
-	.tech = ACCESS_TECHNOLOGY_GSM_EGPRS,
+	.tech = RADIO_TECH_EDGE,
 	.msg = {
 		.buf = (gchar *) &reply_voice_reg_state_valid_parcel4,
 		.buf_len = sizeof(reply_voice_reg_state_valid_parcel4),
@@ -814,7 +595,9 @@ static const reg_state_test voice_reg_valid_4 = {
  * The following hex data represents a valid
  * RIL_REQUEST_VOICE_REGISTRATION_STATE reply with the following parameters:
  *
- * {unknown,1b3f,07eaf3dc,"",(null),(null)}
+ * RADIO_TECH_UNKNOWN (0)
+ *
+ * {unknown,1b3f,07eaf3dc,UNKNOWN,(null),(null)}
  */
 static const guchar reply_voice_reg_state_valid_parcel5[] = {
 	0x0f, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x34, 0x00, 0x00, 0x00,
@@ -831,7 +614,7 @@ static const guchar reply_voice_reg_state_valid_parcel5[] = {
 
 static const reg_state_test voice_reg_valid_5 = {
 	.status = NETWORK_REGISTRATION_STATUS_UNKNOWN,
-	.tech = -1,
+	.tech = RADIO_TECH_UNKNOWN,
 	.msg = {
 		.buf = (gchar *) &reply_voice_reg_state_valid_parcel5,
 		.buf_len = sizeof(reply_voice_reg_state_valid_parcel5),
@@ -846,9 +629,9 @@ static const reg_state_test voice_reg_valid_5 = {
  * The following hex data represents a valid
  * RIL_REQUEST_VOICE_REGISTRATION_STATE reply with the following parameters:
  *
- * RADIO_TECH_LTE (14) -> lte
+ * RADIO_TECH_LTE (14)
  *
- * {roaming,1b3f,07eaf3dc,lte,(null),(null)}
+ * {roaming,1b3f,07eaf3dc,LTE,(null),(null)}
  */
 static const guchar reply_voice_reg_state_valid_parcel6[] = {
 	0x0f, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x35, 0x00, 0x00, 0x00,
@@ -866,7 +649,7 @@ static const guchar reply_voice_reg_state_valid_parcel6[] = {
 
 static const reg_state_test voice_reg_valid_6 = {
 	.status = NETWORK_REGISTRATION_STATUS_ROAMING,
-	.tech = ACCESS_TECHNOLOGY_EUTRAN,
+	.tech = RADIO_TECH_LTE,
 	.msg = {
 		.buf = (gchar *) &reply_voice_reg_state_valid_parcel6,
 		.buf_len = sizeof(reply_voice_reg_state_valid_parcel6),
@@ -881,9 +664,9 @@ static const reg_state_test voice_reg_valid_6 = {
  * The following hex data represents a valid
  * RIL_REQUEST_VOICE_REGISTRATION_STATE reply with the following parameters:
  *
- * RADIO_TECH_HSDPA (9) -> hsdpa
+ * RADIO_TECH_HSDPA (9)
  *
- * {roaming,1b3f,07eaf3dc,hsdpa,(null),(null)}
+ * {roaming,1b3f,07eaf3dc,HSDPA,(null),(null)}
  */
 static const guchar reply_voice_reg_state_valid_parcel7[] = {
 	0x0f, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x35, 0x00, 0x00, 0x00,
@@ -900,7 +683,7 @@ static const guchar reply_voice_reg_state_valid_parcel7[] = {
 
 static const reg_state_test voice_reg_valid_7 = {
 	.status = NETWORK_REGISTRATION_STATUS_ROAMING,
-	.tech = ACCESS_TECHNOLOGY_UTRAN_HSDPA,
+	.tech = RADIO_TECH_HSDPA,
 	.msg = {
 		.buf = (gchar *) &reply_voice_reg_state_valid_parcel7,
 		.buf_len = sizeof(reply_voice_reg_state_valid_parcel7),
@@ -915,9 +698,9 @@ static const reg_state_test voice_reg_valid_7 = {
  * The following hex data represents a valid
  * RIL_REQUEST_VOICE_REGISTRATION_STATE reply with the following parameters:
  *
- * RADIO_TECH_HSUPA (10) -> hsupa
+ * RADIO_TECH_HSUPA (10)
  *
- * {roaming,1b3f,07eaf3dc,hsupa,(null),(null)}
+ * {roaming,1b3f,07eaf3dc,HSUPA,(null),(null)}
  */
 static const guchar reply_voice_reg_state_valid_parcel8[] = {
 	0x0f, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x35, 0x00, 0x00, 0x00,
@@ -935,7 +718,7 @@ static const guchar reply_voice_reg_state_valid_parcel8[] = {
 
 static const reg_state_test voice_reg_valid_8 = {
 	.status = NETWORK_REGISTRATION_STATUS_ROAMING,
-	.tech = ACCESS_TECHNOLOGY_UTRAN_HSUPA,
+	.tech = RADIO_TECH_HSUPA,
 	.msg = {
 		.buf = (gchar *) &reply_voice_reg_state_valid_parcel8,
 		.buf_len = sizeof(reply_voice_reg_state_valid_parcel8),
@@ -950,9 +733,9 @@ static const reg_state_test voice_reg_valid_8 = {
  * The following hex data represents a valid
  * RIL_REQUEST_VOICE_REGISTRATION_STATE reply with the following parameters:
  *
- * RADIO_TECH_HSPA (11) -> hspa
+ * RADIO_TECH_HSPA (11)
  *
- * {roaming,1b3f,07eaf3dc,hspa,(null),(null)}
+ * {roaming,1b3f,07eaf3dc,HSPA,(null),(null)}
  */
 static const guchar reply_voice_reg_state_valid_parcel9[] = {
 	0x0f, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x35, 0x00, 0x00, 0x00,
@@ -970,7 +753,7 @@ static const guchar reply_voice_reg_state_valid_parcel9[] = {
 
 static const reg_state_test voice_reg_valid_9 = {
 	.status = NETWORK_REGISTRATION_STATUS_ROAMING,
-	.tech = ACCESS_TECHNOLOGY_UTRAN_HSDPA_HSUPA,
+	.tech = RADIO_TECH_HSPA,
 	.msg = {
 		.buf = (gchar *) &reply_voice_reg_state_valid_parcel9,
 		.buf_len = sizeof(reply_voice_reg_state_valid_parcel9),
@@ -985,12 +768,9 @@ static const reg_state_test voice_reg_valid_9 = {
  * The following hex data represents a valid
  * RIL_REQUEST_VOICE_REGISTRATION_STATE reply with the following parameters:
  *
- * RADIO_TECH_HSPAP (15) --> hspa
+ * RADIO_TECH_HSPAP (15)
  *
- * Note, as ofono currently doesn't define an access tech enum that represents
- * HSPA+, it's currently mapped to HSPA.
- *
- * {roaming,1b3f,07eaf3dc,hspa,(null),(null)}
+ * {roaming,1b3f,07eaf3dc,HSPAP,(null),(null)}
  */
 static const guchar reply_voice_reg_state_valid_parcel10[] = {
 	0x0f, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x35, 0x00, 0x00, 0x00,
@@ -1008,7 +788,7 @@ static const guchar reply_voice_reg_state_valid_parcel10[] = {
 
 static const reg_state_test voice_reg_valid_10 = {
 	.status = NETWORK_REGISTRATION_STATUS_ROAMING,
-	.tech = ACCESS_TECHNOLOGY_UTRAN_HSDPA_HSUPA,
+	.tech = RADIO_TECH_HSPAP,
 	.msg = {
 		.buf = (gchar *) &reply_voice_reg_state_valid_parcel10,
 		.buf_len = sizeof(reply_voice_reg_state_valid_parcel10),
@@ -1624,32 +1404,6 @@ static const struct sim_password_test reply_enter_sim_pin_valid_2 = {
 	}
 };
 
-static void test_reply_data_call_invalid(gconstpointer data)
-{
-	struct ofono_error error;
-	struct reply_setup_data_call *reply;
-
-	reply = g_ril_reply_parse_data_call(NULL, data, &error);
-	g_assert(reply != NULL);
-	g_ril_reply_free_setup_data_call(reply);
-
-	g_assert(error.type == OFONO_ERROR_TYPE_FAILURE &&
-			error.error == -EINVAL);
-}
-
-static void test_reply_data_call_valid(gconstpointer data)
-{
-	struct ofono_error error;
-	struct reply_setup_data_call *reply =
-		g_ril_reply_parse_data_call(NULL, data, &error);
-
-	g_assert(reply != NULL);
-	g_ril_reply_free_setup_data_call(reply);
-
-	g_assert(error.type == OFONO_ERROR_TYPE_NO_ERROR &&
-			error.error == 0);
-}
-
 static void test_reply_reg_state_invalid(gconstpointer data)
 {
 	struct reply_reg_state *reply =	g_ril_reply_parse_reg_state(NULL, data);
@@ -1881,46 +1635,6 @@ int main(int argc, char **argv)
  * failures when run on PowerPC.
  */
 #if BYTE_ORDER == LITTLE_ENDIAN
-
-	g_test_add_data_func("/testgrilreply/gprs-context: "
-				"invalid SETUP_DATA_CALL Test 1",
-				&reply_data_call_invalid_1,
-				test_reply_data_call_invalid);
-
-	g_test_add_data_func("/testgrilreply/gprs-context: "
-				"invalid SETUP_DATA_CALL Test 2",
-				&reply_data_call_invalid_2,
-				test_reply_data_call_invalid);
-
-	g_test_add_data_func("/testgrilreply/gprs-context: "
-				"invalid SETUP_DATA_CALL Test 3",
-				&reply_data_call_invalid_3,
-				test_reply_data_call_invalid);
-
-	g_test_add_data_func("/testgrilreply/gprs-context: "
-				"invalid SETUP_DATA_CALL Test 4",
-				&reply_data_call_invalid_4,
-				test_reply_data_call_invalid);
-
-	g_test_add_data_func("/testgrilreply/gprs-context: "
-				"invalid SETUP_DATA_CALL Test 5",
-				&reply_data_call_invalid_5,
-				test_reply_data_call_invalid);
-
-	g_test_add_data_func("/testgrilreply/gprs-context: "
-				"invalid SETUP_DATA_CALL Test 6",
-				&reply_data_call_invalid_6,
-				test_reply_data_call_invalid);
-
-	g_test_add_data_func("/testgrilreply/gprs-context: "
-				"invalid SETUP_DATA_CALL Test 7",
-				&reply_data_call_invalid_7,
-				test_reply_data_call_invalid);
-
-	g_test_add_data_func("/testgrilreply/gprs-context: "
-				"valid SETUP_DATA_CALL Test 1",
-				&reply_data_call_valid_1,
-				test_reply_data_call_valid);
 
 	g_test_add_data_func("/testgrilreply/gprs: "
 				"invalid DATA_REG_STATE Test 1",

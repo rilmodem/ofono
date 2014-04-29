@@ -245,7 +245,11 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
 		num_param = SETUP_DATA_CALL_PARAMS + 1;
 
-	if (req->tech < RADIO_TECH_GPRS || req->tech > RADIO_TECH_GSM) {
+	/*
+	 * Radio technology to use: 0-CDMA, 1-GSM/UMTS, 2...
+	 * values > 2 are (RADIO_TECH + 2)
+	 */
+	if (req->tech < 1 || req->tech > (RADIO_TECH_GSM + 2)) {
 		ofono_error("%s: Invalid tech value: %d",
 				__func__,
 				req->tech);

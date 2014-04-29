@@ -45,110 +45,6 @@
 
 #define OPERATOR_NUM_PARAMS 3
 
-/* SETUP_DATA_CALL_PARAMS reply params */
-#define MIN_DATA_CALL_REPLY_SIZE 36
-
-static const char *handle_tech(gint req, gchar *stech, gint *tech) {
-
-	/*
-	 * This code handles the mapping between the RIL_RadioTechnology
-	 * based upon whether this a reply to a voice registration request
-	 * ( see <Act> values - 27.007 Section 7.3 ), or a reply to a
-	 * data registration request ( see <curr_bearer> values - 27.007
-	 * Section 7.29 ).  The two sets of constants are similar, but
-	 * sublty different.
-	 */
-
-	g_assert(tech);
-
-	if (req == RIL_REQUEST_VOICE_REGISTRATION_STATE) {
-		if (stech) {
-			switch(atoi(stech)) {
-			case RADIO_TECH_UNKNOWN:
-				*tech = -1;
-				break;
-			case RADIO_TECH_GSM:
-			case RADIO_TECH_GPRS:
-				*tech = ACCESS_TECHNOLOGY_GSM;
-				break;
-			case RADIO_TECH_EDGE:
-				*tech = ACCESS_TECHNOLOGY_GSM_EGPRS;
-				break;
-			case RADIO_TECH_UMTS:
-				*tech = ACCESS_TECHNOLOGY_UTRAN;
-				break;
-			case RADIO_TECH_HSDPA:
-				*tech = ACCESS_TECHNOLOGY_UTRAN_HSDPA;
-				break;
-			case RADIO_TECH_HSUPA:
-				*tech = ACCESS_TECHNOLOGY_UTRAN_HSUPA;
-				break;
-			case RADIO_TECH_HSPAP:
-			case RADIO_TECH_HSPA:
-				/* HSPAP is HSPA+; which ofono doesn't define;
-				 * so, if differentiating HSPA and HSPA+ is
-				 * important, then ofono needs to be patched,
-				 * and we probably also need to introduce a
-				 * new indicator icon.
-				 */
-
-				*tech = ACCESS_TECHNOLOGY_UTRAN_HSDPA_HSUPA;
-				break;
-			case RADIO_TECH_LTE:
-				*tech = ACCESS_TECHNOLOGY_EUTRAN;
-				break;
-			default:
-				*tech = -1;
-			}
-		} else
-			*tech = -1;
-
-		return registration_tech_to_string(*tech);
-	} else {
-		if (stech) {
-			switch(atoi(stech)) {
-			case RADIO_TECH_GSM:
-			case RADIO_TECH_UNKNOWN:
-				*tech = PACKET_BEARER_NONE;
-				break;
-			case RADIO_TECH_GPRS:
-				*tech = PACKET_BEARER_GPRS;
-				break;
-			case RADIO_TECH_EDGE:
-				*tech = PACKET_BEARER_EGPRS;
-				break;
-			case RADIO_TECH_UMTS:
-				*tech = PACKET_BEARER_UMTS;
-				break;
-			case RADIO_TECH_HSDPA:
-				*tech = PACKET_BEARER_HSDPA;
-				break;
-			case RADIO_TECH_HSUPA:
-				*tech = PACKET_BEARER_HSUPA;
-				break;
-			case RADIO_TECH_HSPAP:
-			case RADIO_TECH_HSPA:
-				/* HSPAP is HSPA+; which ofono doesn't define;
-				 * so, if differentiating HSPA and HSPA+ is
-				 * important, then ofono needs to be patched,
-				 * and we probably also need to introduce a
-				 * new indicator icon.
-				 */
-				*tech = PACKET_BEARER_HSUPA_HSDPA;
-				break;
-			case RADIO_TECH_LTE:
-				*tech = PACKET_BEARER_EPS;
-				break;
-			default:
-				*tech = PACKET_BEARER_NONE;
-			}
-		} else
-			*tech = PACKET_BEARER_NONE;
-
-		return packet_bearer_to_string(*tech);
-	}
-}
-
 static void ril_reply_free_operator(gpointer data)
 {
 	struct reply_operator *reply = data;
@@ -240,12 +136,12 @@ struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
 		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
 			char *tech = parcel_r_string(&rilp);
 			if (strcmp(tech, "3G") == 0)
-				operator->tech = ACCESS_TECHNOLOGY_UTRAN;
+				operator->tech = RADIO_TECH_UMTS;
 			else
-				operator->tech = ACCESS_TECHNOLOGY_GSM;
+				operator->tech = RADIO_TECH_GSM;
 			g_free(tech);
 		} else {
-			operator->tech = ACCESS_TECHNOLOGY_GSM;
+			operator->tech = RADIO_TECH_GSM;
 		}
 
 		if (operator->lalpha == NULL && operator->salpha == NULL) {
@@ -278,15 +174,14 @@ struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
 
 		reply->list = g_slist_append(reply->list, operator);
 
-		g_ril_append_print_buf(gril,
-					"%s [lalpha=%s, salpha=%s, "
-					" numeric=%s status=%s tech=%d]",
-					print_buf,
-					operator->lalpha,
-					operator->salpha,
-					operator->numeric,
-					operator->status,
-					operator->tech);
+		g_ril_append_print_buf(gril, "%s [lalpha=%s, salpha=%s, "
+				" numeric=%s status=%s tech=%s]",
+				print_buf,
+				operator->lalpha,
+				operator->salpha,
+				operator->numeric,
+				operator->status,
+				ril_radio_tech_to_string(operator->tech));
 	}
 
 	g_ril_append_print_buf(gril, "%s}", print_buf);
@@ -372,189 +267,6 @@ error:
 	return NULL;
 }
 
-/* TODO: move this to grilutil.c */
-void g_ril_reply_free_setup_data_call(struct reply_setup_data_call *reply)
-{
-	if (reply) {
-		g_free(reply->ifname);
-		g_strfreev(reply->dns_addresses);
-		g_strfreev(reply->gateways);
-		g_strfreev(reply->ip_addrs);
-		g_free(reply);
-	}
-}
-
-struct reply_setup_data_call *g_ril_reply_parse_data_call(GRil *gril,
-						const struct ril_msg *message,
-						struct ofono_error *error)
-{
-	struct parcel rilp;
-	int num = 0;
-	int protocol;
-	char *type = NULL, *raw_ip_addrs = NULL;
-	char *dnses = NULL, *raw_gws = NULL;
-
-	struct reply_setup_data_call *reply =
-		g_new0(struct reply_setup_data_call, 1);
-
-	OFONO_NO_ERROR(error);
-
-	reply->cid = -1;
-
-       /* TODO:
-	 * Cleanup duplicate code between this function and
-	 * ril_util_parse_data_call_list().
-	 */
-
-	/* valid size: 36 (34 if HCRADIO defined) */
-	if (message->buf_len < MIN_DATA_CALL_REPLY_SIZE) {
-		/* TODO: make a macro for error logging */
-		ofono_error("%s: SETUP_DATA_CALL reply too small: %d",
-				__func__,
-				(int) message->buf_len);
-		OFONO_EINVAL(error);
-		goto error;
-	}
-
-	g_ril_init_parcel(message, &rilp);
-
-	/*
-	 * ril.h documents the reply to a RIL_REQUEST_SETUP_DATA_CALL
-	 * as being a RIL_Data_Call_Response_v6 struct, however in
-	 * reality, the response actually includes the version of the
-	 * struct, followed by an array of calls, so the array size
-	 * also has to be read after the version.
-	 *
-	 * TODO: What if there's more than 1 call in the list??
-	 */
-
-	/*
-	 * TODO: consider using 'unused' variable; however if we
-	 * do this, the alternative is a few more append_print_buf
-	 * calls ( which become no-ops if tracing isn't enabled.
-	 */
-	reply->version = parcel_r_int32(&rilp);
-	num = parcel_r_int32(&rilp);
-	if (num != 1) {
-		ofono_error("%s: too many calls: %d", __func__, num);
-		OFONO_EINVAL(error);
-		goto error;
-	}
-
-	reply->status = parcel_r_int32(&rilp);
-	reply->retry_time = parcel_r_int32(&rilp);
-	reply->cid = parcel_r_int32(&rilp);
-	reply->active = parcel_r_int32(&rilp);
-	type = parcel_r_string(&rilp);
-	reply->ifname = parcel_r_string(&rilp);
-	raw_ip_addrs = parcel_r_string(&rilp);
-	dnses = parcel_r_string(&rilp);
-	raw_gws = parcel_r_string(&rilp);
-
-	g_ril_append_print_buf(gril,
-				"{version=%d,num=%d [status=%d,retry=%d,"
-				"cid=%d,active=%d,type=%s,ifname=%s,address=%s"
-				",dns=%s,gateways=%s]}",
-				reply->version,
-				num,
-				reply->status,
-				reply->retry_time,
-				reply->cid,
-				reply->active,
-				type,
-				reply->ifname,
-				raw_ip_addrs,
-				dnses,
-				raw_gws);
-
-	g_ril_print_response(gril, message);
-
-	protocol = ril_protocol_string_to_ofono_protocol(type);
-	if (protocol < 0) {
-		ofono_error("%s: Invalid type(protocol) specified: %s",
-				__func__,
-				type);
-		OFONO_EINVAL(error);
-		goto error;
-	}
-
-	reply->protocol = (guint) protocol;
-
-	if (reply->ifname == NULL || strlen(reply->ifname) == 0) {
-		ofono_error("%s: No interface specified: %s",
-				__func__,
-				reply->ifname);
-
-		OFONO_EINVAL(error);
-		goto error;
-
-	}
-
-	/* TODO:
-	 * RILD can return multiple addresses; oFono only supports
-	 * setting a single IPv4 address.  At this time, we only
-	 * use the first address.  It's possible that a RIL may
-	 * just specify the end-points of the point-to-point
-	 * connection, in which case this code will need to
-	 * changed to handle such a device.
-	 *
-	 * For now split into a maximum of three, and only use
-	 * the first address for the remaining operations.
-	 */
-	if (raw_ip_addrs)
-		reply->ip_addrs = g_strsplit(raw_ip_addrs, " ", 3);
-	else
-		reply->ip_addrs = NULL;
-
-	/* TODO: I'm not sure it's possible to specify a zero-length
-	 * in a parcel in a parcel.  If *not*, then this can be
-	 * simplified.
-	 */
-	if (reply->ip_addrs == NULL || (sizeof(reply->ip_addrs) == 0)) {
-		ofono_error("%s no IP address: %s", __func__, raw_ip_addrs);
-
-		OFONO_EINVAL(error);
-		goto error;
-	}
-
-	/*
-	 * RILD can return multiple addresses; oFono only supports
-	 * setting a single IPv4 gateway.
-	 */
-	if (raw_gws)
-		reply->gateways = g_strsplit(raw_gws, " ", 3);
-	else
-		reply->gateways = NULL;
-
-	if (reply->gateways == NULL || (sizeof(reply->gateways) == 0)) {
-		ofono_error("%s: no gateways: %s", __func__, raw_gws);
-		OFONO_EINVAL(error);
-		goto error;
-	}
-
-	/* Split DNS addresses */
-	if (dnses)
-		reply->dns_addresses = g_strsplit(dnses, " ", 3);
-	else
-		reply->dns_addresses = NULL;
-
-	if (reply->dns_addresses == NULL ||
-		(sizeof(reply->dns_addresses) == 0)) {
-		ofono_error("%s: no DNS: %s", __func__, dnses);
-
-		OFONO_EINVAL(error);
-		goto error;
-	}
-
-error:
-	g_free(type);
-	g_free(raw_ip_addrs);
-	g_free(dnses);
-	g_free(raw_gws);
-
-	return reply;
-}
-
 struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
 						const struct ril_msg *message)
 
@@ -563,8 +275,8 @@ struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
 	int tmp;
 	char *sstatus = NULL, *slac = NULL, *sci = NULL;
 	char *stech = NULL, *sreason = NULL, *smax = NULL;
-	const char *tech_str;
 	struct reply_reg_state *reply;
+	char *endp;
 
 	DBG("");
 
@@ -647,14 +359,27 @@ struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
 	else
 		reply->ci = -1;
 
-	tech_str = handle_tech(message->req, stech, &reply->tech);
+	if (stech && *stech != '\0') {
+		reply->tech = (int) strtol(stech, &endp, 10);
+		if (*endp != '\0') {
+			ofono_error("%s: cannot parse tech: %s in %s reply",
+					__func__, stech,
+					ril_request_id_to_string(message->req));
+			reply->tech = RADIO_TECH_UNKNOWN;
+		}
+	} else {
+		ofono_error("%s: no tech included in %s reply",
+				__func__,
+				ril_request_id_to_string(message->req));
+		reply->tech = RADIO_TECH_UNKNOWN;
+	}
 
 	g_ril_append_print_buf(gril,
 				"{%s,%s,%s,%s,%s,%s}",
 				registration_status_to_string(reply->status),
 				slac,
 				sci,
-				tech_str,
+				ril_radio_tech_to_string(reply->tech),
 				sreason,
 				smax);
 
