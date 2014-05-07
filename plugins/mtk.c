@@ -313,14 +313,27 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 						RILMODEM, ril->modem);
 		ofono_call_forwarding_create(modem, OFONO_RIL_VENDOR_MTK,
 						RILMODEM, ril->modem);
+		ofono_radio_settings_create(modem, OFONO_RIL_VENDOR_MTK,
+						RILMODEM, ril->modem);
+		ofono_call_barring_create(modem, OFONO_RIL_VENDOR_MTK,
+						RILMODEM, ril->modem);
 
 		gprs = ofono_gprs_create(modem, OFONO_RIL_VENDOR_MTK,
 						MTKMODEM, ril->modem);
-		gc = ofono_gprs_context_create(modem, OFONO_RIL_VENDOR_MTK,
-							RILMODEM, ril->modem);
 
-		if (gprs && gc) {
-			DBG("calling gprs_add_context");
+		gc = ofono_gprs_context_create(modem, OFONO_RIL_VENDOR_MTK,
+						RILMODEM, ril->modem);
+		if (gc) {
+			ofono_gprs_context_set_type(gc,
+					OFONO_GPRS_CONTEXT_TYPE_INTERNET);
+			ofono_gprs_add_context(gprs, gc);
+		}
+
+		gc = ofono_gprs_context_create(modem, OFONO_RIL_VENDOR_MTK,
+						RILMODEM, ril->modem);
+		if (gc) {
+			ofono_gprs_context_set_type(gc,
+					OFONO_GPRS_CONTEXT_TYPE_MMS);
 			ofono_gprs_add_context(gprs, gc);
 		}
 
