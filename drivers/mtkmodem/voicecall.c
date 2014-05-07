@@ -95,7 +95,6 @@ static gboolean mtk_delayed_register(gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
 	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
-	ofono_voicecall_register(vc);
 
 	/* MTK generates this event instead of CALL_STATE_CHANGED */
 	g_ril_register(vd->ril, RIL_UNSOL_CALL_PROGRESS_INFO,
