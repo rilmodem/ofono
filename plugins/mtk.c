@@ -105,6 +105,7 @@ static struct mtk_data *mtk_1;
 
 static void send_get_sim_status(struct ofono_modem *modem);
 static int create_gril(struct ofono_modem *modem);
+static gboolean mtk_connected(gpointer user_data);
 
 static void mtk_debug(const char *str, void *user_data)
 {
@@ -135,6 +136,9 @@ static void mtk_radio_state_changed(struct ril_msg *message, gpointer user_data)
 				__func__, ril->slot,
 				ril_radio_state_to_string(radio_state),
 				ril->ofono_online);
+
+		if (ril->radio_state == RADIO_STATE_UNAVAILABLE)
+			mtk_connected(modem);
 
 		ril->radio_state = radio_state;
 
@@ -235,7 +239,7 @@ static int mtk_probe(struct ofono_modem *modem)
 
 	ril->have_sim = FALSE;
 	ril->ofono_online = FALSE;
-	ril->radio_state = RADIO_STATE_OFF;
+	ril->radio_state = RADIO_STATE_UNAVAILABLE;
 
 	ril->slot = ofono_modem_get_integer(modem, "Slot");
 
@@ -539,6 +543,9 @@ static gboolean mtk_connected(gpointer user_data)
 
 	ofono_modem_set_powered(modem, TRUE);
 
+	ril->devinfo = ofono_devinfo_create(modem, OFONO_RIL_VENDOR_MTK,
+						RILMODEM, ril->modem);
+
 	/* Call the function just once */
 	return FALSE;
 }
@@ -581,18 +588,6 @@ static void socket_disconnected(gpointer user_data)
 	/* The disconnection happens because rild is re-starting, wait for it */
 	g_timeout_add(WAIT_FOR_RILD_TO_RESTART_MS, reconnect_rild, modem);
 }
-
-#ifdef MTK_INITIAL_OFF
-static void poweroff_cb(struct ril_msg *message, gpointer user_data)
-{
-	if (message->error != RIL_E_SUCCESS &&
-			message->error != RIL_E_RADIO_NOT_AVAILABLE)
-		ofono_error("%s RADIO_POWEROFF error %s", __func__,
-				ril_error_to_string(message->error));
-	else
-		mtk_connected(user_data);
-}
-#endif
 
 static const char sock_slot_0[] = "/dev/socket/rild";
 static const char sock_slot_1[] = "/dev/socket/rild2";
@@ -652,22 +647,16 @@ static int create_gril(struct ofono_modem *modem)
 
 static int mtk_enable(struct ofono_modem *modem)
 {
-	struct mtk_data *ril = ofono_modem_get_data(modem);
 	int ret;
 
 	ret = create_gril(modem);
 	if (ret < 0)
 		return ret;
 
-	ril->devinfo = ofono_devinfo_create(modem, OFONO_RIL_VENDOR_MTK,
-						RILMODEM, ril->modem);
-
-#ifdef MTK_INITIAL_OFF
-	g_ril_send(ril->modem, RIL_REQUEST_RADIO_POWEROFF, NULL,
-			poweroff_cb, modem, NULL);
-#else
-	mtk_connected(modem);
-#endif
+	/*
+	 * We will mark the modem as powered when we receive an event that
+	 * confirms that the radio is in a state different from unavailable
+	 */
 
 	return -EINPROGRESS;
 }
