@@ -138,6 +138,7 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 					" mnc %s spn %s imsi %s", __func__,
 					error->message, mcc, mnc, spn, imsi);
 			g_error_free(error);
+			error = NULL;
 		}
 	}
 
@@ -152,6 +153,7 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 						" mnc %s spn: %s", __func__,
 						error->message, mcc, mnc, spn);
 				g_error_free(error);
+				error = NULL;
 			}
 		}
 	}
