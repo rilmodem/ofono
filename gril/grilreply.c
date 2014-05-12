@@ -296,13 +296,14 @@ struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
 
 	reply =	g_new0(struct reply_reg_state, 1);
 
-	/* Size of response string array
-	 *
+	/*
+	 * Size of response string array
 	 * Should be:
 	 *   >= 4 for VOICE_REG reply
 	 *   >= 5 for DATA_REG reply
+	 * But we allow a minimum of 1 (infineon, not registered case)
 	 */
-	if ((tmp = parcel_r_int32(&rilp)) < 4) {
+	if ((tmp = parcel_r_int32(&rilp)) < 1) {
 		ofono_error("%s: invalid %s; response array is too small: %d",
 				__func__,
 				ril_request_id_to_string(message->req),
@@ -311,13 +312,22 @@ struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
 	}
 
 	sstatus = parcel_r_string(&rilp);
-	slac = parcel_r_string(&rilp);
-	sci = parcel_r_string(&rilp);
-	stech = parcel_r_string(&rilp);
+	--tmp;
+	if (tmp > 0) {
+		slac = parcel_r_string(&rilp);
+		--tmp;
+	}
+	if (tmp > 0) {
+		sci = parcel_r_string(&rilp);
+		--tmp;
+	}
+	if (tmp > 0) {
+		stech = parcel_r_string(&rilp);
+		--tmp;
+	}
 
-	tmp -= 4;
-
-	/* FIXME: need to review VOICE_REGISTRATION response
+	/*
+	 * FIXME: need to review VOICE_REGISTRATION response
 	 * as it returns ~15 parameters ( vs. 6 for DATA ).
 	 *
 	 * The first four parameters are the same for both
@@ -1087,8 +1097,9 @@ int g_ril_reply_parse_query_facility_lock(GRil *gril,
 
 	g_ril_init_parcel(message, &rilp);
 
+	/* infineon returns two integers */
 	numint = parcel_r_int32(&rilp);
-	if (numint != 1) {
+	if (numint < 1) {
 		ofono_error("%s: wrong format", __func__);
 		goto error;
 	}
@@ -1158,7 +1169,7 @@ int *g_ril_reply_parse_retries(GRil *gril, const struct ril_msg *message,
 
 	g_ril_init_parcel(message, &rilp);
 
-	/* maguro: no data is returned */
+	/* maguro/infineon: no data is returned */
 	if (parcel_data_avail(&rilp) == 0)
 		goto no_data;
 
