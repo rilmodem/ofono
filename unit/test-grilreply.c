@@ -799,6 +799,30 @@ static const reg_state_test voice_reg_valid_10 = {
 	}
 };
 
+/*
+ * The following hex data represents a valid
+ * RIL_REQUEST_VOICE_REGISTRATION_STATE reply with the following parameters:
+ *
+ * {unregistered,(null),(null),UNKNOWN,(null),(null)}
+ */
+static const guchar reply_voice_reg_state_valid_parcel11[] = {
+	0x03, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x30, 0x00, 0x00, 0x00,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+};
+
+static const reg_state_test voice_reg_valid_11 = {
+	.status = NETWORK_REGISTRATION_STATUS_NOT_REGISTERED,
+	.tech = RADIO_TECH_UNKNOWN,
+	.msg = {
+		.buf = (gchar *) &reply_voice_reg_state_valid_parcel11,
+		.buf_len = sizeof(reply_voice_reg_state_valid_parcel11),
+		.unsolicited = FALSE,
+		.req = RIL_REQUEST_VOICE_REGISTRATION_STATE,
+		.serial_no = 0,
+		.error = 0,
+	}
+};
+
 static const struct ril_msg reply_operator_invalid_1 = {
 	.buf = "",
 	.buf_len = 0,
@@ -1327,6 +1351,29 @@ static const struct query_facility_lock_test
 };
 
 /*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_QUERY_FACILITY_LOCK reply with the following parameters:
+ *
+ * {0,0} (infineon: two integers are returned)
+ */
+static const guchar reply_query_facility_lock_valid_parcel2[] = {
+	0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static const struct query_facility_lock_test
+				reply_query_facility_lock_valid_2 = {
+	.status = 0,
+	.msg = {
+		.buf = (gchar *) reply_query_facility_lock_valid_parcel2,
+		.buf_len = sizeof(reply_query_facility_lock_valid_parcel2),
+		.unsolicited = FALSE,
+		.req = RIL_REQUEST_QUERY_FACILITY_LOCK,
+		.serial_no = 0,
+		.error = 0,
+	}
+};
+
+/*
  * The following structure contains test data for a valid
  * RIL_REQUEST_SET_FACILITY_LOCK reply with no parameters.
  */
@@ -1727,6 +1774,36 @@ int main(int argc, char **argv)
 				test_reply_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/netreg: "
+				"valid VOICE_REG_STATE Test 6",
+				&voice_reg_valid_6,
+				test_reply_reg_state_valid);
+
+	g_test_add_data_func("/testgrilreply/netreg: "
+				"valid VOICE_REG_STATE Test 7",
+				&voice_reg_valid_7,
+				test_reply_reg_state_valid);
+
+	g_test_add_data_func("/testgrilreply/netreg: "
+				"valid VOICE_REG_STATE Test 8",
+				&voice_reg_valid_8,
+				test_reply_reg_state_valid);
+
+	g_test_add_data_func("/testgrilreply/netreg: "
+				"valid VOICE_REG_STATE Test 9",
+				&voice_reg_valid_9,
+				test_reply_reg_state_valid);
+
+	g_test_add_data_func("/testgrilreply/netreg: "
+				"valid VOICE_REG_STATE Test 10",
+				&voice_reg_valid_10,
+				test_reply_reg_state_valid);
+
+	g_test_add_data_func("/testgrilreply/netreg: "
+				"valid VOICE_REG_STATE Test 11",
+				&voice_reg_valid_11,
+				test_reply_reg_state_valid);
+
+	g_test_add_data_func("/testgrilreply/netreg: "
 				"invalid GET_OPERATOR Test 1",
 				&reply_operator_invalid_1,
 				test_reply_operator_invalid);
@@ -1854,6 +1931,11 @@ int main(int argc, char **argv)
 	g_test_add_data_func("/testgrilreply/call-barring: "
 				"valid QUERY_FACILITY_LOCK Test 1",
 				&reply_query_facility_lock_valid_1,
+				test_reply_query_facility_lock_valid);
+
+	g_test_add_data_func("/testgrilreply/call-barring: "
+				"valid QUERY_FACILITY_LOCK Test 2",
+				&reply_query_facility_lock_valid_2,
 				test_reply_query_facility_lock_valid);
 
 	g_test_add_data_func("/testgrilreply/call-barring: "
