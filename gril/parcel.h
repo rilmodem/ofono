@@ -39,6 +39,8 @@ int32_t parcel_r_int32(struct parcel *p);
 int parcel_w_int32(struct parcel *p, int32_t val);
 int parcel_w_string(struct parcel *p, const char *str);
 char *parcel_r_string(struct parcel *p);
+int parcel_w_raw(struct parcel *p, const void *data, size_t len);
+void *parcel_r_raw(struct parcel *p,  int *len);
 size_t parcel_data_avail(struct parcel *p);
 
 #endif

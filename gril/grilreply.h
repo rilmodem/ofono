@@ -89,6 +89,11 @@ struct reply_clir {
 	int provisioned;
 };
 
+struct reply_oem_hook {
+	int length;
+	void *data;
+};
+
 void g_ril_reply_free_avail_ops(struct reply_avail_ops *reply);
 
 struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
@@ -159,6 +164,11 @@ int g_ril_reply_parse_set_facility_lock(GRil *gril,
 
 int *g_ril_reply_parse_retries(GRil *gril, const struct ril_msg *message,
 				enum ofono_sim_password_type passwd_type);
+
+void g_ril_reply_free_oem_hook(struct reply_oem_hook *oem_hook);
+
+struct reply_oem_hook *g_ril_reply_oem_hook_raw(GRil *gril,
+						const struct ril_msg *message);
 
 #ifdef __cplusplus
 }

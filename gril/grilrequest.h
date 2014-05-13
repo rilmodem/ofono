@@ -265,6 +265,9 @@ void g_ril_request_change_barring_password(GRil *gril, const char *facility,
 						const char *new_passwd,
 						struct parcel *rilp);
 
+void g_ril_request_oem_hook_raw(GRil *gril, const void *payload, size_t length,
+					struct parcel *rilp);
+
 #ifdef __cplusplus
 }
 #endif
