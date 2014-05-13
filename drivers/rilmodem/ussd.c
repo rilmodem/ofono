@@ -86,35 +86,37 @@ static void ril_ussd_request(struct ofono_ussd *ussd, int dcs,
 	struct ussd_data *ud = ofono_ussd_get_data(ussd);
 	struct cb_data *cbd = cb_data_new(cb, data, ussd);
 	enum sms_charset charset;
+	char *text = NULL;
 	int ret = 0;
 
 	if (cbs_dcs_decode(dcs, NULL, NULL, &charset, NULL, NULL, NULL)) {
-		/* TODO: send other alphabets (maybe needed by STK) */
+
 		if (charset == SMS_CHARSET_7BIT) {
-			unsigned char *unpacked_buf;
 			long written;
 
-			unpacked_buf = unpack_7bit(pdu, len, 0, TRUE, 0,
-							&written, 1);
+			text = (char *) unpack_7bit(pdu, len, 0, TRUE,
+							0, &written, 1);
+			if (text != NULL)
+				*(text + written) = '\0';
 
-			if (written >= 1) {
-				struct parcel rilp;
-
-				*(unpacked_buf + written) = '\0';
-				g_ril_request_send_ussd(ud->ril,
-							(char *) unpacked_buf,
-							&rilp);
-
-				ret = g_ril_send(ud->ril, RIL_REQUEST_SEND_USSD,
-							&rilp, ril_ussd_cb,
-							ussd, NULL);
-			}
-
-			g_free(unpacked_buf);
+		} else if (charset == SMS_CHARSET_UCS2) {
+			text = g_convert((char *) pdu, len,
+					"UTF-8//TRANSLIT", "UCS-2BE",
+					NULL, NULL, NULL);
 		} else {
 			ofono_error("%s: No support for charset %d",
 					__func__, charset);
 		}
+	}
+
+	if (text) {
+		struct parcel rilp;
+
+		g_ril_request_send_ussd(ud->ril, text, &rilp);
+
+		ret = g_ril_send(ud->ril, RIL_REQUEST_SEND_USSD,
+					&rilp, ril_ussd_cb, ussd, NULL);
+		g_free(text);
 	}
 
 	/*
@@ -131,6 +133,7 @@ static void ril_ussd_request(struct ofono_ussd *ussd, int dcs,
 		g_idle_add(request_success, cbd);
 	}
 }
+
 static void ril_ussd_cancel_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -180,19 +183,26 @@ static void ril_ussd_notify(struct ril_msg *message, gpointer user_data)
 		unsol->type = 0;
 
 	/*
-	 * TODO
-	 *
-	 * With data coding scheme 0x44, we are saying that the ussd string is
-	 * 8-bit data, uncompressed, and with unspecified message class. This
-	 * must be changed in the future so we get the UTF16 from the RIL parcel
-	 * and decode it properly. For the DCS coding, see 3gpp 23.038, sect. 5.
+	 * With data coding scheme 0x48, we are saying that the ussd string is a
+	 * UCS-2 string, uncompressed, and with unspecified message class. For
+	 * the DCS coding, see 3gpp 23.038, sect. 5.
 	 */
-	if (unsol->message != NULL)
-		ofono_ussd_notify(ussd, unsol->type, 0x44,
-					(const unsigned char *) unsol->message,
-					strlen(unsol->message));
-	else
+	if (unsol->message != NULL) {
+		gsize written;
+		char *ucs2;
+
+		ucs2 = g_convert(unsol->message, -1, "UCS-2BE//TRANSLIT",
+					"UTF-8", NULL, &written, NULL);
+		if (ucs2 != NULL) {
+			ofono_ussd_notify(ussd, unsol->type, 0x48,
+					(unsigned char *) ucs2, written);
+			g_free(ucs2);
+		} else {
+			ofono_error("%s: Error transcoding", __func__);
+		}
+	} else {
 		ofono_ussd_notify(ussd, unsol->type, 0, NULL, 0);
+	}
 
 	g_ril_unsol_free_ussd(unsol);
 }

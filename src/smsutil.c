@@ -4763,3 +4763,38 @@ gboolean ussd_encode(const char *str, long *items_written, unsigned char *pdu)
 
 	return TRUE;
 }
+
+gboolean ussd_dcs_encode(const char *str, int *dcs,
+				long *items_written, unsigned char *pdu)
+{
+	gsize written;
+	char *ucs2;
+
+	/* For the DCS coding of USSD strings, see 3gpp 23.038, sect. 5 */
+
+	if (ussd_encode(str, items_written, pdu)) {
+		/* DCS 0x0F: GSM 7 bits, language unspecified */
+		*dcs = 0x0F;
+		return TRUE;
+	}
+
+	/* Trying with UCS-2 */
+	ucs2 = g_convert(str, -1, "UCS-2BE//TRANSLIT", "UTF-8",
+				NULL, &written, NULL);
+	if (ucs2 == NULL || written > 160) {
+		g_free(ucs2);
+		return FALSE;
+	}
+
+	memcpy(pdu, ucs2, written);
+
+	g_free(ucs2);
+
+	if (items_written)
+		*items_written = written;
+
+	/* DCS 0x48: UCS-2 string, uncompressed, unspecified message class */
+	*dcs = 0x48;
+
+	return TRUE;
+}
