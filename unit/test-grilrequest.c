@@ -790,6 +790,37 @@ static const struct request_test_change_barring_password_data
 	.parcel_size = sizeof(req_change_barring_password_valid_1),
 };
 
+/* oem_hook_raw tests */
+
+struct request_test_oem_hook_raw_data {
+	const guchar *data;
+	gsize size;
+	const guchar *parcel_data;
+	gsize parcel_size;
+};
+
+static const guchar req_oem_hook_raw_valid_1[] = {
+	0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static const struct request_test_oem_hook_raw_data oem_hook_raw_valid_test_1 = {
+	.data = req_oem_hook_raw_valid_1 + sizeof(int32_t),
+	.size = sizeof(req_oem_hook_raw_valid_1) - sizeof(int32_t),
+	.parcel_data = (guchar *) &req_oem_hook_raw_valid_1,
+	.parcel_size = sizeof(req_oem_hook_raw_valid_1),
+};
+
+static const guchar req_oem_hook_raw_valid_2[] = {
+	0xFF, 0xFF, 0xFF, 0xFF
+};
+
+static const struct request_test_oem_hook_raw_data oem_hook_raw_valid_test_2 = {
+	.data = NULL,
+	.size = 0,
+	.parcel_data = (guchar *) &req_oem_hook_raw_valid_2,
+	.parcel_size = sizeof(req_oem_hook_raw_valid_2),
+};
+
 /*
  * The following hexadecimal data represents a serialized Binder parcel
  * instance containing a valid RIL_REQUEST_RADIO_POWER 'OFF' message.
@@ -1322,6 +1353,21 @@ static void test_request_change_barring_password(gconstpointer data)
 
 	parcel_free(&rilp);
 }
+
+static void test_request_oem_hook_raw(gconstpointer data)
+{
+	const struct request_test_oem_hook_raw_data *test_data = data;
+	struct parcel rilp;
+
+	g_ril_request_oem_hook_raw(NULL, test_data->data,
+					test_data->size, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+				test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
 #endif
 
 int main(int argc, char **argv)
@@ -1570,6 +1616,16 @@ int main(int argc, char **argv)
 				"valid CHANGE_BARRING_PASSWORD Test 1",
 				&change_barring_password_valid_test_1,
 				test_request_change_barring_password);
+
+	g_test_add_data_func("/testgrilrequest/oem-hook-raw: "
+				"valid OEM_HOOK_RAW Test 1",
+				&oem_hook_raw_valid_test_1,
+				test_request_oem_hook_raw);
+
+	g_test_add_data_func("/testgrilrequest/oem-hook-raw: "
+				"valid OEM_HOOK_RAW Test 2",
+				&oem_hook_raw_valid_test_2,
+				test_request_oem_hook_raw);
 
 #endif
 	return g_test_run();

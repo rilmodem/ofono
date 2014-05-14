@@ -79,6 +79,12 @@ struct sim_password_test {
 	const struct ril_msg msg;
 };
 
+struct oem_hook_raw_test {
+	const unsigned char *data;
+	int size;
+	const struct ril_msg msg;
+};
+
 /* Invalid RIL_REQUEST_DATA_REGISTRATION_STATE: buffer too small */
 static const struct ril_msg reply_data_reg_state_invalid_1 = {
 	.buf = "XYZ",
@@ -1451,6 +1457,49 @@ static const struct sim_password_test reply_enter_sim_pin_valid_2 = {
 	}
 };
 
+/*
+ * The following structure contains test data for a valid
+ * RIL_REQUEST_OEM_HOOK_RAW reply with parameter {4,0x11111111}
+ */
+static const guchar reply_oem_hook_raw_valid_parcel1[] = {
+	0x04, 0x00, 0x00, 0x00, 0x11, 0x11, 0x11, 0x11
+};
+
+static const struct oem_hook_raw_test reply_oem_hook_raw_valid_1 = {
+	.data = reply_oem_hook_raw_valid_parcel1 + sizeof(int32_t),
+	.size = (int) (sizeof(reply_oem_hook_raw_valid_parcel1)
+			- sizeof(int32_t)),
+	.msg = {
+		.buf = (gchar *) reply_oem_hook_raw_valid_parcel1,
+		.buf_len = sizeof(reply_oem_hook_raw_valid_parcel1),
+		.unsolicited = FALSE,
+		.req = RIL_REQUEST_OEM_HOOK_RAW,
+		.serial_no = 0,
+		.error = RIL_E_SUCCESS,
+	}
+};
+
+/*
+ * The following structure contains test data for a valid
+ * RIL_REQUEST_OEM_HOOK_RAW reply with parameter {-1}
+ */
+static const guchar reply_oem_hook_raw_valid_parcel2[] = {
+	0xFF, 0xFF, 0xFF, 0xFF
+};
+
+static const struct oem_hook_raw_test reply_oem_hook_raw_valid_2 = {
+	.data = NULL,
+	.size = -1,
+	.msg = {
+		.buf = (gchar *) reply_oem_hook_raw_valid_parcel2,
+		.buf_len = sizeof(reply_oem_hook_raw_valid_parcel2),
+		.unsolicited = FALSE,
+		.req = RIL_REQUEST_OEM_HOOK_RAW,
+		.serial_no = 0,
+		.error = RIL_E_SUCCESS,
+	}
+};
+
 static void test_reply_reg_state_invalid(gconstpointer data)
 {
 	struct reply_reg_state *reply =	g_ril_reply_parse_reg_state(NULL, data);
@@ -1667,6 +1716,19 @@ static void test_reply_enter_sim_pin_valid(gconstpointer data)
 	g_assert(retries[test->passwd_type] == test->retries);
 
 	g_free(retries);
+}
+
+static void test_reply_oem_hook_raw_valid(gconstpointer data)
+{
+	const struct oem_hook_raw_test *test = data;
+	struct reply_oem_hook *reply =
+		g_ril_reply_oem_hook_raw(NULL, &test->msg);
+
+	g_assert(reply->length == test->size);
+	if (reply->length >= 0)
+		g_assert(!memcmp(reply->data, test->data, test->size));
+	else
+		g_assert(reply->data == NULL);
 }
 
 #endif
@@ -1957,6 +2019,16 @@ int main(int argc, char **argv)
 				"valid ENTER_SIM_PIN Test 2",
 				&reply_enter_sim_pin_valid_2,
 				test_reply_enter_sim_pin_valid);
+
+	g_test_add_data_func("/testgrilreply/oem: "
+				"valid OEM_HOOK_RAW Test 1",
+				&reply_oem_hook_raw_valid_1,
+				test_reply_oem_hook_raw_valid);
+
+	g_test_add_data_func("/testgrilreply/oem: "
+				"valid OEM_HOOK_RAW Test 2",
+				&reply_oem_hook_raw_valid_2,
+				test_reply_oem_hook_raw_valid);
 
 #endif
 
