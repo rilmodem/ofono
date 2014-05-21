@@ -71,6 +71,7 @@ struct hfp {
 	struct ofono_handsfree_card *card;
 };
 
+static const char *none_prefix[] = { NULL };
 static GDBusClient *bluez = NULL;
 
 static void hfp_debug(const char *str, void *user_data)
@@ -347,7 +348,7 @@ static void bcs_notify(GAtResult *result, gpointer user_data)
 	sprintf(str, "AT+BCS=%d", value);
 
 done:
-	g_at_chat_send(info->chat, str, NULL, NULL, NULL, NULL);
+	g_at_chat_send(info->chat, str, none_prefix, NULL, NULL, NULL);
 }
 
 static int hfp16_card_probe(struct ofono_handsfree_card *card,
