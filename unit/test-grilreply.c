@@ -679,7 +679,7 @@ static const guchar reply_voice_reg_state_valid_parcel7[] = {
 	0x04, 0x00, 0x00, 0x00, 0x31, 0x00, 0x62, 0x00, 0x33, 0x00, 0x66, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x30, 0x00, 0x37, 0x00,
 	0x65, 0x00, 0x61, 0x00, 0x35, 0x00, 0x31, 0x00, 0x30, 0x00, 0x61, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x39, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x39, 0x00, 0x00, 0x00,
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 	0x01, 0x00, 0x00, 0x00, 0x31, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
@@ -1530,22 +1530,36 @@ static const struct oem_hook_raw_test reply_oem_hook_raw_valid_2 = {
 	}
 };
 
-static void test_reply_reg_state_invalid(gconstpointer data)
-{
-	struct reply_reg_state *reply =	g_ril_reply_parse_reg_state(NULL, data);
-	g_assert(reply == NULL);
-}
-
-static void test_reply_reg_state_valid(gconstpointer data)
+static void test_reply_voice_reg_state_valid(gconstpointer data)
 {
 	const reg_state_test *test = data;
 	struct reply_reg_state *reply =
-		g_ril_reply_parse_reg_state(NULL, &test->msg);
+		g_ril_reply_parse_voice_reg_state(NULL, &test->msg);
 
 	g_assert(reply != NULL);
 	g_assert(reply->status == test->status);
 
 	g_assert(reply->tech == test->tech);
+	g_free(reply);
+}
+
+static void test_reply_data_reg_state_invalid(gconstpointer data)
+{
+	struct reply_data_reg_state *reply =
+		g_ril_reply_parse_data_reg_state(NULL, data);
+	g_assert(reply == NULL);
+}
+
+static void test_reply_data_reg_state_valid(gconstpointer data)
+{
+	const reg_state_test *test = data;
+	struct reply_data_reg_state *reply =
+		g_ril_reply_parse_data_reg_state(NULL, &test->msg);
+
+	g_assert(reply != NULL);
+	g_assert(reply->reg_state.status == test->status);
+
+	g_assert(reply->reg_state.tech == test->tech);
 	g_free(reply);
 }
 
@@ -1778,127 +1792,127 @@ int main(int argc, char **argv)
 	g_test_add_data_func("/testgrilreply/gprs: "
 				"invalid DATA_REG_STATE Test 1",
 				&reply_data_reg_state_invalid_1,
-				test_reply_reg_state_invalid);
+				test_reply_data_reg_state_invalid);
 
 	g_test_add_data_func("/testgrilreply/gprs: "
 				"invalid DATA_REG_STATE Test 2",
 				&reply_data_reg_state_invalid_2,
-				test_reply_reg_state_invalid);
+				test_reply_data_reg_state_invalid);
 
 	g_test_add_data_func("/testgrilreply/gprs: "
 				"invalid DATA_REG_STATE Test 3",
 				&reply_data_reg_state_invalid_3,
-				test_reply_reg_state_invalid);
+				test_reply_data_reg_state_invalid);
 
 	g_test_add_data_func("/testgrilreply/gprs: "
 				"valid DATA_REG_STATE Test 1",
 				&data_reg_valid_1,
-				test_reply_reg_state_valid);
+				test_reply_data_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/gprs: "
 				"valid DATA_REG_STATE Test 2",
 				&data_reg_valid_2,
-				test_reply_reg_state_valid);
+				test_reply_data_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/gprs: "
 				"valid DATA_REG_STATE Test 3",
 				&data_reg_valid_3,
-				test_reply_reg_state_valid);
+				test_reply_data_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/gprs: "
 				"valid DATA_REG_STATE Test 4",
 				&data_reg_valid_4,
-				test_reply_reg_state_valid);
+				test_reply_data_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/gprs: "
 				"valid DATA_REG_STATE Test 5",
 				&data_reg_valid_5,
-				test_reply_reg_state_valid);
+				test_reply_data_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/gprs: "
 				"valid DATA_REG_STATE Test 6",
 				&data_reg_valid_6,
-				test_reply_reg_state_valid);
+				test_reply_data_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/gprs: "
 				"valid DATA_REG_STATE Test 7",
 				&data_reg_valid_7,
-				test_reply_reg_state_valid);
+				test_reply_data_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/gprs: "
 				"valid DATA_REG_STATE Test 8",
 				&data_reg_valid_8,
-				test_reply_reg_state_valid);
+				test_reply_data_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/gprs: "
 				"valid DATA_REG_STATE Test 9",
 				&data_reg_valid_9,
-				test_reply_reg_state_valid);
+				test_reply_data_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/gprs: "
 				"valid DATA_REG_STATE Test 10",
 				&data_reg_valid_10,
-				test_reply_reg_state_valid);
+				test_reply_data_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/netreg: "
 				"valid VOICE_REG_STATE Test 1",
 				&voice_reg_valid_1,
-				test_reply_reg_state_valid);
+				test_reply_voice_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/netreg: "
 				"valid VOICE_REG_STATE Test 2",
 				&voice_reg_valid_2,
-				test_reply_reg_state_valid);
+				test_reply_voice_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/netreg: "
 				"valid VOICE_REG_STATE Test 3",
 				&voice_reg_valid_3,
-				test_reply_reg_state_valid);
+				test_reply_voice_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/netreg: "
 				"valid VOICE_REG_STATE Test 4",
 				&voice_reg_valid_4,
-				test_reply_reg_state_valid);
+				test_reply_voice_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/netreg: "
 				"valid VOICE_REG_STATE Test 5",
 				&voice_reg_valid_5,
-				test_reply_reg_state_valid);
+				test_reply_voice_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/netreg: "
 				"valid VOICE_REG_STATE Test 6",
 				&voice_reg_valid_6,
-				test_reply_reg_state_valid);
+				test_reply_voice_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/netreg: "
 				"valid VOICE_REG_STATE Test 7",
 				&voice_reg_valid_7,
-				test_reply_reg_state_valid);
+				test_reply_voice_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/netreg: "
 				"valid VOICE_REG_STATE Test 8",
 				&voice_reg_valid_8,
-				test_reply_reg_state_valid);
+				test_reply_voice_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/netreg: "
 				"valid VOICE_REG_STATE Test 9",
 				&voice_reg_valid_9,
-				test_reply_reg_state_valid);
+				test_reply_voice_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/netreg: "
 				"valid VOICE_REG_STATE Test 10",
 				&voice_reg_valid_10,
-				test_reply_reg_state_valid);
+				test_reply_voice_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/netreg: "
 				"valid VOICE_REG_STATE Test 11",
 				&voice_reg_valid_11,
-				test_reply_reg_state_valid);
+				test_reply_voice_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/netreg: "
 				"valid VOICE_REG_STATE Test 12",
 				&voice_reg_valid_12,
-				test_reply_reg_state_valid);
+				test_reply_voice_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/netreg: "
 				"invalid GET_OPERATOR Test 1",
