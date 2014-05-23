@@ -45,6 +45,13 @@
 
 #define OPERATOR_NUM_PARAMS 3
 
+/* Indexes for registration state replies */
+#define RST_IX_STATE 0
+#define RST_IX_LAC 1
+#define RST_IX_CID 2
+#define RST_IX_RAT 3
+#define RDST_IX_MAXDC 5
+
 #define MTK_MODEM_MAX_CIDS 3
 
 static void ril_reply_free_operator(gpointer data)
@@ -269,183 +276,236 @@ error:
 	return NULL;
 }
 
-struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
-						const struct ril_msg *message)
-
+static void set_reg_state(GRil *gril, struct reply_reg_state *reply,
+				int i, const char *str)
 {
-	struct parcel rilp;
-	int tmp, status;
-	char *sstatus = NULL, *slac = NULL, *sci = NULL;
-	char *stech = NULL, *sreason = NULL, *smax = NULL;
-	struct reply_reg_state *reply;
+	int val;
 	char *endp;
+	int base;
 	const char *strstate;
 
-	DBG("");
+	if (str == NULL || *str == '\0')
+		goto no_val;
 
-	/*
-	 * If no array length is present, reply is invalid.
-	 */
-	if (message->buf_len < 4) {
-		ofono_error("%s: invalid %s reply: "
-				"size too small (< 4): %d ",
-				__func__,
-				ril_request_id_to_string(message->req),
-				(int) message->buf_len);
-		return NULL;
+	if (i == RST_IX_LAC || i == RST_IX_CID)
+		base = 16;
+	else
+		base = 10;
+
+	val = (int) strtol(str, &endp, base);
+	if (*endp != '\0')
+		goto no_val;
+
+	switch (i) {
+	case RST_IX_STATE:
+		switch (val) {
+		case RIL_REG_STATE_NOT_REGISTERED:
+		case RIL_REG_STATE_REGISTERED:
+		case RIL_REG_STATE_SEARCHING:
+		case RIL_REG_STATE_DENIED:
+		case RIL_REG_STATE_UNKNOWN:
+		case RIL_REG_STATE_ROAMING:
+			/* Only valid values for ofono */
+			strstate = registration_status_to_string(val);
+			break;
+		case RIL_REG_STATE_EMERGENCY_NOT_REGISTERED:
+		case RIL_REG_STATE_EMERGENCY_SEARCHING:
+		case RIL_REG_STATE_EMERGENCY_DENIED:
+		case RIL_REG_STATE_EMERGENCY_UNKNOWN:
+			/* Map to states valid for ofono core */
+			val -= RIL_REG_STATE_EMERGENCY_NOT_REGISTERED;
+			strstate = str;
+			break;
+		default:
+			val = NETWORK_REGISTRATION_STATUS_UNKNOWN;
+			strstate = str;
+		}
+		reply->status = val;
+		g_ril_append_print_buf(gril, "%s%s", print_buf, strstate);
+		break;
+	case RST_IX_LAC:
+		reply->lac = val;
+		g_ril_append_print_buf(gril, "%s0x%x", print_buf, val);
+		break;
+	case RST_IX_CID:
+		reply->ci = val;
+		g_ril_append_print_buf(gril, "%s0x%x", print_buf, val);
+		break;
+	case RST_IX_RAT:
+		reply->tech = val;
+		g_ril_append_print_buf(gril, "%s%s", print_buf,
+					ril_radio_tech_to_string(val));
+		break;
+	default:
+		goto no_val;
 	}
+
+	return;
+
+no_val:
+	g_ril_append_print_buf(gril, "%s%s", print_buf, str ? str : "(null)");
+}
+
+struct reply_reg_state *g_ril_reply_parse_voice_reg_state(GRil *gril,
+						const struct ril_msg *message)
+{
+	struct parcel rilp;
+	struct parcel_str_array *str_arr;
+	struct reply_reg_state *reply = NULL;
+	int i;
 
 	g_ril_init_parcel(message, &rilp);
 
-	reply =	g_new0(struct reply_reg_state, 1);
-
-	/*
-	 * Size of response string array
-	 * Should be:
-	 *   >= 4 for VOICE_REG reply
-	 *   >= 5 for DATA_REG reply
-	 * But we allow a minimum of 1 (infineon, not registered case)
-	 */
-	if ((tmp = parcel_r_int32(&rilp)) < 1) {
-		ofono_error("%s: invalid %s; response array is too small: %d",
-				__func__,
-				ril_request_id_to_string(message->req),
-				tmp);
-		goto error;
+	str_arr = parcel_r_str_array(&rilp);
+	if (str_arr == NULL) {
+		ofono_error("%s: parse error for %s", __func__,
+				ril_request_id_to_string(message->req));
+		goto out;
 	}
 
-	sstatus = parcel_r_string(&rilp);
-	--tmp;
-	if (tmp > 0) {
-		slac = parcel_r_string(&rilp);
-		--tmp;
-	}
-	if (tmp > 0) {
-		sci = parcel_r_string(&rilp);
-		--tmp;
-	}
-	if (tmp > 0) {
-		stech = parcel_r_string(&rilp);
-		--tmp;
+	reply =	g_try_malloc0(sizeof(*reply));
+	if (reply == NULL) {
+		ofono_error("%s: out of memory", __func__);
+		goto out;
 	}
 
-	/*
-	 * FIXME: need to review VOICE_REGISTRATION response
-	 * as it returns ~15 parameters ( vs. 6 for DATA ).
-	 *
-	 * The first four parameters are the same for both
-	 * responses ( although status includes values for
-	 * emergency calls for VOICE response ).
-	 *
-	 * Parameters 5 & 6 have different meanings for
-	 * voice & data response.
-	 */
-	if (tmp--) {
-		/* TODO: different use for CDMA */
-		sreason = parcel_r_string(&rilp);
+	reply->status = -1;
+	reply->lac = -1;
+	reply->ci = -1;
 
-		if (tmp--) {
-			/* TODO: different use for CDMA */
-			smax = parcel_r_string(&rilp);
+	g_ril_append_print_buf(gril, "{");
 
-			/*
-			 * MTK modem does not return max_cids, string for this
-			 * index actually contains the maximum data bearer
-			 * capability.
-			 */
-			if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
-				reply->max_cids = MTK_MODEM_MAX_CIDS;
-			else if (smax)
-				reply->max_cids = atoi(smax);
+	for (i = 0; i < str_arr->num_str; ++i) {
+		char *str = str_arr->str[i];
+
+		if (i > 0)
+			g_ril_append_print_buf(gril, "%s,", print_buf);
+
+		switch (i) {
+		case RST_IX_STATE: case RST_IX_LAC:
+		case RST_IX_CID:   case RST_IX_RAT:
+			set_reg_state(gril, reply, i, str);
+			break;
+		default:
+			g_ril_append_print_buf(gril, "%s%s", print_buf,
+						str ? str : "(null)");
 		}
 	}
 
-
-	if (sstatus == NULL) {
-		ofono_error("%s: no status included in %s reply",
-				__func__,
-				ril_request_id_to_string(message->req));
-		goto error;
-	}
-
-	status = atoi(sstatus);
-
-	switch (status) {
-	case RIL_REG_STATE_NOT_REGISTERED:
-	case RIL_REG_STATE_REGISTERED:
-	case RIL_REG_STATE_SEARCHING:
-	case RIL_REG_STATE_DENIED:
-	case RIL_REG_STATE_UNKNOWN:
-	case RIL_REG_STATE_ROAMING:
-		/* Only valid values for ofono */
-		reply->status = status;
-		strstate = registration_status_to_string(status);
-		break;
-	case RIL_REG_STATE_EMERGENCY_NOT_REGISTERED:
-	case RIL_REG_STATE_EMERGENCY_SEARCHING:
-	case RIL_REG_STATE_EMERGENCY_DENIED:
-	case RIL_REG_STATE_EMERGENCY_UNKNOWN:
-		/* Map to states valid for ofono core */
-		reply->status = status - RIL_REG_STATE_EMERGENCY_NOT_REGISTERED;
-		strstate = sstatus;
-		break;
-	default:
-		reply->status = NETWORK_REGISTRATION_STATUS_UNKNOWN;
-		strstate = sstatus;
-		ofono_error("%s: Error unknown status code (%s)",
-				__func__, sstatus);
-	}
-
-
-	if (slac)
-		reply->lac = strtol(slac, NULL, 16);
-	else
-		reply->lac = -1;
-
-	if (sci)
-		reply->ci = strtol(sci, NULL, 16);
-	else
-		reply->ci = -1;
-
-	if (stech && *stech != '\0') {
-		reply->tech = (int) strtol(stech, &endp, 10);
-		if (*endp != '\0') {
-			ofono_error("%s: cannot parse tech: %s in %s reply",
-					__func__, stech,
-					ril_request_id_to_string(message->req));
-			reply->tech = RADIO_TECH_UNKNOWN;
-		}
-	} else {
-		ofono_error("%s: no tech included in %s reply",
-				__func__,
-				ril_request_id_to_string(message->req));
-		reply->tech = RADIO_TECH_UNKNOWN;
-	}
-
-	g_ril_append_print_buf(gril,
-				"{%s,%s,%s,%s,%s,%s}",
-				strstate,
-				slac,
-				sci,
-				ril_radio_tech_to_string(reply->tech),
-				sreason,
-				smax ? smax : "NULL");
-
+	g_ril_append_print_buf(gril, "%s}", print_buf);
 	g_ril_print_response(gril, message);
 
-	/* Free our parcel handlers */
-	g_free(sstatus);
-	g_free(slac);
-	g_free(sci);
-	g_free(stech);
-	g_free(sreason);
-	g_free(smax);
+	/* As a minimum we require a valid status string */
+	if (reply->status == -1) {
+		ofono_error("%s: invalid status", __func__);
+		g_free(reply);
+		reply = NULL;
+	}
+
+out:
+	parcel_free_str_array(str_arr);
 
 	return reply;
+}
 
-error:
-	g_free(reply);
-	return NULL;
+static void set_data_reg_state(GRil *gril, struct reply_data_reg_state *reply,
+				int i, const char *str)
+{
+	unsigned val;
+	char *endp;
+
+	if (str == NULL || *str == '\0')
+		goto no_val;
+
+	val = (unsigned) strtoul(str, &endp, 10);
+	if (*endp != '\0')
+		goto no_val;
+
+	switch (i) {
+	case RDST_IX_MAXDC:
+		/*
+		 * MTK modem does not return max_cids, string for this index
+		 * actually contains the maximum data bearer capability.
+		 */
+		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+			reply->max_cids = MTK_MODEM_MAX_CIDS;
+		else
+			reply->max_cids = val;
+		g_ril_append_print_buf(gril, "%s%u", print_buf, val);
+		break;
+	default:
+		goto no_val;
+	}
+
+	return;
+
+no_val:
+	g_ril_append_print_buf(gril, "%s%s", print_buf, str ? str : "(null)");
+}
+
+struct reply_data_reg_state *g_ril_reply_parse_data_reg_state(GRil *gril,
+						const struct ril_msg *message)
+{
+	struct parcel rilp;
+	struct parcel_str_array *str_arr;
+	struct reply_data_reg_state *reply = NULL;
+	int i;
+
+	g_ril_init_parcel(message, &rilp);
+
+	str_arr = parcel_r_str_array(&rilp);
+	if (str_arr == NULL) {
+		ofono_error("%s: parse error for %s", __func__,
+				ril_request_id_to_string(message->req));
+		goto out;
+	}
+
+	reply =	g_try_malloc0(sizeof(*reply));
+	if (reply == NULL) {
+		ofono_error("%s: out of memory", __func__);
+		goto out;
+	}
+
+	reply->reg_state.status = -1;
+	reply->reg_state.lac = -1;
+	reply->reg_state.ci = -1;
+
+	g_ril_append_print_buf(gril, "{");
+
+	for (i = 0; i < str_arr->num_str; ++i) {
+		char *str = str_arr->str[i];
+
+		if (i > 0)
+			g_ril_append_print_buf(gril, "%s,", print_buf);
+
+		switch (i) {
+		case RST_IX_STATE: case RST_IX_LAC:
+		case RST_IX_CID:   case RST_IX_RAT:
+			set_reg_state(gril, &reply->reg_state, i, str);
+			break;
+		case RDST_IX_MAXDC:
+			set_data_reg_state(gril, reply, i, str);
+			break;
+		default:
+			g_ril_append_print_buf(gril, "%s%s", print_buf,
+						str ? str : "(null)");
+		}
+	}
+
+	g_ril_append_print_buf(gril, "%s}", print_buf);
+	g_ril_print_response(gril, message);
+
+	/* As a minimum we require a valid status string */
+	if (reply->reg_state.status == -1) {
+		ofono_error("%s: invalid status", __func__);
+		g_free(reply);
+		reply = NULL;
+	}
+
+out:
+	parcel_free_str_array(str_arr);
+
+	return reply;
 }
 
 void g_ril_reply_free_sim_io(struct reply_sim_io *reply)
