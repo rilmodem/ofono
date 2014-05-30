@@ -121,10 +121,22 @@ static int get_display_status(struct ofono_netreg *netreg, int status)
 {
 	struct network_operator_data *opd = netreg->current_operator;
 
-	/* Networks in EF_SPDI are equivalent to a home network */
+	/*
+	 * Networks in EF_SPDI or EF_OPL are equivalent to a home network. Some
+	 * operators (MVNOs usually) store in one of these files their home
+	 * networks, so we remove the roaming flag if the network we are
+	 * registered in is present in the files. Although this is not strictly
+	 * conformant with the standard, seems to be common practice among
+	 * operators: in the case of EF_SPDI it seems obvious that when the SIM
+	 * owner wants to display the SPN (its name) is because it is not
+	 * roaming. In the case of EF_OPL, no operator would care about changing
+	 * the displayed name for a network which is not among its home networks
+	 * (EF_OPL stores the index for the EF_PNN entry for a PLMN).
+	 */
 	if (status == NETWORK_REGISTRATION_STATUS_ROAMING && opd != NULL &&
-			sim_spdi_lookup(netreg->spdi, opd->mcc, opd->mnc)) {
-		DBG("mcc+mnc found in SPDI, roaming -> registered");
+			(sim_spdi_lookup(netreg->spdi, opd->mcc, opd->mnc) ||
+			sim_eons_lookup(netreg->eons, opd->mcc, opd->mnc))) {
+		DBG("mcc+mnc found in SPDI or OPL, roaming -> registered");
 		status = NETWORK_REGISTRATION_STATUS_REGISTERED;
 	}
 
@@ -1602,6 +1614,11 @@ optimize:
 
 		set_network_operator_eons_info(opd, eons_info);
 	}
+
+	/* Registration status might be affected for MVNOs */
+	set_registration_status(netreg, netreg->status);
+
+	notify_status_watches(netreg);
 }
 
 static void sim_pnn_read_cb(int ok, int length, int record,

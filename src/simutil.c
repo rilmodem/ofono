@@ -1103,6 +1103,9 @@ static const struct sim_eons_operator_info *
 	const struct opl_operator *opl;
 	int i;
 
+	if (eons == NULL)
+		return NULL;
+
 	for (l = eons->opl_list; l; l = l->next) {
 		opl = l->data;
 
