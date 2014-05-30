@@ -46,6 +46,7 @@
 #define POLL_CLCC_DELAY 50
 #define EXPECT_RELEASE_DELAY 50
 #define CLIP_TIMEOUT 500
+#define EXPECT_RING_DELAY 200
 
 static const char *none_prefix[] = { NULL };
 static const char *clcc_prefix[] = { "+CLCC:", NULL };
@@ -499,6 +500,19 @@ static gboolean expect_release(gpointer user_data)
 	return FALSE;
 }
 
+static gboolean expect_ring(gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+
+	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
+				clcc_poll_cb, vc, NULL);
+
+	vd->clip_source = 0;
+
+	return FALSE;
+}
+
 static void release_all_active_cb(gboolean ok, GAtResult *result,
 							gpointer user_data)
 {
@@ -752,6 +766,11 @@ static void ring_notify(GAtResult *result, gpointer user_data)
 	struct ofono_call *call;
 	GSList *waiting;
 
+	if (vd->clip_source) {
+		g_source_remove(vd->clip_source);
+		vd->clip_source = 0;
+	}
+
 	/* RING can repeat, ignore if we already have an incoming call */
 	if (g_slist_find_custom(vd->calls,
 				GINT_TO_POINTER(CALL_STATUS_INCOMING),
@@ -976,7 +995,15 @@ static void ciev_callsetup_notify(struct ofono_voicecall *vc,
 		break;
 
 	case 1:
-		/* Handled in RING/CCWA */
+		/*
+		 * Handled in RING/CCWA most of the time, however sometimes
+		 * the call is answered before the RING unsolicited
+		 * notification has a chance to be generated on the device.
+		 * In this case, we use a failsafe CLCC poll in expect_ring
+		 * callback.
+		 * */
+		vd->clip_source = g_timeout_add(EXPECT_RING_DELAY,
+							expect_ring, vc);
 		break;
 
 	case 2:
