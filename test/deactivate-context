@@ -5,34 +5,47 @@ import dbus
 
 bus = dbus.SystemBus()
 
-manager = dbus.Interface(bus.get_object('org.ofono', '/'),
-						'org.ofono.Manager')
+manager = dbus.Interface(bus.get_object('org.ofono', '/'), 'org.ofono.Manager')
 
-modems = manager.GetModems()
+if (len(sys.argv) == 1):
+	modems = manager.GetModems()
+	modem = modems[0][0]
+	context_idx = 0
+elif (len(sys.argv) == 2):
+	modems = manager.GetModems()
+	modem = modems[0][0]
+	context_idx = int(sys.argv[1]) - 1
+elif (len(sys.argv) == 3):
+	modem = sys.argv[1]
+	context_idx = int(sys.argv[2]) - 1
+else:
+	print("Usage: %s [modem] [context_number]" % (sys.argv[0]))
+	sys.exit(1)
 
-for path, properties in modems:
-	if "org.ofono.ConnectionManager" not in properties["Interfaces"]:
-		continue
+modemapi = dbus.Interface(bus.get_object('org.ofono', modem), 'org.ofono.Modem')
+properties = modemapi.GetProperties()
 
-	connman = dbus.Interface(bus.get_object('org.ofono', path),
-					'org.ofono.ConnectionManager')
+if "org.ofono.ConnectionManager" not in properties["Interfaces"]:
+	print("org.ofono.ConnectionManager not found")
+	exit(2)
 
-	contexts = connman.GetContexts()
+connman = dbus.Interface(bus.get_object('org.ofono', modem),
+				'org.ofono.ConnectionManager')
 
-	if (len(contexts) == 0):
-		print("No context available")
-		sys.exit(1)
+contexts = connman.GetContexts()
 
-	if len(sys.argv) > 1:
-		path = contexts[int(sys.argv[1])][0]
-	else:
-		path = contexts[0][0]
+if (len(contexts) == 0):
+	print("No context available")
+	sys.exit(1)
 
-	context = dbus.Interface(bus.get_object('org.ofono', path),
-					'org.ofono.ConnectionContext')
+path = contexts[context_idx][0]
 
-	try:
-		context.SetProperty("Active", dbus.Boolean(0))
-	except dbus.DBusException as e:
-		print("Error activating %s: %s" % (path, str(e)))
-		exit(2)
+context = dbus.Interface(bus.get_object('org.ofono', path),
+				'org.ofono.ConnectionContext')
+
+try:
+	context.SetProperty("Active", dbus.Boolean(0))
+except dbus.DBusException as e:
+	print("Error deactivating %s: %s" % (path, str(e)))
+	exit(2)
+

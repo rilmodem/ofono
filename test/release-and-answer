@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import sys
 import dbus
 
 bus = dbus.SystemBus()
@@ -9,14 +10,26 @@ manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 
 modems = manager.GetModems()
 
-for path, properties in modems:
-	print("[ %s ]" % (path))
+if (len(sys.argv) == 1):
+	modems = manager.GetModems()
+	path = modems[0][0]
+elif (len(sys.argv) == 2):
+	path = sys.argv[1]
+else:
+	print("Usage: %s [modem]" % (sys.argv[0]))
+	exit(1)
 
-	if "org.ofono.VoiceCallManager" not in properties["Interfaces"]:
-		continue
+modemapi = dbus.Interface(bus.get_object('org.ofono', path), 'org.ofono.Modem')
+properties = modemapi.GetProperties()
 
-	mgr = dbus.Interface(bus.get_object('org.ofono', path),
-					'org.ofono.VoiceCallManager')
+if "org.ofono.VoiceCallManager" not in properties["Interfaces"]:
+	print("org.ofono.VoiceCallManager not found")
+	exit(2)
 
-	mgr.ReleaseAndAnswer()
-	break
+print("[ %s ]" % (path))
+
+mgr = dbus.Interface(bus.get_object('org.ofono', path),
+			'org.ofono.VoiceCallManager')
+
+mgr.ReleaseAndAnswer()
+
