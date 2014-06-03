@@ -115,12 +115,15 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 		switch (radio_state) {
 		case RADIO_STATE_ON:
 
-			if (ril->voice == NULL)
+			if (ril->voice == NULL) {
+				ofono_powerd_create(modem, 0, RILMODEM,
+							ril->modem);
 				ril->voice =
 					ofono_voicecall_create(modem,
 								0,
 								RILMODEM,
 								ril->modem);
+			}
 
 			send_get_sim_status(modem);
 			break;
