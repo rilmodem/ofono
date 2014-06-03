@@ -173,6 +173,42 @@ static const struct request_test_set_call_indication_data
 	.parcel_size = sizeof(req_set_call_indication_parcel_valid_1),
 };
 
+/* MTK: set_fd_mode tests */
+
+struct request_test_set_fd_mode_data {
+	int mode;
+	int param1;
+	int param2;
+	const unsigned char *parcel_data;
+	size_t parcel_size;
+};
+
+static const guchar req_set_fd_mode_parcel_valid_1[] = {
+	0x02, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+static const struct request_test_set_fd_mode_data set_fd_mode_valid_test_1 = {
+	.mode = MTK_FD_MODE_SCREEN_STATUS,
+	.param1 = MTK_FD_PAR1_SCREEN_OFF,
+	.param2 = -1,
+	.parcel_data = req_set_fd_mode_parcel_valid_1,
+	.parcel_size = sizeof(req_set_fd_mode_parcel_valid_1),
+};
+
+static const guchar req_set_fd_mode_parcel_valid_2[] = {
+	0x02, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+};
+
+static const struct request_test_set_fd_mode_data set_fd_mode_valid_test_2 = {
+	.mode = MTK_FD_MODE_SCREEN_STATUS,
+	.param1 = MTK_FD_PAR1_SCREEN_ON,
+	.param2 = -1,
+	.parcel_data = req_set_fd_mode_parcel_valid_2,
+	.parcel_size = sizeof(req_set_fd_mode_parcel_valid_2),
+};
+
+/* Test functions */
+
 static void test_mtk_req_sim_read_binary_valid(gconstpointer data)
 {
 	const struct request_test_data *test_data = data;
@@ -272,6 +308,20 @@ static void test_request_set_call_indication(gconstpointer data)
 	parcel_free(&rilp);
 }
 
+static void test_request_set_fd_mode(gconstpointer data)
+{
+	const struct request_test_set_fd_mode_data *test_data = data;
+	struct parcel rilp;
+
+	g_mtk_request_set_fd_mode(NULL, test_data->mode, test_data->param1,
+					test_data->param2, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+				test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
 #endif	/* LITTLE_ENDIAN */
 
 int main(int argc, char **argv)
@@ -315,6 +365,16 @@ int main(int argc, char **argv)
 				"valid SIM_READ_RECORD Test 1",
 				&mtk_sim_read_record_valid_test_1,
 				test_mtk_req_sim_read_record_valid);
+
+	g_test_add_data_func("/testmtkrequest/radio-settings: "
+				"valid SET_FD_MODE Test 1",
+				&set_fd_mode_valid_test_1,
+				test_request_set_fd_mode);
+
+	g_test_add_data_func("/testmtkrequest/radio-settings: "
+				"valid SET_FD_MODE Test 2",
+				&set_fd_mode_valid_test_2,
+				test_request_set_fd_mode);
 
 #endif	/* LITTLE_ENDIAN */
 
