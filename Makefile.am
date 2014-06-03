@@ -19,7 +19,8 @@ pkginclude_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/cdma-connman.h include/gnss.h \
 			include/private-network.h include/cdma-netreg.h \
 			include/cdma-provision.h include/handsfree.h \
-			include/sim-mnclength.h include/spn-table.h
+			include/sim-mnclength.h include/spn-table.h \
+			include/powerd.h
 
 nodist_pkginclude_HEADERS = include/version.h
 
@@ -136,7 +137,8 @@ builtin_sources += drivers/mtkmodem/mtkmodem.h \
 			drivers/mtkmodem/mtkunsol.h \
 			drivers/mtkmodem/mtkunsol.c \
 			drivers/mtkmodem/voicecall.c \
-			drivers/mtkmodem/gprs.c
+			drivers/mtkmodem/gprs.c \
+			drivers/mtkmodem/powerd.c
 
 builtin_modules += rilmodem
 builtin_sources += drivers/rilmodem/rilmodem.h \
@@ -154,10 +156,10 @@ builtin_sources += drivers/rilmodem/rilmodem.h \
 			drivers/rilmodem/rilutil.h \
 			drivers/rilmodem/ussd.c \
 			drivers/rilmodem/call-settings.c \
+			drivers/rilmodem/powerd.c \
 			drivers/rilmodem/call-forwarding.c \
 			drivers/rilmodem/radio-settings.c \
 			drivers/rilmodem/call-barring.c
-
 endif
 
 if ISIMODEM
@@ -566,7 +568,8 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
 			src/cdma-smsutil.h src/cdma-smsutil.c \
 			src/cdma-sms.c src/private-network.c src/cdma-netreg.c \
 			src/cdma-provision.c src/handsfree.c \
-			src/sim-mnclength.c src/spn-table.c
+			src/sim-mnclength.c src/spn-table.c \
+			src/powerd.c
 
 src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ -ldl
 
