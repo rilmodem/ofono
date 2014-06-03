@@ -242,6 +242,10 @@ void g_ril_request_set_clir(GRil *gril,
 				int mode,
 				struct parcel *rilp);
 
+void g_ril_request_screen_state(GRil *gril,
+				int state,
+				struct parcel *rilp);
+
 void g_ril_request_call_fwd(GRil *gril, const struct req_call_fwd *req,
 				struct parcel *rilp);
 
