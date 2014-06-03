@@ -48,6 +48,7 @@ static int rilmodem_init(void)
 	ril_gprs_context_init();
 	ril_ussd_init();
 	ril_call_settings_init();
+	ril_powerd_init();
 	ril_call_forwarding_init();
 	ril_radio_settings_init();
 	ril_call_barring_init();
@@ -69,6 +70,7 @@ static void rilmodem_exit(void)
 	ril_gprs_context_exit();
 	ril_ussd_exit();
 	ril_call_settings_exit();
+	ril_powerd_exit();
 	ril_call_forwarding_exit();
 	ril_radio_settings_exit();
 	ril_call_barring_exit();
