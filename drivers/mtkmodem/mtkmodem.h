@@ -27,3 +27,6 @@ extern void mtk_voicecall_exit(void);
 
 extern void mtk_gprs_init(void);
 extern void mtk_gprs_exit(void);
+
+extern void mtk_powerd_init(void);
+extern void mtk_powerd_exit(void);

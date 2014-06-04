@@ -82,3 +82,43 @@ void g_mtk_request_set_call_indication(GRil *gril, int mode, int call_id,
 
 	g_ril_append_print_buf(gril, "(%d,%d,%d)", mode, call_id, seq_number);
 }
+
+void g_mtk_request_set_fd_mode(GRil *gril, int mode, int param1,
+					int param2, struct parcel *rilp)
+{
+	int num_args;
+
+	switch (mode) {
+	case MTK_FD_MODE_DISABLE:
+	case MTK_FD_MODE_ENABLE:
+		num_args = 1;
+		break;
+	case MTK_FD_MODE_SET_TIMER:
+		num_args = 3;
+		break;
+	case MTK_FD_MODE_SCREEN_STATUS:
+		num_args = 2;
+		break;
+	default:
+		ofono_error("%s: mode %d is wrong", __func__, mode);
+		return;
+	}
+
+	parcel_init(rilp);
+	parcel_w_int32(rilp, num_args);
+	parcel_w_int32(rilp, mode);
+
+	g_ril_append_print_buf(gril, "(%d,%d", num_args, mode);
+
+	if (mode == MTK_FD_MODE_SCREEN_STATUS) {
+		parcel_w_int32(rilp, param1);
+		g_ril_append_print_buf(gril, "%s,%d)", print_buf, param1);
+	} else if (mode == MTK_FD_MODE_SET_TIMER) {
+		parcel_w_int32(rilp, param1);
+		parcel_w_int32(rilp, param2);
+		g_ril_append_print_buf(gril, "%s,%d,%d)", print_buf,
+					param1, param2);
+	} else {
+		g_ril_append_print_buf(gril, "%s)", print_buf);
+	}
+}
