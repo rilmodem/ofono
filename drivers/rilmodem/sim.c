@@ -675,9 +675,9 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 			 */
 			__ofono_sim_recheck_pin(sim);
 		}
-
-		g_ril_reply_free_sim_status(status);
 	}
+
+	g_ril_reply_free_sim_status(status);
 
 	/* TODO: if no SIM present, handle emergency calling. */
 }
