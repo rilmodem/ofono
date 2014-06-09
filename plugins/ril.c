@@ -251,6 +251,8 @@ static void ril_pre_sim(struct ofono_modem *modem)
 
 	DBG("");
 
+	ofono_devinfo_create(modem, 0, RILMODEM, ril->modem);
+
 	sim_data.gril = ril->modem;
 	sim_data.modem = modem;
 	sim_data.ril_state_watch = NULL;
@@ -417,7 +419,6 @@ static int create_gril(struct ofono_modem *modem)
 
 static int ril_enable(struct ofono_modem *modem)
 {
-	struct ril_data *ril = ofono_modem_get_data(modem);
 	int ret;
 
 	DBG("");
@@ -425,8 +426,6 @@ static int ril_enable(struct ofono_modem *modem)
 	ret = create_gril(modem);
 	if (ret < 0)
 		return ret;
-
-	ofono_devinfo_create(modem, 0, RILMODEM, ril->modem);
 
 	return -EINPROGRESS;
 }
