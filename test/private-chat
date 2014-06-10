@@ -12,14 +12,14 @@ bus = dbus.SystemBus()
 manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 						'org.ofono.Manager')
 
-callid = sys.argv[1]
-sep = callid.find("/", 1)
-path = callid[0:sep]
+call = sys.argv[1]
+sep = call.find("/", 1)
+path = call[0:sep]
 
 manager = dbus.Interface(bus.get_object('org.ofono', path),
 						'org.ofono.VoiceCallManager')
 
-mpty = manager.PrivateChat(callid, timeout=100)
+mpty = manager.PrivateChat(call, timeout=100)
 
 for path in mpty:
 	print(path)
