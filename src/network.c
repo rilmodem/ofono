@@ -1384,14 +1384,14 @@ void ofono_netreg_status_notify(struct ofono_netreg *netreg, int status,
 					GINT_TO_POINTER(netreg->status));
 	}
 
+	if (netreg->technology != tech)
+		set_registration_technology(netreg, tech);
+
 	if (netreg->location != lac)
 		set_registration_location(netreg, lac);
 
 	if (netreg->cellid != ci)
 		set_registration_cellid(netreg, ci);
-
-	if (netreg->technology != tech)
-		set_registration_technology(netreg, tech);
 
 	if (netreg->status == NETWORK_REGISTRATION_STATUS_REGISTERED ||
 		netreg->status == NETWORK_REGISTRATION_STATUS_ROAMING) {
