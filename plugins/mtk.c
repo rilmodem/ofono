@@ -361,6 +361,8 @@ static void mtk_post_online(struct ofono_modem *modem)
 					RILMODEM, &ril->sim_data);
 	g_assert(ril->sim != NULL);
 
+	ofono_powerd_create(modem, OFONO_RIL_VENDOR_MTK, MTKMODEM, ril->modem);
+
 	/* Create interfaces useful for emergency calls */
 	ofono_voicecall_create(modem, OFONO_RIL_VENDOR_MTK,
 					MTKMODEM, ril->modem);

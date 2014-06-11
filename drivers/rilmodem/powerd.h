@@ -1,8 +1,7 @@
 /*
  *
- *  oFono - Open Source Telephony - RIL Modem Support
+ *  oFono - Open Source Telephony
  *
- *  Copyright (C) 2008-2011  Intel Corporation. All rights reserved.
  *  Copyright (C) 2014  Canonical Ltd.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -20,13 +19,12 @@
  *
  */
 
-#define MTKMODEM "mtkmodem"
+struct powerd_data {
+	GRil *ril;
+};
 
-extern void mtk_voicecall_init(void);
-extern void mtk_voicecall_exit(void);
-
-extern void mtk_gprs_init(void);
-extern void mtk_gprs_exit(void);
-
-extern void mtk_powerd_init(void);
-extern void mtk_powerd_exit(void);
+int ril_powerd_probe(struct ofono_powerd *powerd,
+			unsigned int vendor, void *user);
+void ril_powerd_remove(struct ofono_powerd *powerd);
+void ril_powerd_set_display_state(struct ofono_powerd *powerd, gboolean on,
+					ofono_powerd_cb_t cb, void *user_data);

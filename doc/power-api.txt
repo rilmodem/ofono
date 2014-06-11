@@ -1,0 +1,42 @@
+Power API hierarchy
+===================
+
+Service		org.ofono
+Interface	org.ofono.Power
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns all power API properties. See the properties
+			section for available properties.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.Failed
+
+		void SetProperty(string name, variant value)
+
+			Changes the value of the specified property. Only
+			properties that are listed as readwrite are
+			changeable. On success a PropertyChanged signal
+			will be emitted.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.Failed
+
+Signals		PropertyChanged(string property, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+Properties	boolean	LowPowerMode [readwrite, optional]
+
+			This property will enable or disable low power mode in
+			the modem. This mode saves battery disabling features
+			that make sense only when the user is interacting
+			actively with the device, like some notifications. Low
+			power mode should be active, for instance, when the
+			screen is off.
+
