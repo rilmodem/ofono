@@ -198,6 +198,7 @@ static int android_spn_table_init(void)
 				&error) == FALSE) {
 		g_hash_table_destroy(android_spn_table);
 		android_spn_table = NULL;
+		g_clear_error(&error);
 		return -EINVAL;
 	}
 
