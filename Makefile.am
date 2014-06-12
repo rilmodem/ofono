@@ -136,7 +136,8 @@ builtin_sources += drivers/mtkmodem/mtkmodem.h \
 			drivers/mtkmodem/mtkunsol.h \
 			drivers/mtkmodem/mtkunsol.c \
 			drivers/mtkmodem/voicecall.c \
-			drivers/mtkmodem/gprs.c
+			drivers/mtkmodem/gprs.c \
+			drivers/mtkmodem/radio-settings.c
 
 builtin_modules += rilmodem
 builtin_sources += drivers/rilmodem/rilmodem.h \
