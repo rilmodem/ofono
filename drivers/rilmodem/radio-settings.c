@@ -43,10 +43,7 @@
 
 #include "grilrequest.h"
 #include "grilreply.h"
-
-struct radio_data {
-	GRil *ril;
-};
+#include "radio-settings.h"
 
 static void ril_set_rat_cb(struct ril_msg *message, gpointer user_data)
 {
@@ -64,10 +61,10 @@ static void ril_set_rat_cb(struct ril_msg *message, gpointer user_data)
 	}
 }
 
-static void ril_set_rat_mode(struct ofono_radio_settings *rs,
-				enum ofono_radio_access_mode mode,
-				ofono_radio_settings_rat_mode_set_cb_t cb,
-				void *data)
+void ril_set_rat_mode(struct ofono_radio_settings *rs,
+			enum ofono_radio_access_mode mode,
+			ofono_radio_settings_rat_mode_set_cb_t cb,
+			void *data)
 {
 	struct radio_data *rd = ofono_radio_settings_get_data(rs);
 	struct cb_data *cbd = cb_data_new(cb, data, rs);
@@ -141,9 +138,9 @@ static void ril_rat_mode_cb(struct ril_msg *message, gpointer user_data)
 	CALLBACK_WITH_SUCCESS(cb, mode, cbd->data);
 }
 
-static void ril_query_rat_mode(struct ofono_radio_settings *rs,
-				ofono_radio_settings_rat_mode_query_cb_t cb,
-				void *data)
+void ril_query_rat_mode(struct ofono_radio_settings *rs,
+			ofono_radio_settings_rat_mode_query_cb_t cb,
+			void *data)
 {
 	struct radio_data *rd = ofono_radio_settings_get_data(rs);
 	struct cb_data *cbd = cb_data_new(cb, data, rs);
@@ -156,12 +153,61 @@ static void ril_query_rat_mode(struct ofono_radio_settings *rs,
 	}
 }
 
-static gboolean ril_delayed_register(gpointer user_data)
+void ril_query_fast_dormancy(struct ofono_radio_settings *rs,
+			ofono_radio_settings_fast_dormancy_query_cb_t cb,
+			void *data)
+{
+	struct radio_data *rd = ofono_radio_settings_get_data(rs);
+
+	CALLBACK_WITH_SUCCESS(cb, rd->fast_dormancy, data);
+}
+
+static void ril_display_state_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	struct ofono_radio_settings *rs = cbd->user;
+	struct radio_data *rd = ofono_radio_settings_get_data(rs);
+	ofono_radio_settings_fast_dormancy_set_cb_t cb = cbd->cb;
+
+	if (message->error == RIL_E_SUCCESS) {
+		g_ril_print_response_no_args(rd->ril, message);
+
+		rd->fast_dormancy = rd->pending_fd;
+
+		CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	} else {
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+	}
+}
+
+void ril_set_fast_dormancy(struct ofono_radio_settings *rs,
+				ofono_bool_t enable,
+				ofono_radio_settings_fast_dormancy_set_cb_t cb,
+				void *data)
+{
+	struct radio_data *rd = ofono_radio_settings_get_data(rs);
+	struct cb_data *cbd = cb_data_new(cb, data, rs);
+	struct parcel rilp;
+
+	g_ril_request_screen_state(rd->ril, enable ? 0 : 1, &rilp);
+
+	rd->pending_fd = enable;
+
+	if (g_ril_send(rd->ril, RIL_REQUEST_SCREEN_STATE, &rilp,
+			ril_display_state_cb, cbd, g_free) <= 0) {
+		g_free(cbd);
+		CALLBACK_WITH_FAILURE(cb, data);
+	}
+}
+
+void ril_delayed_register(const struct ofono_error *error, void *user_data)
 {
 	struct ofono_radio_settings *rs = user_data;
 
-	ofono_radio_settings_register(rs);
-	return FALSE;
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
+		ofono_radio_settings_register(rs);
+	else
+		ofono_error("%s: cannot set default fast dormancy", __func__);
 }
 
 static int ril_radio_settings_probe(struct ofono_radio_settings *rs,
@@ -178,12 +224,13 @@ static int ril_radio_settings_probe(struct ofono_radio_settings *rs,
 	rsd->ril = g_ril_clone(ril);
 
 	ofono_radio_settings_set_data(rs, rsd);
-	g_idle_add(ril_delayed_register, rs);
+
+	ril_set_fast_dormancy(rs, FALSE, ril_delayed_register, rs);
 
 	return 0;
 }
 
-static void ril_radio_settings_remove(struct ofono_radio_settings *rs)
+void ril_radio_settings_remove(struct ofono_radio_settings *rs)
 {
 	struct radio_data *rd = ofono_radio_settings_get_data(rs);
 	ofono_radio_settings_set_data(rs, NULL);
@@ -193,11 +240,13 @@ static void ril_radio_settings_remove(struct ofono_radio_settings *rs)
 }
 
 static struct ofono_radio_settings_driver driver = {
-	.name		= RILMODEM,
-	.probe		= ril_radio_settings_probe,
-	.remove		= ril_radio_settings_remove,
-	.query_rat_mode	= ril_query_rat_mode,
-	.set_rat_mode	= ril_set_rat_mode,
+	.name			= RILMODEM,
+	.probe			= ril_radio_settings_probe,
+	.remove			= ril_radio_settings_remove,
+	.query_rat_mode		= ril_query_rat_mode,
+	.set_rat_mode		= ril_set_rat_mode,
+	.query_fast_dormancy	= ril_query_fast_dormancy,
+	.set_fast_dormancy	= ril_set_fast_dormancy
 };
 
 void ril_radio_settings_init(void)

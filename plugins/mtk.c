@@ -318,7 +318,7 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 		ofono_call_forwarding_create(modem, OFONO_RIL_VENDOR_MTK,
 						RILMODEM, ril->modem);
 		ofono_radio_settings_create(modem, OFONO_RIL_VENDOR_MTK,
-						RILMODEM, ril->modem);
+						MTKMODEM, ril->modem);
 		ofono_call_barring_create(modem, OFONO_RIL_VENDOR_MTK,
 						RILMODEM, ril->modem);
 

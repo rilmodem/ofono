@@ -672,6 +672,31 @@ static const struct request_test_data set_clir_valid_test_1 = {
 	.parcel_size = sizeof(req_set_clir_parcel_valid_1),
 };
 
+/* screen_state tests */
+
+const int screen_state_0 = 0;
+const int screen_state_1 = 1;
+
+static const guchar req_screen_state_parcel_valid_1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static const struct request_test_data screen_state_valid_test_1 = {
+	.request = &screen_state_0,
+	.parcel_data = req_screen_state_parcel_valid_1,
+	.parcel_size = sizeof(req_screen_state_parcel_valid_1),
+};
+
+static const guchar req_screen_state_parcel_valid_2[] = {
+	0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
+};
+
+static const struct request_test_data screen_state_valid_test_2 = {
+	.request = &screen_state_1,
+	.parcel_data = req_screen_state_parcel_valid_2,
+	.parcel_size = sizeof(req_screen_state_parcel_valid_2),
+};
+
 /* set_preferred_network_type tests */
 
 const int preferred_network_type_gsm_only = PREF_NET_TYPE_GSM_ONLY;
@@ -1224,6 +1249,20 @@ static void test_request_set_clir(gconstpointer data)
 	parcel_free(&rilp);
 }
 
+static void test_request_screen_state(gconstpointer data)
+{
+	const struct request_test_data *test_data = data;
+	int state = *(int *) test_data->request;
+	struct parcel rilp;
+
+	g_ril_request_screen_state(NULL, state, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+				test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
 static void test_request_set_preferred_network_type(gconstpointer data)
 {
 	const struct request_test_data *test_data = data;
@@ -1501,6 +1540,16 @@ int main(int argc, char **argv)
 				"valid SET_CLIR Test 1",
 				&set_clir_valid_test_1,
 				test_request_set_clir);
+
+	g_test_add_data_func("/testgrilrequest/radio-settings: "
+				"valid SCREEN_STATE Test 1",
+				&screen_state_valid_test_1,
+				test_request_screen_state);
+
+	g_test_add_data_func("/testgrilrequest/radio-settings: "
+				"valid SCREEN_STATE Test 2",
+				&screen_state_valid_test_2,
+				test_request_screen_state);
 
 	g_test_add_data_func("/testgrilrequest/radio-settings: "
 				"valid SET_PREFERRED_NETWORK_TYPE Test 1",

@@ -40,6 +40,7 @@ static int mtkmodem_init(void)
 
 	mtk_voicecall_init();
 	mtk_gprs_init();
+	mtk_radio_settings_init();
 
 	return 0;
 }
@@ -50,6 +51,7 @@ static void mtkmodem_exit(void)
 
 	mtk_voicecall_exit();
 	mtk_gprs_exit();
+	mtk_radio_settings_exit();
 }
 
 OFONO_PLUGIN_DEFINE(mtkmodem, "MTK modem driver", VERSION,
