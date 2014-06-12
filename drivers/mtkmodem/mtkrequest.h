@@ -44,6 +44,14 @@ extern "C" {
 #define MTK_CALL_INDIC_MODE_AVAIL 0
 #define MTK_CALL_INDIC_MODE_NOT_AVAIL 1
 
+#define MTK_FD_MODE_DISABLE 0
+#define MTK_FD_MODE_ENABLE 1
+#define MTK_FD_MODE_SET_TIMER 2
+#define MTK_FD_MODE_SCREEN_STATUS 3
+
+#define MTK_FD_PAR1_SCREEN_OFF 0
+#define MTK_FD_PAR1_SCREEN_ON 1
+
 /*
  * The meaning of mode seems to be:
  * -1 -> Both SIMs inactive
@@ -78,6 +86,21 @@ void g_mtk_request_set_gprs_transfer_type(GRil *gril,
  */
 void g_mtk_request_set_call_indication(GRil *gril, int mode, int call_id,
 					int seq_number, struct parcel *rilp);
+
+/*
+ * mode . MTK_FD_MODE_DISABLE: Disable fast dormancy
+ *        MTK_FD_MODE_ENABLE: Enable fast formancy
+ *        MTK_FD_MODE_SET_TIMER: Set fast dormancy timer
+ *        MTK_FD_MODE_SCREEN_STATUS: Inform modem of screen status, to select
+ *                                   timers to use for FD.
+ * param1 Id of timer to set or screen status
+ * param2 Value of timer, in units of 0.1 seconds
+ *
+ * Setting timers and enabling FD is done by rild initialization, so we do not
+ * need to do it again in ofono.
+ */
+void g_mtk_request_set_fd_mode(GRil *gril, int mode, int param1,
+					int param2, struct parcel *rilp);
 
 #ifdef __cplusplus
 }
