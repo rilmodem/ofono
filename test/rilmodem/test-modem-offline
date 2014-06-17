@@ -47,6 +47,6 @@ for path, properties in modems:
 	assert properties['Emergency'] == 0
 	assert properties["Lockdown"] == 0
 	assert properties["Serial"].isalnum()
-	assert properties["Revision"].isalnum() 
+	assert properties["Revision"]
 
 	print("OK\n")
