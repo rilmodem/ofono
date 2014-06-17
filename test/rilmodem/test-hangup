@@ -54,13 +54,13 @@ import telnetlib
 def create_incoming_call(number, port):
 
 	tn = telnetlib.Telnet("localhost", 5554)
-	tn.read_until("OK")
+	tn.read_until(b"OK")
 
-	tn.write("gsm call " + number + "\n")
+	tn.write(bytes("gsm call " + number + "\n", 'utf-8'))
 	print("incoming call created")
 
-	tn.read_until("OK")
-	tn.write("exit")
+	tn.read_until(b"OK")
+	tn.write(b"exit")
 
 if __name__ == "__main__":
 

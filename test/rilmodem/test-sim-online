@@ -69,8 +69,7 @@ def validate_netreg(args, path):
 
 	assert keys.index("Status") != "ValueError"
 
-	# TODO: no Strength reported by emulator!
-	# assert keys.index("Strength") != "ValueError"
+	assert keys.index("Strength") != "ValueError"
 
 	assert keys.index("Name") != "ValueError"
 	assert keys.index("LocationAreaCode") != "ValueError"
@@ -173,15 +172,11 @@ def main(args):
 	assert keys.index("Online") != "ValueError"
 	assert keys.index("Model") != "ValueError"
 
-	# TODO: not properly set by emulator
-	if args.emulator == False:
-		assert keys.index("Revision") != "ValueError"
+	assert keys.index("Revision") != "ValueError"
 
 	assert keys.index("Type") != "ValueError"
     
-	# TODO: not properly set by emulator
-	if args.emulator == False:
-		assert keys.index("Serial") != "ValueError"
+	assert keys.index("Serial") != "ValueError"
 
 	assert keys.index("Manufacturer") != "ValueError"
 
@@ -198,8 +193,7 @@ def main(args):
 	assert properties["Model"] == "Fake Modem Model"
 	assert properties["Type"] == "hardware"
 
-	# TODO: not properly set by emulator
-	# assert properties["Serial"] == "000000000000000"
+	assert properties["Serial"] == "000000000000000"
 
 	assert properties["Manufacturer"] == "Fake Manufacturer"
 
