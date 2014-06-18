@@ -495,6 +495,11 @@ builtin_libadd += @BLUEZ_LIBS@
 endif
 endif
 
+if NETTIME
+builtin_modules += nettime
+builtin_sources += plugins/nettime.c
+endif
+
 if PROVISION
 builtin_sources += plugins/mbpi.h plugins/mbpi.c
 builtin_sources += plugins/android-apndb.h plugins/android-apndb.c
