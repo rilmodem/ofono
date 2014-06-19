@@ -49,6 +49,11 @@ enum ofono_gprs_context_type {
 	OFONO_GPRS_CONTEXT_TYPE_IA,
 };
 
+enum ofono_gprs_auth_method {
+	OFONO_GPRS_AUTH_METHOD_CHAP = 0,
+	OFONO_GPRS_AUTH_METHOD_PAP,
+};
+
 struct ofono_gprs_primary_context {
 	unsigned int cid;
 	int direction;
@@ -56,6 +61,7 @@ struct ofono_gprs_primary_context {
 	char username[OFONO_GPRS_MAX_USERNAME_LENGTH + 1];
 	char password[OFONO_GPRS_MAX_PASSWORD_LENGTH + 1];
 	enum ofono_gprs_proto proto;
+	enum ofono_gprs_auth_method auth_method;
 };
 
 typedef void (*ofono_gprs_context_cb_t)(const struct ofono_error *error,
