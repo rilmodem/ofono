@@ -1,0 +1,47 @@
+Network time hierarchy
+======================
+
+Service		org.ofono
+Interface	org.ofono.NetworkTime
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetNetworkTime()
+
+			Returns the current time and date as notified
+			by the cellular network.  The dictionary
+			contains the following possible keys:
+
+			int64 UTC [optional]
+				Network time in seconds from epoch.
+				Receiving entity obtains current real
+				time by adding the value from monotonic
+				clock e.g.
+				clock_gettime(CLOCK_MONOTONIC,...) and
+				substracting "Received" key value.
+
+			int32 Timezone [optional]
+				Current timezone offset in seconds from
+				UTC.
+
+			uint32 DST [optional]
+				Current daylight saving setting in
+				hours.
+
+			int64 Received [optional]
+				Monotonic time as returned by
+				clock_gettime(CLOCK_MONOTONIC,...) when
+				the network time is received.
+
+			string MobileCountryCode
+				The Mobile country code of the
+				current network operator.
+
+			string MobileNetworkCode
+				The Mobile network code of the
+				current network operator.
+
+Signals		NetworkTimeChanged(dict)
+
+			Returns a dictionary with the same keys as
+			GetNetworkTime() when a NITZ event is received.
+
