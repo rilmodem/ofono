@@ -654,8 +654,10 @@ static void hfp_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct change_state_req *req = g_try_new0(struct change_state_req, 1);
+	int len = strlen(dtmf);
 	char *buf;
 	int s;
+	int i;
 
 	if (req == NULL)
 		goto error;
@@ -665,12 +667,15 @@ static void hfp_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 	req->data = data;
 	req->affected_types = 0;
 
-	/* strlen("AT+VTS=) = 7 + NULL */
-	buf = g_try_new(char, strlen(dtmf) + 8);
+	/* strlen("AT") + (n-1) * strlen("+VTS=T;") + strlen(+VTS=T) + null */
+	buf = g_try_new(char, len * 7 + 2);
 	if (buf == NULL)
 		goto error;
 
-	sprintf(buf, "AT+VTS=%s", dtmf);
+	s = sprintf(buf, "AT+VTS=%c", dtmf[0]);
+
+	for (i = 1; i < len; i++)
+		s += sprintf(buf + s, ";+VTS=%c", dtmf[i]);
 
 	s = g_at_chat_send(vd->chat, buf, none_prefix,
 				generic_cb, req, g_free);
