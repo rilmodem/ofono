@@ -1812,6 +1812,8 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 static void write_context_settings(struct ofono_gprs *gprs,
 					struct pri_context *context)
 {
+	const char *auth_method;
+
 	g_key_file_set_string(gprs->settings, context->key,
 				"Name", context->name);
 	g_key_file_set_string(gprs->settings, context->key,
@@ -1820,10 +1822,11 @@ static void write_context_settings(struct ofono_gprs *gprs,
 				"Username", context->context.username);
 	g_key_file_set_string(gprs->settings, context->key,
 				"Password", context->context.password);
+
+	auth_method = gprs_auth_method_to_string(context->context.auth_method);
 	g_key_file_set_string(gprs->settings, context->key,
-				"AuthenticationMethod",
-				gprs_auth_method_to_string(
-				context->context.auth_method));
+				"AuthenticationMethod", auth_method);
+
 	g_key_file_set_string(gprs->settings, context->key, "Type",
 				gprs_context_type_to_string(context->type));
 	g_key_file_set_string(gprs->settings, context->key, "Protocol",
