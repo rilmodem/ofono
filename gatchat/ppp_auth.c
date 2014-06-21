@@ -258,9 +258,11 @@ gboolean ppp_pap_start(struct ppp_pap *pap)
 	guint16 length;
 
 	length = sizeof(*authreq) + strlen(username) + strlen(password) + 2;
+
 	packet = ppp_packet_new(length, PAP_PROTOCOL);
 	if (packet == NULL)
 		return FALSE;
+
 	pap->authreq = packet;
 	pap->authreq_len = length;
 
@@ -279,7 +281,7 @@ gboolean ppp_pap_start(struct ppp_pap *pap)
 	ppp_transmit(pap->ppp, (guint8 *)packet, length);
 	pap->retries = 0;
 	pap->retry_timer = g_timeout_add_seconds(PAP_TIMEOUT,
-	    ppp_pap_timeout, pap);
+							ppp_pap_timeout, pap);
 
 	return TRUE;
 }
@@ -288,8 +290,10 @@ void ppp_pap_free(struct ppp_pap *pap)
 {
 	if (pap->retry_timer != 0)
 		g_source_remove(pap->retry_timer);
+
 	if (pap->authreq != NULL)
 		g_free(pap->authreq);
+
 	g_free(pap);
 }
 

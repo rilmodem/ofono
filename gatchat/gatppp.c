@@ -231,6 +231,7 @@ static void ppp_receive(const unsigned char *buf, gsize len, void *data)
 			ppp_pap_process_packet(ppp->pap, packet, len - offset);
 		else
 			pppcp_send_protocol_reject(ppp->lcp, buf, len);
+
 		break;
 	case CHAP_PROTOCOL:
 		if (ppp->chap) {
@@ -464,6 +465,7 @@ void ppp_lcp_up_notify(GAtPPP *ppp)
 		else
 			/* It'll never work out. */
 			ppp_auth_notify(ppp, FALSE);
+
 		return;
 	}
 
