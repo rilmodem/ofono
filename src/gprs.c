@@ -2425,6 +2425,8 @@ static void provision_context(const struct ofono_gprs_provision_data *ap,
 	if (ap->password != NULL)
 		strcpy(context->context.password, ap->password);
 
+	context->context.auth_method = ap->auth_method;
+
 	strcpy(context->context.apn, ap->apn);
 	context->context.proto = ap->proto;
 
