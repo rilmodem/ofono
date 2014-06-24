@@ -35,6 +35,7 @@ struct ofono_gprs_provision_data {
 	char *apn;
 	char *username;
 	char *password;
+	enum ofono_gprs_auth_method auth_method;
 	char *message_proxy;
 	char *message_center;
 };
