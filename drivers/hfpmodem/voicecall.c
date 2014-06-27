@@ -295,7 +295,7 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	 * we won't get indicator update if any of them is released by CHLD=1x.
 	 * So we have to poll it.
 	 */
-	if (num_active > 1 || num_held > 1)
+	if ((num_active > 1 || num_held > 1) && !vd->clcc_source)
 		vd->clcc_source = g_timeout_add(POLL_CLCC_INTERVAL, poll_clcc,
 							vc);
 }
