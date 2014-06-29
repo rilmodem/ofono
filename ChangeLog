@@ -1,3 +1,14 @@
+ver 1.15:
+	Fix issue with EF_PNN access affecting PLMN display.
+	Fix issue with SIM detection and Telit HE910 modems.
+	Fix issue with Mobile Provider Database provisioning.
+	Fix issue with bit-shifting and ID mapping allocations.
+	Fix issue with Handsfree and unsolicited notifications.
+	Fix issue with Handsfree and three way calling feature.
+	Add support for Handsfree subscriber number feature.
+	Add support for Handsfree multiple DTMF characters.
+	Add support for PAP authentication.
+
 ver 1.14:
 	Add support for Apple Siri specific Handsfree commands.
 	Add support for provisioning of MMSC and Message Proxy.
