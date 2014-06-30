@@ -193,7 +193,8 @@ def main(args):
 	assert properties["Model"] == "Fake Modem Model"
 	assert properties["Type"] == "hardware"
 
-	assert properties["Serial"] == "000000000000000"
+	if args.emulator:
+		assert properties["Serial"] == "000000000000000"
 
 	assert properties["Manufacturer"] == "Fake Manufacturer"
 
