@@ -989,6 +989,7 @@ static void at_qpinc_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		retries[i] = -1;
 
 	g_at_result_iter_init(&iter, result);
+
 	while (g_at_result_iter_next(&iter, "+QPINC:")) {
 		const char *name;
 		int pin, puk;
@@ -1008,6 +1009,7 @@ static void at_qpinc_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			retries[OFONO_SIM_PASSWORD_SIM_PUK2] = puk;
 		}
 	}
+
 	cb(&error, retries, cbd->data);
 }
 
