@@ -68,6 +68,7 @@ static const char *spic_prefix[] = { "+SPIC:", NULL };
 static const char *pct_prefix[] = { "#PCT:", NULL };
 static const char *pnnm_prefix[] = { "+PNNM:", NULL };
 static const char *qpinc_prefix[] = { "+QPINC:", NULL };
+static const char *upincnt_prefix[] = { "+UPINCNT:", NULL };
 static const char *none_prefix[] = { NULL };
 
 static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -1013,6 +1014,45 @@ static void at_qpinc_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, retries, cbd->data);
 }
 
+static void upincnt_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_sim_pin_retries_cb_t cb = cbd->cb;
+	const char *final = g_at_result_final_response(result);
+	GAtResultIter iter;
+	struct ofono_error error;
+	int retries[OFONO_SIM_PASSWORD_INVALID];
+	size_t i;
+	static enum ofono_sim_password_type password_types[] = {
+		OFONO_SIM_PASSWORD_SIM_PIN,
+		OFONO_SIM_PASSWORD_SIM_PIN2,
+		OFONO_SIM_PASSWORD_SIM_PUK,
+		OFONO_SIM_PASSWORD_SIM_PUK2,
+	};
+
+	decode_at_error(&error, final);
+
+	if (!ok) {
+		cb(&error, NULL, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+UPINCNT:"))
+		goto error;
+
+	BUILD_PIN_RETRIES_ARRAY(password_types, ARRAY_SIZE(password_types),
+				retries);
+
+	cb(&error, retries, cbd->data);
+
+	return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
+}
+
 static void at_pin_retries_query(struct ofono_sim *sim,
 					ofono_sim_pin_retries_cb_t cb,
 					void *data)
@@ -1077,6 +1117,11 @@ static void at_pin_retries_query(struct ofono_sim *sim,
 	case OFONO_VENDOR_QUECTEL:
 		if (g_at_chat_send(sd->chat, "AT+QPINC?", qpinc_prefix,
 					at_qpinc_cb, cbd, g_free) > 0)
+			return;
+		break;
+	case OFONO_VENDOR_UBLOX:
+		if (g_at_chat_send(sd->chat, "AT+UPINCNT", upincnt_prefix,
+					upincnt_cb, cbd, g_free) > 0)
 			return;
 		break;
 	default:
