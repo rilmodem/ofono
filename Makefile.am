@@ -497,6 +497,9 @@ builtin_sources += plugins/he910.c
 builtin_modules += quectel
 builtin_sources += plugins/quectel.c
 
+builtin_modules += ublox
+builtin_sources += plugins/ublox.c
+
 if BLUETOOTH
 if BLUEZ4
 builtin_modules += bluez4
