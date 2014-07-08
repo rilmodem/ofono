@@ -151,6 +151,7 @@ static int ublox_enable(struct ofono_modem *modem)
 		data->modem = NULL;
 		return -EIO;
 	}
+
 	g_at_chat_set_slave(data->modem, data->aux);
 
 	g_at_chat_send(data->modem, "ATE0 +CMEE=1", none_prefix,
