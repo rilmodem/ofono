@@ -319,8 +319,7 @@ static void quectel_pre_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_devinfo_create(modem, OFONO_VENDOR_QUECTEL, "atmodem",
-					data->aux);
+	ofono_devinfo_create(modem, 0, "atmodem", data->aux);
 	sim = ofono_sim_create(modem, OFONO_VENDOR_QUECTEL, "atmodem",
 					data->aux);
 
@@ -336,10 +335,8 @@ static void quectel_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	gprs = ofono_gprs_create(modem, OFONO_VENDOR_QUECTEL, "atmodem",
-					data->aux);
-	gc = ofono_gprs_context_create(modem, OFONO_VENDOR_QUECTEL, "atmodem",
-					data->modem);
+	gprs = ofono_gprs_create(modem, 0, "atmodem", data->aux);
+	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->modem);
 
 	if (gprs && gc)
 		ofono_gprs_add_context(gprs, gc);
@@ -349,8 +346,7 @@ static void quectel_post_online(struct ofono_modem *modem)
 {
 	struct quectel_data *data = ofono_modem_get_data(modem);
 
-	ofono_netreg_create(modem, OFONO_VENDOR_QUECTEL, "atmodem",
-					data->aux);
+	ofono_netreg_create(modem, 0, "atmodem", data->aux);
 }
 
 static struct ofono_modem_driver quectel_driver = {
