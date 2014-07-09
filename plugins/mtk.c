@@ -92,6 +92,8 @@ struct mtk_data {
 	int slot;
 	struct ril_sim_data sim_data;
 	struct ofono_devinfo *devinfo;
+	struct cb_data *pending_online_cbd;
+	ofono_bool_t pending_online;
 };
 
 /*
@@ -106,6 +108,8 @@ static struct mtk_data *mtk_1;
 static void send_get_sim_status(struct ofono_modem *modem);
 static int create_gril(struct ofono_modem *modem);
 static gboolean mtk_connected(gpointer user_data);
+static void mtk_set_online(struct ofono_modem *modem, ofono_bool_t online,
+				ofono_modem_online_cb_t callback, void *data);
 
 static void mtk_debug(const char *str, void *user_data)
 {
@@ -372,14 +376,23 @@ static void mtk_post_online(struct ofono_modem *modem)
 	send_get_sim_status(modem);
 }
 
+static struct mtk_data *ril_complement(struct mtk_data *ril)
+{
+	if (ril->slot == MULTISIM_SLOT_0)
+		return mtk_1;
+	else
+		return mtk_0;
+}
+
 static void mtk_sim_mode_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_modem_online_cb_t cb = cbd->cb;
 	struct ofono_modem *modem = cbd->user;
 	struct mtk_data *ril = ofono_modem_get_data(modem);
+	struct mtk_data *ril_c;
 
-	ril->pending_cb = NULL;
+	mtk_0->pending_cb = NULL;
 
 	if (message->error == RIL_E_SUCCESS) {
 		g_ril_print_response_no_args(ril->modem, message);
@@ -389,6 +402,21 @@ static void mtk_sim_mode_cb(struct ril_msg *message, gpointer user_data)
 		ofono_error("%s: RIL error %s", __func__,
 				ril_error_to_string(message->error));
 		CALLBACK_WITH_FAILURE(cb, cbd->data);
+	}
+
+	/* Execute possible pending operation on the other modem */
+
+	ril_c = ril_complement(ril);
+
+	if (ril_c->pending_online_cbd) {
+		struct cb_data *pending_cbd = ril_c->pending_online_cbd;
+		ofono_modem_online_cb_t pending_cb = pending_cbd->cb;
+
+		mtk_set_online(pending_cbd->user, ril_c->pending_online,
+				pending_cb, pending_cbd->data);
+
+		g_free(ril_c->pending_online_cbd);
+		ril_c->pending_online_cbd = NULL;
 	}
 }
 
@@ -483,6 +511,25 @@ static void mtk_set_online(struct ofono_modem *modem, ofono_bool_t online,
 	struct cb_data *cbd = cb_data_new(callback, data, modem);
 	ofono_modem_online_cb_t cb = cbd->cb;
 	int current_state, next_state;
+
+	/*
+	 * Serialize online requests to avoid incoherent states. When changing
+	 * the online state of *one* of the modems, we need to send a
+	 * DUAL_SIM_MODE_SWITCH request, which affects *both* modems. Also, when
+	 * we want to online one modem and at that time both modems are
+	 * offline a RADIO_POWERON needs to be sent before DUAL_SIM_MODE_SWITCH,
+	 * with the additional complexity of being disconnected from the rild
+	 * socket while doing the sequence. This can take some time, and we
+	 * cannot change the state of the other modem while the sequence is
+	 * happenig, as DUAL_SIM_MODE_SWITCH affects both states. Therefore, we
+	 * need to do this serialization, which is different from the one done
+	 * per modem by ofono core.
+	 */
+	if (mtk_0->pending_cb != NULL) {
+		ril->pending_online_cbd = cbd;
+		ril->pending_online = online;
+		return;
+	}
 
 	current_state = sim_state();
 
