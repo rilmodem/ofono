@@ -675,6 +675,9 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 			 */
 			__ofono_sim_recheck_pin(sim);
 		}
+	} else if (status && status->card_state == RIL_CARDSTATE_ABSENT) {
+		ofono_info("SIM card absent");
+		ofono_sim_inserted_notify(sim, FALSE);
 	}
 
 	g_ril_reply_free_sim_status(status);
