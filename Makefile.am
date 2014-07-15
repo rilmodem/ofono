@@ -123,6 +123,9 @@ builtin_sources += plugins/ril.c
 builtin_modules += mtk
 builtin_sources += plugins/mtk.c
 
+builtin_modules += infineon
+builtin_sources += plugins/infineon.c
+
 builtin_modules += androidspntable
 builtin_sources += plugins/android-spn-table.c
 

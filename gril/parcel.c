@@ -201,6 +201,58 @@ char* parcel_r_string(struct parcel *p)
 	return ret;
 }
 
+int parcel_w_raw(struct parcel *p, const void* data, size_t len)
+{
+	if (data == NULL) {
+		parcel_w_int32(p, -1);
+		return 0;
+	}
+
+	parcel_w_int32(p, len);
+
+	for (;;) {
+
+		if (p->offset + len < p->capacity) {
+			/* There's enough space */
+			memcpy(p->data + p->offset, data, len);
+			p->offset += len;
+			p->size += len;
+			break;
+		} else {
+			/* Grow data and retry */
+			parcel_grow(p, len);
+		}
+	}
+	return 0;
+}
+
+void *parcel_r_raw(struct parcel *p, int *len)
+{
+	char *ret;
+
+	*len = parcel_r_int32(p);
+
+	if (p->malformed || *len <= 0)
+		return NULL;
+
+	if (p->offset + *len > p->size) {
+		ofono_error("%s: parcel is too small", __func__);
+		p->malformed = 1;
+		return NULL;
+	}
+
+	ret = g_try_malloc0(*len);
+	if (ret == NULL) {
+		ofono_error("%s: out of memory (%d bytes)", __func__, *len);
+		return NULL;
+	}
+
+	memcpy(ret, p->data + p->offset, *len);
+	p->offset += *len;
+
+	return ret;
+}
+
 size_t parcel_data_avail(struct parcel *p)
 {
 	return (p->size - p->offset);

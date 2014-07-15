@@ -60,6 +60,7 @@
 #include <grilrequest.h>
 #include <grilunsol.h>
 
+#include "ril.h"
 #include "drivers/rilmodem/rilmodem.h"
 #include "drivers/rilmodem/vendor.h"
 
@@ -69,6 +70,7 @@
 
 struct ril_data {
 	GRil *modem;
+	enum ofono_ril_vendor vendor;
 	int sim_status_retries;
 	ofono_bool_t connected;
 	ofono_bool_t have_sim;
@@ -118,7 +120,7 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 			if (ril->voice == NULL)
 				ril->voice =
 					ofono_voicecall_create(modem,
-								0,
+								ril->vendor,
 								RILMODEM,
 								ril->modem);
 
@@ -205,7 +207,7 @@ static void send_get_sim_status(struct ofono_modem *modem)
 			sim_status_cb, modem, NULL);
 }
 
-static int ril_probe(struct ofono_modem *modem)
+int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor)
 {
 	struct ril_data *ril = g_try_new0(struct ril_data, 1);
 	if (ril == NULL) {
@@ -215,6 +217,7 @@ static int ril_probe(struct ofono_modem *modem)
 
 	DBG("");
 
+	ril->vendor = vendor;
 	ril->have_sim = FALSE;
 	ril->ofono_online = FALSE;
 	ril->radio_state = RADIO_STATE_OFF;
@@ -229,10 +232,14 @@ error:
 	return -errno;
 }
 
-static void ril_remove(struct ofono_modem *modem)
+static int ril_probe(struct ofono_modem *modem)
+{
+	return ril_create(modem, OFONO_RIL_VENDOR_AOSP);
+}
+
+void ril_remove(struct ofono_modem *modem)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
-
 
 	ofono_modem_set_data(modem, NULL);
 
@@ -244,24 +251,24 @@ static void ril_remove(struct ofono_modem *modem)
 	g_free(ril);
 }
 
-static void ril_pre_sim(struct ofono_modem *modem)
+void ril_pre_sim(struct ofono_modem *modem)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
 	struct ril_sim_data sim_data;
 
 	DBG("");
 
-	ofono_devinfo_create(modem, 0, RILMODEM, ril->modem);
+	ofono_devinfo_create(modem, ril->vendor, RILMODEM, ril->modem);
 
 	sim_data.gril = ril->modem;
 	sim_data.modem = modem;
 	sim_data.ril_state_watch = NULL;
 
-	ril->sim = ofono_sim_create(modem, 0, RILMODEM, &sim_data);
+	ril->sim = ofono_sim_create(modem, ril->vendor, RILMODEM, &sim_data);
 	g_assert(ril->sim != NULL);
 }
 
-static void ril_post_sim(struct ofono_modem *modem)
+void ril_post_sim(struct ofono_modem *modem)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
 	struct ofono_gprs *gprs;
@@ -273,10 +280,11 @@ static void ril_post_sim(struct ofono_modem *modem)
 	 *  - stk ( SIM toolkit )
 	 *  - radio_settings
 	 */
-	ofono_sms_create(modem, 0, RILMODEM, ril->modem);
+	ofono_sms_create(modem, ril->vendor, RILMODEM, ril->modem);
 
-	gprs = ofono_gprs_create(modem, 0, RILMODEM, ril->modem);
-	gc = ofono_gprs_context_create(modem, 0, RILMODEM, ril->modem);
+	gprs = ofono_gprs_create(modem, ril->vendor, RILMODEM, ril->modem);
+	gc = ofono_gprs_context_create(modem, ril->vendor,
+					RILMODEM, ril->modem);
 
 	if (gc) {
 		ofono_gprs_context_set_type(gc,
@@ -284,7 +292,8 @@ static void ril_post_sim(struct ofono_modem *modem)
 		ofono_gprs_add_context(gprs, gc);
 	}
 
-	gc = ofono_gprs_context_create(modem, 0, RILMODEM, ril->modem);
+	gc = ofono_gprs_context_create(modem, ril->vendor,
+					RILMODEM, ril->modem);
 
 	if (gc) {
 		ofono_gprs_context_set_type(gc,
@@ -296,19 +305,19 @@ static void ril_post_sim(struct ofono_modem *modem)
 	if (mw)
 		ofono_message_waiting_register(mw);
 
-	ofono_call_forwarding_create(modem, 0, RILMODEM, ril->modem);
+	ofono_call_forwarding_create(modem, ril->vendor, RILMODEM, ril->modem);
 }
 
-static void ril_post_online(struct ofono_modem *modem)
+void ril_post_online(struct ofono_modem *modem)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
 
-	ofono_call_volume_create(modem, 0, RILMODEM, ril->modem);
-	ofono_netreg_create(modem, 0, RILMODEM, ril->modem);
-	ofono_ussd_create(modem, 0, RILMODEM, ril->modem);
-	ofono_call_settings_create(modem, 0, RILMODEM, ril->modem);
-	ofono_radio_settings_create(modem, 0, RILMODEM, ril->modem);
-	ofono_call_barring_create(modem, 0, RILMODEM, ril->modem);
+	ofono_call_volume_create(modem, ril->vendor, RILMODEM, ril->modem);
+	ofono_netreg_create(modem, ril->vendor, RILMODEM, ril->modem);
+	ofono_ussd_create(modem, ril->vendor, RILMODEM, ril->modem);
+	ofono_call_settings_create(modem, ril->vendor, RILMODEM, ril->modem);
+	ofono_radio_settings_create(modem, ril->vendor, RILMODEM, ril->modem);
+	ofono_call_barring_create(modem, ril->vendor, RILMODEM, ril->modem);
 }
 
 static void ril_set_online_cb(struct ril_msg *message, gpointer user_data)
@@ -354,8 +363,8 @@ static void ril_send_power(struct ril_data *ril, ofono_bool_t online,
 	}
 }
 
-static void ril_set_online(struct ofono_modem *modem, ofono_bool_t online,
-				ofono_modem_online_cb_t callback, void *data)
+void ril_set_online(struct ofono_modem *modem, ofono_bool_t online,
+			ofono_modem_online_cb_t callback, void *data)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
 	struct cb_data *cbd = cb_data_new(callback, data, ril);
@@ -417,7 +426,7 @@ static int create_gril(struct ofono_modem *modem)
 	return 0;
 }
 
-static int ril_enable(struct ofono_modem *modem)
+int ril_enable(struct ofono_modem *modem)
 {
 	int ret;
 
@@ -430,7 +439,7 @@ static int ril_enable(struct ofono_modem *modem)
 	return -EINPROGRESS;
 }
 
-static int ril_disable(struct ofono_modem *modem)
+int ril_disable(struct ofono_modem *modem)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
 

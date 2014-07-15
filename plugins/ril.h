@@ -1,8 +1,8 @@
 /*
  *
- *  oFono - Open Source Telephony
+ *  oFono - Open Source Telephony - RIL-based devices
  *
- *  Copyright (C) 2014  Canonical Ltd. All rights reserved.
+ *  Copyright (C) 2014  Canonical Ltd.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -19,13 +19,12 @@
  *
  */
 
-#ifndef RILMODEM_VENDOR_H
-#define RILMODEM_VENDOR_H
-
-enum ofono_ril_vendor {
-	OFONO_RIL_VENDOR_AOSP = 0,
-	OFONO_RIL_VENDOR_MTK,
-	OFONO_RIL_VENDOR_INFINEON
-};
-
-#endif /* RILMODEM_VENDOR_H */
+int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor);
+void ril_remove(struct ofono_modem *modem);
+int ril_enable(struct ofono_modem *modem);
+int ril_disable(struct ofono_modem *modem);
+void ril_pre_sim(struct ofono_modem *modem);
+void ril_post_sim(struct ofono_modem *modem);
+void ril_post_online(struct ofono_modem *modem);
+void ril_set_online(struct ofono_modem *modem, ofono_bool_t online,
+			ofono_modem_online_cb_t callback, void *data);

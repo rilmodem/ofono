@@ -51,6 +51,8 @@
 #include "grilrequest.h"
 #include "grilunsol.h"
 
+#include "drivers/infineonmodem/infineon_constants.h"
+
 /*
  * Based on ../drivers/atmodem/sim.c.
  *
@@ -72,6 +74,7 @@
  */
 struct sim_data {
 	GRil *ril;
+	enum ofono_ril_vendor vendor;
 	gchar *aid_str;
 	guint app_type;
 	gchar *app_str;
@@ -706,12 +709,72 @@ static void ril_sim_status_changed(struct ril_msg *message, gpointer user_data)
 	send_get_sim_status(sim);
 }
 
+static void inf_pin_retries_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_sim_pin_retries_cb_t cb = cbd->cb;
+	struct sim_data *sd = cbd->user;
+	struct reply_oem_hook *reply = NULL;
+	int32_t *ret_data;
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("Reply failure: %s",
+				ril_error_to_string(message->error));
+		goto error;
+	}
+
+	reply = g_ril_reply_oem_hook_raw(sd->ril, message);
+	if (reply == NULL) {
+		ofono_error("%s: parse error", __func__);
+		goto error;
+	}
+
+	if (reply->length < 5 * (int) sizeof(int32_t)) {
+		ofono_error("%s: reply too small", __func__);
+		goto error;
+	}
+
+	/* First integer is INF_RIL_REQUEST_OEM_GET_REMAIN_SIM_PIN_ATTEMPTS */
+	ret_data = reply->data;
+	sd->retries[OFONO_SIM_PASSWORD_SIM_PIN] = *(++ret_data);
+	sd->retries[OFONO_SIM_PASSWORD_SIM_PIN2] = *(++ret_data);
+	sd->retries[OFONO_SIM_PASSWORD_SIM_PUK] = *(++ret_data);
+	sd->retries[OFONO_SIM_PASSWORD_SIM_PUK2] = *(++ret_data);
+
+	g_ril_reply_free_oem_hook(reply);
+	CALLBACK_WITH_SUCCESS(cb, sd->retries, cbd->data);
+
+	return;
+
+error:
+	g_ril_reply_free_oem_hook(reply);
+	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
+}
+
 static void ril_query_pin_retries(struct ofono_sim *sim,
 					ofono_sim_pin_retries_cb_t cb,
 					void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	CALLBACK_WITH_SUCCESS(cb, sd->retries, data);
+
+	if (sd->vendor == OFONO_RIL_VENDOR_INFINEON) {
+		struct cb_data *cbd = cb_data_new(cb, data, sd);
+		struct parcel rilp;
+		int32_t oem_req =
+			INF_RIL_REQUEST_OEM_GET_REMAIN_SIM_PIN_ATTEMPTS;
+
+		g_ril_request_oem_hook_raw(sd->ril, &oem_req,
+						sizeof(oem_req), &rilp);
+
+		/* Send request to RIL */
+		if (g_ril_send(sd->ril, RIL_REQUEST_OEM_HOOK_RAW, &rilp,
+				inf_pin_retries_cb, cbd, g_free) == 0) {
+			g_free(cbd);
+			CALLBACK_WITH_FAILURE(cb, NULL, data);
+		}
+	} else {
+		CALLBACK_WITH_SUCCESS(cb, sd->retries, data);
+	}
 }
 
 static void ril_query_passwd_state(struct ofono_sim *sim,
@@ -896,6 +959,7 @@ static int ril_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 
 	sd = g_new0(struct sim_data, 1);
 	sd->ril = g_ril_clone(ril);
+	sd->vendor = vendor;
 	sd->aid_str = NULL;
 	sd->app_str = NULL;
 	sd->app_type = RIL_APPTYPE_UNKNOWN;

@@ -1204,6 +1204,11 @@ int *g_ril_reply_parse_retries(GRil *gril, const struct ril_msg *message,
 					retries[OFONO_SIM_PASSWORD_SIM_PUK],
 					retries[OFONO_SIM_PASSWORD_SIM_PUK2]);
 		break;
+	case OFONO_RIL_VENDOR_INFINEON:
+		ofono_error("%s: infineon type should not arrive here",
+				__func__);
+		g_assert(FALSE);
+		break;
 	}
 
 	if (rilp.malformed) {
@@ -1219,4 +1224,51 @@ no_data:
 	g_free(retries);
 
 	return NULL;
+}
+
+void g_ril_reply_free_oem_hook(struct reply_oem_hook *oem_hook)
+{
+	if (oem_hook) {
+		g_free(oem_hook->data);
+		g_free(oem_hook);
+	}
+}
+
+struct reply_oem_hook *g_ril_reply_oem_hook_raw(GRil *gril,
+						const struct ril_msg *message)
+{
+	struct reply_oem_hook *reply = NULL;
+	struct parcel rilp;
+
+	reply = g_try_malloc0(sizeof(*reply));
+	if (reply == NULL) {
+		ofono_error("%s: out of memory", __func__);
+		goto end;
+	}
+
+	g_ril_init_parcel(message, &rilp);
+
+	reply->data = parcel_r_raw(&rilp, &(reply->length));
+
+	if (rilp.malformed) {
+		ofono_error("%s: malformed parcel", __func__);
+		g_ril_reply_free_oem_hook(reply);
+		reply = NULL;
+		goto end;
+	}
+
+	g_ril_append_print_buf(gril, "{%d", reply->length);
+
+	if (reply->data != NULL) {
+		char *hex_dump;
+		hex_dump = encode_hex(reply->data, reply->length, '\0');
+		g_ril_append_print_buf(gril, "%s,%s", print_buf, hex_dump);
+		g_free(hex_dump);
+	}
+
+	g_ril_append_print_buf(gril, "%s}", print_buf);
+	g_ril_print_response(gril, message);
+
+end:
+	return reply;
 }
