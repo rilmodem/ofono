@@ -41,12 +41,12 @@
 #include <ofono/gprs-provision.h>
 #include <ofono/log.h>
 
-#include "android-apndb.h"
+#include "ubuntu-apndb.h"
 
 /* TODO: consider reading path from an environment variable */
 
-#ifndef ANDROID_APN_DATABASE
-#define ANDROID_APN_DATABASE    "/android/system/etc/apns-conf.xml"
+#ifndef UBUNTU_APN_DATABASE
+#define UBUNTU_APN_DATABASE    "/ubuntu/system/etc/apns-conf.xml"
 #endif
 
 struct apndb_data {
@@ -60,7 +60,7 @@ struct apndb_data {
 	gboolean mvno_found;
 };
 
-void android_apndb_ap_free(gpointer data)
+void ubuntu_apndb_ap_free(gpointer data)
 {
 	struct apndb_provision_data *ap = data;
 
@@ -74,7 +74,7 @@ void android_apndb_ap_free(gpointer data)
 	g_free(ap);
 }
 
-static void android_apndb_g_set_error(GMarkupParseContext *context,
+static void ubuntu_apndb_g_set_error(GMarkupParseContext *context,
 					GError **error,
 					GQuark domain,
 					gint code,
@@ -91,7 +91,7 @@ static void android_apndb_g_set_error(GMarkupParseContext *context,
 
 	va_end(ap);
 
-	g_prefix_error(error, "%s:%d ", ANDROID_APN_DATABASE, line_number);
+	g_prefix_error(error, "%s:%d ", UBUNTU_APN_DATABASE, line_number);
 }
 
 static gboolean imsi_match(const char *imsi, const char *match)
@@ -141,7 +141,7 @@ static enum ofono_gprs_context_type determine_apn_type(const char *types)
 		return OFONO_GPRS_CONTEXT_TYPE_ANY;
 }
 
-static char *android_apndb_sanitize_ipv4_address(const char *address)
+static char *ubuntu_apndb_sanitize_ipv4_address(const char *address)
 {
 	char **numbers = NULL;
 	char *sanitized_numbers[4];
@@ -236,14 +236,14 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 	}
 
 	if (mcc == NULL) {
-		android_apndb_g_set_error(context, error, G_MARKUP_ERROR,
+		ubuntu_apndb_g_set_error(context, error, G_MARKUP_ERROR,
 					G_MARKUP_ERROR_MISSING_ATTRIBUTE,
 					"Missing attribute: mcc");
 		return;
 	}
 
 	if (mnc == NULL) {
-		android_apndb_g_set_error(context, error, G_MARKUP_ERROR,
+		ubuntu_apndb_g_set_error(context, error, G_MARKUP_ERROR,
 					G_MARKUP_ERROR_MISSING_ATTRIBUTE,
 					"Missing attribute: mnc");
 		return;
@@ -277,7 +277,7 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 	}
 
 	if (apn == NULL) {
-		android_apndb_g_set_error(context, error, G_MARKUP_ERROR,
+		ubuntu_apndb_g_set_error(context, error, G_MARKUP_ERROR,
 					G_MARKUP_ERROR_MISSING_ATTRIBUTE,
 						"APN attribute missing");
 		return;
@@ -375,7 +375,7 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 		ap->gprs_data.message_center = g_strdup(mmscenter);
 
 	if (mmsproxy != NULL && strlen(mmsproxy) > 0) {
-		char *tmp = android_apndb_sanitize_ipv4_address(mmsproxy);
+		char *tmp = ubuntu_apndb_sanitize_ipv4_address(mmsproxy);
 		if (tmp != NULL)
 			mmsproxy = tmp;
 
@@ -412,7 +412,7 @@ static const GMarkupParser toplevel_apndb_parser = {
 	NULL,
 };
 
-static gboolean android_apndb_parse(const GMarkupParser *parser,
+static gboolean ubuntu_apndb_parse(const GMarkupParser *parser,
 					gpointer userdata,
 					GError **error)
 {
@@ -424,7 +424,7 @@ static gboolean android_apndb_parse(const GMarkupParser *parser,
 	const char *apndb_path;
 
 	if ((apndb_path = getenv("OFONO_APNDB_PATH")) == NULL)
-		apndb_path = ANDROID_APN_DATABASE;
+		apndb_path = UBUNTU_APN_DATABASE;
 
 	fd = open(apndb_path, O_RDONLY);
 	if (fd < 0) {
@@ -470,7 +470,7 @@ static gboolean android_apndb_parse(const GMarkupParser *parser,
 	return ret;
 }
 
-GSList *android_apndb_lookup_apn(const char *mcc, const char *mnc,
+GSList *ubuntu_apndb_lookup_apn(const char *mcc, const char *mnc,
 			const char *spn, const char *imsi, const char *gid1,
 			gboolean *mvno_found, GError **error)
 {
@@ -482,9 +482,9 @@ GSList *android_apndb_lookup_apn(const char *mcc, const char *mnc,
 	apndb.match_imsi = imsi;
 	apndb.match_gid1 = gid1;
 
-	if (android_apndb_parse(&toplevel_apndb_parser, &apndb,
+	if (ubuntu_apndb_parse(&toplevel_apndb_parser, &apndb,
 				error) == FALSE) {
-		g_slist_free_full(apndb.apns, android_apndb_ap_free);
+		g_slist_free_full(apndb.apns, ubuntu_apndb_ap_free);
 		apndb.apns = NULL;
 	}
 

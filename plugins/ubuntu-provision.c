@@ -37,7 +37,7 @@
 #include <ofono/modem.h>
 #include <ofono/gprs-provision.h>
 
-#include "android-apndb.h"
+#include "ubuntu-apndb.h"
 #include "mbpi.h"
 
 static unsigned int filter_apns(GSList **apns, GSList *mbpi_apns,
@@ -59,7 +59,7 @@ static unsigned int filter_apns(GSList **apns, GSList *mbpi_apns,
 				DBG("Removing: %s", ap->gprs_data.apn);
 				*apns = g_slist_remove(*apns,
 							(gconstpointer) ap);
-				android_apndb_ap_free(ap);
+				ubuntu_apndb_ap_free(ap);
 				ap_count--;
 			}
 		}
@@ -130,7 +130,7 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 	ofono_info("Provisioning for MCC %s, MNC %s, SPN '%s', IMSI '%s', "
 			"GID1 '%s'", mcc, mnc, spn, imsi, gid1);
 
-	apns = android_apndb_lookup_apn(mcc, mnc, spn, imsi, gid1,
+	apns = ubuntu_apndb_lookup_apn(mcc, mnc, spn, imsi, gid1,
 					&mvno_found, &error);
 	if (apns == NULL) {
 		if (error != NULL) {
@@ -172,7 +172,7 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 		ofono_error("%s: provisioning failed: %s", __func__,
 				g_strerror(errno));
 
-		g_slist_free_full(apns, android_apndb_ap_free);
+		g_slist_free_full(apns, ubuntu_apndb_ap_free);
 
 		*count = 0;
 		return -ENOMEM;
@@ -206,22 +206,22 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 	return 0;
 }
 
-static struct ofono_gprs_provision_driver android_provision_driver = {
-	.name		= "Android APN database Provisioning",
+static struct ofono_gprs_provision_driver ubuntu_provision_driver = {
+	.name		= "Ubuntu APN database Provisioning",
 	.get_settings	= provision_get_settings
 };
 
-static int android_provision_init(void)
+static int ubuntu_provision_init(void)
 {
-	return ofono_gprs_provision_driver_register(&android_provision_driver);
+	return ofono_gprs_provision_driver_register(&ubuntu_provision_driver);
 }
 
-static void android_provision_exit(void)
+static void ubuntu_provision_exit(void)
 {
-	ofono_gprs_provision_driver_unregister(&android_provision_driver);
+	ofono_gprs_provision_driver_unregister(&ubuntu_provision_driver);
 }
 
-OFONO_PLUGIN_DEFINE(android_provision,
-			"Android APN database Provisioning Plugin", VERSION,
+OFONO_PLUGIN_DEFINE(ubuntu_provision,
+			"Ubuntu APN database Provisioning Plugin", VERSION,
 			OFONO_PLUGIN_PRIORITY_DEFAULT,
-			android_provision_init, android_provision_exit)
+			ubuntu_provision_init, ubuntu_provision_exit)
