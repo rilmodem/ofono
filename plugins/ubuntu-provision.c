@@ -40,79 +40,6 @@
 #include "ubuntu-apndb.h"
 #include "mbpi.h"
 
-static unsigned int filter_apns(GSList **apns, GSList *mbpi_apns,
-				gboolean mvno_found)
-{
-	GSList *l = NULL;
-	GSList *l2 = NULL;
-	gboolean found = FALSE;
-	unsigned int ap_count = g_slist_length(*apns);
-	struct apndb_provision_data *ap;
-
-	if (mvno_found == TRUE) {
-
-		for (l = *apns; l;) {
-     			ap = l->data;
-			l = l->next;
-
-			if (ap->mvno == FALSE) {
-				DBG("Removing: %s", ap->gprs_data.apn);
-				*apns = g_slist_remove(*apns,
-							(gconstpointer) ap);
-				ubuntu_apndb_ap_free(ap);
-				ap_count--;
-			}
-		}
-
-		goto done;
-	}
-
-	for (l = mbpi_apns; l; l = l->next, found = FALSE) {
-		struct ofono_gprs_provision_data *ap2 = l->data;
-
-		if (ap2->apn == NULL) {
-			ofono_error("%s: invalid mbpi entry - %s found",
-					__func__, ap2->name);
-			continue;
-		}
-
-		for (l2 = *apns; l2; l2 = l2->next) {
-     			ap = l2->data;
-
-			if (ap->gprs_data.apn != NULL &&
-				ap->gprs_data.type ==
-				OFONO_GPRS_CONTEXT_TYPE_INTERNET &&
-				g_strcmp0(ap2->apn, ap->gprs_data.apn) == 0) {
-
-				found = TRUE;
-				break;
-			}
-		}
-
-		if (found == FALSE) {
-			DBG("Adding %s to apns", ap2->apn);
-
-			ap = g_try_new0(struct apndb_provision_data, 1);
-			if (ap == NULL) {
-				ofono_error("%s: out-of-memory trying to"
-						" provision APN - %s",
-						__func__, ap2->name);
-				goto done;
-			}
-
-			memcpy(&ap->gprs_data, ap2, sizeof(ap->gprs_data));
-			*apns = g_slist_append(*apns, ap);
-			ap_count++;
-			g_free(ap2);
-		} else {
-			mbpi_ap_free(ap2);
-		}
-	}
-
-done:
-	return ap_count;
-}
-
 static int provision_get_settings(const char *mcc, const char *mnc,
 				const char *spn,
 				const char *imsi, const char *gid1,
@@ -120,18 +47,14 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 				int *count)
 {
 	GSList *apns = NULL;
-	GSList *mbpi_apns = NULL;
 	GSList *l = NULL;
 	GError *error = NULL;
-	gboolean mvno_found = FALSE;
-	unsigned int ap_count;
 	unsigned int i;
 
 	ofono_info("Provisioning for MCC %s, MNC %s, SPN '%s', IMSI '%s', "
 			"GID1 '%s'", mcc, mnc, spn, imsi, gid1);
 
-	apns = ubuntu_apndb_lookup_apn(mcc, mnc, spn, imsi, gid1,
-					&mvno_found, &error);
+	apns = ubuntu_apndb_lookup_apn(mcc, mnc, spn, imsi, gid1, &error);
 	if (apns == NULL) {
 		if (error != NULL) {
 			ofono_error("%s: apndb_lookup error -%s for mcc %s"
@@ -142,32 +65,11 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 		}
 	}
 
-	/* If an mvno apn was found, only provision mvno apns */
-	if (mvno_found == FALSE) {
-		mbpi_apns = mbpi_lookup_apn(mcc, mnc,
-					OFONO_GPRS_CONTEXT_TYPE_INTERNET,
-					TRUE, &error);
-		if (mbpi_apns == NULL) {
-			if (error != NULL) {
-				ofono_error("%s: MBPI error - %s for mcc %s"
-						" mnc %s spn: %s", __func__,
-						error->message, mcc, mnc, spn);
-				g_error_free(error);
-				error = NULL;
-			}
-		}
-	}
+	*count = g_slist_length(apns);
 
-	ap_count = filter_apns(&apns, mbpi_apns, mvno_found);
-	if (ap_count == 0) {
-		ofono_warn("%s: No APNs found for mcc %s mnc %s spn: %s"
-				" imsi: %s", __func__, mcc, mnc, spn, imsi);
+	DBG("ap_count: '%d'", *count);
 
-		*count = 0;
-		return -ENOENT;
-	}
-
-	*settings = g_try_new0(struct ofono_gprs_provision_data, ap_count);
+	*settings = g_try_new0(struct ofono_gprs_provision_data, *count);
 	if (*settings == NULL) {
 		ofono_error("%s: provisioning failed: %s", __func__,
 				g_strerror(errno));
@@ -177,8 +79,6 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 		*count = 0;
 		return -ENOMEM;
 	}
-
-	*count = ap_count;
 
 	for (l = apns, i = 0; l; l = l->next, i++) {
 		struct apndb_provision_data *ap = l->data;
@@ -199,9 +99,6 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 
 	if (apns != NULL)
 		g_slist_free(apns);
-
-	if (mbpi_apns != NULL)
-		g_slist_free(mbpi_apns);
 
 	return 0;
 }

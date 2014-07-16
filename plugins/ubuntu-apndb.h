@@ -1,6 +1,6 @@
 /*
  *
- *  oFono - Open Source Telephony
+ *  ofono - Open Source Telephony
  *
  *  Copyright (C) 2008-2011  Intel Corporation. All rights reserved.
  *                2013 Simon Busch <morphis@gravedo.de>
@@ -30,4 +30,4 @@ void ubuntu_apndb_ap_free(gpointer data);
 
 GSList *ubuntu_apndb_lookup_apn(const char *mcc, const char *mnc,
 			const char *spn, const char *imsi, const char *gid1,
-			gboolean *mvno_found, GError **error);
+			GError **error);
