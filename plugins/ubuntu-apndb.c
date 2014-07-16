@@ -41,12 +41,11 @@
 #include <ofono/gprs-provision.h>
 #include <ofono/log.h>
 
-#include "android-apndb.h"
+#include "ubuntu-apndb.h"
 
-/* TODO: consider reading path from an environment variable */
-
-#ifndef ANDROID_APN_DATABASE
-#define ANDROID_APN_DATABASE    "/android/system/etc/apns-conf.xml"
+#ifndef SYSTEM_APNDB_PATH
+#define SYSTEM_APNDB_PATH     "/system/etc/apns-conf.xml"
+#define CUSTOM_APNDB_PATH     "/custom/etc/apns-conf.xml"
 #endif
 
 struct apndb_data {
@@ -60,7 +59,7 @@ struct apndb_data {
 	gboolean mvno_found;
 };
 
-void android_apndb_ap_free(gpointer data)
+void ubuntu_apndb_ap_free(gpointer data)
 {
 	struct apndb_provision_data *ap = data;
 
@@ -72,26 +71,6 @@ void android_apndb_ap_free(gpointer data)
 	g_free(ap->gprs_data.message_center);
 
 	g_free(ap);
-}
-
-static void android_apndb_g_set_error(GMarkupParseContext *context,
-					GError **error,
-					GQuark domain,
-					gint code,
-					const gchar *fmt, ...)
-{
-	va_list ap;
-	gint line_number, char_number;
-
-	g_markup_parse_context_get_position(context, &line_number,
-						&char_number);
-	va_start(ap, fmt);
-
-	*error = g_error_new_valist(domain, code, fmt, ap);
-
-	va_end(ap);
-
-	g_prefix_error(error, "%s:%d ", ANDROID_APN_DATABASE, line_number);
 }
 
 static gboolean imsi_match(const char *imsi, const char *match)
@@ -121,6 +100,83 @@ done:
 	return result;
 }
 
+static void strip_non_mvno_apns(GSList **apns)
+{
+	GSList *l = NULL;
+	unsigned int ap_count = g_slist_length(*apns);
+	struct apndb_provision_data *ap;
+
+	DBG("");
+
+	for (l = *apns; l;) {
+		ap = l->data;
+		l = l->next;
+
+		if (ap->mvno == FALSE) {
+			DBG("Removing: %s", ap->gprs_data.apn);
+			*apns = g_slist_remove(*apns,
+						(gconstpointer) ap);
+			ubuntu_apndb_ap_free(ap);
+			ap_count--;
+		}
+	}
+}
+
+static GSList *merge_apn_lists(GSList *custom_apns, GSList *base_apns)
+{
+	GSList *l = NULL;
+	GSList *l2 = NULL;
+	gboolean found = FALSE;
+	struct apndb_provision_data *ap;
+
+	DBG("");
+
+	if (custom_apns == NULL)
+		return base_apns;
+
+	for (l = custom_apns; l; l = l->next, found = FALSE) {
+		struct apndb_provision_data *ap2 = l->data;
+
+		if (ap2->gprs_data.apn == NULL) {
+			ofono_error("%s: invalid custom apn entry - %s found",
+					__func__, ap2->gprs_data.name);
+			continue;
+		}
+
+		for (l2 = base_apns; l2; l2 = l2->next) {
+			ap = l2->data;
+
+			if (ap->gprs_data.apn != NULL &&
+				ap->gprs_data.type == ap2->gprs_data.type &&
+				g_strcmp0(ap2->gprs_data.apn,
+						ap->gprs_data.apn) == 0) {
+
+				found = TRUE;
+				break;
+			}
+		}
+
+		if (found == TRUE) {
+			DBG("found=TRUE; removing '%s'", ap->gprs_data.apn);
+
+			base_apns = g_slist_remove(base_apns, ap);
+			ubuntu_apndb_ap_free(ap);
+		}
+	}
+
+	custom_apns = g_slist_reverse(custom_apns);
+
+	for (l = custom_apns; l; l = l->next) {
+		struct ap2 *ap2 = l->data;
+
+		base_apns = g_slist_prepend(base_apns, ap2);
+	}
+
+	g_slist_free(custom_apns);
+
+	return base_apns;
+}
+
 static enum ofono_gprs_context_type determine_apn_type(const char *types)
 {
 	/*
@@ -141,7 +197,7 @@ static enum ofono_gprs_context_type determine_apn_type(const char *types)
 		return OFONO_GPRS_CONTEXT_TYPE_ANY;
 }
 
-static char *android_apndb_sanitize_ipv4_address(const char *address)
+static char *ubuntu_apndb_sanitize_ipv4_address(const char *address)
 {
 	char **numbers = NULL;
 	char *sanitized_numbers[4];
@@ -236,16 +292,14 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 	}
 
 	if (mcc == NULL) {
-		android_apndb_g_set_error(context, error, G_MARKUP_ERROR,
-					G_MARKUP_ERROR_MISSING_ATTRIBUTE,
-					"Missing attribute: mcc");
+		ofono_error("%s: apn for %s missing 'mcc' attribute", __func__,
+				carrier);
 		return;
 	}
 
 	if (mnc == NULL) {
-		android_apndb_g_set_error(context, error, G_MARKUP_ERROR,
-					G_MARKUP_ERROR_MISSING_ATTRIBUTE,
-					"Missing attribute: mnc");
+		ofono_error("%s: apn for %s missing 'mnc' attribute", __func__,
+				carrier);
 		return;
 	}
 
@@ -277,9 +331,8 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 	}
 
 	if (apn == NULL) {
-		android_apndb_g_set_error(context, error, G_MARKUP_ERROR,
-					G_MARKUP_ERROR_MISSING_ATTRIBUTE,
-						"APN attribute missing");
+		ofono_error("%s: apn for %s missing 'apn' attribute", __func__,
+				carrier);
 		return;
 	}
 
@@ -375,7 +428,7 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 		ap->gprs_data.message_center = g_strdup(mmscenter);
 
 	if (mmsproxy != NULL && strlen(mmsproxy) > 0) {
-		char *tmp = android_apndb_sanitize_ipv4_address(mmsproxy);
+		char *tmp = ubuntu_apndb_sanitize_ipv4_address(mmsproxy);
 		if (tmp != NULL)
 			mmsproxy = tmp;
 
@@ -412,8 +465,9 @@ static const GMarkupParser toplevel_apndb_parser = {
 	NULL,
 };
 
-static gboolean android_apndb_parse(const GMarkupParser *parser,
+static gboolean ubuntu_apndb_parse(const GMarkupParser *parser,
 					gpointer userdata,
+					const char *apndb_path,
 					GError **error)
 {
 	struct stat st;
@@ -421,10 +475,6 @@ static gboolean android_apndb_parse(const GMarkupParser *parser,
 	int fd;
 	GMarkupParseContext *context;
 	gboolean ret;
-	const char *apndb_path;
-
-	if ((apndb_path = getenv("OFONO_APNDB_PATH")) == NULL)
-		apndb_path = ANDROID_APN_DATABASE;
 
 	fd = open(apndb_path, O_RDONLY);
 	if (fd < 0) {
@@ -470,11 +520,54 @@ static gboolean android_apndb_parse(const GMarkupParser *parser,
 	return ret;
 }
 
-GSList *android_apndb_lookup_apn(const char *mcc, const char *mnc,
+GSList *ubuntu_apndb_lookup_apn(const char *mcc, const char *mnc,
 			const char *spn, const char *imsi, const char *gid1,
-			gboolean *mvno_found, GError **error)
+			GError **error)
 {
 	struct apndb_data apndb = { NULL };
+	struct apndb_data custom_apndb = { NULL };
+	const char *apndb_path;
+	GSList *merged_apns;
+
+	/*
+	 * Lookup /custom apns first, if mvno apns found,
+	 * strip non-mvno apns from list
+	 *
+	 * Lookup /system next, apply same mvno logic...
+	 *
+	 * Merge both lists, any custom apns that match the type
+	 * and apn fields of a /system apn replace it.
+	 */
+
+	custom_apndb.match_mcc = mcc;
+	custom_apndb.match_mnc = mnc;
+	custom_apndb.match_spn = spn;
+	custom_apndb.match_imsi = imsi;
+	custom_apndb.match_gid1 = gid1;
+
+	if ((apndb_path = getenv("OFONO_CUSTOM_APNDB_PATH")) == NULL)
+		apndb_path = CUSTOM_APNDB_PATH;
+
+	if (ubuntu_apndb_parse(&toplevel_apndb_parser, &custom_apndb,
+				apndb_path,
+				error) == FALSE) {
+		g_slist_free_full(custom_apndb.apns, ubuntu_apndb_ap_free);
+		custom_apndb.apns = NULL;
+
+		if (*error) {
+			if ((*error)->domain != G_FILE_ERROR)
+				ofono_error("%s: custom apn_lookup error -%s",
+						__func__, (*error)->message);
+
+			g_error_free(*error);
+			*error = NULL;
+		}
+	}
+
+	if (custom_apndb.apns && custom_apndb.mvno_found)
+		strip_non_mvno_apns(&custom_apndb.apns);
+
+	DBG("custom_apndb: found '%d' APNs", g_slist_length(custom_apndb.apns));
 
 	apndb.match_mcc = mcc;
 	apndb.match_mnc = mnc;
@@ -482,13 +575,22 @@ GSList *android_apndb_lookup_apn(const char *mcc, const char *mnc,
 	apndb.match_imsi = imsi;
 	apndb.match_gid1 = gid1;
 
-	if (android_apndb_parse(&toplevel_apndb_parser, &apndb,
+	if ((apndb_path = getenv("OFONO_SYSTEM_APNDB_PATH")) == NULL)
+		apndb_path = SYSTEM_APNDB_PATH;
+
+	if (ubuntu_apndb_parse(&toplevel_apndb_parser, &apndb,
+				apndb_path,
 				error) == FALSE) {
-		g_slist_free_full(apndb.apns, android_apndb_ap_free);
+		g_slist_free_full(apndb.apns, ubuntu_apndb_ap_free);
 		apndb.apns = NULL;
 	}
 
-	*mvno_found = apndb.mvno_found;
+	DBG("apndb: found '%d' APNs", g_slist_length(apndb.apns));
 
-	return apndb.apns;
+	if (apndb.apns && apndb.mvno_found)
+		strip_non_mvno_apns(&apndb.apns);
+
+	merged_apns = merge_apn_lists(custom_apndb.apns, apndb.apns);
+
+	return merged_apns;
 }
