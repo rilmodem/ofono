@@ -39,6 +39,8 @@ const char *mtk_request_id_to_string(int req)
 		return "RIL_REQUEST_RADIO_POWERON";
 	case RIL_REQUEST_SET_CALL_INDICATION:
 		return "RIL_REQUEST_SET_CALL_INDICATION";
+	case RIL_REQUEST_GET_3G_CAPABILITY:
+		return "RIL_REQUEST_GET_3G_CAPABILITY";
 	case RIL_REQUEST_SET_FD_MODE:
 		return "RIL_REQUEST_SET_FD_MODE";
 	default:
