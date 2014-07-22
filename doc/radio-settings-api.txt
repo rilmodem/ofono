@@ -45,6 +45,20 @@ Properties	string TechnologyPreference [readwrite]
 				"umts"	Only UMTS used for radio access.
 				"lte"	Only LTE used for radio access.
 
+			NOTE: In Ubuntu for Phones branch the description above
+			is no longer valid. Usage of "any" is deprecated and,
+			after setting the property, RAT selection will be done
+			automatically based on reception and availability among
+			the selected technology *and* less advanced
+			technologies. For instance, if preference is "umts",
+			at a given moment we could be registered in a gsm or
+			umts network, but never in an lte one.
+
+		array{string} ModemTechnologies [readonly, optional]
+
+			List of values for TechnologyPreference property
+			supported by the modem.
+
 		string GsmBand [readwrite, optional]
 
 			Frequency band in which the modem is allowed to
