@@ -35,6 +35,9 @@ enum ofono_radio_access_mode {
 	OFONO_RADIO_ACCESS_MODE_LTE	= 3,
 };
 
+/* Set this to latest in ofono_radio_access_mode + 1 */
+#define OFONO_RADIO_ACCESS_MODE_LAST (OFONO_RADIO_ACCESS_MODE_LTE + 1)
+
 enum ofono_radio_band_gsm {
 	OFONO_RADIO_BAND_GSM_ANY,
 	OFONO_RADIO_BAND_GSM_850,
@@ -80,6 +83,11 @@ typedef void (*ofono_radio_settings_fast_dormancy_query_cb_t)(
 						ofono_bool_t enable,
 						void *data);
 
+typedef void (*ofono_radio_settings_modem_rats_query_cb_t)(
+						const struct ofono_error *error,
+						const ofono_bool_t rats[],
+						void *data);
+
 struct ofono_radio_settings_driver {
 	const char *name;
 	int (*probe)(struct ofono_radio_settings *rs, unsigned int vendor,
@@ -106,6 +114,9 @@ struct ofono_radio_settings_driver {
 	void (*set_fast_dormancy)(struct ofono_radio_settings *rs,
 				ofono_bool_t enable,
 				ofono_radio_settings_fast_dormancy_set_cb_t,
+				void *data);
+	void (*query_modem_rats)(struct ofono_radio_settings *rs,
+				ofono_radio_settings_modem_rats_query_cb_t cb,
 				void *data);
 };
 
