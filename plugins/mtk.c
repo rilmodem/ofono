@@ -321,8 +321,6 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 						RILMODEM, ril->modem);
 		ofono_call_forwarding_create(modem, OFONO_RIL_VENDOR_MTK,
 						RILMODEM, ril->modem);
-		ofono_radio_settings_create(modem, OFONO_RIL_VENDOR_MTK,
-						MTKMODEM, ril->modem);
 		ofono_call_barring_create(modem, OFONO_RIL_VENDOR_MTK,
 						RILMODEM, ril->modem);
 
@@ -370,6 +368,10 @@ static void mtk_post_online(struct ofono_modem *modem)
 					MTKMODEM, ril->modem);
 	ofono_call_volume_create(modem, OFONO_RIL_VENDOR_MTK,
 					RILMODEM, ril->modem);
+
+	/* Radio settings does not depend on the SIM */
+	ofono_radio_settings_create(modem, OFONO_RIL_VENDOR_MTK,
+					MTKMODEM, ril->modem);
 
 	/* Ask sim status */
 	ril->sim_status_retries = 0;
@@ -673,6 +675,8 @@ static int create_gril(struct ofono_modem *modem)
 		DBG("g_ril_new() failed to create modem!");
 		return -EIO;
 	}
+
+	g_ril_set_slot(ril->modem, ril->slot);
 
 	g_ril_set_vendor_print_msg_id_funcs(ril->modem,
 						mtk_request_id_to_string,
