@@ -120,6 +120,9 @@ void g_ril_set_disconnect_function(GRil *ril, GRilDisconnectFunc disconnect,
 gboolean g_ril_get_trace(GRil *ril);
 gboolean g_ril_set_trace(GRil *ril, gboolean trace);
 
+int g_ril_get_slot(GRil *ril);
+gboolean g_ril_set_slot(GRil *ril, int slot);
+
 /*!
  * If the function is not NULL, then on every read/write from the GIOChannel
  * provided to GRil the logging function will be called with the
