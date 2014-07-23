@@ -81,7 +81,6 @@ typedef void (*pending_cb_t)(struct cb_data *cbd);
 struct mtk_data {
 	GRil *modem;
 	int sim_status_retries;
-	ofono_bool_t connected;
 	ofono_bool_t have_sim;
 	ofono_bool_t ofono_online;
 	int radio_state;
@@ -168,6 +167,34 @@ static void mtk_radio_state_changed(struct ril_msg *message, gpointer user_data)
 	}
 }
 
+static void sim_removed(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_modem *modem = (struct ofono_modem *) user_data;
+	struct mtk_data *ril = ofono_modem_get_data(modem);
+
+	DBG("");
+
+	g_ril_print_unsol_no_args(ril->modem, message);
+
+	ofono_modem_set_powered(modem, FALSE);
+	g_idle_add(mtk_connected, modem);
+}
+
+static void sim_inserted(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_modem *modem = (struct ofono_modem *) user_data;
+	struct mtk_data *ril = ofono_modem_get_data(modem);
+
+	DBG("");
+
+	g_ril_print_unsol_no_args(ril->modem, message);
+
+	if (getenv("OFONO_RIL_HOT_SIM_SWAP")) {
+		ofono_modem_set_powered(modem, FALSE);
+		g_idle_add(mtk_connected, modem);
+	}
+}
+
 static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -190,6 +217,12 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 			ofono_error("[slot %d] Max retries for GET_SIM_STATUS"
 					" exceeded!", ril->slot);
 	} else {
+
+		/* Register for changes in SIM insertion */
+		g_ril_register(ril->modem, MTK_RIL_UNSOL_SIM_PLUG_OUT,
+				sim_removed, modem);
+		g_ril_register(ril->modem, MTK_RIL_UNSOL_SIM_PLUG_IN,
+				sim_inserted, modem);
 
 		if ((status = g_ril_reply_parse_sim_status(ril->modem, message))
 				!= NULL) {
@@ -452,7 +485,7 @@ static void mtk_send_sim_mode(GRilResponseFunc func, gpointer user_data)
 	g_mtk_request_dual_sim_mode_switch(mtk_0->modem, sim_mode, &rilp);
 
 	/* This request is always sent through the main socket */
-	if (g_ril_send(mtk_0->modem, RIL_REQUEST_DUAL_SIM_MODE_SWITCH,
+	if (g_ril_send(mtk_0->modem, MTK_RIL_REQUEST_DUAL_SIM_MODE_SWITCH,
 			&rilp, func, cbd, notify) == 0 && cbd != NULL) {
 		ofono_error("%s: failure sending request", __func__);
 		CALLBACK_WITH_FAILURE(cb, cbd->data);
@@ -557,8 +590,8 @@ static void mtk_set_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	if (current_state == NO_SIM_ACTIVE) {
 		/* Old state was off, need to power on the modem */
-		if (g_ril_send(mtk_0->modem, RIL_REQUEST_RADIO_POWERON, NULL,
-				poweron_cb, cbd, NULL) == 0) {
+		if (g_ril_send(mtk_0->modem, MTK_RIL_REQUEST_RADIO_POWERON,
+				NULL, poweron_cb, cbd, NULL) == 0) {
 			CALLBACK_WITH_FAILURE(cb, cbd->data);
 			g_free(cbd);
 		} else {
@@ -567,8 +600,8 @@ static void mtk_set_online(struct ofono_modem *modem, ofono_bool_t online,
 			mtk_0->pending_cbd = cbd;
 		}
 	} else if (next_state == NO_SIM_ACTIVE) {
-		if (g_ril_send(mtk_0->modem, RIL_REQUEST_RADIO_POWEROFF, NULL,
-				online_off_cb, cbd, g_free) == 0) {
+		if (g_ril_send(mtk_0->modem, MTK_RIL_REQUEST_RADIO_POWEROFF,
+				NULL, online_off_cb, cbd, g_free) == 0) {
 			ofono_error("%s: failure sending request", __func__);
 			CALLBACK_WITH_FAILURE(cb, cbd->data);
 			g_free(cbd);
@@ -584,9 +617,6 @@ static gboolean mtk_connected(gpointer user_data)
 	struct mtk_data *ril = ofono_modem_get_data(modem);
 
         ofono_info("[slot %d] CONNECTED", ril->slot);
-
-	/* TODO: need a disconnect function to restart things! */
-	ril->connected = TRUE;
 
 	DBG("calling set_powered(TRUE)");
 
@@ -650,6 +680,9 @@ static int create_gril(struct ofono_modem *modem)
 	const char *hex_prefix;
 
 	DBG("slot %d", ril->slot);
+
+	if (ril->modem != NULL)
+		return 0;
 
 	if (ril->slot == MULTISIM_SLOT_0) {
 		sock_path = sock_slot_0;
