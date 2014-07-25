@@ -49,7 +49,7 @@
 
 /*
  * The following hexadecimal data represents a serialized Binder parcel instance
- * containing a valid RIL_UNSOL_INCOMING_CALL_INDICATION message with the
+ * containing a valid MTK_RIL_UNSOL_INCOMING_CALL_INDICATION message with the
  * following parameters:
  *
  * {1,677777777,161,0,1}
@@ -67,7 +67,7 @@ static const struct ril_msg unsol_incoming_call_indication_valid_1 = {
 	.buf = (gchar *) &unsol_incoming_call_indication_parcel1,
 	.buf_len = sizeof(unsol_incoming_call_indication_parcel1),
 	.unsolicited = TRUE,
-	.req = RIL_UNSOL_INCOMING_CALL_INDICATION,
+	.req = MTK_RIL_UNSOL_INCOMING_CALL_INDICATION,
 	.serial_no = 0,
 	.error = 0,
 };

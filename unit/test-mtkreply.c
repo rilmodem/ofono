@@ -106,7 +106,7 @@ static const struct sim_password_test mtk_reply_enter_sim_pin_valid_1 = {
 
 /*
  * The following hexadecimal data contains the reply to a
- * RIL_REQUEST_GET_3G_CAPABILITY request with parameter {1}
+ * MTK_RIL_REQUEST_GET_3G_CAPABILITY request with parameter {1}
  */
 static const guchar mtk_reply_3g_capability_valid_parcel1[] = {
 	0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
@@ -118,7 +118,7 @@ static const struct rep_3g_capability_test mtk_reply_3g_capability_valid_1 = {
 		.buf = (char *) &mtk_reply_3g_capability_valid_parcel1,
 		.buf_len = sizeof(mtk_reply_3g_capability_valid_parcel1),
 		.unsolicited = FALSE,
-		.req = RIL_REQUEST_GET_3G_CAPABILITY,
+		.req = MTK_RIL_REQUEST_GET_3G_CAPABILITY,
 		.serial_no = 0,
 		.error = 0,
 	}
