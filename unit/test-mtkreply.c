@@ -35,6 +35,8 @@
 
 #include "common.h"
 #include "grilreply.h"
+#include "drivers/mtkmodem/mtk_constants.h"
+#include "drivers/mtkmodem/mtkreply.h"
 
 /*
  * As all our architectures are little-endian except for
@@ -47,6 +49,11 @@
 struct sim_password_test {
 	int retries;
 	enum ofono_sim_password_type passwd_type;
+	const struct ril_msg msg;
+};
+
+struct rep_3g_capability_test {
+	int is_3g;
 	const struct ril_msg msg;
 };
 
@@ -97,6 +104,26 @@ static const struct sim_password_test mtk_reply_enter_sim_pin_valid_1 = {
 	}
 };
 
+/*
+ * The following hexadecimal data contains the reply to a
+ * RIL_REQUEST_GET_3G_CAPABILITY request with parameter {1}
+ */
+static const guchar mtk_reply_3g_capability_valid_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
+};
+
+static const struct rep_3g_capability_test mtk_reply_3g_capability_valid_1 = {
+	.is_3g = 1,
+	.msg = {
+		.buf = (char *) &mtk_reply_3g_capability_valid_parcel1,
+		.buf_len = sizeof(mtk_reply_3g_capability_valid_parcel1),
+		.unsolicited = FALSE,
+		.req = RIL_REQUEST_GET_3G_CAPABILITY,
+		.serial_no = 0,
+		.error = 0,
+	}
+};
+
 static void test_mtk_reply_avail_ops_valid(gconstpointer data)
 {
 	struct reply_avail_ops *reply;
@@ -119,6 +146,17 @@ static void test_mtk_reply_enter_sim_pin_valid(gconstpointer data)
 	g_assert(retries[test->passwd_type] == test->retries);
 
 	g_free(retries);
+	g_ril_unref(gril);
+}
+
+static void test_mtk_reply_3g_capability_valid(gconstpointer data)
+{
+	GRil *gril = g_ril_new(NULL, OFONO_RIL_VENDOR_MTK);
+	const struct rep_3g_capability_test *test = data;
+	int is_3g = g_mtk_reply_parse_get_3g_capability(gril, &test->msg);
+
+	g_assert(is_3g == test->is_3g);
+
 	g_ril_unref(gril);
 }
 
@@ -145,6 +183,11 @@ int main(int argc, char **argv)
 				"valid ENTER_SIM_PIN Test 1",
 				&mtk_reply_enter_sim_pin_valid_1,
 				test_mtk_reply_enter_sim_pin_valid);
+
+	g_test_add_data_func("/testmtkreply/radio-settings: "
+				"valid GET_3G_CAPABILITY Test 1",
+				&mtk_reply_3g_capability_valid_1,
+				test_mtk_reply_3g_capability_valid);
 
 #endif	/* LITTLE_ENDIAN */
 

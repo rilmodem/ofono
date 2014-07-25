@@ -138,6 +138,8 @@ builtin_sources += drivers/mtkmodem/mtkmodem.h \
 			drivers/mtkmodem/mtkrequest.c \
 			drivers/mtkmodem/mtkunsol.h \
 			drivers/mtkmodem/mtkunsol.c \
+			drivers/mtkmodem/mtkreply.h \
+			drivers/mtkmodem/mtkreply.c \
 			drivers/mtkmodem/voicecall.c \
 			drivers/mtkmodem/gprs.c \
 			drivers/mtkmodem/radio-settings.c
@@ -816,6 +818,7 @@ unit_test_mtkrequest_LDADD = @GLIB_LIBS@ -ldl
 unit_objects += $(unit_test_mtkrequest_OBJECTS)
 
 unit_test_mtkreply_SOURCES = unit/test-mtkreply.c $(gril_sources) \
+				drivers/mtkmodem/mtkreply.c \
 				src/log.c src/util.c src/simutil.c \
 				src/common.c gatchat/ringbuffer.c
 unit_test_mtkreply_LDADD = @GLIB_LIBS@ -ldl

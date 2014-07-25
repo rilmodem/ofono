@@ -117,12 +117,17 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 		switch (radio_state) {
 		case RADIO_STATE_ON:
 
-			if (ril->voice == NULL)
+			if (ril->voice == NULL) {
 				ril->voice =
 					ofono_voicecall_create(modem,
 								ril->vendor,
 								RILMODEM,
 								ril->modem);
+				ofono_call_volume_create(modem, ril->vendor,
+							RILMODEM, ril->modem);
+				ofono_radio_settings_create(modem, ril->vendor,
+							RILMODEM, ril->modem);
+			}
 
 			send_get_sim_status(modem);
 			break;
@@ -312,11 +317,9 @@ void ril_post_online(struct ofono_modem *modem)
 {
 	struct ril_data *ril = ofono_modem_get_data(modem);
 
-	ofono_call_volume_create(modem, ril->vendor, RILMODEM, ril->modem);
 	ofono_netreg_create(modem, ril->vendor, RILMODEM, ril->modem);
 	ofono_ussd_create(modem, ril->vendor, RILMODEM, ril->modem);
 	ofono_call_settings_create(modem, ril->vendor, RILMODEM, ril->modem);
-	ofono_radio_settings_create(modem, ril->vendor, RILMODEM, ril->modem);
 	ofono_call_barring_create(modem, ril->vendor, RILMODEM, ril->modem);
 }
 

@@ -36,6 +36,7 @@
 
 #include "mtk_constants.h"
 #include "mtkunsol.h"
+#include "mtkreply.h"
 #include "mtkrequest.h"
 
 #include "common.h"
@@ -118,6 +119,55 @@ static int mtk_radio_settings_probe(struct ofono_radio_settings *rs,
 	return 0;
 }
 
+static void mtk_query_modem_rats_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	struct ofono_radio_settings *rs = cbd->user;
+	struct radio_data *rd = ofono_radio_settings_get_data(rs);
+	ofono_radio_settings_modem_rats_query_cb_t cb = cbd->cb;
+	ofono_bool_t modem_rats[OFONO_RADIO_ACCESS_MODE_LAST] = { FALSE };
+	int is_3g;
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: error %s", __func__,
+				ril_error_to_string(message->error));
+		CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
+		return;
+	}
+
+	is_3g = g_mtk_reply_parse_get_3g_capability(rd->ril, message);
+	if (is_3g < 0) {
+		ofono_error("%s: parse error", __func__);
+		CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
+		return;
+	}
+
+	modem_rats[OFONO_RADIO_ACCESS_MODE_GSM] = TRUE;
+
+	if (is_3g) {
+		modem_rats[OFONO_RADIO_ACCESS_MODE_UMTS] = TRUE;
+
+		if (getenv("OFONO_RIL_RAT_LTE"))
+			modem_rats[OFONO_RADIO_ACCESS_MODE_LTE] = TRUE;
+	}
+
+	CALLBACK_WITH_SUCCESS(cb, modem_rats, cbd->data);
+}
+
+static void mtk_query_modem_rats(struct ofono_radio_settings *rs,
+				ofono_radio_settings_modem_rats_query_cb_t cb,
+				void *data)
+{
+	struct radio_data *rd = ofono_radio_settings_get_data(rs);
+	struct cb_data *cbd = cb_data_new(cb, data, rs);
+
+	if (g_ril_send(rd->ril, RIL_REQUEST_GET_3G_CAPABILITY, NULL,
+			mtk_query_modem_rats_cb, cbd, g_free) <= 0) {
+		g_free(cbd);
+		CALLBACK_WITH_FAILURE(cb, NULL, data);
+	}
+}
+
 static struct ofono_radio_settings_driver driver = {
 	.name			= MTKMODEM,
 	.probe			= mtk_radio_settings_probe,
@@ -125,7 +175,8 @@ static struct ofono_radio_settings_driver driver = {
 	.query_rat_mode		= ril_query_rat_mode,
 	.set_rat_mode		= ril_set_rat_mode,
 	.query_fast_dormancy	= ril_query_fast_dormancy,
-	.set_fast_dormancy	= mtk_set_fast_dormancy
+	.set_fast_dormancy	= mtk_set_fast_dormancy,
+	.query_modem_rats	= mtk_query_modem_rats
 };
 
 void mtk_radio_settings_init(void)

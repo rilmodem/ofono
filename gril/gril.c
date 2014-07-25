@@ -104,6 +104,7 @@ struct ril_s {
 	gboolean in_read_handler;		/* Re-entrancy guard */
 	gboolean in_notify;
 	enum ofono_ril_vendor vendor;
+	int slot;
 	GRilMsgIdToStrFunc req_to_string;
 	GRilMsgIdToStrFunc unsol_to_string;
 };
@@ -1190,6 +1191,23 @@ gboolean g_ril_set_trace(GRil *ril, gboolean trace)
 		return FALSE;
 
 	return ril->parent->trace = trace;
+}
+
+gboolean g_ril_set_slot(GRil *ril, int slot)
+{
+	if (ril == NULL || ril->parent == NULL)
+		return FALSE;
+
+	ril->parent->slot = slot;
+	return TRUE;
+}
+
+int g_ril_get_slot(GRil *ril)
+{
+	if (ril == NULL)
+		return 0;
+
+	return ril->parent->slot;
 }
 
 gboolean g_ril_set_debugf(GRil *ril,
