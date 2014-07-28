@@ -1,0 +1,48 @@
+#!/usr/bin/python3
+
+from gi.repository import GLib
+
+import sys
+import dbus
+import dbus.service
+import dbus.mainloop.glib
+
+class VoiceCallAgent(dbus.service.Object):
+	@dbus.service.method("org.ofono.VoiceCallAgent",
+					in_signature="", out_signature="")
+	def Release(self):
+		print("Agent got Release")
+		mainloop.quit()
+
+	@dbus.service.method("org.ofono.VoiceCallAgent",
+				in_signature="b", out_signature="")
+	def RingbackTone(self, play_tone):
+		print("Agent got play_tone notification: %d" % play_tone)
+
+if __name__ == '__main__':
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+	bus = dbus.SystemBus()
+	manager = dbus.Interface(bus.get_object("org.ofono", "/"),
+							"org.ofono.Manager")
+
+	modems = manager.GetModems()
+
+	for path, properties in modems:
+		if "org.ofono.VoiceCallManager" not in properties["Interfaces"]:
+			continue
+
+		vcm = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.VoiceCallManager')
+
+	path = "/test/agent"
+	agent = VoiceCallAgent(bus, path)
+	vcm.RegisterVoicecallAgent(agent)
+	print("Agent registered")
+	mainloop = GLib.MainLoop()
+
+	try:
+		mainloop.run()
+	except KeyboardInterrupt:
+		vcm.UnregisterVoicecallAgent(path)
+		print("Agent unregistered (interrupt)")
