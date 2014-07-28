@@ -279,6 +279,10 @@ void ril_post_sim(struct ofono_modem *modem)
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
 	struct ofono_message_waiting *mw;
+	struct ril_gprs_context_data inet_ctx =
+			{ ril->modem, OFONO_GPRS_CONTEXT_TYPE_INTERNET };
+	struct ril_gprs_context_data mms_ctx =
+			{ ril->modem, OFONO_GPRS_CONTEXT_TYPE_MMS };
 
 	/* TODO: this function should setup:
 	 *  - phonebook
@@ -288,8 +292,7 @@ void ril_post_sim(struct ofono_modem *modem)
 	ofono_sms_create(modem, ril->vendor, RILMODEM, ril->modem);
 
 	gprs = ofono_gprs_create(modem, ril->vendor, RILMODEM, ril->modem);
-	gc = ofono_gprs_context_create(modem, ril->vendor,
-					RILMODEM, ril->modem);
+	gc = ofono_gprs_context_create(modem, ril->vendor, RILMODEM, &inet_ctx);
 
 	if (gc) {
 		ofono_gprs_context_set_type(gc,
@@ -297,8 +300,7 @@ void ril_post_sim(struct ofono_modem *modem)
 		ofono_gprs_add_context(gprs, gc);
 	}
 
-	gc = ofono_gprs_context_create(modem, ril->vendor,
-					RILMODEM, ril->modem);
+	gc = ofono_gprs_context_create(modem, ril->vendor, RILMODEM, &mms_ctx);
 
 	if (gc) {
 		ofono_gprs_context_set_type(gc,
