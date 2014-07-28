@@ -653,6 +653,17 @@ static gboolean enable_supp_svc(gpointer user_data)
 	return FALSE;
 }
 
+static void ril_ringback_tone_notify(struct ril_msg *message,
+	gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
+	gboolean playTone = g_ril_unsol_parse_ringback_tone(vd->ril,  message);
+	DBG("play ringback tone: %d", playTone);
+	ofono_voicecall_ringback_tone_notify(vc, playTone);
+
+}
+
 static gboolean ril_delayed_register(gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
@@ -669,6 +680,10 @@ static gboolean ril_delayed_register(gpointer user_data)
 	/* Unsol when call set on hold */
 	g_ril_register(vd->ril, RIL_UNSOL_SUPP_SVC_NOTIFICATION,
 			ril_ss_notify, vc);
+
+	/* Register for ringback tone notifications */
+	g_ril_register(vd->ril, RIL_UNSOL_RINGBACK_TONE,
+			ril_ringback_tone_notify, vc);
 
 	/* request supplementary service notifications*/
 	enable_supp_svc(vc);
