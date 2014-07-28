@@ -61,6 +61,7 @@ struct gprs_context_data {
 	enum state state;
 	guint call_list_id;
 	char *apn;
+	enum ofono_gprs_context_type type;
 };
 
 static void ril_gprs_context_deactivate_primary(struct ofono_gprs_context *gc,
@@ -247,10 +248,16 @@ static void ril_gprs_context_activate_primary(struct ofono_gprs_context *gc,
 		request.tech = gd->tech + 2;
 	}
 
-	/* TODO: add comments about tethering, other non-public
+	/*
+	 * TODO: add comments about tethering, other non-public
 	 * profiles...
 	 */
-	request.data_profile = RIL_DATA_PROFILE_DEFAULT;
+	if (g_ril_vendor(gcd->ril) == OFONO_RIL_VENDOR_MTK &&
+			gcd->type == OFONO_GPRS_CONTEXT_TYPE_MMS)
+		request.data_profile = RIL_DATA_PROFILE_MTK_MMS;
+	else
+		request.data_profile = RIL_DATA_PROFILE_DEFAULT;
+
 	request.apn = g_strdup(ctx->apn);
 	request.username = g_strdup(ctx->username);
 	request.password = g_strdup(ctx->password);
@@ -261,6 +268,7 @@ static void ril_gprs_context_activate_primary(struct ofono_gprs_context *gc,
 		request.auth_type = RIL_AUTH_BOTH;
 
 	request.protocol = ctx->proto;
+	request.req_cid = ctx->cid;
 
 	if (g_ril_request_setup_data_call(gcd->ril,
 						&request,
@@ -405,7 +413,7 @@ static void ril_gprs_context_detach_shutdown(struct ofono_gprs_context *gc,
 static int ril_gprs_context_probe(struct ofono_gprs_context *gc,
 					unsigned int vendor, void *data)
 {
-	GRil *ril = data;
+	struct ril_gprs_context_data *ril_data = data;
 	struct gprs_context_data *gcd;
 
 	DBG("*gc: %p", gc);
@@ -414,9 +422,10 @@ static int ril_gprs_context_probe(struct ofono_gprs_context *gc,
 	if (gcd == NULL)
 		return -ENOMEM;
 
-	gcd->ril = g_ril_clone(ril);
+	gcd->ril = g_ril_clone(ril_data->gril);
 	set_context_disconnected(gcd);
 	gcd->call_list_id = -1;
+	gcd->type = ril_data->type;
 
 	ofono_gprs_context_set_data(gc, gcd);
 
