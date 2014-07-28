@@ -577,7 +577,8 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
 			src/cdma-smsutil.h src/cdma-smsutil.c \
 			src/cdma-sms.c src/private-network.c src/cdma-netreg.c \
 			src/cdma-provision.c src/handsfree.c \
-			src/sim-mnclength.c src/spn-table.c
+			src/sim-mnclength.c src/spn-table.c \
+			src/voicecallagent.c
 
 src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ -ldl
 
@@ -713,6 +714,7 @@ test_scripts = test/backtrace \
 		test/hold-and-answer \
 		test/hangup-multiparty \
 		test/hangup-call \
+		test/test-voicecallagent \
 		test/rilmodem/test-hangup \
 		test/rilmodem/test-modem-offline \
 		test/rilmodem/test-sim-online
