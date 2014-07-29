@@ -91,7 +91,7 @@ static void mtk_set_fast_dormancy(struct ofono_radio_settings *rs,
 	g_mtk_request_set_fd_mode(rsd->ril, MTK_FD_MODE_SCREEN_STATUS,
 					enable ? FALSE : TRUE, 0, &rilp);
 
-	if (g_ril_send(rsd->ril, RIL_REQUEST_SET_FD_MODE, &rilp,
+	if (g_ril_send(rsd->ril, MTK_RIL_REQUEST_SET_FD_MODE, &rilp,
 			mtk_set_fd_mode_cb, cbd, g_free) <= 0) {
 		g_free(cbd);
 		g_free(user);
@@ -161,7 +161,7 @@ static void mtk_query_modem_rats(struct ofono_radio_settings *rs,
 	struct radio_data *rd = ofono_radio_settings_get_data(rs);
 	struct cb_data *cbd = cb_data_new(cb, data, rs);
 
-	if (g_ril_send(rd->ril, RIL_REQUEST_GET_3G_CAPABILITY, NULL,
+	if (g_ril_send(rd->ril, MTK_RIL_REQUEST_GET_3G_CAPABILITY, NULL,
 			mtk_query_modem_rats_cb, cbd, g_free) <= 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, NULL, data);

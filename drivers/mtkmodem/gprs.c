@@ -115,7 +115,7 @@ static void mtk_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 
 	g_mtk_request_set_gprs_connect_type(gd->ril, attached, &rilp);
 
-	if (g_ril_send(gd->ril, RIL_REQUEST_SET_GPRS_CONNECT_TYPE, &rilp,
+	if (g_ril_send(gd->ril, MTK_RIL_REQUEST_SET_GPRS_CONNECT_TYPE, &rilp,
 			mtk_gprs_set_connect_type_cb, cbd, g_free) == 0) {
 		ofono_error("%s: send failed", __func__);
 		g_free(cbd);
@@ -139,7 +139,8 @@ static int mtk_gprs_probe(struct ofono_gprs *gprs,
 	 * In MTK the event emitted when the gprs state changes is different
 	 * from the one in AOSP ril. Overwrite the one set in parent.
 	 */
-	gd->state_changed_unsol = RIL_UNSOL_RESPONSE_PS_NETWORK_STATE_CHANGED;
+	gd->state_changed_unsol =
+				MTK_RIL_UNSOL_RESPONSE_PS_NETWORK_STATE_CHANGED;
 
 	return 0;
 }

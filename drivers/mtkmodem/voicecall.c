@@ -84,7 +84,7 @@ static void mtk_incoming_notify(struct ril_msg *message, gpointer user_data)
 						call_ind->call_id,
 						call_ind->seq_number, &rilp);
 
-	if (g_ril_send(vd->ril, RIL_REQUEST_SET_CALL_INDICATION,
+	if (g_ril_send(vd->ril, MTK_RIL_REQUEST_SET_CALL_INDICATION,
 			&rilp, mtk_set_indication_cb, vc, NULL) == 0)
 		ofono_error("%s: cannot send indication", __func__);
 
@@ -97,11 +97,11 @@ static gboolean mtk_delayed_register(gpointer user_data)
 	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 
 	/* MTK generates this event instead of CALL_STATE_CHANGED */
-	g_ril_register(vd->ril, RIL_UNSOL_CALL_PROGRESS_INFO,
+	g_ril_register(vd->ril, MTK_RIL_UNSOL_CALL_PROGRESS_INFO,
 			ril_call_state_notify, vc);
 
 	/* Indicates incoming call, before telling the network our state */
-	g_ril_register(vd->ril, RIL_UNSOL_INCOMING_CALL_INDICATION,
+	g_ril_register(vd->ril, MTK_RIL_UNSOL_INCOMING_CALL_INDICATION,
 			mtk_incoming_notify, vc);
 
 	/* This makes the timeout a single-shot */
