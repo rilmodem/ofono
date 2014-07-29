@@ -82,13 +82,15 @@ static gboolean imsi_match(const char *imsi, const char *match)
 
 	DBG("imsi %s match %s", imsi, match);
 
-	if (imsi_len != match_len)
+	if (match_len == 0 || imsi_len < match_len)
 		goto done;
 
-	for (i = 0; i < imsi_len; i++) {
+	for (i = 0; i < match_len; i++) {
 		if (*(imsi + i) == *(match + i))
 			continue;
 		else if (*(match + i) == 'x')
+			continue;
+		else if (*(match + i) == 'X')
 			continue;
 		else
 			goto done;
