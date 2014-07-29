@@ -300,6 +300,10 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 		struct ofono_gprs *gprs;
 		struct ofono_gprs_context *gc;
 		struct ofono_message_waiting *mw;
+		struct ril_gprs_context_data inet_ctx =
+			{ ril->modem, OFONO_GPRS_CONTEXT_TYPE_INTERNET };
+		struct ril_gprs_context_data mms_ctx =
+			{ ril->modem, OFONO_GPRS_CONTEXT_TYPE_MMS };
 
 		DBG("SIM ready, creating more atoms");
 
@@ -328,7 +332,7 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 						MTKMODEM, ril->modem);
 
 		gc = ofono_gprs_context_create(modem, OFONO_RIL_VENDOR_MTK,
-						RILMODEM, ril->modem);
+						RILMODEM, &inet_ctx);
 		if (gc) {
 			ofono_gprs_context_set_type(gc,
 					OFONO_GPRS_CONTEXT_TYPE_INTERNET);
@@ -336,7 +340,7 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 		}
 
 		gc = ofono_gprs_context_create(modem, OFONO_RIL_VENDOR_MTK,
-						RILMODEM, ril->modem);
+						RILMODEM, &mms_ctx);
 		if (gc) {
 			ofono_gprs_context_set_type(gc,
 					OFONO_GPRS_CONTEXT_TYPE_MMS);

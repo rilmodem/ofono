@@ -169,6 +169,8 @@
 #define RIL_DATA_PROFILE_FOTA 3           /* FOTA = Firmware Over the Air */
 #define RIL_DATA_PROFILE_CBS 4
 #define RIL_DATA_PROFILE_OEM_BASE 1000    /* Start of OEM-specific profiles */
+/* MTK specific profile for MMS */
+#define RIL_DATA_PROFILE_MTK_MMS (RIL_DATA_PROFILE_OEM_BASE + 1)
 
 #define RIL_AUTH_NONE 0
 #define RIL_AUTH_PAP 1

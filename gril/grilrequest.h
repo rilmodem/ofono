@@ -54,6 +54,7 @@ struct req_setup_data_call {
 	gchar *password;
 	guint auth_type;
 	guint protocol;
+	unsigned req_cid;
 };
 
 struct req_sim_read_info {

@@ -54,6 +54,7 @@
 #define DATA_PROFILE_FOTA_STR "3"
 #define DATA_PROFILE_CBS_STR "4"
 #define DATA_PROFILE_OEM_BASE_STR "1000"
+#define DATA_PROFILE_MTK_MMS_STR "1001"
 
 /* SETUP_DATA_CALL_PARAMS reply parameters */
 #define MIN_DATA_CALL_REPLY_SIZE 36
@@ -82,6 +83,9 @@
 /* RIL_FACILITY_LOCK parameters */
 #define RIL_FACILITY_UNLOCK "0"
 #define RIL_FACILITY_LOCK "1"
+
+/* Call ID should not really be a big number */
+#define MAX_CID_DIGITS 3
 
 /*
  * TODO:
@@ -238,7 +242,6 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 	gchar *profile_str;
 	size_t apn_len;
 	int num_param = SETUP_DATA_CALL_PARAMS;
-	const char *request_cid_pr = "";
 
 	DBG("");
 
@@ -277,6 +280,11 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 	case RIL_DATA_PROFILE_CBS:
 		profile_str = DATA_PROFILE_CBS_STR;
 		break;
+	case RIL_DATA_PROFILE_MTK_MMS:
+		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
+			profile_str = DATA_PROFILE_MTK_MMS_STR;
+			break;
+		}
 	default:
 		ofono_error("%s, invalid data_profile value: %d",
 				__func__,
@@ -325,22 +333,26 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 	parcel_w_string(rilp, auth_str);
 	parcel_w_string(rilp, protocol_str);
 
-	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
-		/* MTK request_cid parameter */
-		parcel_w_string(rilp, "1");
-		request_cid_pr = ",1";
-	}
-
 	g_ril_append_print_buf(gril,
-				"(%s,%s,%s,%s,%s,%s,%s%s)",
+				"(%s,%s,%s,%s,%s,%s,%s",
 				tech_str,
 				profile_str,
 				req->apn,
 				req->username,
 				req->password,
 				auth_str,
-				protocol_str,
-				request_cid_pr);
+				protocol_str);
+
+	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
+		/* MTK request_cid parameter */
+		char cid_str[MAX_CID_DIGITS + 1];
+
+		snprintf(cid_str, sizeof(cid_str), "%u", req->req_cid);
+		parcel_w_string(rilp, cid_str);
+		g_ril_append_print_buf(gril, "%s,%s", print_buf, cid_str);
+	}
+
+	g_ril_append_print_buf(gril, "%s)", print_buf);
 
 	g_free(tech_str);
 	g_free(auth_str);
