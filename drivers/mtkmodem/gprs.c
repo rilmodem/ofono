@@ -41,6 +41,7 @@
 
 #include "common.h"
 
+#include "mtkutil.h"
 #include "mtkmodem.h"
 #include "mtk_constants.h"
 #include "mtkrequest.h"
@@ -79,6 +80,7 @@ static void mtk_gprs_set_connect_type_cb(struct ril_msg *message,
 		g_ril_print_response_no_args(gd->ril, message);
 
 		gd->ofono_attached = attach_data->set_attached;
+		mtk_set_attach_state(gd->modem, gd->ofono_attached);
 
 		CALLBACK_WITH_SUCCESS(cb, cbd->data);
 	} else {
@@ -123,10 +125,21 @@ static void mtk_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 	}
 }
 
+static void detach_event(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_gprs *gprs = user_data;
+	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
+
+	g_ril_print_unsol_no_args(gd->ril, message);
+
+	mtk_detach_received(gd->modem);
+}
+
 static int mtk_gprs_probe(struct ofono_gprs *gprs,
 				unsigned int vendor, void *data)
 {
-	GRil *ril = data;
+	struct mtk_gprs_data *gprs_data = data;
+	GRil *ril = gprs_data->gril;
 	struct ril_gprs_data *gd;
 
 	gd = g_try_new0(struct ril_gprs_data, 1);
@@ -135,6 +148,8 @@ static int mtk_gprs_probe(struct ofono_gprs *gprs,
 
 	ril_gprs_start(ril, gprs, gd);
 
+	gd->modem = gprs_data->modem;
+
 	/*
 	 * In MTK the event emitted when the gprs state changes is different
 	 * from the one in AOSP ril. Overwrite the one set in parent.
@@ -142,13 +157,25 @@ static int mtk_gprs_probe(struct ofono_gprs *gprs,
 	gd->state_changed_unsol =
 				MTK_RIL_UNSOL_RESPONSE_PS_NETWORK_STATE_CHANGED;
 
+	g_ril_register(gd->ril, MTK_RIL_UNSOL_GPRS_DETACH, detach_event, gprs);
+
 	return 0;
+}
+
+static void mtk_gprs_remove(struct ofono_gprs *gprs)
+{
+	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
+
+	gd->ofono_attached = FALSE;
+	mtk_set_attach_state(gd->modem, gd->ofono_attached);
+
+	ril_gprs_remove(gprs);
 }
 
 static struct ofono_gprs_driver driver = {
 	.name			= MTKMODEM,
 	.probe			= mtk_gprs_probe,
-	.remove			= ril_gprs_remove,
+	.remove			= mtk_gprs_remove,
 	.set_attached		= mtk_gprs_set_attached,
 	.attached_status	= ril_gprs_registration_status,
 };
