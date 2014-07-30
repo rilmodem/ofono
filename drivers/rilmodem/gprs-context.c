@@ -172,6 +172,16 @@ static void ril_setup_data_call_cb(struct ril_msg *message, gpointer user_data)
 
 	call = (struct ril_data_call *) call_list->calls->data;
 
+	/* Check for valid DNS settings, except for MMS contexts */
+	if (gcd->type != OFONO_GPRS_CONTEXT_TYPE_MMS
+				&& (call->dns_addrs == NULL
+				|| g_strv_length(call->dns_addrs) == 0)) {
+		ofono_error("%s: no DNS in context of type %d",
+				__func__, gcd->type);
+		disconnect_context(gc);
+		goto error;
+	}
+
 	if (call->status != PDP_FAIL_NONE) {
 		ofono_error("%s: reply->status for apn: %s, is non-zero: %s",
 				__func__, gcd->apn,
