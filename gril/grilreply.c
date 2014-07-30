@@ -515,8 +515,8 @@ struct reply_sim_status *g_ril_reply_parse_sim_status(GRil *gril,
 	unsigned int i;
 	struct reply_sim_status *status;
 
-	g_ril_append_print_buf(gril, "[%04d]< %s",
-			message->serial_no,
+	g_ril_append_print_buf(gril, "[%d,%04d]< %s",
+			g_ril_get_slot(gril), message->serial_no,
 			ril_request_id_to_string(message->req));
 
 	g_ril_init_parcel(message, &rilp);

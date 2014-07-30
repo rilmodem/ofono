@@ -378,8 +378,8 @@ static void handle_response(struct ril_s *p, struct ril_msg *message)
 			message->req = req->req;
 
 			if (message->error != RIL_E_SUCCESS)
-				RIL_TRACE(p, "[%04d]< %s failed %s",
-					message->serial_no,
+				RIL_TRACE(p, "[%d,%04d]< %s failed %s",
+					p->slot, message->serial_no,
 					request_id_to_string(p, message->req),
 					ril_error_to_string(message->error));
 
