@@ -69,37 +69,43 @@ typedef const char *(*GRilMsgIdToStrFunc)(int msg_id);
  */
 #define G_RIL_TRACE(gril, fmt, arg...) do {	\
 	if (gril && g_ril_get_trace(gril))	\
-		ofono_debug(fmt, ## arg); 	\
+		ofono_debug(fmt, ## arg);	\
 } while (0)
 
 extern char print_buf[];
 
 #define g_ril_print_request(gril, token, req)				\
-        G_RIL_TRACE(gril, "[%04d]> %s %s", token, 			\
+	G_RIL_TRACE(gril, "[%d,%04d]> %s %s",				\
+		g_ril_get_slot(gril), token,				\
 		g_ril_request_id_to_string(gril, req), print_buf)
 #define g_ril_print_request_no_args(gril, token, req)			\
-        G_RIL_TRACE(gril, "[%04d]> %s", token,				\
+	G_RIL_TRACE(gril, "[%d,%04d]> %s",				\
+			g_ril_get_slot(gril), token,			\
 			g_ril_request_id_to_string(gril, req))
-#define g_ril_print_response(gril, message)           			\
-        G_RIL_TRACE(gril, "[%04d]< %s %s", message->serial_no,		\
+#define g_ril_print_response(gril, message)				\
+	G_RIL_TRACE(gril, "[%d,%04d]< %s %s",				\
+			g_ril_get_slot(gril),				\
+			message->serial_no,				\
 			g_ril_request_id_to_string(gril, message->req), \
 							print_buf)
 #define g_ril_print_response_no_args(gril, message)			\
-        G_RIL_TRACE(gril, "[%04d]< %s", message->serial_no,		\
+	G_RIL_TRACE(gril, "[%d,%04d]< %s",				\
+		g_ril_get_slot(gril), message->serial_no,		\
 			g_ril_request_id_to_string(gril, message->req))
 
-#define g_ril_append_print_buf(gril, x...)  do {    \
-	if (gril && g_ril_get_trace(gril))          \
-		sprintf(print_buf, x);              \
+#define g_ril_append_print_buf(gril, x...) do {	\
+	if (gril && g_ril_get_trace(gril))	\
+		sprintf(print_buf, x);		\
 } while (0)
 
 #define g_ril_print_unsol(gril, message)				\
-        G_RIL_TRACE(gril, "[UNSOL]< %s %s",				\
+	G_RIL_TRACE(gril, "[%d,UNSOL]< %s %s",				\
+			g_ril_get_slot(gril),				\
 			g_ril_unsol_request_to_string(gril,		\
 							message->req),	\
 			print_buf)
 #define g_ril_print_unsol_no_args(gril, message)			\
-        G_RIL_TRACE(gril, "[UNSOL]< %s",				\
+	G_RIL_TRACE(gril, "[%d,UNSOL]< %s", g_ril_get_slot(gril),	\
 			g_ril_unsol_request_to_string(gril, message->req))
 
 void g_ril_init_parcel(const struct ril_msg *message, struct parcel *rilp);

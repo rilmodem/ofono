@@ -386,8 +386,8 @@ static void ril_connected(struct ril_msg *message, gpointer user_data)
 	struct ofono_modem *modem = (struct ofono_modem *) user_data;
 	struct ril_data *ril = ofono_modem_get_data(modem);
 
-        ofono_info("[UNSOL]< %s", g_ril_unsol_request_to_string(ril->modem,
-								message->req));
+	ofono_info("[%d,UNSOL]< %s", g_ril_get_slot(ril->modem),
+		g_ril_unsol_request_to_string(ril->modem, message->req));
 
 	/* TODO: need a disconnect function to restart things! */
 	ril->connected = TRUE;
