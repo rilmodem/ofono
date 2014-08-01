@@ -106,6 +106,7 @@ struct mtk_data {
 	struct ofono_call_settings *call_settings;
 	struct ofono_call_forwarding *call_forwarding;
 	struct ofono_call_barring *call_barring;
+	struct ofono_phonebook *phonebook;
 	struct ofono_gprs *gprs;
 	struct ofono_message_waiting *message_waiting;
 };
@@ -434,7 +435,9 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 		ril->call_barring =
 			ofono_call_barring_create(modem, OFONO_RIL_VENDOR_MTK,
 							RILMODEM, ril->modem);
-
+		ril->phonebook =
+			ofono_phonebook_create(modem, OFONO_RIL_VENDOR_MTK,
+						RILMODEM, modem);
 		ril->gprs = ofono_gprs_create(modem, OFONO_RIL_VENDOR_MTK,
 						MTKMODEM, &gprs_data);
 
@@ -469,6 +472,10 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 		if (ril->gprs) {
 			ofono_gprs_remove(ril->gprs);
 			ril->gprs = NULL;
+		}
+		if (ril->phonebook) {
+			ofono_phonebook_remove(ril->phonebook);
+			ril->phonebook = NULL;
 		}
 		if (ril->call_barring) {
 			ofono_call_barring_remove(ril->call_barring);
