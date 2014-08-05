@@ -53,6 +53,7 @@
 typedef struct signal_strength_test signal_strength_test;
 struct signal_strength_test {
 	int strength;
+	int ril_tech;
 	const struct ril_msg msg;
 };
 
@@ -455,9 +456,39 @@ static const guchar unsol_signal_strength_parcel1[] = {
 
 static const signal_strength_test unsol_signal_strength_valid_1 = {
 	.strength = 45,
+	.ril_tech = RADIO_TECH_GPRS,
 	.msg = {
 		.buf = (gchar *) &unsol_signal_strength_parcel1,
 		.buf_len = sizeof(unsol_signal_strength_parcel1),
+		.unsolicited = TRUE,
+		.req = RIL_UNSOL_SIGNAL_STRENGTH,
+		.serial_no = 0,
+		.error = 0,
+	}
+};
+
+/*
+ * The following hexadecimal data represents a serialized Binder parcel
+ * instance containing a valid RIL_UNSOL_SIGNAL_STRENGTH message
+ * with the following parameters:
+ *
+ * (gw: 99, cdma: 0, evdo: 0, lte: 99)
+ */
+static const guchar unsol_signal_strength_parcel2[] = {
+	0x63, 0x00, 0x00, 0x00, 0x63, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x63, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0x7f,
+	0xff, 0xff, 0xff, 0x7f, 0x2d, 0x01, 0x00, 0x00, 0xff, 0xff, 0xff, 0x7f,
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static const signal_strength_test unsol_signal_strength_valid_2 = {
+	.strength = -1,
+	.ril_tech = RADIO_TECH_GPRS,
+	.msg = {
+		.buf = (gchar *) &unsol_signal_strength_parcel2,
+		.buf_len = sizeof(unsol_signal_strength_parcel2),
 		.unsolicited = TRUE,
 		.req = RIL_UNSOL_SIGNAL_STRENGTH,
 		.serial_no = 0,
@@ -530,7 +561,8 @@ static void test_unsol_data_call_list_changed_valid(gconstpointer data)
 static void test_signal_strength_valid(gconstpointer data)
 {
 	const signal_strength_test *test = data;
-	int strength = g_ril_unsol_parse_signal_strength(NULL, &test->msg);
+	int strength = g_ril_unsol_parse_signal_strength(NULL, &test->msg,
+								test->ril_tech);
 	g_assert(strength == test->strength);
 }
 
@@ -648,6 +680,11 @@ int main(int argc, char **argv)
 	g_test_add_data_func("/testgrilunsol/voicecall: "
 				"valid SIGNAL_STRENGTH Test 1",
 				&unsol_signal_strength_valid_1,
+				test_signal_strength_valid);
+
+	g_test_add_data_func("/testgrilunsol/voicecall: "
+				"valid SIGNAL_STRENGTH Test 2",
+				&unsol_signal_strength_valid_2,
 				test_signal_strength_valid);
 
 	g_test_add_data_func("/testgrilunsol/ussd: "
