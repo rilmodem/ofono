@@ -421,10 +421,19 @@ int g_ril_unsol_parse_radio_state_changed(GRil *gril, const struct ril_msg *mess
 	return radio_state;
 }
 
-int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message)
+inline static int is_valid_strength(int signal)
+{
+	if (signal != 99 && signal != -1)
+		return 1;
+	else
+		return 0;
+}
+
+int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
+					int ril_tech)
 {
 	struct parcel rilp;
-	int gw_signal, cdma_dbm, evdo_dbm, lte_signal;
+	int gw_signal, cdma_dbm, evdo_dbm, lte_signal, signal;
 
 	g_ril_init_parcel(message, &rilp);
 
@@ -432,6 +441,10 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message)
 	/* GW_SignalStrength */
 	gw_signal = parcel_r_int32(&rilp);
 	parcel_r_int32(&rilp); /* bitErrorRate */
+
+	/*
+	 * CDMA/EVDO values are not processed as CDMA is not supported
+	 */
 
 	/* CDMA_SignalStrength */
 	cdma_dbm = parcel_r_int32(&rilp);
@@ -454,7 +467,7 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message)
 		lte_signal = -1;
 	}
 
-	g_ril_append_print_buf(gril, "(gw: %d, cdma: %d, evdo: %d, lte: %d)",
+	g_ril_append_print_buf(gril, "{gw: %d, cdma: %d, evdo: %d, lte: %d}",
 				gw_signal, cdma_dbm, evdo_dbm, lte_signal);
 
 	if (message->unsolicited)
@@ -463,24 +476,19 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message)
 		g_ril_print_response(gril, message);
 
 	/* Return the first valid one */
-	if ((gw_signal != 99) && (gw_signal != -1))
-		return (gw_signal * 100) / 31;
-	if ((lte_signal != 99) && (lte_signal != -1))
-		return (lte_signal * 100) / 31;
+	if (is_valid_strength(gw_signal) && is_valid_strength(lte_signal))
+		if (ril_tech == RADIO_TECH_LTE)
+			signal = lte_signal;
+		else
+			signal = gw_signal;
+	else if (is_valid_strength(gw_signal))
+		signal = gw_signal;
+	else if (is_valid_strength(lte_signal))
+		signal = lte_signal;
+	else
+		return -1;
 
-	/* In case of dbm, return the value directly */
-	if (cdma_dbm != -1) {
-		if (cdma_dbm > 100)
-			cdma_dbm = 100;
-		return cdma_dbm;
-	}
-	if (evdo_dbm != -1) {
-		if (evdo_dbm > 100)
-			evdo_dbm = 100;
-		return evdo_dbm;
-	}
-
-	return -1;
+	return (signal * 100) / 31;
 }
 
 void g_ril_unsol_free_supp_svc_notif(struct unsol_supp_svc_notif *unsol)
