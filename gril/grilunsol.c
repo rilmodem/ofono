@@ -110,11 +110,6 @@ static gboolean handle_settings(struct ril_data_call *call, char *type,
 	if (raw_dns)
 		dns_addrs = g_strsplit(raw_dns, " ", 3);
 
-	if (dns_addrs == NULL || g_strv_length(dns_addrs) == 0) {
-		ofono_error("%s: no DNS: %s", __func__, raw_dns);
-		goto done;
-	}
-
 	/*
 	 * RILD can return multiple addresses; oFono only supports
 	 * setting a single IPv4 gateway.
