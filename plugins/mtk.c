@@ -76,6 +76,8 @@
 #define SIM_2_ACTIVE 2
 #define NO_SIM_ACTIVE 0
 
+#define RILD_CONNECT_RETRY_TIME_S 5
+
 typedef void (*pending_cb_t)(struct cb_data *cbd);
 
 struct mtk_data {
@@ -764,7 +766,8 @@ static int create_gril(struct ofono_modem *modem)
 	 */
 
 	if (ril->modem == NULL) {
-		DBG("g_ril_new() failed to create modem!");
+		ofono_error("g_ril_new() failed to create modem %d!",
+				ril->slot);
 		return -EIO;
 	}
 
@@ -788,13 +791,27 @@ static int create_gril(struct ofono_modem *modem)
 	return 0;
 }
 
+static gboolean connect_rild(gpointer user_data)
+{
+	struct ofono_modem *modem = (struct ofono_modem *) user_data;
+	struct mtk_data *ril = ofono_modem_get_data(modem);
+
+	ofono_info("Trying to reconnect to slot %d...", ril->slot);
+
+	if (create_gril(modem) < 0)
+		return TRUE;
+
+	return FALSE;
+}
+
 static int mtk_enable(struct ofono_modem *modem)
 {
 	int ret;
 
 	ret = create_gril(modem);
 	if (ret < 0)
-		return ret;
+		g_timeout_add_seconds(RILD_CONNECT_RETRY_TIME_S,
+					connect_rild, modem);
 
 	/*
 	 * We will mark the modem as powered when we receive an event that
