@@ -319,16 +319,21 @@ static void ril_cleanup(struct ril_s *p)
 {
 	/* Cleanup pending commands */
 
-	g_queue_free(p->command_queue);
-	p->command_queue = NULL;
-	g_queue_free(p->out_queue);
-	p->out_queue = NULL;
+	if (p->command_queue) {
+		g_queue_free(p->command_queue);
+		p->command_queue = NULL;
+	}
+
+	if (p->out_queue) {
+		g_queue_free(p->out_queue);
+		p->out_queue = NULL;
+	}
 
 	/* Cleanup registered notifications */
-	if (p->notify_list)
+	if (p->notify_list) {
 		g_hash_table_destroy(p->notify_list);
-
-	p->notify_list = NULL;
+		p->notify_list = NULL;
+	}
 
 	if (p->timeout_source) {
 		g_source_remove(p->timeout_source);
@@ -867,6 +872,8 @@ static struct ril_s *create_ril(const char *sock_path)
 	if (connect(sk, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
 		ofono_error("create_ril: can't connect to RILD: %s (%d)\n",
 				strerror(errno), errno);
+		/* Switch back to root */
+		set_process_id(0, 0);
 		goto error;
 	}
 
@@ -875,9 +882,9 @@ static struct ril_s *create_ril(const char *sock_path)
 
 	io = g_io_channel_unix_new(sk);
 	if (io == NULL) {
-		ofono_error("create_ril: can't connect to RILD: %s (%d)\n",
+		ofono_error("create_ril: can't open RILD io channel: %s (%d)\n",
 				strerror(errno), errno);
-		return NULL;
+		goto error;
 	}
 
 	g_io_channel_set_close_on_unref(io, TRUE);
@@ -912,8 +919,9 @@ static struct ril_s *create_ril(const char *sock_path)
 	return ril;
 
 error:
-	ofono_error("Exiting...");
-	exit(EXIT_FAILURE);
+	ril_unref(ril);
+
+	return NULL;
 }
 
 static struct ril_notify *ril_notify_create(struct ril_s *ril,
