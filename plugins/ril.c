@@ -66,6 +66,8 @@
 
 #define MAX_SIM_STATUS_RETRIES 15
 
+#define RILD_CONNECT_RETRY_TIME_S 5
+
 #define RILD_CMD_SOCKET "/dev/socket/rild"
 
 struct ril_data {
@@ -412,7 +414,7 @@ static int create_gril(struct ofono_modem *modem)
 	 */
 
 	if (ril->modem == NULL) {
-		DBG("g_ril_new() failed to create modem!");
+		ofono_error("g_ril_new() failed to create modem!");
 		return -EIO;
 	}
 
@@ -431,6 +433,18 @@ static int create_gril(struct ofono_modem *modem)
 	return 0;
 }
 
+static gboolean connect_rild(gpointer user_data)
+{
+	struct ofono_modem *modem = (struct ofono_modem *) user_data;
+
+	ofono_info("Trying to reconnect to rild...");
+
+	if (create_gril(modem) < 0)
+		return TRUE;
+
+	return FALSE;
+}
+
 int ril_enable(struct ofono_modem *modem)
 {
 	int ret;
@@ -439,7 +453,8 @@ int ril_enable(struct ofono_modem *modem)
 
 	ret = create_gril(modem);
 	if (ret < 0)
-		return ret;
+		g_timeout_add_seconds(RILD_CONNECT_RETRY_TIME_S,
+					connect_rild, modem);
 
 	return -EINPROGRESS;
 }
