@@ -633,6 +633,29 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 	guint i = 0;
 	guint search_index = -1;
 
+	if (sd->sim_registered == FALSE) {
+		/* First status request, after sim_probe() */
+		ofono_sim_register(sim);
+		sd->sim_registered = TRUE;
+
+		if (sd->ril_state_watch != NULL &&
+				!ofono_sim_add_state_watch(sim,
+						sd->ril_state_watch,
+						sd->modem, NULL))
+			ofono_error("Error registering ril sim watch");
+	} else {
+		/* status request afer entering PIN */
+		/*
+		 * TODO: There doesn't seem to be any other
+		 * way to force the core SIM code to
+		 * recheck the PIN.
+		 * Wouldn't __ofono_sim_refresh be
+		 * more appropriate call here??
+		 * __ofono_sim_refresh(sim, NULL, TRUE, TRUE);
+		 */
+		__ofono_sim_recheck_pin(sim);
+	}
+
 	if ((status = g_ril_reply_parse_sim_status(sd->ril, message))
 			!= NULL
 			&& status->card_state == RIL_CARDSTATE_PRESENT
@@ -656,36 +679,12 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 			}
 		}
 
-		if (sd->sim_registered == FALSE) {
-			/* First status request, after sim_probe() */
-			ofono_sim_register(sim);
-			sd->sim_registered = TRUE;
-
-			if (sd->ril_state_watch != NULL &&
-					!ofono_sim_add_state_watch(sim,
-							sd->ril_state_watch,
-							sd->modem, NULL))
-				ofono_error("Error registering ril sim watch");
-		} else {
-			/* status request afer entering PIN */
-			/*
-			 * TODO: There doesn't seem to be any other
-			 * way to force the core SIM code to
-			 * recheck the PIN.
-			 * Wouldn't __ofono_sim_refresh be
-			 * more appropriate call here??
-			 * __ofono_sim_refresh(sim, NULL, TRUE, TRUE);
-			 */
-			__ofono_sim_recheck_pin(sim);
-		}
 	} else if (status && status->card_state == RIL_CARDSTATE_ABSENT) {
 		ofono_info("SIM card absent");
 		ofono_sim_inserted_notify(sim, FALSE);
 	}
 
 	g_ril_reply_free_sim_status(status);
-
-	/* TODO: if no SIM present, handle emergency calling. */
 }
 
 
