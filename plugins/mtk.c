@@ -83,7 +83,6 @@ typedef void (*pending_cb_t)(struct cb_data *cbd);
 struct mtk_data {
 	GRil *modem;
 	int sim_status_retries;
-	ofono_bool_t have_sim;
 	ofono_bool_t ofono_online;
 	int radio_state;
 	struct ofono_sim *sim;
@@ -293,25 +292,12 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 				DBG("Card PRESENT; num_apps: %d",
 					status->num_apps);
 
-				if (!ril->have_sim) {
-					DBG("notify SIM inserted");
-					ril->have_sim = TRUE;
-
-					ofono_sim_inserted_notify(ril->sim,
-									TRUE);
-				}
-
+				ofono_sim_inserted_notify(ril->sim, TRUE);
 			} else {
 				ofono_warn("[slot %d] Card NOT_PRESENT",
 						ril->slot);
 
-				if (ril->have_sim) {
-					DBG("notify SIM removed");
-					ril->have_sim = FALSE;
-
-					ofono_sim_inserted_notify(ril->sim,
-									FALSE);
-				}
+				ofono_sim_inserted_notify(ril->sim, FALSE);
 			}
 			g_ril_reply_free_sim_status(status);
 		}
@@ -338,7 +324,6 @@ static int mtk_probe(struct ofono_modem *modem)
 		goto error;
 	}
 
-	ril->have_sim = FALSE;
 	ril->ofono_online = FALSE;
 	ril->radio_state = RADIO_STATE_UNAVAILABLE;
 
@@ -644,10 +629,8 @@ static void mtk_set_online(struct ofono_modem *modem, ofono_bool_t online,
 	}
 
 	/* Reset mtk_data variables */
-	if (online == FALSE) {
-		ril->have_sim = FALSE;
+	if (online == FALSE)
 		ril->sim_status_retries = 0;
-	}
 
 	if (current_state == NO_SIM_ACTIVE) {
 		/* Old state was off, need to power on the modem */

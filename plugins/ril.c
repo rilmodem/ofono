@@ -75,7 +75,6 @@ struct ril_data {
 	enum ofono_ril_vendor vendor;
 	int sim_status_retries;
 	ofono_bool_t connected;
-	ofono_bool_t have_sim;
 	ofono_bool_t ofono_online;
 	int radio_state;
 	struct ofono_sim *sim;
@@ -182,22 +181,12 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 				DBG("Card PRESENT; num_apps: %d",
 					status->num_apps);
 
-				if (!ril->have_sim) {
-					DBG("notify SIM inserted");
-					ril->have_sim = TRUE;
-
-					ofono_sim_inserted_notify(ril->sim, TRUE);
-				}
+				ofono_sim_inserted_notify(ril->sim, TRUE);
 
 			} else {
 				ofono_warn("Card NOT_PRESENT.");
 
-				if (ril->have_sim) {
-					DBG("notify SIM removed");
-					ril->have_sim = FALSE;
-
-					ofono_sim_inserted_notify(ril->sim, FALSE);
-				}
+				ofono_sim_inserted_notify(ril->sim, FALSE);
 			}
 			g_ril_reply_free_sim_status(status);
 		}
@@ -225,7 +214,6 @@ int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor)
 	DBG("");
 
 	ril->vendor = vendor;
-	ril->have_sim = FALSE;
 	ril->ofono_online = FALSE;
 	ril->radio_state = RADIO_STATE_OFF;
 
