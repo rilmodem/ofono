@@ -76,6 +76,8 @@
 #define SIM_2_ACTIVE 2
 #define NO_SIM_ACTIVE 0
 
+/* this gives 30s for rild to initialize */
+#define RILD_MAX_CONNECT_RETRIES 5
 #define RILD_CONNECT_RETRY_TIME_S 5
 
 typedef void (*pending_cb_t)(struct cb_data *cbd);
@@ -95,6 +97,7 @@ struct mtk_data {
 	struct cb_data *pending_online_cbd;
 	ofono_bool_t pending_online;
 	ofono_bool_t gprs_attach;
+	int rild_connect_retries;
 };
 
 /*
@@ -781,8 +784,13 @@ static gboolean connect_rild(gpointer user_data)
 
 	ofono_info("Trying to reconnect to slot %d...", ril->slot);
 
-	if (create_gril(modem) < 0)
-		return TRUE;
+	if (ril->rild_connect_retries++ < RILD_MAX_CONNECT_RETRIES) {
+		if (create_gril(modem) < 0)
+			return TRUE;
+	} else {
+		ofono_error("Exiting, can't connect to rild.");
+		exit(0);
+	}
 
 	return FALSE;
 }
