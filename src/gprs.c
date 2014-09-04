@@ -1231,8 +1231,9 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 		return pri_set_name(ctx, conn, msg, str);
 	}
 
-	if (ctx->type != OFONO_GPRS_CONTEXT_TYPE_MMS ||
-		ctx->type != OFONO_GPRS_CONTEXT_TYPE_INTERNET)
+	if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_ANY ||
+		ctx->type == OFONO_GPRS_CONTEXT_TYPE_WAP ||
+		ctx->type == OFONO_GPRS_CONTEXT_TYPE_IMS)
 		return __ofono_error_invalid_args(msg);
 
 	if (!strcmp(property, "MessageProxy")) {
