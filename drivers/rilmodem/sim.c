@@ -643,17 +643,6 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 						sd->ril_state_watch,
 						sd->modem, NULL))
 			ofono_error("Error registering ril sim watch");
-	} else {
-		/* status request afer entering PIN */
-		/*
-		 * TODO: There doesn't seem to be any other
-		 * way to force the core SIM code to
-		 * recheck the PIN.
-		 * Wouldn't __ofono_sim_refresh be
-		 * more appropriate call here??
-		 * __ofono_sim_refresh(sim, NULL, TRUE, TRUE);
-		 */
-		__ofono_sim_recheck_pin(sim);
 	}
 
 	if ((status = g_ril_reply_parse_sim_status(sd->ril, message))
@@ -678,6 +667,14 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 				break;
 			}
 		}
+
+		/*
+		 * Note: There doesn't seem to be any other way to
+		 * force the core SIM code to recheck the PIN. This
+		 * call causes the core to call the this atom's
+		 * query_passwd() function.
+		 */
+		__ofono_sim_recheck_pin(sim);
 
 	} else if (status && status->card_state == RIL_CARDSTATE_ABSENT) {
 		ofono_info("SIM card absent");
