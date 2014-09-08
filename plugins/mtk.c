@@ -94,6 +94,8 @@ struct mtk_data {
 	int slot;
 	struct ril_sim_data sim_data;
 	struct ofono_devinfo *devinfo;
+	struct ofono_voicecall *voicecall;
+	struct ofono_call_volume *callvolume;	
 	struct cb_data *pending_online_cbd;
 	ofono_bool_t pending_online;
 	ofono_bool_t gprs_attach;
@@ -453,12 +455,6 @@ static void mtk_post_online(struct ofono_modem *modem)
 					RILMODEM, &ril->sim_data);
 	g_assert(ril->sim != NULL);
 
-	/* Create interfaces useful for emergency calls */
-	ofono_voicecall_create(modem, OFONO_RIL_VENDOR_MTK,
-					MTKMODEM, ril->modem);
-	ofono_call_volume_create(modem, OFONO_RIL_VENDOR_MTK,
-					RILMODEM, ril->modem);
-
 	/* Radio settings does not depend on the SIM */
 	ofono_radio_settings_create(modem, OFONO_RIL_VENDOR_MTK,
 					MTKMODEM, ril->modem);
@@ -658,6 +654,32 @@ static void mtk_set_online(struct ofono_modem *modem, ofono_bool_t online,
 	}
 }
 
+static void create_atoms_on_connection(struct ofono_modem *modem)
+{
+	struct mtk_data *ril = ofono_modem_get_data(modem);
+
+	ril->devinfo = ofono_devinfo_create(modem, OFONO_RIL_VENDOR_MTK,
+						RILMODEM, ril->modem);
+
+	/* Create interfaces useful for emergency calls */
+	ril->voicecall = ofono_voicecall_create(modem, OFONO_RIL_VENDOR_MTK,
+						MTKMODEM, ril->modem);
+	ril->callvolume = ofono_call_volume_create(modem, OFONO_RIL_VENDOR_MTK,
+							RILMODEM, ril->modem);
+}
+
+static void remove_atoms_on_disconnection(struct ofono_modem *modem)
+{
+	struct mtk_data *ril = ofono_modem_get_data(modem);
+
+	ofono_call_volume_remove(ril->callvolume);
+	ril->callvolume = NULL;
+	ofono_voicecall_remove(ril->voicecall);
+	ril->voicecall = NULL;
+	ofono_devinfo_remove(ril->devinfo);
+	ril->devinfo = NULL;
+}
+
 static gboolean mtk_connected(gpointer user_data)
 {
 	struct ofono_modem *modem = (struct ofono_modem *) user_data;
@@ -669,8 +691,7 @@ static gboolean mtk_connected(gpointer user_data)
 
 	ofono_modem_set_powered(modem, TRUE);
 
-	ril->devinfo = ofono_devinfo_create(modem, OFONO_RIL_VENDOR_MTK,
-						RILMODEM, ril->modem);
+	create_atoms_on_connection(modem);
 
 	/* Call the function just once */
 	return FALSE;
@@ -686,8 +707,7 @@ static gboolean reconnect_rild(gpointer user_data)
 	if (create_gril(modem) < 0)
 		return TRUE;
 
-	ril->devinfo = ofono_devinfo_create(modem, OFONO_RIL_VENDOR_MTK,
-						RILMODEM, ril->modem);
+	create_atoms_on_connection(modem);
 
 	if (ril->pending_cb)
 		ril->pending_cb(ril->pending_cbd);
@@ -705,8 +725,8 @@ static void socket_disconnected(gpointer user_data)
 
 	DBG("slot %d", ril->slot);
 
-	/* Uses old gril object, remove and recreate later */
-	ofono_devinfo_remove(ril->devinfo);
+	/* Atoms use old gril object, remove and recreate later */
+	remove_atoms_on_disconnection(modem);
 
 	g_ril_unref(ril->modem);
 	ril->modem = NULL;
