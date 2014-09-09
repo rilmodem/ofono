@@ -80,7 +80,7 @@ struct ril_data {
 	ofono_bool_t ofono_online;
 	int radio_state;
 	struct ofono_sim *sim;
-	struct ofono_voicecall *voice;
+	struct ofono_radio_settings *radio_settings;
 	int rild_connect_retries;
 };
 
@@ -121,17 +121,11 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 		switch (radio_state) {
 		case RADIO_STATE_ON:
 
-			if (ril->voice == NULL) {
-				ril->voice =
-					ofono_voicecall_create(modem,
-								ril->vendor,
-								RILMODEM,
-								ril->modem);
-				ofono_call_volume_create(modem, ril->vendor,
-							RILMODEM, ril->modem);
-				ofono_radio_settings_create(modem, ril->vendor,
-							RILMODEM, ril->modem);
-			}
+			if (ril->radio_settings == NULL)
+				ril->radio_settings =
+					ofono_radio_settings_create(modem,
+						ril->vendor, RILMODEM,
+						ril->modem);
 
 			send_get_sim_status(modem);
 			break;
@@ -257,6 +251,8 @@ void ril_pre_sim(struct ofono_modem *modem)
 	DBG("");
 
 	ofono_devinfo_create(modem, ril->vendor, RILMODEM, ril->modem);
+	ofono_voicecall_create(modem, ril->vendor, RILMODEM, ril->modem);
+	ofono_call_volume_create(modem, ril->vendor, RILMODEM, ril->modem);
 
 	sim_data.gril = ril->modem;
 	sim_data.modem = modem;
