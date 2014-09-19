@@ -87,6 +87,7 @@ struct ofono_modem {
 	void			*driver_data;
 	char			*driver_type;
 	char			*name;
+	ofono_bool_t		driver_watches_sim;
 };
 
 struct ofono_devinfo {
@@ -697,7 +698,8 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 	case OFONO_SIM_STATE_RESETTING:
 		break;
 	case OFONO_SIM_STATE_LOCKED_OUT:
-		modem_change_state(modem, MODEM_STATE_PRE_SIM);
+		if (modem->driver_watches_sim == FALSE)
+			modem_change_state(modem, MODEM_STATE_PRE_SIM);
 		break;
 	case OFONO_SIM_STATE_READY:
 		/* Avoid state regressions */
@@ -1801,6 +1803,17 @@ void ofono_modem_set_driver(struct ofono_modem *modem, const char *type)
 
 	g_free(modem->driver_type);
 	modem->driver_type = g_strdup(type);
+}
+
+void ofono_modem_set_driver_watches_sim(struct ofono_modem *modem,
+					ofono_bool_t value)
+{
+	modem->driver_watches_sim = value;
+}
+
+ofono_bool_t ofono_modem_get_driver_watches_sim(struct ofono_modem *modem)
+{
+	return modem->driver_watches_sim;
 }
 
 struct ofono_modem *ofono_modem_create(const char *name, const char *type)

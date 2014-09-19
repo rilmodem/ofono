@@ -2727,7 +2727,7 @@ ofono_bool_t ofono_sim_remove_spn_watch(struct ofono_sim *sim, unsigned int *id)
 
 	DBG("%p", sim);
 
-	if (sim == NULL)
+	if (sim == NULL || sim->spn_watches == NULL)
 		return FALSE;
 
 	ret = __ofono_watchlist_remove_item(sim->spn_watches, *id);
