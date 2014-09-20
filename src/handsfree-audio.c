@@ -72,10 +72,10 @@ static ofono_bool_t transparent_sco = FALSE;
 static uint16_t codec2setting(uint8_t codec)
 {
 	switch (codec) {
-		case HFP_CODEC_CVSD:
-			return BT_VOICE_CVSD_16BIT;
-		default:
-			return BT_VOICE_TRANSPARENT;
+	case HFP_CODEC_CVSD:
+		return BT_VOICE_CVSD_16BIT;
+	default:
+		return BT_VOICE_TRANSPARENT;
 	}
 }
 
