@@ -467,8 +467,8 @@ static void handle_unsol_req(struct ril_s *p, struct ril_msg *message)
 
 	/* Only log events not being listended for... */
 	if (!found)
-		DBG("RIL Event: %s\n",
-			unsol_request_to_string(p, message->req));
+		DBG("RIL Event slot %d: %s\n",
+			p->slot, unsol_request_to_string(p, message->req));
 
 	p->in_notify = FALSE;
 

@@ -45,6 +45,8 @@
 
 #define OPERATOR_NUM_PARAMS 3
 
+#define MTK_MODEM_MAX_CIDS 3
+
 static void ril_reply_free_operator(gpointer data)
 {
 	struct reply_operator *reply = data;
@@ -272,11 +274,12 @@ struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
 
 {
 	struct parcel rilp;
-	int tmp;
+	int tmp, status;
 	char *sstatus = NULL, *slac = NULL, *sci = NULL;
 	char *stech = NULL, *sreason = NULL, *smax = NULL;
 	struct reply_reg_state *reply;
 	char *endp;
+	const char *strstate;
 
 	DBG("");
 
@@ -338,12 +341,21 @@ struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
 	 * voice & data response.
 	 */
 	if (tmp--) {
-		sreason = parcel_r_string(&rilp);        /* TODO: different use for CDMA */
+		/* TODO: different use for CDMA */
+		sreason = parcel_r_string(&rilp);
 
 		if (tmp--) {
-			smax = parcel_r_string(&rilp);           /* TODO: different use for CDMA */
+			/* TODO: different use for CDMA */
+			smax = parcel_r_string(&rilp);
 
-			if (smax)
+			/*
+			 * MTK modem does not return max_cids, string for this
+			 * index actually contains the maximum data bearer
+			 * capability.
+			 */
+			if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+				reply->max_cids = MTK_MODEM_MAX_CIDS;
+			else if (smax)
 				reply->max_cids = atoi(smax);
 		}
 	}
@@ -356,7 +368,33 @@ struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
 		goto error;
 	}
 
-	reply->status = atoi(sstatus);
+	status = atoi(sstatus);
+
+	switch (status) {
+	case RIL_REG_STATE_NOT_REGISTERED:
+	case RIL_REG_STATE_REGISTERED:
+	case RIL_REG_STATE_SEARCHING:
+	case RIL_REG_STATE_DENIED:
+	case RIL_REG_STATE_UNKNOWN:
+	case RIL_REG_STATE_ROAMING:
+		/* Only valid values for ofono */
+		reply->status = status;
+		strstate = registration_status_to_string(status);
+		break;
+	case RIL_REG_STATE_EMERGENCY_NOT_REGISTERED:
+	case RIL_REG_STATE_EMERGENCY_SEARCHING:
+	case RIL_REG_STATE_EMERGENCY_DENIED:
+	case RIL_REG_STATE_EMERGENCY_UNKNOWN:
+		/* Map to states valid for ofono core */
+		reply->status = status - RIL_REG_STATE_EMERGENCY_NOT_REGISTERED;
+		strstate = sstatus;
+		break;
+	default:
+		reply->status = NETWORK_REGISTRATION_STATUS_UNKNOWN;
+		strstate = sstatus;
+		ofono_error("%s: Error unknown status code (%s)",
+				__func__, sstatus);
+	}
 
 
 	if (slac)
@@ -386,12 +424,12 @@ struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
 
 	g_ril_append_print_buf(gril,
 				"{%s,%s,%s,%s,%s,%s}",
-				registration_status_to_string(reply->status),
+				strstate,
 				slac,
 				sci,
 				ril_radio_tech_to_string(reply->tech),
 				sreason,
-				smax);
+				smax ? smax : "NULL");
 
 	g_ril_print_response(gril, message);
 
