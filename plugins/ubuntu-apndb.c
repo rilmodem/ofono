@@ -400,7 +400,7 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 	type = determine_apn_type(types);
 
 	if (type == OFONO_GPRS_CONTEXT_TYPE_ANY ||
-		(type == OFONO_GPRS_CONTEXT_TYPE_MMS && mmsproxy == NULL)) {
+		(type == OFONO_GPRS_CONTEXT_TYPE_MMS && mmscenter == NULL)) {
 		DBG("Skipping %s context; types: %s", apn, types);
 		return;
 	}
