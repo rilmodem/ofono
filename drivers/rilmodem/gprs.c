@@ -316,6 +316,11 @@ void ril_gprs_registration_status(struct ofono_gprs *gprs,
 
 	DBG("");
 
+	if (!gd) {
+		g_free(cbd);
+		return;
+	}
+
 	if (g_ril_send(gd->ril, RIL_REQUEST_DATA_REGISTRATION_STATE, NULL,
 			ril_data_reg_cb, cbd, g_free) == 0) {
 		ofono_error("%s: send "
