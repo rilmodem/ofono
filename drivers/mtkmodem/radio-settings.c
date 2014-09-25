@@ -63,7 +63,13 @@ static void mtk_set_fd_mode_cb(struct ril_msg *message, gpointer user_data)
 	struct radio_data *rsd = ofono_radio_settings_get_data(rs);
 	ofono_radio_settings_fast_dormancy_set_cb_t cb = cbd->cb;
 
-	if (message->error == RIL_E_SUCCESS) {
+	if (message->error == RIL_E_SUCCESS ||
+			message->error == RIL_E_RADIO_NOT_AVAILABLE) {
+
+		if (message->error == RIL_E_RADIO_NOT_AVAILABLE)
+			ofono_warn("Could not set fast dormancy "
+					"as radio is not available");
+
 		g_ril_print_response_no_args(rsd->ril, message);
 		ril_set_fast_dormancy(rs, user->on, cb, cbd->data);
 	} else {
