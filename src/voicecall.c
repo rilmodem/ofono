@@ -2819,6 +2819,18 @@ static void read_sim_ecc_numbers(int id, void *userdata)
 			ecc_g3_read_cb, vc);
 }
 
+/*
+ * When this function is called context is being destroyed from SIM. So we mark
+ * it as such in voicecall data. This happens when the SIM atom is destroyed,
+ * and we need to know because it can be re-created later and we will need to
+ * create a new sim context.
+ */
+static void ecc_watch_destroy(void *userdata)
+{
+	struct ofono_voicecall *vc = userdata;
+	vc->sim_context = NULL;
+}
+
 static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 {
 	struct ofono_voicecall *vc = user;
@@ -2831,7 +2843,8 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 		read_sim_ecc_numbers(SIM_EFECC_FILEID, vc);
 
 		ofono_sim_add_file_watch(vc->sim_context, SIM_EFECC_FILEID,
-						read_sim_ecc_numbers, vc, NULL);
+						read_sim_ecc_numbers, vc,
+						ecc_watch_destroy);
 		break;
 	case OFONO_SIM_STATE_NOT_PRESENT:
 	case OFONO_SIM_STATE_RESETTING:
