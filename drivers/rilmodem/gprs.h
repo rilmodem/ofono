@@ -28,6 +28,7 @@ struct ril_gprs_data {
 	int tech;
 	int state_changed_unsol;
 	int pending_deact_req;
+	guint status_retry_cb_id;
 };
 
 int ril_gprs_probe(struct ofono_gprs *gprs, unsigned int vendor, void *data);
