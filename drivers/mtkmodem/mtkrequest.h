@@ -102,6 +102,12 @@ void g_mtk_request_set_call_indication(GRil *gril, int mode, int call_id,
 void g_mtk_request_set_fd_mode(GRil *gril, int mode, int param1,
 					int param2, struct parcel *rilp);
 
+/*
+ * Sets the slot to which the GRil object is connected as the one with 3G
+ * capabilities. This makes the other slot just 2G.
+ */
+void g_mtk_request_set_3g_capability(GRil *gril, struct parcel *rilp);
+
 #ifdef __cplusplus
 }
 #endif
