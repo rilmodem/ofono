@@ -132,7 +132,7 @@ static void mtk_query_modem_rats_cb(struct ril_msg *message, gpointer user_data)
 	struct radio_data *rd = ofono_radio_settings_get_data(rs);
 	ofono_radio_settings_modem_rats_query_cb_t cb = cbd->cb;
 	ofono_bool_t modem_rats[OFONO_RADIO_ACCESS_MODE_LAST] = { FALSE };
-	int is_3g;
+	int slot_3g, is_3g;
 
 	if (message->error != RIL_E_SUCCESS) {
 		ofono_error("%s: error %s", __func__,
@@ -141,12 +141,14 @@ static void mtk_query_modem_rats_cb(struct ril_msg *message, gpointer user_data)
 		return;
 	}
 
-	is_3g = g_mtk_reply_parse_get_3g_capability(rd->ril, message);
-	if (is_3g < 0) {
+	slot_3g = g_mtk_reply_parse_get_3g_capability(rd->ril, message);
+	if (slot_3g < 0) {
 		ofono_error("%s: parse error", __func__);
 		CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
 		return;
 	}
+
+	is_3g = (g_ril_get_slot(rd->ril) == slot_3g);
 
 	modem_rats[OFONO_RADIO_ACCESS_MODE_GSM] = TRUE;
 
