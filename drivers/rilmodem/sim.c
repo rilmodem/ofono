@@ -72,6 +72,12 @@
  *
  * The same applies to the app_type.
  */
+ 
+static void ril_pin_change_state(struct ofono_sim *sim,
+				enum ofono_sim_password_type passwd_type,
+				int enable, const char *passwd,
+				ofono_sim_lock_unlock_cb_t cb, void *data);
+
 struct sim_data {
 	GRil *ril;
 	enum ofono_ril_vendor vendor;
@@ -85,6 +91,16 @@ struct sim_data {
 	enum ofono_sim_password_type passwd_state;
 	struct ofono_modem *modem;
 	ofono_sim_state_event_cb_t ril_state_watch;
+	ofono_bool_t unlock_pending;
+};
+
+struct change_state_cbd {
+	struct ofono_sim *sim;
+	enum ofono_sim_password_type passwd_type;
+	int enable;
+	const char *passwd;
+	ofono_sim_lock_unlock_cb_t cb;
+	void *data;
 };
 
 static void ril_file_info_cb(struct ril_msg *message, gpointer user_data)
@@ -789,8 +805,8 @@ static void ril_pin_change_state_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_sim_lock_unlock_cb_t cb = cbd->cb;
-	struct ofono_sim *sim = cbd->data;
-	struct sim_data *sd = cbd->user;
+	struct ofono_sim *sim = cbd->user;
+	struct sim_data *sd = ofono_sim_get_data(sim);
 	int *retries;
 	/*
 	 * There is no reason to ask SIM status until
@@ -824,8 +840,13 @@ static void ril_pin_change_state_cb(struct ril_msg *message, gpointer user_data)
 static void ril_pin_send(struct ofono_sim *sim, const char *passwd,
 				ofono_sim_lock_unlock_cb_t cb, void *data)
 {
+	/*
+	 * TODO: This function is supposed to enter the pending password, which
+	 * might be also PIN2. So we must check the pending PIN in the future.
+	 */
+
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(cb, data, sd);
+	struct cb_data *cbd = cb_data_new(cb, data, sim);
 	struct parcel rilp;
 
 	sd->passwd_type = OFONO_SIM_PASSWORD_SIM_PIN;
@@ -842,16 +863,59 @@ static void ril_pin_send(struct ofono_sim *sim, const char *passwd,
 	}
 }
 
+static void enter_pin_done(const struct ofono_error *error, void *data)
+{
+	struct change_state_cbd *csd = data;
+	struct sim_data *sd = ofono_sim_get_data(csd->sim);
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_error("%s: wrong password", __func__);
+		sd->unlock_pending = FALSE;
+		CALLBACK_WITH_FAILURE(csd->cb, csd->data);
+	} else {
+		ril_pin_change_state(csd->sim, csd->passwd_type, csd->enable,
+					csd->passwd, csd->cb, csd->data);
+	}
+
+	g_free(csd);
+}
+
 static void ril_pin_change_state(struct ofono_sim *sim,
-					enum ofono_sim_password_type passwd_type,
-					int enable, const char *passwd,
-					ofono_sim_lock_unlock_cb_t cb, void *data)
+				enum ofono_sim_password_type passwd_type,
+				int enable, const char *passwd,
+				ofono_sim_lock_unlock_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(cb, data, sd);
+	struct cb_data *cbd;
 	struct parcel rilp;
 	struct req_pin_change_state req;
 	int ret = 0;
+
+	/*
+	 * If we want to unlock a password that has not been entered yet,
+	 * we enter it before trying to unlock. We need sd->unlock_pending as
+	 * the password still has not yet been refreshed when this function is
+	 * called from enter_pin_done().
+	 */
+	if (ofono_sim_get_password_type(sim) == passwd_type
+			&& enable == FALSE && sd->unlock_pending == FALSE) {
+		struct change_state_cbd *csd = g_malloc0(sizeof(*csd));
+		csd->sim = sim;
+		csd->passwd_type = passwd_type;
+		csd->enable = enable;
+		csd->passwd = passwd;
+		csd->cb = cb;
+		csd->data = data;
+		sd->unlock_pending = TRUE;
+
+		ril_pin_send(sim, passwd, enter_pin_done, csd);
+
+		return;
+	}
+
+	sd->unlock_pending = FALSE;
+
+	cbd = cb_data_new(cb, data, sim);
 
 	sd->passwd_type = passwd_type;
 
@@ -882,7 +946,7 @@ static void ril_pin_send_puk(struct ofono_sim *sim,
 				ofono_sim_lock_unlock_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(cb, data, sd);
+	struct cb_data *cbd = cb_data_new(cb, data, sim);
 	struct parcel rilp;
 
 	sd->passwd_type = OFONO_SIM_PASSWORD_SIM_PUK;
@@ -906,7 +970,7 @@ static void ril_change_passwd(struct ofono_sim *sim,
 				ofono_sim_lock_unlock_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(cb, data, sd);
+	struct cb_data *cbd = cb_data_new(cb, data, sim);
 	struct parcel rilp;
 	int request = RIL_REQUEST_CHANGE_SIM_PIN;
 
