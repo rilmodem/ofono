@@ -118,8 +118,16 @@ static void ril_rat_mode_cb(struct ril_msg *message, gpointer user_data)
 		return;
 	}
 
+	/*
+	 * GSM_WCDMA_AUTO -> ril.h: GSM/WCDMA (auto mode, according to PRL)
+	 * PRL: preferred roaming list.
+	 * This value is returned when selecting the slot as having 3G
+	 * capabilities, so it is sort of the default for MTK modems.
+	 */
+
 	switch (pref) {
 	case PREF_NET_TYPE_GSM_WCDMA:
+	case PREF_NET_TYPE_GSM_WCDMA_AUTO:
 		mode = OFONO_RADIO_ACCESS_MODE_UMTS;
 		break;
 	case PREF_NET_TYPE_GSM_ONLY:
