@@ -268,6 +268,12 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/mbmmodem/stk.c \
 			drivers/mbmmodem/location-reporting.c
 
+builtin_modules += telitmodem
+builtin_sources += drivers/atmodem/atutil.h \
+			drivers/telitmodem/telitmodem.h \
+			drivers/telitmodem/telitmodem.c \
+			drivers/telitmodem/location-reporting.c
+
 builtin_modules += hsomodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/hsomodem/hsomodem.h \
