@@ -46,6 +46,7 @@
 #include <ofono/call-settings.h>
 #include <ofono/devinfo.h>
 #include <ofono/message-waiting.h>
+#include <ofono/location-reporting.h>
 #include <ofono/netreg.h>
 #include <ofono/phonebook.h>
 #include <ofono/sim.h>
@@ -318,6 +319,7 @@ static void he910_pre_sim(struct ofono_modem *modem)
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
 	data->sim = ofono_sim_create(modem, OFONO_VENDOR_TELIT, "atmodem",
 					data->chat);
+	ofono_location_reporting_create(modem, 0, "telitmodem", data->chat);
 }
 
 static void he910_post_online(struct ofono_modem *modem)
