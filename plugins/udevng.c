@@ -636,7 +636,7 @@ static gboolean setup_telit(struct modem_info *modem)
 
 static gboolean setup_he910(struct modem_info *modem)
 {
-	const char *mdm = NULL, *aux = NULL;
+	const char *mdm = NULL, *aux = NULL, *gps = NULL;
 	GSList *list;
 
 	DBG("%s", modem->syspath);
@@ -652,16 +652,19 @@ static gboolean setup_he910(struct modem_info *modem)
 				mdm = info->devnode;
 			else if (g_strcmp0(info->number, "06") == 0)
 				aux = info->devnode;
+			else if (g_strcmp0(info->number, "0a") == 0)
+				gps = info->devnode;
 		}
 	}
 
 	if (aux == NULL || mdm == NULL)
 		return FALSE;
 
-	DBG("modem=%s aux=%s", mdm, aux);
+	DBG("modem=%s aux=%s gps=%s", mdm, aux, gps);
 
 	ofono_modem_set_string(modem->modem, "Modem", mdm);
 	ofono_modem_set_string(modem->modem, "Aux", aux);
+	ofono_modem_set_string(modem->modem, "GPS", gps);
 
 	return TRUE;
 }
