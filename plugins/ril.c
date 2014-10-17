@@ -84,22 +84,11 @@ struct ril_data {
 	int rild_connect_retries;
 };
 
-static void send_get_sim_status(struct ofono_modem *modem);
-
 static void ril_debug(const char *str, void *user_data)
 {
 	const char *prefix = user_data;
 
 	ofono_info("%s%s", prefix, str);
-}
-
-static gboolean sim_status_retry(gpointer user_data)
-{
-	struct ofono_modem *modem = user_data;
-	send_get_sim_status(modem);
-
-	/* Makes this a single shot */
-	return FALSE;
 }
 
 static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
@@ -127,7 +116,6 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 						ril->vendor, RILMODEM,
 						ril->modem);
 
-			send_get_sim_status(modem);
 			break;
 
 		case RADIO_STATE_UNAVAILABLE:
@@ -148,56 +136,6 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 			g_assert(FALSE);
 		}
 	}
-}
-
-static void sim_status_cb(struct ril_msg *message, gpointer user_data)
-{
-	struct ofono_modem *modem = user_data;
-	struct ril_data *ril = ofono_modem_get_data(modem);
-	struct reply_sim_status *status;
-
-	DBG("");
-
-	if (message->error != RIL_E_SUCCESS) {
-		ril->sim_status_retries++;
-
-		ofono_error("GET_SIM_STATUS request failed: %s; retries: %d",
-				ril_error_to_string(message->error),
-				ril->sim_status_retries);
-
-		if (ril->sim_status_retries < MAX_SIM_STATUS_RETRIES)
-			g_timeout_add_seconds(2, sim_status_retry, modem);
-		else
-			ofono_error("Max retries for GET_SIM_STATUS exceeded!");
-	} else {
-
-		if ((status = g_ril_reply_parse_sim_status(ril->modem, message))
-				!= NULL) {
-
-			if (status->card_state == RIL_CARDSTATE_PRESENT) {
-				DBG("Card PRESENT; num_apps: %d",
-					status->num_apps);
-
-				ofono_sim_inserted_notify(ril->sim, TRUE);
-
-			} else {
-				ofono_warn("Card NOT_PRESENT.");
-
-				ofono_sim_inserted_notify(ril->sim, FALSE);
-			}
-			g_ril_reply_free_sim_status(status);
-		}
-	}
-}
-
-static void send_get_sim_status(struct ofono_modem *modem)
-{
-	struct ril_data *ril = ofono_modem_get_data(modem);
-
-	DBG("");
-
-	g_ril_send(ril->modem, RIL_REQUEST_GET_SIM_STATUS, NULL,
-			sim_status_cb, modem, NULL);
 }
 
 int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor)
