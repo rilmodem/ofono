@@ -1,0 +1,19 @@
+oFono - Open Source Telephony
+*****************************
+
+Purpose
+=======
+The purpose of this document is to identify issues and configuration
+requirements with Telit's modems.
+
+HE910
+=====
+
+GPS:
+  To enable location reporting on the Telit HE910 the modem needs to be
+  switched to Port Configuration #8. Please refer to Telit's
+  'HE910 UE910 Family Ports Arrangements' section 4.1.3 for rationale and
+  'AT Commands Reference Guide' section 3.5.7.1.96 for specific AT command.
+  After setting the configuration, a power cycle is required.
+  Port Configiuration #8 is available since firmware 12.00.004. Firmware version
+  can be checked using 'AT+CGMR'.
