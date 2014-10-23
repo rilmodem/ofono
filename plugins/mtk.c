@@ -357,7 +357,7 @@ static void reg_suspended(struct ril_msg *message, gpointer user_data)
 		ofono_error("%s: failure sending request", __func__);
 }
 
-static void sim_removed(struct ril_msg *message, gpointer user_data)
+static void sim_presence_changed(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = (struct ofono_modem *) user_data;
 	struct mtk_data *md = ofono_modem_get_data(modem);
@@ -368,21 +368,6 @@ static void sim_removed(struct ril_msg *message, gpointer user_data)
 
 	ofono_modem_set_powered(modem, FALSE);
 	g_idle_add(mtk_connected, modem);
-}
-
-static void sim_inserted(struct ril_msg *message, gpointer user_data)
-{
-	struct ofono_modem *modem = (struct ofono_modem *) user_data;
-	struct mtk_data *md = ofono_modem_get_data(modem);
-
-	DBG("");
-
-	g_ril_print_unsol_no_args(md->ril, message);
-
-	if (getenv("OFONO_RIL_HOT_SIM_SWAP")) {
-		ofono_modem_set_powered(modem, FALSE);
-		g_idle_add(mtk_connected, modem);
-	}
 }
 
 static void set_trm_cb(struct ril_msg *message, gpointer user_data)
@@ -759,9 +744,9 @@ static void mtk_post_online(struct ofono_modem *modem)
 
 	/* Register for changes in SIM insertion */
 	g_ril_register(md->ril, MTK_RIL_UNSOL_SIM_PLUG_OUT,
-			sim_removed, modem);
+			sim_presence_changed, modem);
 	g_ril_register(md->ril, MTK_RIL_UNSOL_SIM_PLUG_IN,
-			sim_inserted, modem);
+			sim_presence_changed, modem);
 }
 
 static void mtk_sim_mode_cb(struct ril_msg *message, gpointer user_data)
