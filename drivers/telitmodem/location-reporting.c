@@ -71,7 +71,8 @@ static void telit_gps_disable_cb(gboolean ok, GAtResult *result,
 	CALLBACK_WITH_SUCCESS(cb, cbd->data);
 }
 
-static void telit_location_reporting_disable(struct ofono_location_reporting *lr,
+static void telit_location_reporting_disable(
+				struct ofono_location_reporting *lr,
 				ofono_location_reporting_disable_cb_t cb,
 				void *data)
 {
@@ -174,8 +175,8 @@ static void telit_gps_enable_cb(gboolean ok, GAtResult *result,
 		return;
 	}
 
-	if( g_at_chat_send(gd->chat, "AT$GPSNMUN=1,0,0,0,0,0,0",
-				none_prefix, telit_gps_ctl_cb, cbd, g_free ) > 0 )
+	if (g_at_chat_send(gd->chat, "AT$GPSNMUN=1,0,0,0,0,0,0",
+				none_prefix, telit_gps_ctl_cb, cbd, g_free) > 0)
 		return;
 
 	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
@@ -215,7 +216,7 @@ static void telit_portcfg_check_cb(gboolean ok, GAtResult *result,
 	if (!g_at_result_iter_next_number(&iter, &current_portcfg))
 		goto fail;
 
-	if ( current_portcfg != 8 ) {
+	if (current_portcfg != 8) {
 		ofono_warn("Unable to start GPS, modem configuration invalid");
 		ofono_warn("Refer to doc/telit-modem.txt section HE910/GPS");
 		goto fail;
