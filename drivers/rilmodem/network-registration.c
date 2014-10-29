@@ -129,7 +129,8 @@ static void ril_creg_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	if ((reply = g_ril_reply_parse_reg_state(nd->ril, message)) == NULL)
+	if ((reply = g_ril_reply_parse_voice_reg_state(nd->ril, message))
+			== NULL)
 		goto error;
 
 	nd->tech = reply->tech;

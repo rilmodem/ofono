@@ -175,7 +175,7 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 	ofono_gprs_status_cb_t cb = cbd->cb;
 	struct ofono_gprs *gprs = cbd->user;
 	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
-	struct reply_reg_state *reply;
+	struct reply_data_reg_state *reply;
 	gboolean attached = FALSE;
 	gboolean notify_status = FALSE;
 	int old_status;
@@ -189,7 +189,8 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	if ((reply = g_ril_reply_parse_reg_state(gd->ril, message)) == NULL)
+	if ((reply = g_ril_reply_parse_data_reg_state(gd->ril, message))
+			== NULL)
 		goto error;
 
 	/*
@@ -207,8 +208,8 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 	 *    function.  A valid ofono cb exists.
 	 */
 
-	if (gd->rild_status != reply->status) {
-		gd->rild_status = reply->status;
+	if (gd->rild_status != reply->reg_state.status) {
+		gd->rild_status = reply->reg_state.status;
 
 		if (cb == NULL)
 			notify_status = TRUE;
@@ -219,12 +220,15 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 	 * attached status set by the core GPRS code ( controlled
 	 * by the ConnnectionManager's 'Powered' property ).
 	 */
-	attached = (reply->status == NETWORK_REGISTRATION_STATUS_REGISTERED ||
-			reply->status == NETWORK_REGISTRATION_STATUS_ROAMING);
+	attached = (reply->reg_state.status ==
+				NETWORK_REGISTRATION_STATUS_REGISTERED ||
+			reply->reg_state.status ==
+				NETWORK_REGISTRATION_STATUS_ROAMING);
 
 	if (attached && gd->ofono_attached == FALSE) {
 		DBG("attached=true; ofono_attached=false; return !REGISTERED");
-		reply->status = NETWORK_REGISTRATION_STATUS_NOT_REGISTERED;
+		reply->reg_state.status =
+			NETWORK_REGISTRATION_STATUS_NOT_REGISTERED;
 
 		/*
 		 * Further optimization so that if ril_status ==
@@ -234,7 +238,7 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 		 * As is, this results in unecessary status notify calls
 		 * when nothing has changed.
 		 */
-		if (notify_status && reply->status == old_status)
+		if (notify_status && reply->reg_state.status == old_status)
 			notify_status = FALSE;
 	}
 
@@ -278,22 +282,22 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 					NETWORK_REGISTRATION_STATUS_ROAMING)) {
 			DBG("calling ofono_gprs_detached_notify()");
 			ofono_gprs_detached_notify(gprs);
-			reply->tech = RADIO_TECH_UNKNOWN;
+			reply->reg_state.tech = RADIO_TECH_UNKNOWN;
 		} else {
 			DBG("calling ofono_gprs_status_notify()");
-			ofono_gprs_status_notify(gprs, reply->status);
+			ofono_gprs_status_notify(gprs, reply->reg_state.status);
 		}
 	}
 
-	if (gd->tech != reply->tech) {
-		gd->tech = reply->tech;
+	if (gd->tech != reply->reg_state.tech) {
+		gd->tech = reply->reg_state.tech;
 
 		ofono_gprs_bearer_notify(gprs,
-					ril_tech_to_bearer_tech(reply->tech));
+				ril_tech_to_bearer_tech(reply->reg_state.tech));
 	}
 
 	if (cb)
-		CALLBACK_WITH_SUCCESS(cb, reply->status, cbd->data);
+		CALLBACK_WITH_SUCCESS(cb, reply->reg_state.status, cbd->data);
 
 	g_free(reply);
 

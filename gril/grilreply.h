@@ -50,7 +50,10 @@ struct reply_reg_state {
 	int lac;
 	int ci;
 	int tech;
-	int reason;
+};
+
+struct reply_data_reg_state {
+	struct reply_reg_state reg_state;
 	unsigned int max_cids;
 };
 
@@ -110,7 +113,9 @@ struct reply_sim_io *g_ril_reply_parse_sim_io(GRil *gril,
 
 gchar *g_ril_reply_parse_imsi(GRil *gril, const struct ril_msg *message);
 
-struct reply_reg_state *g_ril_reply_parse_reg_state(GRil *gril,
+struct reply_reg_state *g_ril_reply_parse_voice_reg_state(GRil *gril,
+						const struct ril_msg *message);
+struct reply_data_reg_state *g_ril_reply_parse_data_reg_state(GRil *gril,
 						const struct ril_msg *message);
 
 void g_ril_reply_free_sim_status(struct reply_sim_status *status);

@@ -257,3 +257,38 @@ size_t parcel_data_avail(struct parcel *p)
 {
 	return (p->size - p->offset);
 }
+
+struct parcel_str_array *parcel_r_str_array(struct parcel *p)
+{
+	int i;
+	struct parcel_str_array *str_arr;
+	int num_str = parcel_r_int32(p);
+
+	if (p->malformed || num_str <= 0)
+		return NULL;
+
+	str_arr = g_try_malloc0(sizeof(*str_arr) + num_str * sizeof(char *));
+	if (str_arr == NULL)
+		return NULL;
+
+	str_arr->num_str = num_str;
+	for (i = 0; i < num_str; ++i)
+		str_arr->str[i] = parcel_r_string(p);
+
+	if (p->malformed) {
+		parcel_free_str_array(str_arr);
+		return NULL;
+	}
+
+	return str_arr;
+}
+
+void parcel_free_str_array(struct parcel_str_array *str_arr)
+{
+	if (str_arr) {
+		int i;
+		for (i = 0; i < str_arr->num_str; ++i)
+			g_free(str_arr->str[i]);
+		g_free(str_arr);
+	}
+}
