@@ -162,8 +162,8 @@ builtin_sources += drivers/rilmodem/rilmodem.h \
 			drivers/rilmodem/call-settings.c \
 			drivers/rilmodem/call-forwarding.c \
 			drivers/rilmodem/radio-settings.c \
-			drivers/rilmodem/call-barring.c
-
+			drivers/rilmodem/call-barring.c \
+			drivers/rilmodem/phonebook.c
 endif
 
 if ISIMODEM

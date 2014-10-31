@@ -1604,7 +1604,7 @@ static gboolean check_bdn_status(struct ofono_sim *sim)
 	if (sim_sst_is_active(sim->efsst, sim->efsst_length,
 			SIM_SST_SERVICE_BDN)) {
 		sim_fs_read_info(sim->context, SIM_EFBDN_FILEID,
-				OFONO_SIM_FILE_STRUCTURE_FIXED,
+				OFONO_SIM_FILE_STRUCTURE_FIXED, NULL, 0,
 				sim_efbdn_info_read_cb, sim);
 		return TRUE;
 	}
@@ -1658,7 +1658,7 @@ static void sim_efsst_read_cb(int ok, int length, int record,
 	if (sim_sst_is_active(sim->efsst, sim->efsst_length,
 				SIM_SST_SERVICE_FDN)) {
 		sim_fs_read_info(sim->context, SIM_EFADN_FILEID,
-					OFONO_SIM_FILE_STRUCTURE_FIXED,
+					OFONO_SIM_FILE_STRUCTURE_FIXED, NULL, 0,
 					sim_efadn_info_read_cb, sim);
 		return;
 	}
@@ -2204,6 +2204,34 @@ int ofono_sim_read(struct ofono_sim_context *context, int id,
 			ofono_sim_file_read_cb_t cb, void *data)
 {
 	return sim_fs_read(context, id, expected_type, 0, 0, NULL, 0, cb, data);
+}
+
+int ofono_sim_read_path(struct ofono_sim_context *context, int id,
+			enum ofono_sim_file_structure expected_type,
+			const unsigned char *path, unsigned int path_len,
+			ofono_sim_file_read_cb_t cb, void *data)
+{
+	return sim_fs_read(context, id, expected_type, 0, 0,
+				path, path_len, cb, data);
+}
+
+int ofono_sim_read_info(struct ofono_sim_context *context, int id,
+			enum ofono_sim_file_structure expected_type,
+			const unsigned char *path, unsigned int pth_len,
+			ofono_sim_read_info_cb_t cb, void *data)
+{
+	return sim_fs_read_info(context, id, expected_type, path, pth_len,
+				cb, data);
+}
+
+int ofono_sim_read_record(struct ofono_sim_context *context, int id,
+				enum ofono_sim_file_structure expected_type,
+				int record, int record_length,
+				const unsigned char *path, unsigned int pth_len,
+				ofono_sim_file_read_cb_t cb, void *data)
+{
+	return sim_fs_read_record(context, id, expected_type, record,
+					record_length, path, pth_len, cb, data);
 }
 
 int ofono_sim_write(struct ofono_sim_context *context, int id,

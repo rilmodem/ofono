@@ -264,7 +264,7 @@ static void sim_fs_op_error(struct sim_fs *fs)
 	}
 
 	if (op->info_only == TRUE)
-		((sim_fs_read_info_cb_t) op->cb)
+		((ofono_sim_read_info_cb_t) op->cb)
 			(0, 0, 0, 0, op->userdata);
 	else if (op->is_read == TRUE)
 		((ofono_sim_file_read_cb_t) op->cb)
@@ -331,6 +331,27 @@ static void sim_fs_op_write_cb(const struct ofono_error *error, void *data)
 		cb(1, op->userdata);
 	else
 		cb(0, op->userdata);
+
+	sim_fs_end_current(fs);
+}
+
+static void sim_fs_op_read_record_cb(const struct ofono_error *error,
+					const unsigned char *sdata, int length,
+					void *data)
+{
+	struct sim_fs *fs = data;
+	struct sim_fs_op *op = g_queue_peek_head(fs->op_q);
+	ofono_sim_file_read_cb_t cb = op->cb;
+
+	if (cb == NULL) {
+		sim_fs_end_current(fs);
+		return;
+	}
+
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
+		cb(1, -1, op->current, sdata, length, op->userdata);
+	else
+		cb(0, -1, op->current, NULL, 0, op->userdata);
 
 	sim_fs_end_current(fs);
 }
@@ -565,7 +586,8 @@ static gboolean sim_fs_op_read_record(gpointer user)
 
 		driver->read_file_linear(fs->sim, op->id, op->current,
 						op->record_length,
-						NULL, 0,
+						op->path_len ? op->path : NULL,
+						op->path_len,
 						sim_fs_op_retrieve_cb, fs);
 		break;
 	case OFONO_SIM_FILE_STRUCTURE_CYCLIC:
@@ -576,7 +598,8 @@ static gboolean sim_fs_op_read_record(gpointer user)
 
 		driver->read_file_cyclic(fs->sim, op->id, op->current,
 						op->record_length,
-						NULL, 0,
+						op->path_len ? op->path : NULL,
+						op->path_len,
 						sim_fs_op_retrieve_cb, fs);
 		break;
 	default:
@@ -700,7 +723,7 @@ static void sim_fs_op_info_cb(const struct ofono_error *error, int length,
 		 * It's an info-only request, so there is no need to request
 		 * actual contents of the EF. Just return the EF-info.
 		 */
-		sim_fs_read_info_cb_t cb = op->cb;
+		ofono_sim_read_info_cb_t cb = op->cb;
 
 		cb(1, file_status, op->length,
 			op->record_length, op->userdata);
@@ -778,7 +801,7 @@ static gboolean sim_fs_op_check_cached(struct sim_fs *fs)
 		 * It's an info-only request, so there is no need to request
 		 * actual contents of the EF. Just return the EF-info.
 		 */
-		sim_fs_read_info_cb_t cb = op->cb;
+		ofono_sim_read_info_cb_t cb = op->cb;
 
 		cb(1, file_status, op->length,
 			op->record_length, op->userdata);
@@ -820,7 +843,28 @@ static gboolean sim_fs_op_next(gpointer user_data)
 		return FALSE;
 	}
 
-	if (op->is_read == TRUE) {
+	if (op->is_read == TRUE && op->current > 0) {
+		switch (op->structure) {
+		case OFONO_SIM_FILE_STRUCTURE_FIXED:
+			driver->read_file_linear(fs->sim, op->id,
+						op->current, op->record_length,
+						op->path_len ? op->path : NULL,
+						op->path_len,
+						sim_fs_op_read_record_cb, fs);
+			break;
+		case OFONO_SIM_FILE_STRUCTURE_CYCLIC:
+			driver->read_file_cyclic(fs->sim, op->id,
+						op->current, op->record_length,
+						op->path_len ? op->path : NULL,
+						op->path_len,
+						sim_fs_op_read_record_cb, fs);
+			break;
+		case OFONO_SIM_FILE_STRUCTURE_TRANSPARENT:
+		default:
+			ofono_error("Wrong file structure for reading record");
+			break;
+		}
+	} else if (op->is_read == TRUE) {
 		if (sim_fs_op_check_cached(fs))
 			return FALSE;
 
@@ -859,7 +903,8 @@ static gboolean sim_fs_op_next(gpointer user_data)
 
 int sim_fs_read_info(struct ofono_sim_context *context, int id,
 			enum ofono_sim_file_structure expected_type,
-			sim_fs_read_info_cb_t cb, void *data)
+			const unsigned char *path, unsigned int pth_len,
+			ofono_sim_read_info_cb_t cb, void *data)
 {
 	struct sim_fs *fs = context->fs;
 	struct sim_fs_op *op;
@@ -887,6 +932,8 @@ int sim_fs_read_info(struct ofono_sim_context *context, int id,
 	op->is_read = TRUE;
 	op->info_only = TRUE;
 	op->context = context;
+	memcpy(op->path, path, pth_len);
+	op->path_len = pth_len;
 
 	g_queue_push_tail(fs->op_q, op);
 
@@ -932,6 +979,59 @@ int sim_fs_read(struct ofono_sim_context *context, int id,
 	op->num_bytes = num_bytes;
 	op->info_only = FALSE;
 	op->context = context;
+	memcpy(op->path, path, path_len);
+	op->path_len = path_len;
+
+	g_queue_push_tail(fs->op_q, op);
+
+	if (g_queue_get_length(fs->op_q) == 1)
+		fs->op_source = g_idle_add(sim_fs_op_next, fs);
+
+	return 0;
+}
+
+int sim_fs_read_record(struct ofono_sim_context *context, int id,
+			enum ofono_sim_file_structure expected_type,
+			int record, int record_length,
+			const unsigned char *path, unsigned int path_len,
+			ofono_sim_file_read_cb_t cb, void *data)
+{
+	struct sim_fs *fs = context->fs;
+	struct sim_fs_op *op;
+
+	if (cb == NULL)
+		return -EINVAL;
+
+	if (fs->driver == NULL)
+		return -EINVAL;
+
+	if (record < 1)
+		return -EINVAL;
+
+	if ((expected_type == OFONO_SIM_FILE_STRUCTURE_FIXED &&
+			fs->driver->read_file_linear == NULL) ||
+			(expected_type == OFONO_SIM_FILE_STRUCTURE_CYCLIC &&
+				fs->driver->read_file_cyclic == NULL)) {
+		cb(0, 0, 0, NULL, 0, data);
+		return -ENOSYS;
+	}
+
+	if (fs->op_q == NULL)
+		fs->op_q = g_queue_new();
+
+	op = g_try_new0(struct sim_fs_op, 1);
+	if (op == NULL)
+		return -ENOMEM;
+
+	op->id = id;
+	op->structure = expected_type;
+	op->cb = cb;
+	op->userdata = data;
+	op->is_read = TRUE;
+	op->info_only = FALSE;
+	op->context = context;
+	op->record_length = record_length;
+	op->current = record;
 	memcpy(op->path, path, path_len);
 	op->path_len = path_len;
 
