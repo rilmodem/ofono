@@ -85,7 +85,6 @@ struct sim_data {
 	guint app_type;
 	gchar *app_str;
 	guint app_index;
-	gboolean sim_registered;
 	enum ofono_sim_password_type passwd_type;
 	int retries[OFONO_SIM_PASSWORD_INVALID];
 	enum ofono_sim_password_type passwd_state;
@@ -646,55 +645,56 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 	struct ofono_sim *sim = user_data;
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct reply_sim_status *status;
-	guint i = 0;
-	guint search_index = -1;
+	guint search_index;
 
-	if (sd->sim_registered == FALSE) {
-		/* First status request, after sim_probe() */
-		ofono_sim_register(sim);
-		sd->sim_registered = TRUE;
-
-		if (sd->ril_state_watch != NULL &&
-				!ofono_sim_add_state_watch(sim,
-						sd->ril_state_watch,
-						sd->modem, NULL))
-			ofono_error("Error registering ril sim watch");
+	status = g_ril_reply_parse_sim_status(sd->ril, message);
+	if (status == NULL) {
+		ofono_error("%s: Cannot parse SIM status reply", __func__);
+		return;
 	}
 
-	if ((status = g_ril_reply_parse_sim_status(sd->ril, message))
-			!= NULL
-			&& status->card_state == RIL_CARDSTATE_PRESENT
-			&& status->num_apps) {
+	DBG("SIM status is %u", status->card_state);
 
-		DBG("num_apps: %d gsm_umts_index: %d", status->num_apps,
-			status->gsm_umts_index);
-
-		/*
-		 * TODO(CDMA): need some kind of logic to
-		 * set the correct app_index,
-		 */
-		search_index = status->gsm_umts_index;
-
-		for (i = 0; i < status->num_apps; i++) {
-			struct reply_sim_app *app = status->apps[i];
-			if (i == search_index &&
-					app->app_type != RIL_APPTYPE_UNKNOWN) {
-				configure_active_app(sd, app, i);
-				break;
-			}
-		}
-
-		/*
-		 * Note: There doesn't seem to be any other way to
-		 * force the core SIM code to recheck the PIN. This
-		 * call causes the core to call the this atom's
-		 * query_passwd() function.
-		 */
-		__ofono_sim_recheck_pin(sim);
-
-	} else if (status && status->card_state == RIL_CARDSTATE_ABSENT) {
-		ofono_info("SIM card absent");
+	if (status->card_state == RIL_CARDSTATE_PRESENT)
+		ofono_sim_inserted_notify(sim, TRUE);
+	else if (status && status->card_state == RIL_CARDSTATE_ABSENT)
 		ofono_sim_inserted_notify(sim, FALSE);
+	else
+		ofono_error("%s: bad SIM state (%u)",
+				__func__, status->card_state);
+
+	/* TODO(CDMA): need some kind of logic to set the correct app_index */
+	search_index = status->gsm_umts_index;
+
+	/*
+	 * We cache the current password state. Ideally this should be done by
+	 * issuing a GET_SIM_STATUS request from ril_query_passwd_state, which
+	 * is called by the core after sending a password, but unfortunately the
+	 * response to GET_SIM_STATUS is not reliable in mako when sent just
+	 * after sending the password. Some time is needed before the modem
+	 * refreshes its internal state, and when it does it sends a
+	 * SIM_STATUS_CHANGED event. In that moment we retrieve the status and
+	 * this function is executed. We call __ofono_sim_recheck_pin as it is
+	 * the only way to indicate the core to call query_passwd_state again.
+	 * An option that can be explored in the future is wait before invoking
+	 * core callback for send_passwd until we know the real password state.
+	 */
+	if (status->card_state == RIL_CARDSTATE_PRESENT
+			&& search_index < status->num_apps) {
+		struct reply_sim_app *app = status->apps[search_index];
+
+		if (app->app_type != RIL_APPTYPE_UNKNOWN) {
+			configure_active_app(sd, app, search_index);
+			DBG("passwd_state: %d", sd->passwd_state);
+
+			/*
+			 * Note: There doesn't seem to be any other way to force
+			 * the core SIM code to recheck the PIN. This call
+			 * causes the core to call the this atom's
+			 * query_passwd() function.
+			 */
+			__ofono_sim_recheck_pin(sim);
+		}
 	}
 
 	g_ril_reply_free_sim_status(status);
@@ -823,7 +823,7 @@ static void ril_pin_change_state_cb(struct ril_msg *message, gpointer user_data)
 		g_free(retries);
 	}
 
-	/* TODO: re-bfactor to not use macro for FAILURE;
+	/* TODO: re-factor to not use macro for FAILURE;
 	   doesn't return error! */
 	if (message->error == RIL_E_SUCCESS) {
 		CALLBACK_WITH_SUCCESS(cb, cbd->data);
@@ -992,6 +992,20 @@ static void ril_change_passwd(struct ofono_sim *sim,
 	}
 }
 
+static gboolean listen_and_get_sim_status(gpointer user)
+{
+	struct ofono_sim *sim = user;
+	struct sim_data *sd = ofono_sim_get_data(sim);
+
+	send_get_sim_status(sim);
+
+	g_ril_register(sd->ril, RIL_UNSOL_RESPONSE_SIM_STATUS_CHANGED,
+			(GRilNotifyFunc) ril_sim_status_changed, sim);
+
+	/* TODO: should we also register for RIL_UNSOL_SIM_REFRESH? */
+	return FALSE;
+}
+
 static gboolean ril_sim_register(gpointer user)
 {
 	struct ofono_sim *sim = user;
@@ -999,12 +1013,19 @@ static gboolean ril_sim_register(gpointer user)
 
  	DBG("");
 
- 	send_get_sim_status(sim);
+ 	ofono_sim_register(sim);
 
-	g_ril_register(sd->ril, RIL_UNSOL_RESPONSE_SIM_STATUS_CHANGED,
-			(GRilNotifyFunc) ril_sim_status_changed, sim);
+	if (sd->ril_state_watch != NULL &&
+			!ofono_sim_add_state_watch(sim, sd->ril_state_watch,
+							sd->modem, NULL))
+		ofono_error("Error registering ril sim watch");
 
-	/* TODO: should we also register for RIL_UNSOL_SIM_REFRESH? */
+	/*
+	 * We use g_idle_add here to make sure that the presence of the SIM
+	 * interface is signalled before signalling anything else from the said
+	 * interface, as ofono_sim_register also uses g_idle_add.
+	 */
+	g_idle_add(listen_and_get_sim_status, sim);
 
 	return FALSE;
 }
@@ -1025,7 +1046,6 @@ static int ril_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 	sd->app_type = RIL_APPTYPE_UNKNOWN;
 	sd->passwd_state = OFONO_SIM_PASSWORD_NONE;
 	sd->passwd_type = OFONO_SIM_PASSWORD_NONE;
-	sd->sim_registered = FALSE;
 	sd->modem = ril_data->modem;
 	sd->ril_state_watch = ril_data->ril_state_watch;
 
