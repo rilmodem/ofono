@@ -2825,7 +2825,7 @@ static void gprs_load_settings(struct ofono_gprs *gprs, const char *imsi)
 	 */
 	if (error) {
 		g_error_free(error);
-		gprs->powered = TRUE;
+		gprs->powered = FALSE;
 		g_key_file_set_boolean(gprs->settings, SETTINGS_GROUP,
 					"Powered", gprs->powered);
 	}
