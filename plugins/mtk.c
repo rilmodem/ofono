@@ -80,6 +80,8 @@
 #define RILD_MAX_CONNECT_RETRIES 5
 #define RILD_CONNECT_RETRY_TIME_S 5
 
+#define T_WAIT_DISCONN_MS 1000
+
 typedef void (*pending_cb_t)(struct cb_data *cbd);
 
 struct mtk_data {
@@ -119,6 +121,10 @@ struct mtk_data {
  */
 static struct mtk_data *mtk_0;
 static struct mtk_data *mtk_1;
+
+/* Some variables control global state of the modem and are then static */
+static gboolean disconnect_expected;
+static guint not_disconn_cb_id;
 
 static int create_gril(struct ofono_modem *modem);
 static gboolean mtk_connected(gpointer user_data);
@@ -534,6 +540,18 @@ static void mtk_send_sim_mode(GRilResponseFunc func, gpointer user_data)
 	}
 }
 
+static gboolean no_disconnect_case(gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+
+	ofono_info("%s: Execute pending sim mode switch", __func__);
+	not_disconn_cb_id = 0;
+
+	mtk_send_sim_mode(mtk_sim_mode_cb, cbd);
+
+	return FALSE;
+}
+
 static void poweron_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -543,10 +561,41 @@ static void poweron_cb(struct ril_msg *message, gpointer user_data)
 
 	DBG("");
 
+	/*
+	 * MTK's rild behavior when a POWERON is sent to it is different
+	 * depending on whether a previous POWEROFF had been sent. When
+	 * the modem is initialized during device startup, POWERON is
+	 * sent without a prior POWEROFF, rild responds with an OK reply,
+	 * and the modem is brought up. Any subsequent POWERON requests
+	 * are sent whenever both modems have been offlined before ( meaning a
+	 * POWEROFF has been sent prior ). rild may respond to the POWERON
+	 * request, but will usually ( always? ) trigger a socket disconnect in
+	 * this case.
+	 *
+	 * This means there's a race condition between the POWERON reply
+	 * callback and the socket disconnect function ( which triggers a
+	 * SIM_MODE_SWITCH request ). In some cases rild is slower than
+	 * usual closing the socket, so we add a timeout to avoid following
+	 * the code path used when there is not a disconnection. Otherwise,
+	 * there would be a race and some requests would return errors due to
+	 * having been sent through the about-to-be-disconnected socket, leaving
+	 * ofono in an inconsistent state. So, we delay sending the
+	 * SIM_MODE_SWITCH for 1s, to allow the disconnect to happen when we
+	 * know that we have sent previously a POWEROFF.
+	 *
+	 * Also, I saw once that sending SIM_MODE while the
+	 * socket was being disconnected provoked a crash due to SIGPIPE being
+	 * issued. The timeout should also fix this.
+	 */
+
 	if (message->error == RIL_E_SUCCESS) {
 		g_ril_print_response_no_args(ril->modem, message);
 
-		mtk_send_sim_mode(mtk_sim_mode_cb, cbd);
+		if (disconnect_expected)
+			not_disconn_cb_id = g_timeout_add(T_WAIT_DISCONN_MS,
+						no_disconnect_case, cbd);
+		else
+			mtk_send_sim_mode(mtk_sim_mode_cb, cbd);
 	} else {
 		ofono_error("%s RADIO_POWERON error %s", __func__,
 				ril_error_to_string(message->error));
@@ -644,6 +693,8 @@ static void mtk_set_online(struct ofono_modem *modem, ofono_bool_t online,
 			ofono_error("%s: failure sending request", __func__);
 			CALLBACK_WITH_FAILURE(cb, cbd->data);
 			g_free(cbd);
+		} else {
+			disconnect_expected = TRUE;
 		}
 	} else {
 		mtk_send_sim_mode(mtk_sim_mode_cb, cbd);
@@ -726,6 +777,12 @@ static void socket_disconnected(gpointer user_data)
 
 	g_ril_unref(ril->modem);
 	ril->modem = NULL;
+
+	/* Disconnection happened so we do not call failsafe function */
+	if (not_disconn_cb_id != 0) {
+		g_source_remove(not_disconn_cb_id);
+		not_disconn_cb_id = 0;
+	}
 
 	/* The disconnection happens because rild is re-starting, wait for it */
 	g_timeout_add(WAIT_FOR_RILD_TO_RESTART_MS, reconnect_rild, modem);
@@ -836,6 +893,11 @@ static int mtk_disable(struct ofono_modem *modem)
 	struct mtk_data *ril = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
+
+	if (ril->slot == MULTISIM_SLOT_0 && not_disconn_cb_id != 0) {
+		g_source_remove(not_disconn_cb_id);
+		not_disconn_cb_id = 0;
+	}
 
 	if (ril->ofono_online) {
 		ril->ofono_online = FALSE;
