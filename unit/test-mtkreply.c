@@ -53,7 +53,7 @@ struct sim_password_test {
 };
 
 struct rep_3g_capability_test {
-	int is_3g;
+	int slot_3g;
 	const struct ril_msg msg;
 };
 
@@ -113,7 +113,7 @@ static const guchar mtk_reply_3g_capability_valid_parcel1[] = {
 };
 
 static const struct rep_3g_capability_test mtk_reply_3g_capability_valid_1 = {
-	.is_3g = 1,
+	.slot_3g = 0,
 	.msg = {
 		.buf = (char *) &mtk_reply_3g_capability_valid_parcel1,
 		.buf_len = sizeof(mtk_reply_3g_capability_valid_parcel1),
@@ -153,9 +153,9 @@ static void test_mtk_reply_3g_capability_valid(gconstpointer data)
 {
 	GRil *gril = g_ril_new(NULL, OFONO_RIL_VENDOR_MTK);
 	const struct rep_3g_capability_test *test = data;
-	int is_3g = g_mtk_reply_parse_get_3g_capability(gril, &test->msg);
+	int slot_3g = g_mtk_reply_parse_get_3g_capability(gril, &test->msg);
 
-	g_assert(is_3g == test->is_3g);
+	g_assert(slot_3g == test->slot_3g);
 
 	g_ril_unref(gril);
 }
