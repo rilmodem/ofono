@@ -34,6 +34,8 @@ struct ofono_modem;
 void mtk_set_attach_state(struct ofono_modem *modem, ofono_bool_t attached);
 void mtk_detach_received(struct ofono_modem *modem);
 
+void mtk_reset_all_modems(void);
+
 struct mtk_gprs_data {
 	GRil *gril;
 	struct ofono_modem *modem;
