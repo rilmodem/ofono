@@ -1,0 +1,49 @@
+MediaTek settings hierarchy
+===========================
+
+Service		org.ofono
+Interface	org.ofono.MtkSettings
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns all MtkSettings properties. See the
+			properties section for available properties.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.Failed
+
+		void SetProperty(string name, variant value)
+
+			Changes the value of the specified property. Only
+			properties that are listed as readwrite are
+			changeable. On success a PropertyChanged signal
+			will be emitted.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.Failed
+
+Signals		PropertyChanged(string property, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+Properties	boolean Has3G [readwrite]
+
+			If true, the modem has 3G capabilities, otherwise it is
+			just 2G. Only one of the modems can have this set at a
+			time (note that in fact the modem hardware is shared
+			among all ofono MTK modems, and that each ofono MTK
+			modem represents one physical slot in the phone).
+
+			When we set the property to TRUE, all MTK modems are
+			reset, and after that this property will be false for
+			all modems except for the one for which we set the
+			property. Note that setting this property to FALSE is
+			not allowed to avoid confusion, as one and only one of
+			the modems must have it set to true and we can have
+			the case of more than two modems.
+

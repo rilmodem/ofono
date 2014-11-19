@@ -207,6 +207,18 @@ static const struct request_test_set_fd_mode_data set_fd_mode_valid_test_2 = {
 	.parcel_size = sizeof(req_set_fd_mode_parcel_valid_2),
 };
 
+/* MTK: set_3g_capability tests */
+
+static const guchar req_set_3g_capability_valid_1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+};
+
+static const struct request_test_data set_set_3g_capability_valid_test_1 = {
+	.request = NULL,
+	.parcel_data = req_set_3g_capability_valid_1,
+	.parcel_size = sizeof(req_set_3g_capability_valid_1),
+};
+
 /* Test functions */
 
 static void test_mtk_req_sim_read_binary_valid(gconstpointer data)
@@ -322,6 +334,19 @@ static void test_request_set_fd_mode(gconstpointer data)
 	parcel_free(&rilp);
 }
 
+static void test_request_set_3g_capability(gconstpointer data)
+{
+	const struct request_test_data *test_data = data;
+	struct parcel rilp;
+
+	g_mtk_request_set_3g_capability(NULL, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+				test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
 #endif	/* LITTLE_ENDIAN */
 
 int main(int argc, char **argv)
@@ -375,6 +400,11 @@ int main(int argc, char **argv)
 				"valid SET_FD_MODE Test 2",
 				&set_fd_mode_valid_test_2,
 				test_request_set_fd_mode);
+
+	g_test_add_data_func("/testmtkrequest/mtk-settings: "
+				"valid SET_3G_CAPABILITY Test 1",
+				&set_set_3g_capability_valid_test_1,
+				test_request_set_3g_capability);
 
 #endif	/* LITTLE_ENDIAN */
 

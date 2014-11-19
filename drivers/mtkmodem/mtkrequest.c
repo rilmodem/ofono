@@ -122,3 +122,14 @@ void g_mtk_request_set_fd_mode(GRil *gril, int mode, int param1,
 		g_ril_append_print_buf(gril, "%s)", print_buf);
 	}
 }
+
+void g_mtk_request_set_3g_capability(GRil *gril, struct parcel *rilp)
+{
+	int mode = g_ril_get_slot(gril) + 1;
+
+	parcel_init(rilp);
+	parcel_w_int32(rilp, 1);
+	parcel_w_int32(rilp, mode);
+
+	g_ril_append_print_buf(gril, "(%d)", mode);
+}

@@ -35,7 +35,7 @@ int g_mtk_reply_parse_get_3g_capability(GRil *gril,
 					const struct ril_msg *message)
 {
 	struct parcel rilp;
-	int sim_3g, numint, slot;
+	int slot_3g, numint;
 
 	g_ril_init_parcel(message, &rilp);
 
@@ -49,19 +49,18 @@ int g_mtk_reply_parse_get_3g_capability(GRil *gril,
 	 * Bitmap with 3g capability per slot. Reply is the same regardless of
 	 * the socket used to sent the request.
 	 */
-	sim_3g = parcel_r_int32(&rilp);
+	slot_3g = parcel_r_int32(&rilp);
 
 	if (rilp.malformed) {
 		ofono_error("%s: malformed parcel", __func__);
 		goto error;
 	}
 
-	g_ril_append_print_buf(gril, "{%d}", sim_3g);
+	g_ril_append_print_buf(gril, "{%d}", slot_3g);
 	g_ril_print_response(gril, message);
 
-	slot = g_ril_get_slot(gril);
-
-	return (sim_3g >> slot) & 0x01;
+	/* Do it zero-based */
+	return slot_3g - 1;
 
 error:
 	return -1;
