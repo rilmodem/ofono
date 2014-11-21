@@ -6,7 +6,7 @@ import dbus
 import dbus.mainloop.glib
 
 def incoming_message(message, details, path, interface):
-	print("%s" % (message))
+	print("%s" % (message.encode('utf-8')))
 
 	for key in details:
 		val = details[key]
