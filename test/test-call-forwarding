@@ -53,6 +53,8 @@ def parse_arguments():
 
 def main(args):
 
+	path = ""
+
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
 	bus = dbus.SystemBus()
@@ -62,16 +64,22 @@ def main(args):
 
 	modems = manager.GetModems()
 
-        if (args.modem == ""):
-                modem = modems[0][0]
+	assert len(modems) >= 1
 
-        if (args.noreply_timeout == -1):
-                noreply_timeout = dbus.UInt16(30)
-        else:
-                noreply_timeout = dbus.UInt16(args.noreply_timeout)
+	for modem in modems:
+		if modem[0] == args.modem:
+			path = args.modem
 
-	cf = dbus.Interface(bus.get_object('org.ofono', modem),
-				'org.ofono.CallForwarding')
+	if path == "":
+		path = modems[0][0]
+
+	if args.noreply_timeout == -1:
+		noreply_timeout = dbus.UInt16(30)
+	else:
+		noreply_timeout = dbus.UInt16(args.noreply_timeout)
+
+	cf = dbus.Interface(bus.get_object('org.ofono', path),
+						'org.ofono.CallForwarding')
 
 	cf.connect_to_signal("PropertyChanged", property_changed)
 
