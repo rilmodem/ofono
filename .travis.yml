@@ -1,0 +1,13 @@
+language: c
+
+compiler:
+        - gcc
+        - clang
+
+install:
+        - sudo add-apt-repository -y ppa:sergiusens/ofonotest
+        - sudo apt-get update -qq
+        - sudo apt-get install -y libglib2.0-dev libdbus-glib-1-dev libbluetooth-dev libudev-dev mobile-broadband-provider-info
+
+# script: "./bootstrap && ./configure --enable-bluetooth --enable-dundee && make && make test"
+script: "./bootstrap && ./configure --disable-bluetooth --enable-dundee && make && make test"
