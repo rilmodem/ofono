@@ -26,8 +26,12 @@ args = parse_arguments()
 
 bus = dbus.SystemBus()
 
-manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+try:
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 						'org.ofono.Manager')
+except dbus.exceptions.DBusException as e:
+       print("Service org.ofono not found on DBus: {}".format(e))
+       exit(1)
 
 modems = manager.GetModems()
 
@@ -66,7 +70,8 @@ for path, properties in modems:
 					"PreferredLanguages",
 					"PrimaryContexts",
 					"LockedPins",
-					"Features"]:
+					"Features",
+					"ModemTechnologies"]:
 				val = ""
 				for i in properties[key]:
 					val += i + " "
