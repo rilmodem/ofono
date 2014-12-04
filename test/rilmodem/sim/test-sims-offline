@@ -1,0 +1,104 @@
+#!/usr/bin/python3
+#
+#  oFono - Open Source Telephony - RIL Modem test
+#
+#  Copyright (C) 2014 Canonical Ltd.
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+# This test ensures that basic modem information is available
+# when the modem is online and has a valid, unlocked SIM present.
+
+"""Tests SIM(s) and modem(s) offline.
+
+This module contains a functional test which checks a running
+ofono/rilmodem/mtkmodem instance to ensure that the correct
+DBus properties are exported when one or more SIMs (unlocked)
+are inserted AND the corresponding modem(s) are offline. As such
+it validates the properties of the followinh interfaces:
+
+ * org.ofono.Modem
+ * org.ofono.SimManager ( on supported hw )
+ * org.ofono.VoiceCallManager ( EmergencyNumbers )
+ * org.ofono.CallVolume
+
+NOTE - this test by default verifies all modems present a device.
+If the device is multi-SIM and not all slots have unlocked SIMs,
+then please use the -m to verify a specific modem.
+
+SETUP:
+
+ * Ensure that at least one unlocked SIM is inserted in the phone
+
+ * Ensure FlightMode from System Settings ( or net-indicator )
+
+ * Run this script
+
+ * Disable FlightMode
+
+ToDo:
+ * If run on the emulator, make this script use console
+   commands to configure the modem(s) for the required
+   conditions ( ie. no SIM(s), online )
+"""
+
+import argparse
+import simtestutil
+
+from simtestutil import *
+
+def parse_args():
+	parser = argparse.ArgumentParser()
+
+	parser.add_argument("--mnc",
+			dest="mnc",
+			help="""Specify a MNC (mobile-network-code) to
+			match against""",
+			default="",
+			)
+	parser.add_argument("--mcc",
+			dest="mcc",
+			help="""Specify a MCC (mobile-country-code) to
+			match against""",
+			default="",
+			)
+	parser.add_argument("--subscriber",
+			dest="subscriber",
+			help="""Specify a SubscriberIdentity to
+			match against""",
+			default="",
+			)
+
+	return simtestutil.parse_args(parser)
+
+class TestSimsOffline(SimTestCase):
+
+	def validate_modem(self, path):
+
+		self.validate_modem_properties(path, False, True)
+
+		# krillin: no SIM access when modem offline
+		if (self.product != "krillin"):
+			self.validate_sim_properties(path)
+
+		self.validate_emergency_numbers(path)
+		self.validate_call_volume_properties(path)
+
+	def test_main(self):
+		self.main(args)
+
+if __name__ == "__main__":
+	args = parse_args()
+
+	sim_unittest_main(args)
