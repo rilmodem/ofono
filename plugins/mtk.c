@@ -584,13 +584,23 @@ static void mtk_send_sim_mode(GRilResponseFunc func, gpointer user_data)
 {
 	struct parcel rilp;
 	struct cb_data *cbd = user_data;
-	ofono_modem_online_cb_t cb;
+	ofono_modem_online_cb_t cb = NULL;
 	GDestroyNotify notify = NULL;
 	int sim_mode;
 
 	if (cbd != NULL) {
 		notify = g_free;
 		cb = cbd->cb;
+	}
+
+	/* Case of modems with just one slot */
+	if (mtk_data_1 == NULL) {
+		mtk_data_0->pending_cb = NULL;
+		if (cbd != NULL) {
+			CALLBACK_WITH_SUCCESS(cb, cbd->data);
+			g_free(cbd);
+		}
+		return;
 	}
 
 	sim_mode = sim_state();
@@ -604,8 +614,11 @@ static void mtk_send_sim_mode(GRilResponseFunc func, gpointer user_data)
 	if (g_ril_send(mtk_data_0->ril, MTK_RIL_REQUEST_DUAL_SIM_MODE_SWITCH,
 			&rilp, func, cbd, notify) == 0 && cbd != NULL) {
 		ofono_error("%s: failure sending request", __func__);
-		CALLBACK_WITH_FAILURE(cb, cbd->data);
-		g_free(cbd);
+		mtk_data_0->pending_cb = NULL;
+		if (cbd != NULL) {
+			CALLBACK_WITH_FAILURE(cb, cbd->data);
+			g_free(cbd);
+		}
 	}
 }
 
