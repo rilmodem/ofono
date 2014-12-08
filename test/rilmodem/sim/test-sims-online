@@ -39,6 +39,14 @@ SETUP:
 
  * Run this script
 
+Options:
+
+ * --mnc - specify a mobile network code to match against
+
+ * --mcc - specify a mobile country code to match against
+
+ * --subscriber - specify a subscriber identity to match against
+
 ToDo:
  * If run on the emulator, make this script use console
    commands to configure the modem(s) for the required
@@ -73,13 +81,6 @@ def parse_args():
 			help="""Specify a SubscriberIdentity to
 			match against""",
 			default="",
-			)
-
-	parser.add_argument("--netreg",
-			dest="netreg",
-			action="store_true",
-			help="""Validate Netreg interface""",
-			default=False,
 			)
 
 	return simtestutil.parse_args(parser)
