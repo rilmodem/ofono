@@ -150,6 +150,12 @@ class SimTestCase(unittest.TestCase):
 							'org.ofono.Manager')
 		self.modems = self.manager.GetModems()
 
+	def if_supports_sim_offline(self):
+		if self.product != "krillin":
+			return True
+		else:
+			return False
+
 	def check_no_sim_present(self, path):
 
 		# valid SimManager properties
@@ -253,6 +259,8 @@ class SimTestCase(unittest.TestCase):
 				print(iface)
 
 			self.assertTrue(iface in ifaces)
+
+		return modem
 
 	def validate_call_volume_properties(self, path):
 

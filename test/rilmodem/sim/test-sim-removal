@@ -1,0 +1,146 @@
+#!/usr/bin/python3
+#
+#  oFono - Open Source Telephony - RIL Modem test
+#
+#  Copyright (C) 2014 Canonical Ltd.
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+# This test ensures that basic modem information is available
+# when the modem is online and has a valid, unlocked SIM present.
+
+"""Tests SIM removal detection/notification
+
+This module contains a functional test which checks a running
+ofono/rilmodem/mtkmodem instance to ensure that the correct
+DBus signals are generated and the correct properties updated
+when a SIM is removed from a running device.  The script by
+default will wait for 60 seconds for the SIM to be removed after
+which it will exit.
+
+NOTE - this test by default verifies the removal of a SIM from
+a single modem.  If the device is multi-SIM, the first modem
+will be used by default.  The -m argument can be used to specify
+the second modem if needed.
+
+SETUP:
+
+ * Run this script
+
+ * Remove the SIM card
+
+Options:
+
+ * -t / --timer - specify a timeout after which the script
+    will exit.
+
+ToDo:
+ * If run on the emulator, make this script use console
+   commands to configure the modem(s) for the required
+   conditions ( ie. no SIM(s), online )
+"""
+
+import dbus.mainloop.glib
+import simtestutil
+
+from gi.repository import GLib
+from simtestutil import *
+
+def parse_args():
+
+	parser = argparse.ArgumentParser()
+
+	parser.add_argument("-t",
+			"--timeout",
+			dest="timeout",
+			help="""Specify a timeout which causes
+			the script to exit""",
+			default=60,
+			)
+
+	return simtestutil.parse_args(parser)
+
+class TestSimRemovalNotification(SimTestCase):
+
+	def modem_listener(self, name, value, path=None):
+		if self.args.debug:
+			print("Modem property: '%s' changed to '%s'"
+				% (name, str(value)))
+
+		if name == "Interfaces":
+			if "org.ofono.SimManager" in value:
+				self.check_no_sim_present(path)
+				self.mainloop.quit()
+
+	def sim_listener(self, name, value):
+		if self.args.debug:
+			print("SIM property: '%s' changed to '%s'"
+				% (name, str(value)))
+
+		if name == "Present":
+			self.assertTrue(value == 0)
+			self.mainloop.quit()
+
+	def setUp(self):
+		self.args = args
+		self.product = get_product()
+
+		self.mainloop = GLib.MainLoop()
+
+		dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+		SimTestCase.setUp(self)
+
+		interval_ms = 1000 * int(self.args.timeout)
+		GLib.timeout_add(interval_ms, self.timeout_cb)
+
+	def timeout_cb(self):
+		if self.args.debug:
+			print("ALL DONE - timer fired!!!")
+
+		self.assertTrue(False)
+
+	def validate_modem(self, path):
+		modem = self.validate_modem_properties(path, True, True)
+
+		if self.if_supports_sim_offline() == True:
+
+			# valid SimManager properties
+			simmanager = dbus.Interface(self.bus.get_object('org.ofono',
+								path),
+							'org.ofono.SimManager')
+
+			simmanager.connect_to_signal("PropertyChanged",
+						 self.sim_listener)
+		else:
+			modem.connect_to_signal("PropertyChanged",
+						 self.modem_listener,
+						path_keyword="path")
+
+
+	def test_main(self):		
+		if args.debug:
+			print ("ro.build.product: %s" % self.product)
+
+		if len(args.modem) > 0:
+			self.validate_modem(args.modem)
+		else:
+			self.validate_modem(self.modems[0][0])
+
+		self.mainloop.run()
+
+if __name__ == "__main__":
+	args = parse_args()
+
+	sim_unittest_main(args)
