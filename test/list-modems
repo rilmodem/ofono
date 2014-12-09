@@ -40,7 +40,8 @@ for path, properties in modems:
 					"PreferredLanguages",
 					"PrimaryContexts",
 					"LockedPins",
-					"Features"]:
+					"Features",
+					"AvailableTechnologies"]:
 				val = ""
 				for i in properties[key]:
 					val += i + " "
