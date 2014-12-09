@@ -45,6 +45,11 @@ Properties	string TechnologyPreference [readwrite]
 				"umts"	Only UMTS used for radio access.
 				"lte"	Only LTE used for radio access.
 
+		array{string} AvailableTechnologies [readonly, optional]
+
+			List of values for TechnologyPreference property
+			supported by the modem.
+
 		string GsmBand [readwrite, optional]
 
 			Frequency band in which the modem is allowed to
