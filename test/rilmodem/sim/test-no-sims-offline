@@ -1,0 +1,82 @@
+#!/usr/bin/python3
+#
+#  oFono - Open Source Telephony - RIL Modem test
+#
+#  Copyright (C) 2014 Canonical Ltd.
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+# This test ensures that basic modem information is available
+# when the modem is online and has a valid, unlocked SIM present.
+
+"""Tests no SIM(s) and modem(s) offline.
+
+This module contains a functional test which checks a running
+ofono/rilmodem/mtkmodem instance to ensure that the correct
+DBus properties are exported when no SIM(s) are inserted AND
+the corresponding modem(s) are offline.  As such it validates
+the properties of the following interfaces:
+
+ * org.ofono.Modem
+ * org.ofono.SimManager ( on supported hw )
+ * org.ofono.VoiceCallManager ( EmergencyNumbers )
+ * org.ofono.CallVolume
+
+NOTE - this test by default verifies all modems present a device.
+If the device is multi-SIM and not all slots have unlocked SIMs,
+then please use the -m to verify a specific modem.
+
+SETUP:
+
+ * Power off the phone
+
+ * Remove any SIMs
+
+ * Power on the phone
+
+ * Enable FlightMode from System Setttings ( or net indicator )
+
+ * Run this script
+
+ * [Optional] Reboot the phone and re-run script
+
+ * Disable FlightMode
+
+ToDo:
+ * If run on the emulator, make this script use console
+   commands to configure the modem(s) for the required
+   conditions ( ie. no SIM(s), online )
+"""
+
+from simtestutil import *
+
+class TestNoSimsOffline(SimTestCase):
+
+	def validate_modem(self, path):
+		self.validate_modem_properties(path, False, False)
+
+		# krillin doesn't expose SimManager when offline
+		if (self.product != "krillin"):
+			self.check_no_sim_present(path)
+
+		self.validate_emergency_numbers(path)
+		self.validate_call_volume_properties(path)
+
+	def test_main(self):
+		self.main(args)
+
+if __name__ == "__main__":
+	args = parse_args()
+
+	sim_unittest_main(args)
