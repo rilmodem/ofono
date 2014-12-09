@@ -399,6 +399,14 @@ gboolean g_ril_request_sim_read_info(GRil *gril,
 	parcel_w_string(rilp, NULL);       /* pin2; only req'd for writes */
 	parcel_w_string(rilp, req->aid_str); /* AID (Application ID) */
 
+	/*
+	 * sessionId, specific to latest MTK modems (harmless for older ones).
+	 * It looks like this field selects one or another SIM application, but
+	 * we use only one at a time so using zero here seems safe.
+	 */
+	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+		parcel_w_int32(rilp, 0);
+
 	return TRUE;
 
 error:
@@ -429,6 +437,10 @@ gboolean g_ril_request_sim_read_binary(GRil *gril,
 	parcel_w_string(rilp, NULL);          /* pin2; only req'd for writes */
 	parcel_w_string(rilp, req->aid_str);
 
+	/* sessionId, specific to latest MTK modems (harmless for older ones) */
+	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+		parcel_w_int32(rilp, 0);
+
 	return TRUE;
 
 error:
@@ -458,6 +470,10 @@ gboolean g_ril_request_sim_read_record(GRil *gril,
 	parcel_w_string(rilp, NULL);       /* data; only req'd for writes */
 	parcel_w_string(rilp, NULL);       /* pin2; only req'd for writes */
 	parcel_w_string(rilp, req->aid_str); /* AID (Application ID) */
+
+	/* sessionId, specific to latest MTK modems (harmless for older ones) */
+	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+		parcel_w_int32(rilp, 0);
 
 	return TRUE;
 
@@ -493,6 +509,10 @@ gboolean g_ril_request_sim_write_binary(GRil *gril,
 	parcel_w_string(rilp, hex_data);	/* data */
 	parcel_w_string(rilp, NULL);		/* pin2; only for FDN/BDN */
 	parcel_w_string(rilp, req->aid_str);	/* AID (Application ID) */
+
+	/* sessionId, specific to latest MTK modems (harmless for older ones) */
+	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+		parcel_w_int32(rilp, 0);
 
 	g_ril_append_print_buf(gril,
 				"%s%d,%d,%d,%s,pin2=(null),aid=%s)",
@@ -554,6 +574,10 @@ gboolean g_ril_request_sim_write_record(GRil *gril,
 	parcel_w_string(rilp, hex_data);	/* data */
 	parcel_w_string(rilp, NULL);		/* pin2; only for FDN/BDN */
 	parcel_w_string(rilp, req->aid_str);	/* AID (Application ID) */
+
+	/* sessionId, specific to latest MTK modems (harmless for older ones) */
+	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+		parcel_w_int32(rilp, 0);
 
 	g_ril_append_print_buf(gril,
 				"%s%d,%d,%d,%s,pin2=(null),aid=%s)",
