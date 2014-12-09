@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+#include <stdint.h>
 
 #include <glib.h>
 #include <gdbus.h>
@@ -48,8 +49,7 @@ struct ofono_radio_settings {
 	enum ofono_radio_band_gsm pending_band_gsm;
 	enum ofono_radio_band_umts pending_band_umts;
 	ofono_bool_t fast_dormancy_pending;
-	ofono_bool_t modem_rats[OFONO_RADIO_ACCESS_MODE_LAST];
-	ofono_bool_t modem_rats_filled;
+	uint32_t available_rats;
 	const struct ofono_radio_settings_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -224,18 +224,20 @@ static DBusMessage *radio_get_properties_reply(DBusMessage *msg,
 					DBUS_TYPE_BOOLEAN, &value);
 	}
 
-	if (rs->driver->query_modem_rats) {
-		const char *rats_strs[OFONO_RADIO_ACCESS_MODE_LAST + 1];
-		const char *(*strs)[] = &rats_strs;
-		int i, str_i;
+	if (rs->available_rats) {
+		const char *rats_strs[OFONO_RADIO_ACCESS_MODE_LTE + 1];
+		const char **strs = rats_strs;
+		int str_i = 0;
+		size_t i, techs = sizeof(rats_strs)/sizeof(rats_strs[0]) - 1;
 
-		for (i = 0, str_i = 0; i < OFONO_RADIO_ACCESS_MODE_LAST; ++i)
-			if (rs->modem_rats[i])
+		for (i = 0; i < techs; ++i)
+			if (rs->available_rats & (1 << i))
 				rats_strs[str_i++] =
-						radio_access_mode_to_string(i);
+					radio_access_mode_to_string(i + 1);
+
 		rats_strs[str_i] = NULL;
 
-		ofono_dbus_dict_append_array(&dict, "ModemTechnologies",
+		ofono_dbus_dict_append_array(&dict, "AvailableTechnologies",
 						DBUS_TYPE_STRING, &strs);
 	}
 
@@ -391,41 +393,30 @@ static void radio_send_properties_reply(struct ofono_radio_settings *rs)
 	__ofono_dbus_pending_reply(&rs->pending, reply);
 }
 
-static void radio_set_modem_rats(struct ofono_radio_settings *rs,
-					const ofono_bool_t rats[])
-{
-	memcpy(rs->modem_rats, rats, sizeof(rs->modem_rats));
-	rs->modem_rats_filled = TRUE;
-}
-
-static void radio_modem_rats_query_callback(const struct ofono_error *error,
-						const ofono_bool_t rats[],
+static void radio_available_rats_query_callback(const struct ofono_error *error,
+						unsigned int available_rats,
 						void *data)
 {
 	struct ofono_radio_settings *rs = data;
-	DBusMessage *reply;
 
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		DBG("Error during modem rats query");
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
+		rs->available_rats = available_rats;
+	else
+		DBG("Error while querying available rats");
 
-		reply = __ofono_error_failed(rs->pending);
-		__ofono_dbus_pending_reply(&rs->pending, reply);
-
-		return;
-	}
-
-	radio_set_modem_rats(rs, rats);
 	radio_send_properties_reply(rs);
 }
 
-static void radio_query_modem_rats(struct ofono_radio_settings *rs)
+static void radio_query_available_rats(struct ofono_radio_settings *rs)
 {
-	if (rs->driver->query_modem_rats == NULL) {
+	/* Modem technology is not supposed to change, so one query is enough */
+	if (rs->driver->query_available_rats == NULL || rs->available_rats) {
 		radio_send_properties_reply(rs);
 		return;
 	}
 
-	rs->driver->query_modem_rats(rs, radio_modem_rats_query_callback, rs);
+	rs->driver->query_available_rats(
+				rs, radio_available_rats_query_callback, rs);
 }
 
 static void radio_fast_dormancy_query_callback(const struct ofono_error *error,
@@ -444,12 +435,7 @@ static void radio_fast_dormancy_query_callback(const struct ofono_error *error,
 	}
 
 	radio_set_fast_dormancy(rs, enable);
-
-	/* Modem technology is not supposed to change, so one query is enough */
-	if (rs->modem_rats_filled)
-		radio_send_properties_reply(rs);
-	else
-		radio_query_modem_rats(rs);
+	radio_query_available_rats(rs);
 }
 
 static void radio_query_fast_dormancy(struct ofono_radio_settings *rs)
