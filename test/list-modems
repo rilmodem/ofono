@@ -71,7 +71,7 @@ for path, properties in modems:
 					"PrimaryContexts",
 					"LockedPins",
 					"Features",
-					"ModemTechnologies"]:
+					"AvailableTechnologies"]:
 				val = ""
 				for i in properties[key]:
 					val += i + " "
