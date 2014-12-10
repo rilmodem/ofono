@@ -389,6 +389,30 @@ static void phonesim_radio_settings_remove(struct ofono_radio_settings *rs)
 	g_at_chat_unref(chat);
 }
 
+static void phonesim_query_rat_mode(struct ofono_radio_settings *rs,
+                                ofono_radio_settings_rat_mode_query_cb_t cb,
+				void *data)
+{
+	DBG("");
+
+	CALLBACK_WITH_SUCCESS(cb, OFONO_RADIO_ACCESS_MODE_ANY, data);
+}
+
+static void phonesim_query_available_rats(struct ofono_radio_settings *rs,
+			ofono_radio_settings_available_rats_query_cb_t cb,
+			void *data)
+{
+	uint32_t techs = 0;
+
+	DBG("");
+
+	techs |= OFONO_RADIO_ACCESS_MODE_GSM;
+	techs |= OFONO_RADIO_ACCESS_MODE_UMTS;
+	techs |= OFONO_RADIO_ACCESS_MODE_LTE;
+
+	CALLBACK_WITH_SUCCESS(cb, techs, data);
+}
+
 static struct ofono_gprs_context_driver context_driver = {
 	.name			= "phonesim",
 	.probe			= phonesim_context_probe,
@@ -398,9 +422,11 @@ static struct ofono_gprs_context_driver context_driver = {
 };
 
 static struct ofono_radio_settings_driver radio_settings_driver = {
-	.name		= "phonesim",
-	.probe		= phonesim_radio_settings_probe,
-	.remove		= phonesim_radio_settings_remove,
+	.name			= "phonesim",
+	.probe			= phonesim_radio_settings_probe,
+	.remove			= phonesim_radio_settings_remove,
+	.query_rat_mode		= phonesim_query_rat_mode,
+	.query_available_rats	= phonesim_query_available_rats,
 };
 
 static struct ofono_ctm_driver ctm_driver = {
