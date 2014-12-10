@@ -140,6 +140,27 @@ def parse_args(parser=None):
 
 	return args
 
+def parse_lock_test_args():
+
+	parser = argparse.ArgumentParser()
+
+	group = parser.add_mutually_exclusive_group(required=True)
+
+	group.add_argument("--pin",
+				dest="pin",
+				help="""Specify the SIM PIN code""",
+				metavar="<PIN Code>",
+				)
+
+	group.add_argument("--continue",
+				dest="cont",
+				action="store_true",
+				help="""Continue verification after
+				 a reboot""",
+				)
+
+	return parse_args(parser)
+
 class SimTestCase(unittest.TestCase):
 
 	def setUp(self):
@@ -150,6 +171,10 @@ class SimTestCase(unittest.TestCase):
 							'org.ofono.Manager')
 		self.modems = self.manager.GetModems()
 
+	def get_simmanager(self, path):
+		return dbus.Interface(self.bus.get_object('org.ofono',
+							path),
+							'org.ofono.SimManager')
 	def if_supports_sim_offline(self):
 		if self.product != "krillin":
 			return True
@@ -158,12 +183,7 @@ class SimTestCase(unittest.TestCase):
 
 	def check_no_sim_present(self, path):
 
-		# valid SimManager properties
-		simmanager = dbus.Interface(self.bus.get_object('org.ofono',
-								path),
-							'org.ofono.SimManager')
-
-		properties = simmanager.GetProperties()
+		properties = self.get_simmanager(path).GetProperties()
 
 		self.assertTrue(properties["Present"] != 1)
 
@@ -303,14 +323,10 @@ class SimTestCase(unittest.TestCase):
 		for number in numbers:
 			self.assertTrue(number in emergency_numbers)
 
-	def validate_sim_properties(self, path):
+	def validate_sim_properties(self, path, mnc="", mcc="", subs=""):
 
 		# valid SimManager properties
-		simmanager = dbus.Interface(self.bus.get_object('org.ofono',
-								path),
-							'org.ofono.SimManager')
-
-		properties = simmanager.GetProperties()
+		properties = self.get_simmanager(path).GetProperties()
 		keys = list(properties.keys())
 
 		for property in sim_properties:
@@ -329,7 +345,6 @@ class SimTestCase(unittest.TestCase):
 			self.assertTrue(properties["SubscriberNumbers"][0]
 					== "15555215554")
 
-		self.assertTrue(len(properties["LockedPins"]) == 0)
 		self.assertTrue(properties["PinRequired"] == "none")
 
                 # validate optional properties
@@ -342,26 +357,25 @@ class SimTestCase(unittest.TestCase):
 			if self.product == "goldfish":
 				self.assertTrue(properties["MobileCountryCode"]
 						 == "310")
-			elif self.args.mcc != "":
+			elif mcc != "":
 				self.assertTrue(properties["MobileCountryCode"]
-						 == args.mcc)
+						 == mcc)
 
 		if "MobileNetworkCode" in keys:
 			if self.product == "goldfish":
 				self.assertTrue(properties["MobileNetworkCode"]
 						 == "260")
-			elif self.args.mnc != "":
+			elif mnc != "":
 				self.assertTrue(properties["MobileNetworkCode"]
-						 == args.mnc)
+						 == mnc)
 
 		if "SubscriberIdentity" in keys:
 			if self.product == "goldfish":
 				self.assertTrue(properties["SubscriberIdentity"]
 						 == "310260000000000")
-			elif self.args.subscriber != "":
+			elif subs != "":
 				self.assertTrue(properties["SubscriberIdentity"]
-						 == args.subscriber)
-
+						 == subs)
 
 	def main(self, args):
 		self.args = args
