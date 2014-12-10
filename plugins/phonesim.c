@@ -861,6 +861,8 @@ static void phonesim_post_sim(struct ofono_modem *modem)
 
 	if (!data->calypso)
 		ofono_sms_create(modem, 0, "atmodem", data->chat);
+
+	ofono_radio_settings_create(modem, 0, "phonesim", data->chat);
 }
 
 static void phonesim_post_online(struct ofono_modem *modem)
