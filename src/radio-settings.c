@@ -225,20 +225,24 @@ static DBusMessage *radio_get_properties_reply(DBusMessage *msg,
 	}
 
 	if (rs->available_rats) {
-		const char *rats_strs[OFONO_RADIO_ACCESS_MODE_LTE + 1];
-		const char **strs = rats_strs;
-		int str_i = 0;
-		size_t i, techs = sizeof(rats_strs)/sizeof(rats_strs[0]) - 1;
+		const char *rats[sizeof(uint32_t) + 1];
+		const char **dbus_rats = rats;
+		int n = 0;
+		unsigned int i;
 
-		for (i = 0; i < techs; ++i)
-			if (rs->available_rats & (1 << i))
-				rats_strs[str_i++] =
-					radio_access_mode_to_string(i + 1);
+		for (i = 0; i < sizeof(uint32_t); i++) {
+			int tech = 1 << i;
 
-		rats_strs[str_i] = NULL;
+			if (!(rs->available_rats & tech))
+				continue;
+
+			rats[n++] = radio_access_mode_to_string(tech);
+		}
+
+		rats[n] = NULL;
 
 		ofono_dbus_dict_append_array(&dict, "AvailableTechnologies",
-						DBUS_TYPE_STRING, &strs);
+						DBUS_TYPE_STRING, &dbus_rats);
 	}
 
 	dbus_message_iter_close_container(&iter, &dict);
