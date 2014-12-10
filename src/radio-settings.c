@@ -445,7 +445,7 @@ static void radio_fast_dormancy_query_callback(const struct ofono_error *error,
 static void radio_query_fast_dormancy(struct ofono_radio_settings *rs)
 {
 	if (rs->driver->query_fast_dormancy == NULL) {
-		radio_send_properties_reply(rs);
+		radio_query_available_rats(rs);
 		return;
 	}
 
