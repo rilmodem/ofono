@@ -404,7 +404,7 @@ static void radio_available_rats_query_callback(const struct ofono_error *error,
 	struct ofono_radio_settings *rs = data;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		rs->available_rats = available_rats;
+		rs->available_rats = available_rats & 0x7;
 	else
 		DBG("Error while querying available rats");
 
