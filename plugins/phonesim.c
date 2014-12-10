@@ -351,12 +351,53 @@ static void phonesim_ctm_set(struct ofono_ctm *ctm, ofono_bool_t enable,
 	g_free(cbd);
 }
 
+static gboolean phonesim_radio_settings_register(gpointer user)
+{
+	struct ofono_radio_settings *rs = user;
+
+	ofono_radio_settings_register(rs);
+
+	return FALSE;
+}
+
+static int phonesim_radio_settings_probe(struct ofono_radio_settings *rs,
+					unsigned int vendor, void *data)
+{
+	GAtChat *chat;
+
+	DBG("");
+
+	chat = g_at_chat_clone(data);
+
+	ofono_radio_settings_set_data(rs, chat);
+	g_idle_add(phonesim_radio_settings_register, rs);
+
+	return 0;
+}
+
+static void phonesim_radio_settings_remove(struct ofono_radio_settings *rs)
+{
+	GAtChat *chat = ofono_radio_settings_get_data(rs);
+
+	DBG("");
+
+	ofono_radio_settings_set_data(rs, NULL);
+
+	g_at_chat_unref(chat);
+}
+
 static struct ofono_gprs_context_driver context_driver = {
 	.name			= "phonesim",
 	.probe			= phonesim_context_probe,
 	.remove			= phonesim_context_remove,
 	.activate_primary	= phonesim_activate_primary,
 	.deactivate_primary	= phonesim_deactivate_primary,
+};
+
+static struct ofono_radio_settings_driver radio_settings_driver = {
+	.name		= "phonesim",
+	.probe		= phonesim_radio_settings_probe,
+	.remove		= phonesim_radio_settings_remove,
 };
 
 static struct ofono_ctm_driver ctm_driver = {
@@ -1081,6 +1122,7 @@ static int phonesim_init(void)
 
 	ofono_gprs_context_driver_register(&context_driver);
 	ofono_ctm_driver_register(&ctm_driver);
+	ofono_radio_settings_driver_register(&radio_settings_driver);
 
 	if (conf_override)
 		parse_config(conf_override);
@@ -1103,6 +1145,7 @@ static void phonesim_exit(void)
 	g_slist_free(modem_list);
 	modem_list = NULL;
 
+	ofono_radio_settings_driver_unregister(&radio_settings_driver);
 	ofono_ctm_driver_unregister(&ctm_driver);
 
 	ofono_gprs_context_driver_unregister(&context_driver);
