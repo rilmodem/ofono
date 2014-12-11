@@ -79,7 +79,8 @@ class TestSimEnablePinLock(SimTestCase):
 		simmanager.LockPin("pin", self.args.pin)
 		properties = simmanager.GetProperties()
 
-		self.assertTrue(len(properties["LockedPins"]) == 1)
+		locked_pins = properties["LockedPins"]
+		self.assertTrue(len(locked_pins) == 1)
 		self.assertTrue(locked_pins[0] == "pin")
 
 	def validate_modem(self, path):
