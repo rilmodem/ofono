@@ -1,0 +1,128 @@
+#!/usr/bin/python3
+#
+#  oFono - Open Source Telephony - RIL Modem test
+#
+#  Copyright (C) 2014 Canonical Ltd.
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+# This test ensures that basic modem information is available
+# when the modem is online and has a valid, unlocked SIM present.
+
+"""Tests the abilty to change a SIM PIN.
+
+This module contains a functional test which checks an
+ofono/rilmodem/mtkmodem instance to ensure that the a
+SIM PIN can be changed.
+
+NOTE - this test by default tries to change the PIN of a
+single SIM.  If the device is multi-SIM, the first modem
+will be used by default.  The -m argument can be used to
+specify the second modem if needed.
+
+Requirements:
+
+ * a SIM with PIN-locking enabled
+
+ * the current PIN code for the SIM
+
+Setup:
+
+ * Ensure that FlightMode is NOT enabled
+
+ * Ensure that at least one SIM with PIN-locking
+   enabled is inserted in the phone AND STILL LOCKED!
+   ( ie. the PIN hasn't been entered yet )
+
+ * Run this script
+
+Notes:
+
+On some phones, this script will enter the SIM PIN
+to unlock it before changing the PIN.
+
+ToDo:
+ * If run on the emulator, make this script use console
+   commands to configure the modem(s) for the required
+   conditions ( ie. no SIM(s), online )
+"""
+
+import simtestutil
+
+from simtestutil import *
+
+def parse_test_args():
+
+	parser = argparse.ArgumentParser()
+
+	parser.add_argument("--old-pin",
+				dest="old_pin",
+				help="""Specify the SIM PIN code""",
+				required="yes",
+				)
+
+	parser.add_argument("--new-pin",
+				dest="new_pin",
+				help="""Specify the new SIM PIN code""",
+				required="yes"
+				)
+
+	return parse_args(parser)
+
+class TestSimChangePin(SimTestCase):
+
+	def change_pin_lock(self, path):
+
+		if self.args.debug:
+			print("change_pin_lock called, "
+				"pin= {} "
+				"new_pin: {}".format(self.args.old_pin,
+							self.args.new_pin))
+
+		simmanager = self.get_simmanager(path)
+		properties = simmanager.GetProperties()
+
+		locked_pins = properties["LockedPins"]
+		self.assertTrue(len(locked_pins) == 1)
+		self.assertTrue(locked_pins[0] == "pin")
+
+		if self.product == "krillin" and properties["PinRequired"] == "pin":
+			simmanager.EnterPin("pin", self.args.old_pin)
+
+		simmanager.ChangePin("pin", self.args.old_pin,
+					self.args.new_pin)
+
+		simmanager.UnlockPin("pin", self.args.new_pin)
+		simmanager.LockPin("pin", self.args.new_pin)
+
+		properties = simmanager.GetProperties()
+
+		locked_pins = properties["LockedPins"]
+		self.assertTrue(len(locked_pins) == 1)
+		self.assertTrue(locked_pins[0] == "pin")
+
+		self.assertTrue(properties["PinRequired"] == "none")
+
+	def validate_modem(self, path):
+
+		self.change_pin_lock(path)
+
+	def test_main(self):
+		self.main(args)
+
+if __name__ == "__main__":
+	args = parse_test_args()
+
+	sim_unittest_main(args)
+
