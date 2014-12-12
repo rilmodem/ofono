@@ -225,12 +225,12 @@ static DBusMessage *radio_get_properties_reply(DBusMessage *msg,
 	}
 
 	if (rs->available_rats) {
-		const char *rats[sizeof(uint32_t) + 1];
+		const char *rats[sizeof(uint32_t) * CHAR_BIT + 1];
 		const char **dbus_rats = rats;
 		int n = 0;
 		unsigned int i;
 
-		for (i = 0; i < sizeof(uint32_t); i++) {
+		for (i = 0; i < sizeof(uint32_t) * CHAR_BIT; i++) {
 			int tech = 1 << i;
 
 			if (!(rs->available_rats & tech))
