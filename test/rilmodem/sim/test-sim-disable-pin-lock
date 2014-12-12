@@ -1,0 +1,106 @@
+#!/usr/bin/python3
+#
+#  oFono - Open Source Telephony - RIL Modem test
+#
+#  Copyright (C) 2014 Canonical Ltd.
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+# This test ensures that basic modem information is available
+# when the modem is online and has a valid, unlocked SIM present.
+
+"""Tests disabling PIN locking for a SIM.
+
+This module contains a functional test which checks an
+ofono/rilmodem/mtkmodem instance to ensure that the correct
+things happen when SIM PIN locking is disabled.
+
+NOTE - this test by default disables locking for a single SIM.
+If the device is multi-SIM, the first modem will be used by
+default.  The -m argument can be used to specify the second
+modem if needed.
+
+Requirements:
+
+ * a locked SIM card
+
+ * the current PIN code for the SIM
+
+SETUP:
+
+ * Ensure that at least one locked SIM is inserted in the phone
+
+ * Ensure that FlightMode is NOT enabled
+
+ * [Optional] Some phones may require the SIM to be entered
+   before PIN locking can be disabled.
+
+ * Run this script
+
+ * Reboot the phone and re-run this script specifying --continue
+   ( DON'T enter the PIN on the UI after rebooting!!! )
+
+ToDo:
+ * If run on the emulator, make this script use console
+   commands to configure the modem(s) for the required
+   conditions ( ie. no SIM(s), online )
+"""
+
+import simtestutil
+
+from simtestutil import *
+
+class TestSimDisablePinLock(SimTestCase):
+
+	def validate_pin_props(self, path):
+		simmanager = self.get_simmanager(path)
+		properties = simmanager.GetProperties()
+
+		self.assertTrue(len(properties["LockedPins"]) == 0)
+		self.assertTrue(properties["PinRequired"] == "none")
+
+	def disable_pin_lock(self, path):
+
+		simmanager = self.get_simmanager(path)
+		properties = simmanager.GetProperties()
+
+		if self.args.debug:
+			print("disable_pin_lock called, LockedPins: %s"
+				% properties["LockedPins"])
+			print("pin=%s" % self.args.pin)
+
+		locked_pins = properties["LockedPins"]
+		self.assertTrue(len(locked_pins) == 1)
+		self.assertTrue(locked_pins[0] == "pin")
+
+		simmanager.UnlockPin("pin", self.args.pin)
+		properties = simmanager.GetProperties()
+		self.assertTrue(len(properties["LockedPins"]) == 0)
+
+	def validate_modem(self, path):
+
+		if self.args.cont == False:
+			self.validate_modem_properties(path, True, True)
+			self.disable_pin_lock(path)
+		else:
+			self.validate_pin_props(path)
+
+	def test_main(self):
+		self.main(args)
+
+if __name__ == "__main__":
+	args = simtestutil.parse_lock_test_args()
+
+	sim_unittest_main(args)
+

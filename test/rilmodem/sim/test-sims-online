@@ -89,7 +89,11 @@ class TestSimsOnline(SimTestCase):
 
 	def validate_modem(self, path):
 		self.validate_modem_properties(path, True, True)
-		self.validate_sim_properties(path)
+
+
+		self.validate_sim_properties(path, self.args.mcc,
+						self.args.mnc,
+						self.args.subscriber)
 
 		self.validate_emergency_numbers(path)
 		self.validate_call_volume_properties(path)

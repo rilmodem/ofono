@@ -90,7 +90,9 @@ class TestSimsOffline(SimTestCase):
 
 		# krillin: no SIM access when modem offline
 		if (self.product != "krillin"):
-			self.validate_sim_properties(path)
+			self.validate_sim_properties(path, self.args.mcc,
+							self.args.mnc,
+							self.args.subscriber)
 
 		self.validate_emergency_numbers(path)
 		self.validate_call_volume_properties(path)
