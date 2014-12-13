@@ -1,3 +1,12 @@
+ver 1.16:
+	Fix issue with PIN retry handling.
+	Fix issue with HFP and multiple calls.
+	Add support for Distracted Driving Reduction.
+	Add support for available technologies property.
+	Add support for Telit location reporting driver.
+	Add support for u-blox SARA-U270 modems.
+	Add support for Quectel UC15 modems.
+
 ver 1.15:
 	Fix issue with EF_PNN access affecting PLMN display.
 	Fix issue with SIM detection and Telit HE910 modems.
