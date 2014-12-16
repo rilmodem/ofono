@@ -45,6 +45,8 @@ const char *mtk_request_id_to_string(int req)
 		return "MTK_RIL_REQUEST_SET_3G_CAPABILITY";
 	case MTK_RIL_REQUEST_SET_FD_MODE:
 		return "MTK_RIL_REQUEST_SET_FD_MODE";
+	case MTK_RIL_REQUEST_STORE_MODEM_TYPE:
+		return "MTK_RIL_REQUEST_STORE_MODEM_TYPE";
 	default:
 		return NULL;
 	}
