@@ -120,7 +120,7 @@ struct mtk_data {
 	struct ofono_phonebook *phonebook;
 	struct ofono_gprs *gprs;
 	struct ofono_message_waiting *message_waiting;
-	struct ofono_modem *ofono_modem;
+	struct ofono_modem *modem;
 	ofono_bool_t has_3g;
 	struct mtk_settings_data *mtk_settings;
 };
@@ -347,7 +347,7 @@ static int mtk_probe(struct ofono_modem *modem)
 
 	DBG("slot %d", md->slot);
 
-	md->ofono_modem = modem;
+	md->modem = modem;
 
 	ofono_modem_set_data(modem, md);
 
@@ -550,7 +550,7 @@ static void mtk_sim_mode_cb(struct ril_msg *message, gpointer user_data)
 
 	if (md->ofono_online)
 		md->mtk_settings =
-			mtk_settings_create(md->ofono_modem, md->ril,
+			mtk_settings_create(md->modem, md->ril,
 						md->has_3g);
 	else
 		mtk_settings_remove(md->mtk_settings);
@@ -775,17 +775,17 @@ static void mtk_set_online(struct ofono_modem *modem, ofono_bool_t online,
 static void set_online_cb(const struct ofono_error *error, void *data)
 {
 	if (mtk_data_1->ofono_online_target && !mtk_data_1->ofono_online)
-		mtk_set_online(mtk_data_1->ofono_modem, TRUE, set_online_cb, NULL);
+		mtk_set_online(mtk_data_1->modem, TRUE, set_online_cb, NULL);
 }
 
 static void set_offline_cb(const struct ofono_error *error, void *data)
 {
 	if (mtk_data_1->ofono_online)
-		mtk_set_online(mtk_data_1->ofono_modem, FALSE, set_offline_cb, NULL);
+		mtk_set_online(mtk_data_1->modem, FALSE, set_offline_cb, NULL);
 	else if (mtk_data_0->ofono_online_target)
-		mtk_set_online(mtk_data_0->ofono_modem, TRUE, set_online_cb, NULL);
+		mtk_set_online(mtk_data_0->modem, TRUE, set_online_cb, NULL);
 	else
-		mtk_set_online(mtk_data_1->ofono_modem, TRUE, set_online_cb, NULL);
+		mtk_set_online(mtk_data_1->modem, TRUE, set_online_cb, NULL);
 }
 
 void mtk_reset_all_modems(void)
@@ -796,13 +796,13 @@ void mtk_reset_all_modems(void)
 	mtk_data_0->ofono_online_target = mtk_data_0->ofono_online;
 	mtk_data_1->ofono_online_target = mtk_data_1->ofono_online;
 
-	ofono_modem_set_powered(mtk_data_0->ofono_modem, FALSE);
-	ofono_modem_set_powered(mtk_data_1->ofono_modem, FALSE);
+	ofono_modem_set_powered(mtk_data_0->modem, FALSE);
+	ofono_modem_set_powered(mtk_data_1->modem, FALSE);
 
 	if (mtk_data_0->ofono_online)
-		mtk_set_online(mtk_data_0->ofono_modem, FALSE, set_offline_cb, NULL);
+		mtk_set_online(mtk_data_0->modem, FALSE, set_offline_cb, NULL);
 	else
-		mtk_set_online(mtk_data_1->ofono_modem, FALSE, set_offline_cb, NULL);
+		mtk_set_online(mtk_data_1->modem, FALSE, set_offline_cb, NULL);
 }
 
 static void create_atoms_on_connection(struct ofono_modem *modem)
@@ -851,14 +851,14 @@ static void start_slot(struct mtk_data *md, struct socket_data *sock,
 		g_ril_set_debugf(md->ril, mtk_debug, (char *) hex_prefix);
 
 	g_ril_set_disconnect_function(md->ril, socket_disconnected,
-					md->ofono_modem);
+					md->modem);
 
 	g_ril_unregister(sock->ril, sock->radio_state_ev_id);
 
 	g_ril_register(md->ril, RIL_UNSOL_RESPONSE_RADIO_STATE_CHANGED,
-			mtk_radio_state_changed, md->ofono_modem);
+			mtk_radio_state_changed, md->modem);
 
-	mtk_connected(md->ofono_modem);
+	mtk_connected(md->modem);
 }
 
 static void query_3g_caps_cb(struct ril_msg *message, gpointer user_data)
