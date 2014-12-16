@@ -1,0 +1,227 @@
+#!/usr/bin/python3
+#
+#  oFono - Open Source Telephony - RIL Modem test
+#
+#  Copyright (C) 2014 Canonical Ltd.
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+# This test ensures that basic modem information is available
+# when the modem is online and has a valid, unlocked SIM present.
+
+"""Tests the abilty to unlock a PUK-locked SIM.
+
+Requirements:
+
+ * a SIM with PIN-locking enabled
+
+ * the current PUK code for the SIM
+
+Setup:
+
+ * Ensure that FlightMode is NOT enabled
+
+ * Ensure that at least one SIM with PIN-locking
+   enabled is inserted in the phone AND STILL LOCKED!
+   ( ie. the PIN hasn't been entered yet )
+
+ * Run this script
+
+Notes:
+
+This script will actually cause the SIM to become PUK-locked
+by entering a hard-coded SIM three times in a row.  This is
+done to verify that the 'Retries' property is properly updated
+on incorrect PIN attempts.  Likewise, once PUK-locked this
+test will also attempt on incorrect PUK reset to again check
+'Retries'.  It will then reset the SIM to the given new PIN.
+
+ToDo:
+ * If run on the emulator, make this script use console
+   commands to configure the modem(s) for the required
+   conditions ( ie. no SIM(s), online )
+"""
+
+import dbus.mainloop.glib
+import simtestutil
+
+from gi.repository import GLib
+from simtestutil import *
+
+def parse_test_args():
+
+	parser = argparse.ArgumentParser()
+
+	parser.add_argument("--puk",
+				dest="puk",
+				help="""Specify the SIM PUK code""",
+				required="yes",
+				)
+
+	parser.add_argument("--new-pin",
+				dest="new_pin",
+				help="""Spicy the new SIM PIN code""",
+				required="yes"
+				)
+
+	parser.add_argument("-t",
+			"--timeout",
+			dest="timeout",
+			help="""Specify a timeout which causes
+			the script to exit""",
+			default=10,
+			)
+
+	return parse_args(parser)
+
+class TestSimUnlockPuk(SimTestCase):
+
+	def setUp(self):
+		self.args = args
+		self.product = get_product()
+		self.pin_retries = 3
+		self.puk_retries = 10
+		self.pin_retry_failure = False
+		self.puk_retry_failure = False
+		self.timeout_failure = False
+		self.bad_puk_sent = False
+
+		self.mainloop = GLib.MainLoop()
+
+		dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+		SimTestCase.setUp(self)
+
+		interval_ms = 1000 * int(self.args.timeout)
+		GLib.timeout_add(interval_ms, self.timeout_cb)
+
+	def enter_bad_pin(self, path, simmanager=None):
+		if simmanager == None:
+			simmanager = self.get_simmanager(path)
+
+		try:
+			simmanager.EnterPin("pin", "0000")
+		except dbus.DBusException as e:
+			if self.args.debug:
+				print("EnterPin failed")
+
+	def enter_puk(self, path, puk, pin, simmanager=None):
+		if simmanager == None:
+			simmanager = self.get_simmanager(path)
+
+		try:
+			simmanager.ResetPin("puk", puk, pin)
+		except dbus.DBusException as e:
+			if self.args.debug:
+				print("ResetPin failed")
+
+			# now do a valid PUK unlock
+			if self.bad_puk_sent == False:
+				self.bad_puk_sent = True
+				self.enter_puk(path,
+						self.args.puk,
+						self.args.new_pin)
+
+	def retry_listener(self, name, value, path):
+		if self.args.debug:
+			print("modem: {} SIM property: {} changed "
+				"to {}".format(path, name, str(value)))
+
+		if name == "Retries" and len(value) > 0:
+
+			# bug: lp: #14028 - Retries not updated for
+			# bad PUK attempts!  If it's possible to fix
+			# this bug, then code should be added here to
+			# validate puk retries decreasing...
+
+			if self.bad_puk_sent == False:
+				if "pin" in value:
+					retries = int(value["pin"])
+				else:
+					retries = 0
+
+				if retries != (self.pin_retries - 1):
+					self.pin_retry_failure = True
+					self.mainloop.quit()
+				else:
+					self.pin_retries = retries
+
+				if retries > 0:
+					if self.args.debug:
+						print("enter another bad pin")
+
+					self.enter_bad_pin(path)
+
+		elif name == "PinRequired":
+			if value == "none":
+				if self.args.debug:
+					print("Pin reset; all done!");
+
+				self.mainloop.quit()
+			elif value == "puk":
+
+				# trigger an invalid PUK unlock
+				self.enter_puk(path,
+						"0000000000",
+						"0000")
+
+	def timeout_cb(self):
+		if self.args.debug:
+			print("ALL DONE - timer fired!!!")
+
+		self.timeout_failure = True
+		self.mainloop.quit()
+
+	def puk_unlock(self, path):
+
+		if self.args.debug:
+			print("puk_unlock called, puk= {} "
+				"new_pin: {}".format(self.args.puk,
+							self.args.new_pin))
+
+		simmanager = self.get_simmanager(path)
+		properties = simmanager.GetProperties()
+
+		# verify SIM is PIN-locked
+		locked_pins = properties["LockedPins"]
+		self.assertTrue(len(locked_pins) == 1)
+		self.assertTrue(locked_pins[0] == "pin")
+
+		self.assertTrue(properties["PinRequired"] == "pin")
+
+		# enter wrong PIN x3
+		simmanager.connect_to_signal("PropertyChanged",
+						self.retry_listener,
+						path_keyword="path")
+
+		self.enter_bad_pin(path, simmanager)
+
+	def validate_modem(self, path):
+
+		self.puk_unlock(path)
+
+		self.mainloop.run()
+
+		self.assertFalse(self.timeout_failure)
+		self.assertFalse(self.pin_retry_failure)
+		self.assertFalse(self.puk_retry_failure)
+
+	def test_main(self):
+		self.main(args)
+
+if __name__ == "__main__":
+	args = parse_test_args()
+
+	sim_unittest_main(args)
+
