@@ -185,7 +185,7 @@ class SimTestCase(unittest.TestCase):
 
 		properties = self.get_simmanager(path).GetProperties()
 
-		self.assertTrue(properties["Present"] != 1)
+		return (properties["Present"] != 1)
 
 	def validate_modem_properties(self, path, test_online, test_sims):
 

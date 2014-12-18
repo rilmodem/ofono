@@ -80,7 +80,9 @@ class TestSimRemovalNotification(SimTestCase):
 
 		if name == "Interfaces":
 			if "org.ofono.SimManager" in value:
-				self.check_no_sim_present(path)
+				if (self.check_no_sim_present(path) != True):
+					self.sim_present_failure = True
+
 				self.mainloop.quit()
 
 	def sim_listener(self, name, value):
@@ -89,12 +91,18 @@ class TestSimRemovalNotification(SimTestCase):
 				% (name, str(value)))
 
 		if name == "Present":
-			self.assertTrue(value == 0)
+			if value != 0:
+				self.sim_present_signal_failure = True
+
 			self.mainloop.quit()
 
 	def setUp(self):
 		self.args = args
 		self.product = get_product()
+
+		self.sim_present_failure = False
+		self.sim_present_signal_failure = False
+		self.timeout_failure = False
 
 		self.mainloop = GLib.MainLoop()
 
@@ -109,7 +117,8 @@ class TestSimRemovalNotification(SimTestCase):
 		if self.args.debug:
 			print("ALL DONE - timer fired!!!")
 
-		self.assertTrue(False)
+		self.timeout_failure = True
+		self.mainloop.quit()
 
 	def validate_modem(self, path):
 		modem = self.validate_modem_properties(path, True, True)
@@ -117,9 +126,7 @@ class TestSimRemovalNotification(SimTestCase):
 		if self.if_supports_sim_offline() == True:
 
 			# valid SimManager properties
-			simmanager = dbus.Interface(self.bus.get_object('org.ofono',
-								path),
-							'org.ofono.SimManager')
+			simmanager = self.get_simmanager(path)
 
 			simmanager.connect_to_signal("PropertyChanged",
 						 self.sim_listener)
@@ -127,7 +134,6 @@ class TestSimRemovalNotification(SimTestCase):
 			modem.connect_to_signal("PropertyChanged",
 						 self.modem_listener,
 						path_keyword="path")
-
 
 	def test_main(self):		
 		if args.debug:
@@ -139,6 +145,10 @@ class TestSimRemovalNotification(SimTestCase):
 			self.validate_modem(self.modems[0][0])
 
 		self.mainloop.run()
+
+		self.assertFalse(self.timeout_failure)
+		self.assertFalse(self.sim_present_failure)
+		self.assertFalse(self.sim_present_signal_failure)
 
 if __name__ == "__main__":
 	args = parse_args()

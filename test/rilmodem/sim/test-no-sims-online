@@ -61,7 +61,7 @@ class TestNoSimsOnline(SimTestCase):
 
 	def validate_modem(self, path):
 		self.validate_modem_properties(path, True, False)
-		self.check_no_sim_present(path)
+		self.assertTrue(self.check_no_sim_present(path))
 		self.validate_emergency_numbers(path)
 		self.validate_call_volume_properties(path)
 

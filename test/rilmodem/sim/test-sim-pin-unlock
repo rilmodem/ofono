@@ -1,0 +1,149 @@
+#!/usr/bin/python3
+#
+#  oFono - Open Source Telephony - RIL Modem test
+#
+#  Copyright (C) 2014 Canonical Ltd.
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+# This test ensures that basic modem information is available
+# when the modem is online and has a valid, unlocked SIM present.
+
+"""Tests the abilty to unlock a locked SIM for use.
+
+This module contains a functional test which checks an
+ofono/rilmodem/mtkmodem instance to ensure that the a
+SIM PIN can be entered and thus unlock the SIM for use.
+
+NOTE - this test by default tries to unlock the PIN of a
+single SIM.  If the device is multi-SIM, the first modem
+will be used by default.  The -m argument can be used to
+specify the second modem if needed.
+
+Requirements:
+
+ * a SIM with PIN-locking enabled
+
+ * the current PIN code for the SIM
+
+Setup:
+
+ * Ensure that FlightMode is NOT enabled
+
+ * Ensure that at least one SIM with PIN-locking
+   enabled is inserted in the phone AND STILL LOCKED!
+   ( ie. the PIN hasn't been entered yet )
+
+ * Run this script
+
+ToDo:
+ * If run on the emulator, make this script use console
+   commands to configure the modem(s) for the required
+   conditions ( ie. no SIM(s), online )
+"""
+
+import dbus.mainloop.glib
+import simtestutil
+
+from gi.repository import GLib
+from simtestutil import *
+
+def parse_test_args():
+
+	parser = argparse.ArgumentParser()
+
+	parser.add_argument("--pin",
+				dest="pin",
+				help="""Specify the SIM PIN code""",
+				required="yes",
+				)
+
+	parser.add_argument("-t",
+			"--timeout",
+			dest="timeout",
+			help="""Specify a timeout which causes
+			the script to exit""",
+			default=10,
+			)
+
+	return parse_args(parser)
+
+class TestSimPukUnlock(SimTestCase):
+
+	def setUp(self):
+		self.args = args
+		self.product = get_product()
+		self.timer = False
+
+		self.mainloop = GLib.MainLoop()
+
+		dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+		SimTestCase.setUp(self)
+
+		interval_ms = 1000 * int(self.args.timeout)
+		GLib.timeout_add(interval_ms, self.timeout_cb)
+
+	def pin_unlock(self, path):
+
+		if self.args.debug:
+			print("pin_unlock called,"
+				"pin: {}".format(self.args.pin))
+
+		simmanager = self.get_simmanager(path)
+		simmanager.connect_to_signal("PropertyChanged",
+						 self.sim_listener)
+
+		properties = simmanager.GetProperties()
+
+		locked_pins = properties["LockedPins"]
+		self.assertTrue(len(locked_pins) == 1)
+		self.assertTrue(locked_pins[0] == "pin")
+
+		self.assertTrue(properties["PinRequired"] == "pin")
+
+		simmanager.EnterPin("pin", self.args.pin)
+
+	def sim_listener(self, name, value):
+		if self.args.debug:
+			print("SIM property: {} changed "
+				"to {}".format(name, str(value)))
+
+		if name == "PinRequired":
+			self.assertTrue(value == "none")
+			self.mainloop.quit()
+
+	def timeout_cb(self):
+		if self.args.debug:
+			print("ALL DONE - timer fired!!!")
+
+		self.timer = True
+		self.mainloop.quit()
+
+	def validate_modem(self, path):
+
+		self.pin_unlock(path)
+
+		self.mainloop.run()
+
+		self.assertTrue(self.timer == False)
+
+	def test_main(self):
+		self.main(args)
+
+if __name__ == "__main__":
+	args = parse_test_args()
+
+	sim_unittest_main(args)
+
