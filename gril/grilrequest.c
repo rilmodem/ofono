@@ -1081,3 +1081,36 @@ void g_ril_request_oem_hook_raw(GRil *gril, const void *payload, size_t length,
 	g_ril_append_print_buf(gril, "(%s)", hex_dump? hex_dump: "(null)");
 	g_free(hex_dump);
 }
+
+void g_ril_request_set_initial_attach_apn(GRil *gril, const char *apn,
+						int proto,
+						const char *user,
+						const char *passwd,
+						const char *mccmnc,
+						struct parcel *rilp)
+{
+	const char *proto_str;
+	const int auth_type = RIL_AUTH_ANY;
+
+	parcel_init(rilp);
+
+	parcel_w_string(rilp, apn);
+
+	proto_str = ril_ofono_protocol_to_ril_string(proto);
+	parcel_w_string(rilp, proto_str);
+
+	parcel_w_int32(rilp, auth_type);
+	parcel_w_string(rilp, user);
+	parcel_w_string(rilp, passwd);
+
+	g_ril_append_print_buf(gril, "(%s,%s,%s,%s,%s", apn, proto_str,
+				ril_authtype_to_string(auth_type),
+				user, passwd);
+
+	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
+		parcel_w_string(rilp, mccmnc);
+		g_ril_append_print_buf(gril, "%s,%s)", print_buf, mccmnc);
+	} else {
+		g_ril_append_print_buf(gril, "%s)", print_buf);
+	}
+}

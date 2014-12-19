@@ -123,6 +123,24 @@ const char *ril_apptype_to_string(int app_type)
 	}
 }
 
+const char *ril_authtype_to_string(int auth_type)
+{
+	switch (auth_type) {
+	case RIL_AUTH_NONE:
+		return "NONE";
+	case RIL_AUTH_PAP:
+		return "PAP";
+	case RIL_AUTH_CHAP:
+		return "CHAP";
+	case RIL_AUTH_BOTH:
+		return "BOTH";
+	case RIL_AUTH_ANY:
+		return "ANY";
+	default:
+		return "<INVALID>";
+	}
+}
+
 const char *ril_cardstate_to_string(int card_state)
 {
 	switch (card_state) {
@@ -475,6 +493,8 @@ const char *ril_request_id_to_string(int req)
 		return "RIL_REQUEST_ACKNOWLEDGE_INCOMING_GSM_SMS_WITH_PDU";
 	case RIL_REQUEST_STK_SEND_ENVELOPE_WITH_STATUS:
 		return "RIL_REQUEST_STK_SEND_ENVELOPE_WITH_STATUS";
+	case RIL_REQUEST_SET_INITIAL_ATTACH_APN:
+		return "RIL_REQUEST_SET_INITIAL_ATTACH_APN";
 	default:
 		return "<INVALID>";
 	}

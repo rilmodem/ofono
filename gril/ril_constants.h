@@ -172,6 +172,13 @@
 /* MTK specific profile for MMS */
 #define RIL_DATA_PROFILE_MTK_MMS (RIL_DATA_PROFILE_OEM_BASE + 1)
 
+/*
+ * auth type -1 seems to mean 0 (RIL_AUTH_NONE) if no user/password is
+ * specified or 3 (RIL_AUTH_BOTH) otherwise. See $ANDROID/packages/
+ * providers/TelephonyProvider/src/com/android/providers/telephony/
+ * TelephonyProvider.java.
+ */
+#define RIL_AUTH_ANY -1
 #define RIL_AUTH_NONE 0
 #define RIL_AUTH_PAP 1
 #define RIL_AUTH_CHAP 2
@@ -343,6 +350,7 @@
 #define RIL_REQUEST_ACKNOWLEDGE_INCOMING_GSM_SMS_WITH_PDU 106
 #define RIL_REQUEST_STK_SEND_ENVELOPE_WITH_STATUS 107
 #define RIL_REQUEST_VOICE_RADIO_TECH 108
+#define RIL_REQUEST_SET_INITIAL_ATTACH_APN 111
 
 /* RIL Unsolicited Messages */
 #define RIL_UNSOL_RESPONSE_BASE 1000
