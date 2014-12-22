@@ -44,7 +44,7 @@ struct _GRilIO {
 	GIOChannel *channel;			/* comms channel */
 	GRilDisconnectFunc user_disconnect;	/* user disconnect func */
 	gpointer user_disconnect_data;		/* user disconnect data */
-	struct ring_buffer *buf;		/* Current read buffer */
+	struct ring_buffer *ring_buf;		/* Current read buffer */
 	guint max_read_attempts;		/* max reads / select */
 	GRilIOReadFunc read_handler;		/* Read callback */
 	gpointer read_data;			/* Read callback userdata */
@@ -62,8 +62,8 @@ static void read_watcher_destroy_notify(gpointer user_data)
 {
 	GRilIO *io = user_data;
 
-	ring_buffer_free(io->buf);
-	io->buf = NULL;
+	ring_buffer_free(io->ring_buf);
+	io->ring_buf = NULL;
 
 	io->debugf = NULL;
 	io->debug_data = NULL;
@@ -97,13 +97,13 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 
 	/* Regardless of condition, try to read all the data available */
 	do {
-		toread = ring_buffer_avail_no_wrap(io->buf);
+		toread = ring_buffer_avail_no_wrap(io->ring_buf);
 
 		if (toread == 0)
 			break;
 
 		rbytes = 0;
-		buf = ring_buffer_write_ptr(io->buf, 0);
+		buf = ring_buffer_write_ptr(io->ring_buf, 0);
 
 		status = g_io_channel_read_chars(channel, (char *) buf,
 							toread, &rbytes, NULL);
@@ -116,13 +116,13 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 		total_read += rbytes;
 
 		if (rbytes > 0)
-			ring_buffer_write_advance(io->buf, rbytes);
+			ring_buffer_write_advance(io->ring_buf, rbytes);
 
 	} while (status == G_IO_STATUS_NORMAL && rbytes > 0 &&
 					read_count < io->max_read_attempts);
 
 	if (total_read > 0 && io->read_handler)
-		io->read_handler(io->buf, io->read_data);
+		io->read_handler(io->ring_buf, io->read_data);
 
 	if (cond & (G_IO_HUP | G_IO_ERR))
 		return FALSE;
@@ -131,7 +131,7 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 		return FALSE;
 
 	/* We're overflowing the buffer, shutdown the socket */
-	if (ring_buffer_avail(io->buf) == 0)
+	if (ring_buffer_avail(io->ring_buf) == 0)
 		return FALSE;
 
 	return TRUE;
@@ -207,9 +207,9 @@ static GRilIO *create_io(GIOChannel *channel, GIOFlags flags)
 		io->use_write_watch = FALSE;
 	}
 
-	io->buf = ring_buffer_new(8192);
+	io->ring_buf = ring_buffer_new(8192);
 
-	if (!io->buf)
+	if (!io->ring_buf)
 		goto error;
 
 	if (!g_ril_util_setup_io(channel, flags))
@@ -224,8 +224,8 @@ static GRilIO *create_io(GIOChannel *channel, GIOFlags flags)
 	return io;
 
 error:
-	if (io->buf)
-		ring_buffer_free(io->buf);
+	if (io->ring_buf)
+		ring_buffer_free(io->ring_buf);
 
 	g_free(io);
 
@@ -259,8 +259,8 @@ gboolean g_ril_io_set_read_handler(GRilIO *io, GRilIOReadFunc read_handler,
 	io->read_handler = read_handler;
 	io->read_data = user_data;
 
-	if (read_handler && ring_buffer_len(io->buf) > 0)
-		read_handler(io->buf, user_data);
+	if (read_handler && ring_buffer_len(io->ring_buf) > 0)
+		read_handler(io->ring_buf, user_data);
 
 	return TRUE;
 }
@@ -393,5 +393,5 @@ void g_ril_io_set_write_done(GRilIO *io, GRilDisconnectFunc func,
 
 void g_ril_io_drain_ring_buffer(GRilIO *io, guint len)
 {
-	ring_buffer_drain(io->buf, len);
+	ring_buffer_drain(io->ring_buf, len);
 }
