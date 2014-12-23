@@ -93,7 +93,7 @@ struct ril_s {
 	GHashTable *notify_list;		/* List of notification reg */
 	GRilDisconnectFunc user_disconnect;	/* user disconnect func */
 	gpointer user_disconnect_data;		/* user disconnect data */
-	guint read_so_far;			/* Number of bytes processed */
+	uint32_t cur_parcel_size;		/* Current parcel size */
 	gboolean suspended;			/* Are we suspended? */
 	GRilDebugFunc debugf;			/* debugging output function */
 	gpointer debug_data;			/* Data to pass to debug func */
@@ -558,102 +558,54 @@ error:
 	g_free(message);
 }
 
-static struct ril_msg *read_fixed_record(struct ril_s *p,
-						const guchar *bytes, gsize *len)
-{
-	struct ril_msg *message;
-	unsigned message_len, plen;
-
-	/* First four bytes are length in TCP byte order (Big Endian) */
-	plen = ntohl(*((uint32_t *) (void *) bytes));
-	bytes += 4;
-
-	/* TODO: Verify that 4k is the max message size from rild.
-	 *
-	 * These conditions shouldn't happen.  If it does
-	 * there are three options:
-	 *
-	 * 1) ASSERT; ofono will restart via DBus
-	 * 2) Consume the bytes & continue
-	 * 3) force a disconnect
-	 */
-	g_assert(plen >= 8 && plen <= 4092);
-
-	/* If we don't have the whole fixed record in the ringbuffer
-	 * then return NULL & leave ringbuffer as is.
-	*/
-
-	message_len = *len - 4;
-	if (message_len < plen) {
-		DBG("Not enough bytes for fixed record; len: %d avail: %d",
-			plen, message_len);
-		return NULL;
-	}
-
-	/* FIXME: add check for message_len = 0? */
-
-	message = g_try_malloc(sizeof(struct ril_msg));
-	g_assert(message != NULL);
-
-	/* allocate ril_msg->buffer */
-	message->buf_len = plen;
-	message->buf = g_try_malloc(plen);
-	g_assert(message->buf != NULL);
-
-	/* Copy bytes into message buffer */
-	memmove(message->buf, (const void *) bytes, plen);
-
-	/* Indicate to caller size of record we extracted */
-	*len = plen + 4;
-	return message;
-}
-
 static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 {
 	struct ril_msg *message;
 	struct ril_s *p = user_data;
-	unsigned int len = ring_buffer_len(rbuf);
-	unsigned int wrap = ring_buffer_len_no_wrap(rbuf);
-	guchar *buf = ring_buffer_read_ptr(rbuf, p->read_so_far);
+	unsigned int len;
+	uint32_t plen;
 
 	p->in_read_handler = TRUE;
 
-	while (p->suspended == FALSE && (p->read_so_far < len)) {
-		gsize rbytes = MIN(len - p->read_so_far, wrap - p->read_so_far);
+	while (p->suspended == FALSE) {
+		plen = p->cur_parcel_size;
+		len = ring_buffer_len(rbuf);
 
-		if (rbytes < 4) {
-			DBG("Not enough bytes for header length: len: %d", len);
-			return;
+		if (!plen) {
+			if (len < 4) {
+				DBG("Not enough bytes for header length: len: %d", len);
+				break;
+			}
+
+			ring_buffer_read(rbuf, &plen, sizeof plen);
+			len -= sizeof plen;
+
+			p->cur_parcel_size = plen = ntohl(plen);
+			if (!plen)
+				continue;
 		}
 
-		/* this function attempts to read the next full length
-		 * fixed message from the stream.  if not all bytes are
-		 * available, it returns NULL.  otherwise it allocates
-		 * and returns a ril_message with the copied bytes, and
-		 * drains those bytes from the ring_buffer
-		 */
-		message = read_fixed_record(p, buf, &rbytes);
-
-		/* wait for the rest of the record... */
-		if (message == NULL)
+		if (len < plen) {
+			DBG("Not enough bytes for fixed record; len: %d avail: %d",
+				plen, len);
 			break;
-
-		buf += rbytes;
-		p->read_so_far += rbytes;
-
-		/* TODO: need to better understand how wrap works! */
-		if (p->read_so_far == wrap) {
-			buf = ring_buffer_read_ptr(rbuf, p->read_so_far);
-			wrap = len;
 		}
+
+		/* Reset for next parcel. */
+		p->cur_parcel_size = 0;
+
+		message = g_try_malloc(sizeof(struct ril_msg));
+		g_assert(message != NULL);
+
+		/* allocate ril_msg->buffer */
+		message->buf_len = plen;
+		message->buf = g_try_malloc(plen);
+		g_assert(message->buf != NULL);
+
+		/* Copy bytes into message buffer */
+		ring_buffer_read(rbuf, message->buf, plen);
 
 		dispatch(p, message);
-
-		ring_buffer_drain(rbuf, p->read_so_far);
-
-		len -= p->read_so_far;
-		wrap -= p->read_so_far;
-		p->read_so_far = 0;
 	}
 
 	p->in_read_handler = FALSE;
