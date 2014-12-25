@@ -96,6 +96,7 @@ static struct mcc_mnclength mnclen_db[] = {
 	{284, 2},	/* Bulgaria (Republic of) */
 	{286, 2},	/* Turkey */
 	{288, 2},	/* Faroe Islands */
+	{289, 2},	/* Abkhazia (Georgia) */
 	{290, 2},	/* Greenland (Denmark) */
 	{292, 2},	/* San Marino (Republic of) */
 	{293, 2},	/* Slovenia (Republic of) */
