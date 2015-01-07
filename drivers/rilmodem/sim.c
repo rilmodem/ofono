@@ -1028,6 +1028,15 @@ static void ril_change_passwd(struct ofono_sim *sim,
 	}
 }
 
+#if defined(HAVE_ANDROID_PROP)
+static void sim_state_watch(enum ofono_sim_state new_state, void *data)
+{
+	struct ofono_sim *sim = data;
+
+	property_set("gsm.sim.operator.alpha", ofono_sim_get_spn(sim));
+}
+#endif
+
 static gboolean listen_and_get_sim_status(gpointer user)
 {
 	struct ofono_sim *sim = user;
@@ -1055,6 +1064,16 @@ static gboolean ril_sim_register(gpointer user)
 			!ofono_sim_add_state_watch(sim, sd->ril_state_watch,
 							sd->modem, NULL))
 		ofono_error("Error registering ril sim watch");
+
+#if defined(HAVE_ANDROID_PROP)
+	/*
+	 * Ideally, this should have been `ofono_sim_add_spn_watch` instead.
+	 * However, there is not a deterministic timing for registering that
+	 * because `sim->spn_watch` is only initialized in a sequence of
+	 * private operations inside src/sim.c.
+	 */
+	ofono_sim_add_state_watch(sim, sim_state_watch, sim, NULL);
+#endif
 
 	/*
 	 * We use g_idle_add here to make sure that the presence of the SIM
