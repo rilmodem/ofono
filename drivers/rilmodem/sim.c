@@ -586,42 +586,42 @@ static void configure_active_app(struct sim_data *sd,
 
 	DBG("setting aid_str (AID) to: %s", sd->aid_str);
 	switch (app->app_state) {
-	case APPSTATE_PIN:
+	case RIL_APPSTATE_PIN:
 		sd->passwd_state = OFONO_SIM_PASSWORD_SIM_PIN;
 		break;
-	case APPSTATE_PUK:
+	case RIL_APPSTATE_PUK:
 		sd->passwd_state = OFONO_SIM_PASSWORD_SIM_PUK;
 		break;
-	case APPSTATE_SUBSCRIPTION_PERSO:
+	case RIL_APPSTATE_SUBSCRIPTION_PERSO:
 		switch (app->perso_substate) {
-		case PERSOSUBSTATE_SIM_NETWORK:
+		case RIL_PERSOSUBSTATE_SIM_NETWORK:
 			sd->passwd_state = OFONO_SIM_PASSWORD_PHNET_PIN;
 			break;
-		case PERSOSUBSTATE_SIM_NETWORK_SUBSET:
+		case RIL_PERSOSUBSTATE_SIM_NETWORK_SUBSET:
 			sd->passwd_state = OFONO_SIM_PASSWORD_PHNETSUB_PIN;
 			break;
-		case PERSOSUBSTATE_SIM_CORPORATE:
+		case RIL_PERSOSUBSTATE_SIM_CORPORATE:
 			sd->passwd_state = OFONO_SIM_PASSWORD_PHCORP_PIN;
 			break;
-		case PERSOSUBSTATE_SIM_SERVICE_PROVIDER:
+		case RIL_PERSOSUBSTATE_SIM_SERVICE_PROVIDER:
 			sd->passwd_state = OFONO_SIM_PASSWORD_PHSP_PIN;
 			break;
-		case PERSOSUBSTATE_SIM_SIM:
+		case RIL_PERSOSUBSTATE_SIM_SIM:
 			sd->passwd_state = OFONO_SIM_PASSWORD_PHSIM_PIN;
 			break;
-		case PERSOSUBSTATE_SIM_NETWORK_PUK:
+		case RIL_PERSOSUBSTATE_SIM_NETWORK_PUK:
 			sd->passwd_state = OFONO_SIM_PASSWORD_PHNET_PUK;
 			break;
-		case PERSOSUBSTATE_SIM_NETWORK_SUBSET_PUK:
+		case RIL_PERSOSUBSTATE_SIM_NETWORK_SUBSET_PUK:
 			sd->passwd_state = OFONO_SIM_PASSWORD_PHNETSUB_PUK;
 			break;
-		case PERSOSUBSTATE_SIM_CORPORATE_PUK:
+		case RIL_PERSOSUBSTATE_SIM_CORPORATE_PUK:
 			sd->passwd_state = OFONO_SIM_PASSWORD_PHCORP_PUK;
 			break;
-		case PERSOSUBSTATE_SIM_SERVICE_PROVIDER_PUK:
+		case RIL_PERSOSUBSTATE_SIM_SERVICE_PROVIDER_PUK:
 			sd->passwd_state = OFONO_SIM_PASSWORD_PHSP_PUK;
 			break;
-		case PERSOSUBSTATE_SIM_SIM_PUK:
+		case RIL_PERSOSUBSTATE_SIM_SIM_PUK:
 			sd->passwd_state = OFONO_SIM_PASSWORD_PHFSIM_PUK;
 			break;
 		default:
@@ -629,11 +629,11 @@ static void configure_active_app(struct sim_data *sd,
 			break;
 		};
 		break;
-	case APPSTATE_READY:
+	case RIL_APPSTATE_READY:
 		sd->passwd_state = OFONO_SIM_PASSWORD_NONE;
 		break;
-	case APPSTATE_UNKNOWN:
-	case APPSTATE_DETECTED:
+	case RIL_APPSTATE_UNKNOWN:
+	case RIL_APPSTATE_DETECTED:
 	default:
 		sd->passwd_state = OFONO_SIM_PASSWORD_INVALID;
 		break;
