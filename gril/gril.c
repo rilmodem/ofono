@@ -93,7 +93,6 @@ struct ril_s {
 	GHashTable *notify_list;		/* List of notification reg */
 	GRilDisconnectFunc user_disconnect;	/* user disconnect func */
 	gpointer user_disconnect_data;		/* user disconnect data */
-	guint read_so_far;			/* Number of bytes processed */
 	gboolean suspended;			/* Are we suspended? */
 	GRilDebugFunc debugf;			/* debugging output function */
 	gpointer debug_data;			/* Data to pass to debug func */
@@ -614,12 +613,12 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 	struct ril_s *p = user_data;
 	unsigned int len = ring_buffer_len(rbuf);
 	unsigned int wrap = ring_buffer_len_no_wrap(rbuf);
-	guchar *buf = ring_buffer_read_ptr(rbuf, p->read_so_far);
+	guchar *buf = ring_buffer_read_ptr(rbuf, 0);
 
 	p->in_read_handler = TRUE;
 
-	while (p->suspended == FALSE && (p->read_so_far < len)) {
-		gsize rbytes = MIN(len - p->read_so_far, wrap - p->read_so_far);
+	while (p->suspended == FALSE && len) {
+		gsize rbytes = wrap;
 
 		if (rbytes < 4) {
 			DBG("Not enough bytes for header length: len: %d", len);
@@ -639,21 +638,19 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 			break;
 
 		buf += rbytes;
-		p->read_so_far += rbytes;
 
 		/* TODO: need to better understand how wrap works! */
-		if (p->read_so_far == wrap) {
-			buf = ring_buffer_read_ptr(rbuf, p->read_so_far);
+		if (rbytes == wrap) {
+			buf = ring_buffer_read_ptr(rbuf, rbytes);
 			wrap = len;
 		}
 
 		dispatch(p, message);
 
-		ring_buffer_drain(rbuf, p->read_so_far);
+		ring_buffer_drain(rbuf, rbytes);
 
-		len -= p->read_so_far;
-		wrap -= p->read_so_far;
-		p->read_so_far = 0;
+		len -= rbytes;
+		wrap -= rbytes;
 	}
 
 	p->in_read_handler = FALSE;
