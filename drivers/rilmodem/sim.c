@@ -548,6 +548,20 @@ static void ril_imsi_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
+#if defined(HAVE_ANDROID_PROP)
+	{
+		gchar buf[OFONO_MAX_MCC_LENGTH + OFONO_MAX_MNC_LENGTH + 1];
+		int mnc_len;
+
+		mnc_len = __ofono_sim_mnclength_get_mnclength(imsi);
+		if (mnc_len > 0 && mnc_len <= OFONO_MAX_MNC_LENGTH) {
+			strncpy(buf, imsi, OFONO_MAX_MCC_LENGTH + mnc_len);
+			buf[OFONO_MAX_MCC_LENGTH + mnc_len] = '\0';
+			property_set("gsm.sim.operator.numeric", buf);
+		}
+	}
+#endif
+
 	cb(&error, imsi, cbd->data);
 	g_free(imsi);
 
