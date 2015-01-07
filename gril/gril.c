@@ -580,6 +580,9 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 			ring_buffer_read(rbuf, &plen, sizeof plen);
 			len -= sizeof plen;
 
+			g_ril_util_debug_hexdump(TRUE, (guchar *) &plen, sizeof plen,
+							p->debugf, p->debug_data);
+
 			p->cur_parcel_size = plen = ntohl(plen);
 			if (!plen)
 				continue;
@@ -604,6 +607,9 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 
 		/* Copy bytes into message buffer */
 		ring_buffer_read(rbuf, message->buf, plen);
+
+		g_ril_util_debug_hexdump(TRUE, (guchar *) message->buf, plen,
+						p->debugf, p->debug_data);
 
 		dispatch(p, message);
 	}

@@ -115,9 +115,6 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 
 		ring_buffer_write_advance(io->buf, rbytes);
 
-		g_ril_util_debug_hexdump(TRUE, (guchar *) buf, rbytes,
-						io->debugf, io->debug_data);
-
 		/* Try to dispatch all the incoming parcels so that we may get
 		 * some more space to read again.
 		 */
