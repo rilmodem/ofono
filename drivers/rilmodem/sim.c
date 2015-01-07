@@ -46,6 +46,7 @@
 #include "parcel.h"
 #include "ril_constants.h"
 #include "rilmodem.h"
+#include "android_properties.h"
 
 #include "grilreply.h"
 #include "grilrequest.h"
@@ -646,6 +647,9 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct reply_sim_status *status;
 	guint search_index;
+#if defined(HAVE_ANDROID_PROP)
+	const char *state = "UNKNOWN";
+#endif
 
 	status = g_ril_reply_parse_sim_status(sd->ril, message);
 	if (status == NULL) {
@@ -696,6 +700,38 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 			__ofono_sim_recheck_pin(sim);
 		}
 	}
+
+#if defined(HAVE_ANDROID_PROP)
+	if (status->card_state == RIL_CARDSTATE_ABSENT) {
+		if (ofono_modem_get_online(sd->modem)) {
+			state = "ABSENT";
+		} else {
+			state = "NOT_READY";
+		}
+	} else if (status->card_state == RIL_CARDSTATE_PRESENT
+			|| search_index < status->num_apps) {
+		struct reply_sim_app *app = status->apps[search_index];
+
+		switch (app->app_state) {
+		case RIL_APPSTATE_PIN:
+			state = "PIN_REQUIRED";
+			break;
+		case RIL_APPSTATE_PUK:
+			state = "PUK_REQUIRED";
+			break;
+		case RIL_APPSTATE_SUBSCRIPTION_PERSO:
+			if (app->perso_substate == RIL_PERSOSUBSTATE_SIM_NETWORK) {
+				state = "NETWORK_LOCKED";
+			}
+			break;
+		case RIL_APPSTATE_READY:
+			state = "READY";
+			break;
+		}
+	}
+
+	property_set("gsm.sim.state", state);
+#endif
 
 	g_ril_reply_free_sim_status(status);
 }
