@@ -215,23 +215,23 @@ const char *ril_radio_tech_to_string(int radio_tech)
 {
 	switch (radio_tech) {
 	case RADIO_TECH_UNKNOWN:
-		return "UNKNOWN";
+		return "Unknown";
 	case RADIO_TECH_GPRS:
 		return "GPRS";
 	case RADIO_TECH_EDGE:
-		return	"EDGE";
+		return "EDGE";
 	case RADIO_TECH_UMTS:
 		return "UMTS";
 	case RADIO_TECH_IS95A:
-		return "IS95A";
+		return "CDMA-IS95A";
 	case RADIO_TECH_IS95B:
-		return "IS95B";
+		return "CDMA-IS95B";
 	case RADIO_TECH_1xRTT:
 		return "1xRTT";
 	case RADIO_TECH_EVDO_0:
-		return "EVDO_0";
+		return "EvDo-rev.0";
 	case RADIO_TECH_EVDO_A:
-		return "EVDO_A";
+		return "EvDo-rev.A";
 	case RADIO_TECH_HSDPA:
 		return "HSDPA";
 	case RADIO_TECH_HSUPA:
@@ -239,9 +239,9 @@ const char *ril_radio_tech_to_string(int radio_tech)
 	case RADIO_TECH_HSPA:
 		return "HSPA";
 	case RADIO_TECH_EVDO_B:
-		return "EVDO_B";
+		return "EvDo-rev.B";
 	case RADIO_TECH_EHRPD:
-		return "EHRPD";
+		return "eHRPD";
 	case RADIO_TECH_LTE:
 		return "LTE";
 	case RADIO_TECH_HSPAP:

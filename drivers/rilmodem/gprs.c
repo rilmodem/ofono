@@ -43,6 +43,7 @@
 #include "grilutil.h"
 #include "common.h"
 #include "rilmodem.h"
+#include "android_properties.h"
 
 #include "grilreply.h"
 #include "grilrequest.h"
@@ -291,6 +292,11 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 
 	if (gd->tech != reply->reg_state.tech) {
 		gd->tech = reply->reg_state.tech;
+
+#if defined(HAVE_ANDROID_PROP)
+		property_set("gsm.network.type",
+				ril_radio_tech_to_string(reply->reg_state.tech));
+#endif
 
 		ofono_gprs_bearer_notify(gprs,
 				ril_tech_to_bearer_tech(reply->reg_state.tech));
