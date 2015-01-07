@@ -521,3 +521,4 @@ ofono_bool_t __ofono_private_network_request(ofono_private_network_cb_t cb,
 #include <ofono/sim-mnclength.h>
 
 int __ofono_sim_mnclength_get_mnclength(const char *imsi);
+const char *__ofono_sim_mnclength_get_country_code(const char *mcc);

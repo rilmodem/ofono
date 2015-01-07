@@ -31,6 +31,7 @@ extern "C" {
 struct ofono_sim_mnclength_driver {
 	const char *name;
 	int (*get_mnclength)(const char *imsi);
+	const char *(*get_country_code)(const char *mcc);
 };
 
 int ofono_sim_mnclength_driver_register(

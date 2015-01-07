@@ -559,6 +559,9 @@ static void ril_imsi_cb(struct ril_msg *message, gpointer user_data)
 			buf[OFONO_MAX_MCC_LENGTH + mnc_len] = '\0';
 			property_set("gsm.sim.operator.numeric", buf);
 		}
+
+		property_set("gsm.sim.operator.iso-country",
+			__ofono_sim_mnclength_get_country_code(imsi));
 	}
 #endif
 

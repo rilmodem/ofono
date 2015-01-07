@@ -54,6 +54,28 @@ int __ofono_sim_mnclength_get_mnclength(const char *imsi)
 	return mnclen;
 }
 
+const char *__ofono_sim_mnclength_get_country_code(const char *mcc)
+{
+	GSList *d;
+	const char *code;
+
+	for (d = g_drivers; d != NULL; d = d->next) {
+		const struct ofono_sim_mnclength_driver *driver = d->data;
+
+		if (driver->get_country_code == NULL)
+			continue;
+
+		DBG("Calling mnclength plugin '%s'", driver->name);
+
+		if (!(code = driver->get_country_code(mcc)))
+			continue;
+
+		return code;
+	}
+
+	return code;
+}
+
 int ofono_sim_mnclength_driver_register(
 			struct ofono_sim_mnclength_driver *driver)
 {
