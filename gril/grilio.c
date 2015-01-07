@@ -89,7 +89,6 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 	GIOStatus status;
 	gsize rbytes;
 	gsize toread;
-	gsize total_read = 0;
 	guint read_count = 0;
 
 	if (cond & G_IO_NVAL)
@@ -98,31 +97,36 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 	/* Regardless of condition, try to read all the data available */
 	do {
 		toread = ring_buffer_avail_no_wrap(io->buf);
-
-		if (toread == 0)
-			break;
+		if (!toread) {
+			toread = ring_buffer_avail(io->buf);
+			if (!toread)
+				break;
+		}
 
 		rbytes = 0;
 		buf = ring_buffer_write_ptr(io->buf, 0);
 
 		status = g_io_channel_read_chars(channel, (char *) buf,
 							toread, &rbytes, NULL);
+		read_count++;
+
+		if (!rbytes)
+			break;
+
+		ring_buffer_write_advance(io->buf, rbytes);
 
 		g_ril_util_debug_hexdump(TRUE, (guchar *) buf, rbytes,
 						io->debugf, io->debug_data);
 
-		read_count++;
+		/* Try to dispatch all the incoming parcels so that we may get
+		 * some more space to read again.
+		 */
+		if (io->read_handler) {
+			io->read_handler(io->buf, io->read_data);
+		}
 
-		total_read += rbytes;
-
-		if (rbytes > 0)
-			ring_buffer_write_advance(io->buf, rbytes);
-
-	} while (status == G_IO_STATUS_NORMAL && rbytes > 0 &&
-					read_count < io->max_read_attempts);
-
-	if (total_read > 0 && io->read_handler)
-		io->read_handler(io->buf, io->read_data);
+	} while (status == G_IO_STATUS_NORMAL
+				&& read_count < io->max_read_attempts);
 
 	if (cond & (G_IO_HUP | G_IO_ERR))
 		return FALSE;
