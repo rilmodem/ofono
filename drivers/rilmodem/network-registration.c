@@ -39,8 +39,10 @@
 #include <ofono/spn-table.h>
 
 #include "common.h"
+#include "ofono.h"
 #include "gril.h"
 #include "rilmodem.h"
+#include "android_properties.h"
 
 #include "grilreply.h"
 #include "grilrequest.h"
@@ -480,6 +482,35 @@ error:
 	ofono_error("%s: unable to notify ofono about NITZ", __func__);
 }
 
+#if defined(HAVE_ANDROID_PROP)
+static void netreg_status_notify(int status, int lac, int ci, int tech,
+			const char *mcc, const char *mnc, void *data)
+{
+	struct ofono_netreg *netreg = data;
+
+	property_set("gsm.operator.alpha", ofono_netreg_get_name(netreg));
+
+	if (mcc && mnc) {
+		char buf[OFONO_MAX_MCC_LENGTH + OFONO_MAX_MNC_LENGTH + 1];
+
+		strncpy(buf, mcc, OFONO_MAX_MCC_LENGTH);
+		buf[OFONO_MAX_MCC_LENGTH] = '\0';
+		strncat(buf, mnc, OFONO_MAX_MNC_LENGTH);
+		buf[OFONO_MAX_MCC_LENGTH + OFONO_MAX_MNC_LENGTH] = '\0';
+
+		property_set("gsm.operator.numeric", buf);
+	} else {
+		property_set("gsm.operator.numeric", NULL);
+	}
+
+	property_set("gsm.operator.iso-country",
+			__ofono_sim_mnclength_get_country_code(mcc));
+	property_set("gsm.operator.isroaming",
+			status == NETWORK_REGISTRATION_STATUS_ROAMING
+				? "true" : "false");
+}
+#endif
+
 static gboolean ril_delayed_register(gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
@@ -497,6 +528,11 @@ static gboolean ril_delayed_register(gpointer user_data)
 	/* Register for signal strength changes */
 	g_ril_register(nd->ril, RIL_UNSOL_SIGNAL_STRENGTH,
 			ril_strength_notify, netreg);
+
+#if defined(HAVE_ANDROID_PROP)
+	__ofono_netreg_add_status_watch(netreg, netreg_status_notify,
+					netreg, NULL);
+#endif
 
 	/* This makes the timeout a single-shot */
 	return FALSE;

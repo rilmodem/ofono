@@ -114,6 +114,7 @@ int ofono_netreg_get_status(struct ofono_netreg *netreg);
 int ofono_netreg_get_technology(struct ofono_netreg *netreg);
 const char *ofono_netreg_get_mcc(struct ofono_netreg *netreg);
 const char *ofono_netreg_get_mnc(struct ofono_netreg *netreg);
+const char *ofono_netreg_get_name(struct ofono_netreg *netreg);
 
 #ifdef __cplusplus
 }
