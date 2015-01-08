@@ -54,7 +54,7 @@ Properties	string TechnologyPreference [readwrite]
 			at a given moment we could be registered in a gsm or
 			umts network, but never in an lte one.
 
-		array{string} ModemTechnologies [readonly, optional]
+		array{string} AvailableTechnologies [readonly, optional]
 
 			List of values for TechnologyPreference property
 			supported by the modem.

@@ -208,32 +208,32 @@ void ril_set_fast_dormancy(struct ofono_radio_settings *rs,
 	}
 }
 
-static ofono_bool_t query_modem_rats_cb(gpointer user_data)
+static ofono_bool_t query_available_rats_cb(gpointer user_data)
 {
-	ofono_bool_t modem_rats[OFONO_RADIO_ACCESS_MODE_LAST] = { FALSE };
+	unsigned int available_rats;
 	struct cb_data *cbd = user_data;
-	ofono_radio_settings_modem_rats_query_cb_t cb = cbd->cb;
+	ofono_radio_settings_available_rats_query_cb_t cb = cbd->cb;
 
-	modem_rats[OFONO_RADIO_ACCESS_MODE_GSM] = TRUE;
-	modem_rats[OFONO_RADIO_ACCESS_MODE_UMTS] = TRUE;
+	available_rats = OFONO_RADIO_ACCESS_MODE_GSM
+				| OFONO_RADIO_ACCESS_MODE_UMTS;
 
 	if (getenv("OFONO_RIL_RAT_LTE"))
-		modem_rats[OFONO_RADIO_ACCESS_MODE_LTE] = TRUE;
+		available_rats |= OFONO_RADIO_ACCESS_MODE_LTE;
 
-	CALLBACK_WITH_SUCCESS(cb, modem_rats, cbd->data);
+	CALLBACK_WITH_SUCCESS(cb, available_rats, cbd->data);
 
 	g_free(cbd);
 
 	return FALSE;
 }
 
-static void ril_query_modem_rats(struct ofono_radio_settings *rs,
-				ofono_radio_settings_modem_rats_query_cb_t cb,
-				void *data)
+static void ril_query_available_rats(struct ofono_radio_settings *rs,
+			ofono_radio_settings_available_rats_query_cb_t cb,
+			void *data)
 {
 	struct cb_data *cbd = cb_data_new(cb, data, rs);
 
-	g_idle_add(query_modem_rats_cb, cbd);
+	g_idle_add(query_available_rats_cb, cbd);
 }
 
 void ril_delayed_register(const struct ofono_error *error, void *user_data)
@@ -283,7 +283,7 @@ static struct ofono_radio_settings_driver driver = {
 	.set_rat_mode		= ril_set_rat_mode,
 	.query_fast_dormancy	= ril_query_fast_dormancy,
 	.set_fast_dormancy	= ril_set_fast_dormancy,
-	.query_modem_rats	= ril_query_modem_rats
+	.query_available_rats	= ril_query_available_rats
 };
 
 void ril_radio_settings_init(void)
