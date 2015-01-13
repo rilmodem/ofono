@@ -53,13 +53,39 @@ struct request_test_data {
 	gsize parcel_size;
 };
 
+/* MTK specific sim_read_info tests */
+
+static const guchar req_mtk_sim_read_info_parcel_valid_1[] = {
+	0xc0, 0x00, 0x00, 0x00, 0xb7, 0x6f, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00,
+	0x37, 0x00, 0x46, 0x00, 0x46, 0x00, 0x46, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0f, 0x00, 0x00, 0x00,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static const unsigned char sim_mtk_read_info_path_valid_1[] = {0x7F, 0xFF};
+
+static const struct req_sim_read_info req_mtk_sim_read_info_valid_1 = {
+	.app_type = RIL_APPTYPE_UNKNOWN,
+	.aid_str = "",
+	.fileid = 0x6FB7,
+	.path = sim_mtk_read_info_path_valid_1,
+	.path_len = sizeof(sim_mtk_read_info_path_valid_1),
+};
+
+static const struct request_test_data mtk_sim_read_info_valid_test_1 = {
+	.request = &req_mtk_sim_read_info_valid_1,
+	.parcel_data = (guchar *) &req_mtk_sim_read_info_parcel_valid_1,
+	.parcel_size = sizeof(req_mtk_sim_read_info_parcel_valid_1),
+};
+
 /* MTK specific sim_read_binary tests */
 
 static const guchar req_mtk_sim_read_binary_parcel_valid_1[] = {
 	0xb0, 0x00, 0x00, 0x00, 0xe2, 0x2f, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00,
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
 static const unsigned char sim_mtk_read_binary_path_valid_1[] = {0x3F, 0x00};
@@ -86,7 +112,7 @@ static const guchar mtk_req_sim_read_record_parcel_valid_1[] = {
 	0xb2, 0x00, 0x00, 0x00, 0xe2, 0x2f, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
 	0x05, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00,
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
 static const unsigned char mtk_sim_read_record_path_valid_1[] = {0x3F, 0x00};
@@ -221,6 +247,25 @@ static const struct request_test_data set_set_3g_capability_valid_test_1 = {
 
 /* Test functions */
 
+static void test_mtk_req_sim_read_info_valid(gconstpointer data)
+{
+	const struct request_test_data *test_data = data;
+	const struct req_sim_read_info *req = test_data->request;
+	gboolean result;
+	struct parcel rilp;
+	GRil *gril = g_ril_new(NULL, OFONO_RIL_VENDOR_MTK);
+
+	result = g_ril_request_sim_read_info(gril, req, &rilp);
+
+	g_assert(result == TRUE);
+	g_assert(test_data->parcel_size == rilp.size);
+	g_assert(!memcmp(rilp.data, test_data->parcel_data, rilp.size));
+
+	parcel_free(&rilp);
+
+	g_ril_unref(gril);
+}
+
 static void test_mtk_req_sim_read_binary_valid(gconstpointer data)
 {
 	const struct request_test_data *test_data = data;
@@ -234,8 +279,8 @@ static void test_mtk_req_sim_read_binary_valid(gconstpointer data)
 	result = g_ril_request_sim_read_binary(gril, req, &rilp);
 
 	g_assert(result == TRUE);
-	g_assert(!memcmp(rilp.data, test_data->parcel_data,
-			test_data->parcel_size));
+	g_assert(test_data->parcel_size == rilp.size);
+	g_assert(!memcmp(rilp.data, test_data->parcel_data, rilp.size));
 
 	parcel_free(&rilp);
 
@@ -255,8 +300,8 @@ static void test_mtk_req_sim_read_record_valid(gconstpointer data)
 	result = g_ril_request_sim_read_record(gril, req, &rilp);
 
 	g_assert(result == TRUE);
-	g_assert(!memcmp(rilp.data, test_data->parcel_data,
-			test_data->parcel_size));
+	g_assert(test_data->parcel_size == rilp.size);
+	g_assert(!memcmp(rilp.data, test_data->parcel_data, rilp.size));
 
 	parcel_free(&rilp);
 
@@ -271,8 +316,8 @@ static void test_request_dual_sim_mode_switch(gconstpointer data)
 
 	g_mtk_request_dual_sim_mode_switch(NULL, mode, &rilp);
 
-	g_assert(!memcmp(rilp.data, test_data->parcel_data,
-				test_data->parcel_size));
+	g_assert(test_data->parcel_size == rilp.size);
+	g_assert(!memcmp(rilp.data, test_data->parcel_data, rilp.size));
 
 	parcel_free(&rilp);
 }
@@ -285,8 +330,8 @@ static void test_request_set_gprs_connect_type(gconstpointer data)
 
 	g_mtk_request_set_gprs_connect_type(NULL, connect_type, &rilp);
 
-	g_assert(!memcmp(rilp.data, test_data->parcel_data,
-				test_data->parcel_size));
+	g_assert(test_data->parcel_size == rilp.size);
+	g_assert(!memcmp(rilp.data, test_data->parcel_data, rilp.size));
 
 	parcel_free(&rilp);
 }
@@ -299,8 +344,8 @@ static void test_request_set_gprs_transfer_type(gconstpointer data)
 
 	g_mtk_request_set_gprs_transfer_type(NULL, transfer_type, &rilp);
 
-	g_assert(!memcmp(rilp.data, test_data->parcel_data,
-				test_data->parcel_size));
+	g_assert(test_data->parcel_size == rilp.size);
+	g_assert(!memcmp(rilp.data, test_data->parcel_data, rilp.size));
 
 	parcel_free(&rilp);
 }
@@ -314,8 +359,8 @@ static void test_request_set_call_indication(gconstpointer data)
 						test_data->call_id,
 						test_data->seq_number, &rilp);
 
-	g_assert(!memcmp(rilp.data, test_data->parcel_data,
-				test_data->parcel_size));
+	g_assert(test_data->parcel_size == rilp.size);
+	g_assert(!memcmp(rilp.data, test_data->parcel_data, rilp.size));
 
 	parcel_free(&rilp);
 }
@@ -328,8 +373,8 @@ static void test_request_set_fd_mode(gconstpointer data)
 	g_mtk_request_set_fd_mode(NULL, test_data->mode, test_data->param1,
 					test_data->param2, &rilp);
 
-	g_assert(!memcmp(rilp.data, test_data->parcel_data,
-				test_data->parcel_size));
+	g_assert(test_data->parcel_size == rilp.size);
+	g_assert(!memcmp(rilp.data, test_data->parcel_data, rilp.size));
 
 	parcel_free(&rilp);
 }
@@ -341,8 +386,8 @@ static void test_request_set_3g_capability(gconstpointer data)
 
 	g_mtk_request_set_3g_capability(NULL, &rilp);
 
-	g_assert(!memcmp(rilp.data, test_data->parcel_data,
-				test_data->parcel_size));
+	g_assert(test_data->parcel_size == rilp.size);
+	g_assert(!memcmp(rilp.data, test_data->parcel_data, rilp.size));
 
 	parcel_free(&rilp);
 }
@@ -380,6 +425,11 @@ int main(int argc, char **argv)
 				"valid SET_CALL_INDICATION Test 1",
 				&set_call_indication_valid_test_1,
 				test_request_set_call_indication);
+
+	g_test_add_data_func("/testmtkrequest/sim: "
+				"valid SIM_READ_INFO Test 1",
+				&mtk_sim_read_info_valid_test_1,
+				test_mtk_req_sim_read_info_valid);
 
 	g_test_add_data_func("/testmtkrequest/sim: "
 				"valid SIM_READ_BINARY Test 1",

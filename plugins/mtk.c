@@ -584,13 +584,24 @@ static void mtk_send_sim_mode(GRilResponseFunc func, gpointer user_data)
 {
 	struct parcel rilp;
 	struct cb_data *cbd = user_data;
-	ofono_modem_online_cb_t cb;
+	ofono_modem_online_cb_t cb = NULL;
 	GDestroyNotify notify = NULL;
 	int sim_mode;
 
 	if (cbd != NULL) {
 		notify = g_free;
 		cb = cbd->cb;
+	}
+
+	/* Case of modems with just one slot */
+	if (mtk_data_1 == NULL) {
+		mtk_data_0->pending_cb = NULL;
+
+		if (cbd != NULL) {
+			CALLBACK_WITH_SUCCESS(cb, cbd->data);
+			g_free(cbd);
+		}
+		return;
 	}
 
 	sim_mode = sim_state();
@@ -604,8 +615,12 @@ static void mtk_send_sim_mode(GRilResponseFunc func, gpointer user_data)
 	if (g_ril_send(mtk_data_0->ril, MTK_RIL_REQUEST_DUAL_SIM_MODE_SWITCH,
 			&rilp, func, cbd, notify) == 0 && cbd != NULL) {
 		ofono_error("%s: failure sending request", __func__);
-		CALLBACK_WITH_FAILURE(cb, cbd->data);
-		g_free(cbd);
+		mtk_data_0->pending_cb = NULL;
+
+		if (cbd != NULL) {
+			CALLBACK_WITH_FAILURE(cb, cbd->data);
+			g_free(cbd);
+		}
 	}
 }
 
@@ -731,7 +746,7 @@ static void mtk_set_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	md->ofono_online = online;
 
-	/* Changes as md points to either mtk_data_0 or mtk_data_1 global variables */
+	/* Changes as md points to either mtk_data_0 or mtk_data_1 variables */
 	next_state = sim_state();
 
 	DBG("setting md_%d->ofono_online to: %d (from %d to %d)",
@@ -883,8 +898,8 @@ static void query_3g_caps_cb(struct ril_msg *message, gpointer user_data)
 	 * to different physical slots depending on the current configuration.
 	 * We want to keep the relationship between the physical slots and
 	 * the modem names in DBus (so /ril_0 and /ril_1 always refer to the
-	 * same physical slots), so here we assign the sockets needed by mtk_data_0
-	 * and mtk_data_1 structures to make sure that happens.
+	 * same physical slots), so here we assign the sockets needed by
+	 * mtk_data_0 and mtk_data_1 structures to make sure that happens.
 	 */
 	if (slot_3g == MULTISIM_SLOT_0) {
 		sock_for_md_0 = sock_0;
