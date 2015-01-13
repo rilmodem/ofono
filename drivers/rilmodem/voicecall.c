@@ -33,6 +33,8 @@
 
 #include <glib.h>
 
+#include <ofono.h>
+
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/voicecall.h>
@@ -55,6 +57,9 @@
 
 /* To use with change_state_req::affected_types */
 #define AFFECTED_STATES_ALL 0x3F
+
+/* Auto-answer delay in seconds */
+#define AUTO_ANSWER_DELAY_S 3
 
 struct release_id_req {
 	struct ofono_voicecall *vc;
@@ -98,6 +103,47 @@ static void lastcause_cb(struct ril_msg *message, gpointer user_data)
 	DBG("Call %d ended with reason %d", reqdata->id, reason);
 
 	ofono_voicecall_disconnected(vc, reqdata->id, reason, NULL);
+}
+
+static gboolean auto_answer_call(gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+
+	DBG("");
+
+	ril_answer(vc, NULL, NULL);
+
+	return FALSE;
+}
+
+static gboolean is_auto_answer(struct ril_voicecall_data *vd,
+				struct ofono_call* call)
+{
+	static const char test_mcc_mnc_1[] = "00101";
+	static const char test_mcc_mnc_2[] = "001001";
+
+	const char *imsi;
+	struct ofono_sim *sim;
+
+	if (call->status != CALL_STATUS_INCOMING)
+		return FALSE;
+
+	sim = __ofono_atom_find(OFONO_ATOM_TYPE_SIM, vd->modem);
+	if (sim == NULL)
+		return FALSE;
+
+	imsi = ofono_sim_get_imsi(sim);
+	if (imsi == NULL)
+		return FALSE;
+
+	if (strncmp(imsi, test_mcc_mnc_1, sizeof(test_mcc_mnc_1) - 1) == 0 ||
+		strncmp(imsi, test_mcc_mnc_2, sizeof(test_mcc_mnc_2) - 1)
+			== 0) {
+		ofono_info("Auto answering incoming call, imsi is %s", imsi);
+		return TRUE;
+	}
+
+	return FALSE;
 }
 
 static void clcc_poll_cb(struct ril_msg *message, gpointer user_data)
@@ -151,6 +197,7 @@ static void clcc_poll_cb(struct ril_msg *message, gpointer user_data)
 			/* new call, signal it */
 			if (nc->type) {
 				ofono_voicecall_notify(vc, nc);
+
 				if (vd->cb) {
 					struct ofono_error error;
 					ofono_voicecall_cb_t cb = vd->cb;
@@ -160,6 +207,10 @@ static void clcc_poll_cb(struct ril_msg *message, gpointer user_data)
 					vd->data = NULL;
 				}
 
+				if (is_auto_answer(vd, nc))
+					g_timeout_add_seconds(
+							AUTO_ANSWER_DELAY_S,
+							auto_answer_call, vc);
 			}
 
 			n = n->next;
@@ -677,11 +728,13 @@ static gboolean ril_delayed_register(gpointer user_data)
 	return FALSE;
 }
 
-void ril_voicecall_start(GRil *ril, struct ofono_voicecall *vc,
+void ril_voicecall_start(struct ril_voicecall_driver_data *driver_data,
+				struct ofono_voicecall *vc,
 				unsigned int vendor,
 				struct ril_voicecall_data *vd)
 {
-	vd->ril = g_ril_clone(ril);
+	vd->ril = g_ril_clone(driver_data->gril);
+	vd->modem = driver_data->modem;
 	vd->vendor = vendor;
 	vd->cb = NULL;
 	vd->data = NULL;
@@ -703,14 +756,14 @@ void ril_voicecall_start(GRil *ril, struct ofono_voicecall *vc,
 int ril_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 			void *data)
 {
-	GRil *ril = data;
+	struct ril_voicecall_driver_data *driver_data = data;
 	struct ril_voicecall_data *vd;
 
 	vd = g_try_new0(struct ril_voicecall_data, 1);
 	if (vd == NULL)
 		return -ENOMEM;
 
-	ril_voicecall_start(ril, vc, vendor, vd);
+	ril_voicecall_start(driver_data, vc, vendor, vd);
 
 	return 0;
 }
