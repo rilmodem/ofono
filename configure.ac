@@ -171,6 +171,14 @@ AC_ARG_ENABLE(rilmodem, AC_HELP_STRING([--disable-rilmodem],
                                 [disable RIL modem support]),
                                         [enable_rilmodem=${enableval}])
 AM_CONDITIONAL(RILMODEM, test "${enable_rilmodem}" != "no")
+if test "${enable_rilmodem}" != "no"; then
+	PKG_CHECK_MODULES(ANDROID_PROP, libandroid-properties,
+		[AC_DEFINE([WITH_HYBRIS_ANDROID_PROPERTIES], [1],
+			[Define to 1 if we have android property calls from libhybris.])],
+		[dummy=yes])
+	AC_SUBST(ANDROID_PROP_CFLAGS)
+	AC_SUBST(ANDROID_PROP_LIBS)
+fi
 
 AC_ARG_ENABLE(qmimodem, AC_HELP_STRING([--disable-qmimodem],
 				[disable Qualcomm QMI modem support]),

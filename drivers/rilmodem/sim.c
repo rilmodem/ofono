@@ -46,6 +46,7 @@
 #include "parcel.h"
 #include "ril_constants.h"
 #include "rilmodem.h"
+#include "android_properties.h"
 
 #include "grilreply.h"
 #include "grilrequest.h"
@@ -547,6 +548,23 @@ static void ril_imsi_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
+#if defined(HAVE_ANDROID_PROP)
+	{
+		gchar buf[OFONO_MAX_MCC_LENGTH + OFONO_MAX_MNC_LENGTH + 1];
+		int mnc_len;
+
+		mnc_len = __ofono_sim_mnclength_get_mnclength(imsi);
+		if (mnc_len > 0 && mnc_len <= OFONO_MAX_MNC_LENGTH) {
+			strncpy(buf, imsi, OFONO_MAX_MCC_LENGTH + mnc_len);
+			buf[OFONO_MAX_MCC_LENGTH + mnc_len] = '\0';
+			property_set("gsm.sim.operator.numeric", buf);
+		}
+
+		property_set("gsm.sim.operator.iso-country",
+			__ofono_sim_mnclength_get_country_code(imsi));
+	}
+#endif
+
 	cb(&error, imsi, cbd->data);
 	g_free(imsi);
 
@@ -646,6 +664,9 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct reply_sim_status *status;
 	guint search_index;
+#if defined(HAVE_ANDROID_PROP)
+	const char *state = "UNKNOWN";
+#endif
 
 	status = g_ril_reply_parse_sim_status(sd->ril, message);
 	if (status == NULL) {
@@ -696,6 +717,38 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 			__ofono_sim_recheck_pin(sim);
 		}
 	}
+
+#if defined(HAVE_ANDROID_PROP)
+	if (status->card_state == RIL_CARDSTATE_ABSENT) {
+		if (ofono_modem_get_online(sd->modem)) {
+			state = "ABSENT";
+		} else {
+			state = "NOT_READY";
+		}
+	} else if (status->card_state == RIL_CARDSTATE_PRESENT
+			|| search_index < status->num_apps) {
+		struct reply_sim_app *app = status->apps[search_index];
+
+		switch (app->app_state) {
+		case RIL_APPSTATE_PIN:
+			state = "PIN_REQUIRED";
+			break;
+		case RIL_APPSTATE_PUK:
+			state = "PUK_REQUIRED";
+			break;
+		case RIL_APPSTATE_SUBSCRIPTION_PERSO:
+			if (app->perso_substate == RIL_PERSOSUBSTATE_SIM_NETWORK) {
+				state = "NETWORK_LOCKED";
+			}
+			break;
+		case RIL_APPSTATE_READY:
+			state = "READY";
+			break;
+		}
+	}
+
+	property_set("gsm.sim.state", state);
+#endif
 
 	g_ril_reply_free_sim_status(status);
 }
@@ -992,6 +1045,15 @@ static void ril_change_passwd(struct ofono_sim *sim,
 	}
 }
 
+#if defined(HAVE_ANDROID_PROP)
+static void sim_state_watch(enum ofono_sim_state new_state, void *data)
+{
+	struct ofono_sim *sim = data;
+
+	property_set("gsm.sim.operator.alpha", ofono_sim_get_spn(sim));
+}
+#endif
+
 static gboolean listen_and_get_sim_status(gpointer user)
 {
 	struct ofono_sim *sim = user;
@@ -1019,6 +1081,16 @@ static gboolean ril_sim_register(gpointer user)
 			!ofono_sim_add_state_watch(sim, sd->ril_state_watch,
 							sd->modem, NULL))
 		ofono_error("Error registering ril sim watch");
+
+#if defined(HAVE_ANDROID_PROP)
+	/*
+	 * Ideally, this should have been `ofono_sim_add_spn_watch` instead.
+	 * However, there is not a deterministic timing for registering that
+	 * because `sim->spn_watch` is only initialized in a sequence of
+	 * private operations inside src/sim.c.
+	 */
+	ofono_sim_add_state_watch(sim, sim_state_watch, sim, NULL);
+#endif
 
 	/*
 	 * We use g_idle_add here to make sure that the presence of the SIM

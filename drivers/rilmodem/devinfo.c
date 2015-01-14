@@ -40,6 +40,7 @@
 
 #include "rilmodem.h"
 #include "grilreply.h"
+#include "android_properties.h"
 
 /*
  * TODO: The functions in this file are stubbed out, and
@@ -94,6 +95,9 @@ static void query_revision_cb(struct ril_msg *message, gpointer user_data)
 	}
 
 	revision = g_ril_reply_parse_baseband_version(ril, message);
+#if defined(HAVE_ANDROID_PROP)
+	property_set("gsm.version.baseband", revision);
+#endif
 
 	cb(&error, revision, cbd->data);
 

@@ -1,9 +1,8 @@
 /*
  *
- *  oFono - Open Telephony stack for Linux
+ *  oFono - Open Source Telephony
  *
- *  Copyright (C) 2011  Nokia Corporation and/or its subsidiary(-ies).
- *  Copyright (C) 2013  Canonical Ltd.
+ *  Copyright (C) 2014  Canonical Ltd.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -20,28 +19,23 @@
  *
  */
 
-#ifndef OFONO_SIM_MNCLENGTH_H
-#define OFONO_SIM_MNCLENGTH_H
+#if defined(WITH_HYBRIS_ANDROID_PROPERTIES)
 
-#ifdef __cplusplus
-extern "C" {
+#include <hybris/properties/properties.h>
+
+#define HAVE_ANDROID_PROP 1
+
+#else /* !WITH_HYBRIS_ANDROID_PROPERTIES */
+
+#define PROP_NAME_MAX 32
+#define PROP_VALUE_MAX 92
+
+#define property_set(key, value) -1
+#define property_get(key, value, default_value) -1
+#define property_list(propfn, cookie) -1
+
+#if defined(HAVE_ANDROID_PROP)
+#undef HAVE_ANDROID_PROP
 #endif
 
-
-struct ofono_sim_mnclength_driver {
-	const char *name;
-	int (*get_mnclength)(const char *imsi);
-	const char *(*get_country_code)(const char *mcc);
-};
-
-int ofono_sim_mnclength_driver_register(
-			struct ofono_sim_mnclength_driver *driver);
-void ofono_sim_mnclength_driver_unregister(
-			const struct ofono_sim_mnclength_driver *driver);
-
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* OFONO_SIM_MNCLENGTH_H */
+#endif /* !WITH_HYBRIS_ANDROID_PROPERTIES */
