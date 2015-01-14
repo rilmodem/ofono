@@ -823,13 +823,14 @@ void mtk_reset_all_modems(void)
 static void create_atoms_on_connection(struct ofono_modem *modem)
 {
 	struct mtk_data *md = ofono_modem_get_data(modem);
+	struct ril_voicecall_driver_data vc_data = { md->ril, modem };
 
 	md->devinfo = ofono_devinfo_create(modem, OFONO_RIL_VENDOR_MTK,
 						RILMODEM, md->ril);
 
 	/* Create interfaces useful for emergency calls */
 	md->voicecall = ofono_voicecall_create(modem, OFONO_RIL_VENDOR_MTK,
-						MTKMODEM, md->ril);
+						MTKMODEM, &vc_data);
 	md->callvolume = ofono_call_volume_create(modem, OFONO_RIL_VENDOR_MTK,
 							RILMODEM, md->ril);
 }

@@ -76,6 +76,11 @@ struct ril_gprs_context_data {
 	enum ofono_gprs_context_type type;
 };
 
+struct ril_voicecall_driver_data {
+	GRil *gril;
+	struct ofono_modem *modem;
+};
+
 typedef void (*ril_util_sim_inserted_cb_t)(gboolean present, void *userdata);
 
 void decode_ril_error(struct ofono_error *error, const char *final);

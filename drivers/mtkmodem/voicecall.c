@@ -42,6 +42,7 @@
 
 #include "common.h"
 #include "mtkmodem.h"
+#include "drivers/rilmodem/rilutil.h"
 #include "drivers/rilmodem/voicecall.h"
 
 /*
@@ -111,14 +112,14 @@ static gboolean mtk_delayed_register(gpointer user_data)
 static int mtk_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 				void *data)
 {
-	GRil *ril = data;
+	struct ril_voicecall_driver_data *driver_data = data;
 	struct ril_voicecall_data *vd;
 
 	vd = g_try_new0(struct ril_voicecall_data, 1);
 	if (vd == NULL)
 		return -ENOMEM;
 
-	ril_voicecall_start(ril, vc, vendor, vd);
+	ril_voicecall_start(driver_data, vc, vendor, vd);
 
 	/*
 	 * Register events after ofono_voicecall_register() is called from

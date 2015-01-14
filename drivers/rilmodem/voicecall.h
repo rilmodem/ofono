@@ -25,6 +25,7 @@ struct ril_voicecall_data {
 	unsigned int local_release;
 	unsigned int clcc_source;
 	GRil *ril;
+	struct ofono_modem *modem;
 	unsigned int vendor;
 	unsigned char flags;
 	ofono_voicecall_cb_t cb;
@@ -62,7 +63,8 @@ void ril_set_udub(struct ofono_voicecall *vc,
 void ril_release_all_active(struct ofono_voicecall *vc,
 				ofono_voicecall_cb_t cb, void *data);
 
-void ril_voicecall_start(GRil *ril, struct ofono_voicecall *vc,
+void ril_voicecall_start(struct ril_voicecall_driver_data *driver_data,
+				struct ofono_voicecall *vc,
 				unsigned int vendor,
 				struct ril_voicecall_data *vd);
 void ril_call_state_notify(struct ril_msg *message, gpointer user_data);
