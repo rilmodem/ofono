@@ -125,6 +125,11 @@ void g_mtk_request_set_3g_capability(GRil *gril, struct parcel *rilp);
  */
 void g_mtk_request_store_modem_type(GRil *gril, int mode, struct parcel *rilp);
 
+/*
+ * Set TRM
+ */
+void g_mtk_request_set_trm(GRil *gril, int trm, struct parcel *rilp);
+
 #ifdef __cplusplus
 }
 #endif

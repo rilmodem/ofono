@@ -142,3 +142,12 @@ void g_mtk_request_store_modem_type(GRil *gril, int mode, struct parcel *rilp)
 
 	g_ril_append_print_buf(gril, "(%d)", mode);
 }
+
+void g_mtk_request_set_trm(GRil *gril, int trm, struct parcel *rilp)
+{
+	parcel_init(rilp);
+	parcel_w_int32(rilp, 1);
+	parcel_w_int32(rilp, trm);
+
+	g_ril_append_print_buf(gril, "(%d)", trm);
+}
