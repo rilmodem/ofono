@@ -36,6 +36,7 @@
 #include "common.h"
 #include "grilreply.h"
 #include "drivers/mtkmodem/mtk_constants.h"
+#include "drivers/mtkmodem/mtkrequest.h"
 #include "drivers/mtkmodem/mtkreply.h"
 
 /*
@@ -54,6 +55,11 @@ struct sim_password_test {
 
 struct rep_3g_capability_test {
 	int slot_3g;
+	const struct ril_msg msg;
+};
+
+struct rep_query_modem_type_test {
+	int type;
 	const struct ril_msg msg;
 };
 
@@ -124,6 +130,27 @@ static const struct rep_3g_capability_test mtk_reply_3g_capability_valid_1 = {
 	}
 };
 
+/*
+ * The following hexadecimal data contains the reply to a
+ * MTK_RIL_REQUEST_QUERY_MODEM_TYPE request with parameter {6}
+ */
+static const guchar mtk_reply_query_modem_type_valid_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00
+};
+
+static const struct rep_query_modem_type_test
+					mtk_reply_query_modem_type_valid_1 = {
+	.type = MTK_MD_TYPE_LTG,
+	.msg = {
+		.buf = (char *) &mtk_reply_query_modem_type_valid_parcel1,
+		.buf_len = sizeof(mtk_reply_query_modem_type_valid_parcel1),
+		.unsolicited = FALSE,
+		.req = MTK_RIL_REQUEST_QUERY_MODEM_TYPE,
+		.serial_no = 0,
+		.error = 0,
+	}
+};
+
 static void test_mtk_reply_avail_ops_valid(gconstpointer data)
 {
 	struct reply_avail_ops *reply;
@@ -160,6 +187,17 @@ static void test_mtk_reply_3g_capability_valid(gconstpointer data)
 	g_ril_unref(gril);
 }
 
+static void test_mtk_reply_query_modem_type_valid(gconstpointer data)
+{
+	GRil *gril = g_ril_new(NULL, OFONO_RIL_VENDOR_MTK);
+	const struct rep_query_modem_type_test *test = data;
+	int type = g_mtk_reply_parse_query_modem_type(gril, &test->msg);
+
+	g_assert(type == test->type);
+
+	g_ril_unref(gril);
+}
+
 #endif	/* LITTLE_ENDIAN */
 
 int main(int argc, char **argv)
@@ -188,6 +226,11 @@ int main(int argc, char **argv)
 				"valid GET_3G_CAPABILITY Test 1",
 				&mtk_reply_3g_capability_valid_1,
 				test_mtk_reply_3g_capability_valid);
+
+	g_test_add_data_func("/testmtkreply/modem-fw: "
+				"valid QUERY_MODEM_TYPE Test 1",
+				&mtk_reply_query_modem_type_valid_1,
+				test_mtk_reply_query_modem_type_valid);
 
 #endif	/* LITTLE_ENDIAN */
 
