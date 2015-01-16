@@ -151,3 +151,13 @@ void g_mtk_request_set_trm(GRil *gril, int trm, struct parcel *rilp)
 
 	g_ril_append_print_buf(gril, "(%d)", trm);
 }
+
+void g_mtk_request_resume_registration(GRil *gril, int session_id,
+					struct parcel *rilp)
+{
+	parcel_init(rilp);
+	parcel_w_int32(rilp, 1);
+	parcel_w_int32(rilp, session_id);
+
+	g_ril_append_print_buf(gril, "(%d)", session_id);
+}

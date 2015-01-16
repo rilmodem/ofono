@@ -130,6 +130,12 @@ void g_mtk_request_store_modem_type(GRil *gril, int mode, struct parcel *rilp);
  */
 void g_mtk_request_set_trm(GRil *gril, int trm, struct parcel *rilp);
 
+/*
+ * Request to resume registration.
+ */
+void g_mtk_request_resume_registration(GRil *gril, int session_id,
+					struct parcel *rilp);
+
 #ifdef __cplusplus
 }
 #endif
