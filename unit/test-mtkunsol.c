@@ -72,6 +72,26 @@ static const struct ril_msg unsol_incoming_call_indication_valid_1 = {
 	.error = 0,
 };
 
+/*
+ * The following hexadecimal data represents a serialized Binder parcel instance
+ * containing a valid MTK_RIL_UNSOL_RESPONSE_REGISTRATION_SUSPENDED message with
+ * the following parameters:
+ *
+ * {1}
+ */
+static const guchar unsol_registration_suspended_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg unsol_registration_suspended_valid_1 = {
+	.buf = (gchar *) &unsol_registration_suspended_parcel1,
+	.buf_len = sizeof(unsol_registration_suspended_parcel1),
+	.unsolicited = TRUE,
+	.req = MTK_RIL_UNSOL_RESPONSE_REGISTRATION_SUSPENDED,
+	.serial_no = 0,
+	.error = 0,
+};
+
 static void test_unsol_incoming_call_indication_valid(gconstpointer data)
 {
 	struct unsol_call_indication *unsol;
@@ -81,6 +101,16 @@ static void test_unsol_incoming_call_indication_valid(gconstpointer data)
 
 	g_assert(unsol != NULL);
 	g_mtk_unsol_free_call_indication(unsol);
+}
+
+static void test_unsol_registration_suspended_valid(gconstpointer data)
+{
+	int suspended;
+
+	suspended = g_mtk_unsol_parse_registration_suspended(NULL,
+						(struct ril_msg *) data);
+
+	g_assert(suspended > 0);
 }
 
 #endif	/* LITTLE_ENDIAN */
@@ -101,6 +131,11 @@ int main(int argc, char **argv)
 				"valid INCOMING_CALL_INDICATION Test 1",
 				&unsol_incoming_call_indication_valid_1,
 				test_unsol_incoming_call_indication_valid);
+
+	g_test_add_data_func("/testmtkunsol/network: "
+				"valid RESPONSE_REGISTRATION_SUSPENDED Test 1",
+				&unsol_registration_suspended_valid_1,
+				test_unsol_registration_suspended_valid);
 
 #endif	/* LITTLE_ENDIAN */
 
