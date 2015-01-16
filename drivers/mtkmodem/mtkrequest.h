@@ -52,6 +52,18 @@ extern "C" {
 #define MTK_FD_PAR1_SCREEN_OFF 0
 #define MTK_FD_PAR1_SCREEN_ON 1
 
+#define MTK_MD_TYPE_INVALID 0
+#define MTK_MD_TYPE_2G 1
+#define MTK_MD_TYPE_3G 2
+#define MTK_MD_TYPE_WG 3
+#define MTK_MD_TYPE_TG 4
+/* FDD CSFB modem */
+#define MTK_MD_TYPE_LWG 5
+/* TDD CSFB modem */
+#define MTK_MD_TYPE_LTG 6
+/* SGLTE modem */
+#define MTK_MD_TYPE_LTNG 7
+
 /*
  * The meaning of mode seems to be:
  * -1 -> Both SIMs inactive

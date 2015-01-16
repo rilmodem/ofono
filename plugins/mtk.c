@@ -125,7 +125,11 @@ struct mtk_data {
 	struct ofono_modem *modem;
 	ofono_bool_t has_3g;
 	struct mtk_settings_data *mtk_settings;
+	int md_type; /* MTK_MD_TYPE_* */
 };
+
+typedef void (*query_modem_type_cb_t)(const struct ofono_error *error,
+					struct mtk_data *md);
 
 /*
  * MTK dual SIM sockets are not completely symmetric: some requests (essentially
@@ -262,6 +266,49 @@ static void radio_state_changed(struct ril_msg *message, gpointer user_data)
 	}
 }
 
+static void query_modem_type_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	query_modem_type_cb_t cb = cbd->cb;
+	struct mtk_data *md = (struct mtk_data*)cbd->data;
+	int type = MTK_MD_TYPE_INVALID;
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+	} else {
+		type = g_mtk_reply_parse_query_modem_type(md->ril, message);
+		if (type != MTK_MD_TYPE_INVALID)
+			md->md_type = type;
+	}
+
+	if (!cb)
+		return;
+
+	if (type != MTK_MD_TYPE_INVALID)
+		CALLBACK_WITH_SUCCESS(cb, md);
+
+	else
+		CALLBACK_WITH_FAILURE(cb, md);
+
+}
+
+static void mtk_send_query_modem_type(struct mtk_data *md,
+					query_modem_type_cb_t cb)
+{
+	struct cb_data *cbd = cb_data_new(cb, md, NULL);
+
+	if (g_ril_send(md->ril, MTK_RIL_REQUEST_QUERY_MODEM_TYPE, NULL,
+			query_modem_type_cb, cbd, g_free) == 0) {
+		ofono_error("%s: failure sending request", __func__);
+
+		if (cb)
+			CALLBACK_WITH_FAILURE(cb, cbd->data);
+
+		g_free(cbd);
+	}
+}
+
 static void mtk_radio_state_changed(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -280,6 +327,9 @@ static void mtk_radio_state_changed(struct ril_msg *message, gpointer user_data)
 
 		switch (radio_state) {
 		case RADIO_STATE_ON:
+			mtk_send_query_modem_type(md, NULL);
+			break;
+
 		/* MTK */
 		case RADIO_STATE_SIM_NOT_READY:
 		case RADIO_STATE_SIM_LOCKED_OR_ABSENT:
@@ -339,6 +389,7 @@ static int mtk_probe(struct ofono_modem *modem)
 
 	md->ofono_online = FALSE;
 	md->radio_state = RADIO_STATE_UNAVAILABLE;
+	md->md_type = MTK_MD_TYPE_INVALID;
 
 	md->slot = ofono_modem_get_integer(modem, "Slot");
 
