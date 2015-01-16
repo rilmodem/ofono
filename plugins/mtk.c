@@ -69,6 +69,7 @@
 #include "drivers/mtkmodem/mtkutil.h"
 #include "drivers/mtkmodem/mtkrequest.h"
 #include "drivers/mtkmodem/mtkreply.h"
+#include "drivers/mtkmodem/mtkunsol.h"
 #include "drivers/mtkmodem/mtksettings.h"
 
 #define MAX_SIM_STATUS_RETRIES 15
@@ -304,6 +305,40 @@ static void mtk_radio_state_changed(struct ril_msg *message, gpointer user_data)
 			g_assert(FALSE);
 		}
 	}
+}
+
+static void reg_suspended_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mtk_data *md = ofono_modem_get_data(modem);
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+		return;
+	}
+
+	g_ril_print_response_no_args(md->ril, message);
+}
+
+static void reg_suspended(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mtk_data *md = ofono_modem_get_data(modem);
+	struct parcel rilp;
+	int session_id;
+
+	session_id = g_mtk_unsol_parse_registration_suspended(md->ril, message);
+	if (session_id < 0) {
+		ofono_error("%s: parse error", __func__);
+		return;
+	}
+
+	g_mtk_request_resume_registration(md->ril, session_id, &rilp);
+
+	if (g_ril_send(md->ril, MTK_RIL_REQUEST_RESUME_REGISTRATION, &rilp,
+			reg_suspended_cb, modem, NULL) == 0)
+		ofono_error("%s: failure sending request", __func__);
 }
 
 static void sim_removed(struct ril_msg *message, gpointer user_data)
@@ -1230,6 +1265,9 @@ static int create_gril(struct ofono_modem *modem)
 		g_ril_register(sock->ril,
 				RIL_UNSOL_RESPONSE_RADIO_STATE_CHANGED,
 				radio_state_changed, sock);
+
+	g_ril_register(sock->ril, MTK_RIL_UNSOL_RESPONSE_REGISTRATION_SUSPENDED,
+			reg_suspended, modem);
 
 	/* sock_num is negative to avoid confusion with physical slots */
 	g_ril_set_slot(sock->ril, sock_num);
