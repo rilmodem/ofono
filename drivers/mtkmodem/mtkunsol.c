@@ -131,3 +131,34 @@ error:
 
 	return NULL;
 }
+
+int g_mtk_unsol_parse_registration_suspended(GRil *gril,
+						const struct ril_msg *message)
+{
+	struct parcel rilp;
+	int numint, session_id;
+
+	g_ril_init_parcel(message, &rilp);
+
+	numint = parcel_r_int32(&rilp);
+	if (numint != 1) {
+		ofono_error("%s Wrong format", __func__);
+		goto error;
+	}
+
+	session_id = parcel_r_int32(&rilp);
+
+	if (rilp.malformed) {
+		ofono_error("%s: malformed parcel", __func__);
+		goto error;
+	}
+
+	g_ril_append_print_buf(gril, "{%d}", session_id);
+	g_ril_print_unsol(gril, message);
+
+	return session_id;
+
+error:
+	return -1;
+
+}
