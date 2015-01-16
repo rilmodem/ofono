@@ -89,6 +89,13 @@
 
 #define T_WAIT_DISCONN_MS 1000
 
+enum mtk_user_type {
+	MTK_USER_TYPE_UNKNOWN,
+	MTK_USER_TYPE_1,
+	MTK_USER_TYPE_2,
+	MTK_USER_TYPE_3
+};
+
 static const char hex_slot_0[] = "Slot 0: ";
 static const char hex_slot_1[] = "Slot 1: ";
 
@@ -127,6 +134,7 @@ struct mtk_data {
 	struct mtk_settings_data *mtk_settings;
 	int md_type; /* MTK_MD_TYPE_* */
 	gboolean first_switch_modem_type;
+	enum mtk_user_type user_type;
 };
 
 typedef void (*query_modem_type_cb_t)(const struct ofono_error *error,
@@ -472,6 +480,7 @@ static int mtk_probe(struct ofono_modem *modem)
 	md->radio_state = RADIO_STATE_UNAVAILABLE;
 	md->md_type = MTK_MD_TYPE_INVALID;
 	md->first_switch_modem_type = TRUE;
+	md->user_type = MTK_USER_TYPE_UNKNOWN;
 
 	md->slot = ofono_modem_get_integer(modem, "Slot");
 
@@ -520,6 +529,60 @@ static void mtk_post_sim(struct ofono_modem *modem)
 	struct mtk_data *md = ofono_modem_get_data(modem);
 
 	DBG("slot %d", md->slot);
+}
+
+static gboolean find_in_table(const char *str, const char **table, size_t num)
+{
+	size_t i;
+
+	for (i = 0; i < num; i++)
+		if (strncmp(str, table[i], strlen(table[i])) == 0)
+			return TRUE;
+
+	return FALSE;
+}
+
+static enum mtk_user_type get_user_type_by_mccmnc(const char *imsi)
+{
+	/* China Mobile MCC/MNC codes */
+	static const char *type1[] = { "46000", "46002", "46007" };
+	/* China Unicom and China Telecom MCC/MNC codes */
+	static const char *type3[] =
+		{ "46001", "46006", "46009", "45407", "46005", "45502" };
+
+	if (find_in_table(imsi, type1, G_N_ELEMENTS(type1)))
+		return MTK_USER_TYPE_1;
+
+	if (find_in_table(imsi, type3, G_N_ELEMENTS(type3)))
+		return MTK_USER_TYPE_3;
+
+	return MTK_USER_TYPE_2;
+}
+
+static void store_modem_type(struct mtk_data *md, int type)
+{
+	if (type == md->md_type)
+		return;
+
+	mtk_send_store_modem_type(md, type);
+}
+
+static void store_modem_type_on_imsi(struct mtk_data *md)
+{
+	if (md->slot != MULTISIM_SLOT_0)
+		return;
+
+	md->user_type = get_user_type_by_mccmnc(ofono_sim_get_imsi(md->sim));
+
+	if (md->first_switch_modem_type) {
+
+		md->first_switch_modem_type = FALSE;
+
+		if (md->user_type == MTK_USER_TYPE_1)
+			store_modem_type(md, MTK_MD_TYPE_LTG);
+		else
+			store_modem_type(md, MTK_MD_TYPE_LWG);
+	}
 }
 
 /*
@@ -595,6 +658,9 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 		if (md->message_waiting)
 			ofono_message_waiting_register(md->message_waiting);
 
+		if (getenv("OFONO_RIL_RAT_LTE"))
+			store_modem_type_on_imsi(md);
+
 	} else if (new_state == OFONO_SIM_STATE_LOCKED_OUT) {
 
 		DBG("SIM locked, removing atoms");
@@ -635,6 +701,12 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 			ofono_sms_remove(md->sms);
 			md->sms = NULL;
 		}
+
+	} else if (new_state == OFONO_SIM_STATE_NOT_PRESENT) {
+
+		if (getenv("OFONO_RIL_RAT_LTE"))
+			md->first_switch_modem_type = TRUE;
+
 	}
 }
 
