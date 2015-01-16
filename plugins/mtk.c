@@ -56,7 +56,9 @@
 
 #include "ofono.h"
 
+#include <gril.h>
 #include <grilreply.h>
+#include <grilrequest.h>
 #include <grilunsol.h>
 
 #include "drivers/rilmodem/rilmodem.h"
@@ -680,7 +682,7 @@ static void poweron_disconnect(struct cb_data *cbd)
 	mtk_send_sim_mode(mtk_sim_mode_cb, cbd);
 }
 
-static void online_off_cb(struct ril_msg *message, gpointer user_data)
+static void poweroff_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_modem_online_cb_t cb = cbd->cb;
@@ -698,6 +700,47 @@ static void online_off_cb(struct ril_msg *message, gpointer user_data)
 				ril_error_to_string(message->error));
 		CALLBACK_WITH_FAILURE(cb, cbd->data);
 	}
+}
+
+static int power_on_off(GRil *ril, gboolean on, struct cb_data *cbd)
+{
+	int cancel_id;
+	int req;
+	struct parcel rilp;
+	struct parcel *p_rilp;
+	GRilResponseFunc resp;
+	GDestroyNotify notify;
+	ofono_modem_online_cb_t cb = cbd->cb;
+
+	/* Case of modems with just one slot */
+	if (mtk_data_1 == NULL) {
+		/* Fall back to generic RIL_REQUEST_RADIO_POWER */
+		req = RIL_REQUEST_RADIO_POWER;
+		g_ril_request_power(ril, on, &rilp);
+		p_rilp = &rilp;
+	} else {
+		req = on ? MTK_RIL_REQUEST_RADIO_POWERON
+			: MTK_RIL_REQUEST_RADIO_POWEROFF;
+		p_rilp = NULL;
+	}
+
+	if (on) {
+		resp = poweron_cb;
+		notify = NULL;
+	} else {
+		resp = poweroff_cb;
+		notify = g_free;
+	}
+
+	if ((cancel_id = g_ril_send(ril, req, p_rilp, resp, cbd, notify))
+			== 0) {
+		ofono_error("%s: failure sending request", __func__);
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+		g_free(cbd);
+		return 0;
+	}
+
+	return cancel_id;
 }
 
 static void mtk_set_online(struct ofono_modem *modem, ofono_bool_t online,
@@ -749,24 +792,14 @@ static void mtk_set_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	if (current_state == NO_SIM_ACTIVE) {
 		/* Old state was off, need to power on the modem */
-		if (g_ril_send(mtk_data_0->ril, MTK_RIL_REQUEST_RADIO_POWERON,
-				NULL, poweron_cb, cbd, NULL) == 0) {
-			CALLBACK_WITH_FAILURE(cb, cbd->data);
-			g_free(cbd);
-		} else {
+		if (power_on_off(mtk_data_0->ril, TRUE, cbd)) {
 			/* Socket might disconnect... failsafe */
 			mtk_data_0->pending_cb = poweron_disconnect;
 			mtk_data_0->pending_cbd = cbd;
 		}
 	} else if (next_state == NO_SIM_ACTIVE) {
-		if (g_ril_send(mtk_data_0->ril, MTK_RIL_REQUEST_RADIO_POWEROFF,
-				NULL, online_off_cb, cbd, g_free) == 0) {
-			ofono_error("%s: failure sending request", __func__);
-			CALLBACK_WITH_FAILURE(cb, cbd->data);
-			g_free(cbd);
-		} else {
+		if (power_on_off(mtk_data_0->ril, FALSE, cbd))
 			disconnect_expected = TRUE;
-		}
 	} else {
 		mtk_send_sim_mode(mtk_sim_mode_cb, cbd);
 	}
