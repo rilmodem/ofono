@@ -126,6 +126,7 @@ struct mtk_data {
 	ofono_bool_t has_3g;
 	struct mtk_settings_data *mtk_settings;
 	int md_type; /* MTK_MD_TYPE_* */
+	gboolean first_switch_modem_type;
 };
 
 typedef void (*query_modem_type_cb_t)(const struct ofono_error *error,
@@ -309,6 +310,29 @@ static void mtk_send_query_modem_type(struct mtk_data *md,
 	}
 }
 
+static void mtk_send_store_modem_type(struct mtk_data *md, int type)
+{
+	struct parcel rilp;
+
+	g_mtk_request_store_modem_type(md->ril, type, &rilp);
+
+	if (g_ril_send(md->ril, MTK_RIL_REQUEST_STORE_MODEM_TYPE, &rilp,
+			NULL, NULL, NULL) == 0) {
+		ofono_error("%s: failure sending request", __func__);
+       }
+}
+
+static void store_modem_type_if_success(const struct ofono_error *error,
+						struct mtk_data *md)
+{
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR &&
+			md->first_switch_modem_type) {
+		md->first_switch_modem_type = FALSE;
+
+		mtk_send_store_modem_type(md, md->md_type);
+	}
+}
+
 static void mtk_radio_state_changed(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -327,7 +351,11 @@ static void mtk_radio_state_changed(struct ril_msg *message, gpointer user_data)
 
 		switch (radio_state) {
 		case RADIO_STATE_ON:
-			mtk_send_query_modem_type(md, NULL);
+			if (!getenv("OFONO_RIL_RAT_LTE"))
+				mtk_send_query_modem_type(md,
+						store_modem_type_if_success);
+			else
+				mtk_send_query_modem_type(md, NULL);
 			break;
 
 		/* MTK */
@@ -390,6 +418,7 @@ static int mtk_probe(struct ofono_modem *modem)
 	md->ofono_online = FALSE;
 	md->radio_state = RADIO_STATE_UNAVAILABLE;
 	md->md_type = MTK_MD_TYPE_INVALID;
+	md->first_switch_modem_type = TRUE;
 
 	md->slot = ofono_modem_get_integer(modem, "Slot");
 

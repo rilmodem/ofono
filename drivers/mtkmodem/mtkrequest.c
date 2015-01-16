@@ -133,3 +133,12 @@ void g_mtk_request_set_3g_capability(GRil *gril, struct parcel *rilp)
 
 	g_ril_append_print_buf(gril, "(%d)", mode);
 }
+
+void g_mtk_request_store_modem_type(GRil *gril, int type, struct parcel *rilp)
+{
+	parcel_init(rilp);
+	parcel_w_int32(rilp, 1);
+	parcel_w_int32(rilp, type);
+
+	g_ril_append_print_buf(gril, "(%d)", type);
+}
