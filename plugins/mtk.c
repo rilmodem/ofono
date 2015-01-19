@@ -164,6 +164,12 @@ struct socket_data {
 
 static struct socket_data *sock_0, *sock_1;
 
+struct gprs_foreach_data {
+	struct mtk_data *md;
+	struct ofono_gprs_primary_context *first;
+	struct ofono_gprs_primary_context *any;
+};
+
 static int create_gril(struct ofono_modem *modem);
 static gboolean mtk_connected(gpointer user_data);
 static void mtk_set_online(struct ofono_modem *modem, ofono_bool_t online,
@@ -503,6 +509,24 @@ static void sim_inserted(struct ril_msg *message, gpointer user_data)
 	}
 }
 
+static void mtk_send_set_initial_attach_apn(struct mtk_data *md,
+						const char *apn,
+						enum ofono_gprs_proto proto,
+						int auth_type, const char *user,
+						const char *passwd,
+						const char *mccmnc)
+{
+	struct parcel rilp;
+
+	g_mtk_request_set_initial_attach_apn(md->ril, apn, proto, auth_type,
+						user, passwd, mccmnc, &rilp);
+
+	if (g_ril_send(md->ril, RIL_REQUEST_SET_INITIAL_ATTACH_APN, &rilp,
+			NULL, NULL, NULL) == 0) {
+		ofono_error("%s: failure sending request", __func__);
+	}
+}
+
 static int mtk_probe(struct ofono_modem *modem)
 {
 	struct mtk_data *md = g_try_new0(struct mtk_data, 1);
@@ -566,6 +590,57 @@ static void mtk_post_sim(struct ofono_modem *modem)
 	struct mtk_data *md = ofono_modem_get_data(modem);
 
 	DBG("slot %d", md->slot);
+}
+
+static void foreach_gprs_primary_context(
+				struct ofono_gprs_primary_context *context,
+				enum ofono_gprs_context_type type, void *data)
+{
+	struct gprs_foreach_data *gfd = data;
+
+	if (!gfd->first)
+		gfd->first = context;
+
+	if (type == OFONO_GPRS_CONTEXT_TYPE_ANY)
+		gfd->any = context;
+}
+
+static void gprs_primary_contexts_changed(void *data)
+{
+	struct mtk_data *md = data;
+	const char *imsi;
+	int mnc_len;
+	char mccmnc[OFONO_MAX_MCC_LENGTH + OFONO_MAX_MNC_LENGTH + 1];
+	struct gprs_foreach_data gfd;
+	struct ofono_gprs_primary_context *context = NULL;
+
+	imsi = ofono_sim_get_imsi(md->sim);
+	if (!imsi)
+		return;
+
+	/* Copy only (mcc + mnc) chars. */
+	mnc_len = __ofono_sim_mnclength_get_mnclength(imsi);
+	strncpy(mccmnc, imsi, OFONO_MAX_MCC_LENGTH + mnc_len);
+	mccmnc[OFONO_MAX_MCC_LENGTH + mnc_len] = '\0';
+
+	memset(&gfd, 0, sizeof gfd);
+	gfd.md = md;
+
+	__ofono_gprs_foreach_primary_context(md->gprs,
+				foreach_gprs_primary_context, &gfd);
+	if (gfd.first)
+		context = gfd.first;
+	if (gfd.any)
+		context = gfd.any;
+
+	if (context == NULL)
+		mtk_send_set_initial_attach_apn(md, "", OFONO_GPRS_PROTO_IP,
+						-1, "", "", mccmnc);
+	else
+		mtk_send_set_initial_attach_apn(md, context->apn,
+						context->proto, -1,
+						context->username,
+						context->password, mccmnc);
 }
 
 static gboolean find_in_table(const char *str, const char **table, size_t num)
@@ -695,6 +770,9 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 					OFONO_GPRS_CONTEXT_TYPE_MMS);
 			ofono_gprs_add_context(md->gprs, gc);
 		}
+
+		__ofono_gprs_add_primary_context_watch(md->gprs,
+				gprs_primary_contexts_changed, md, NULL);
 
 		md->message_waiting = ofono_message_waiting_create(modem);
 		if (md->message_waiting)

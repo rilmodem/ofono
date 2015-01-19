@@ -24,6 +24,7 @@
 
 #include <ofono/types.h>
 #include <ofono/sim.h>
+#include <ofono/gprs-context.h>
 
 #include "gril.h"
 
@@ -135,6 +136,19 @@ void g_mtk_request_store_modem_type(GRil *gril, int type, struct parcel *rilp);
  * Set TRM.
  */
 void g_mtk_request_set_trm(GRil *gril, int mode, struct parcel *rilp);
+
+/*
+ * MTK doesn't add a new request type for its own version of
+ * RIL_REQUEST_SET_INITIAL_ATTACH_APN. Instead, it appends an additional field
+ * "mccmnc" in the end.
+ */
+void g_mtk_request_set_initial_attach_apn(GRil *gril, const char *apn,
+						enum ofono_gprs_proto proto,
+						int auth_type,
+						const char *user,
+						const char *passwd,
+						const char *mccmnc,
+						struct parcel *rilp);
 
 #ifdef __cplusplus
 }

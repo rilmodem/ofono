@@ -32,6 +32,7 @@
 #include <ofono/modem.h>
 #include <ofono/gprs-context.h>
 
+#include "grilrequest.h"
 #include "mtkrequest.h"
 #include "simutil.h"
 #include "util.h"
@@ -160,4 +161,20 @@ void g_mtk_request_set_trm(GRil *gril, int mode, struct parcel *rilp)
 	parcel_w_int32(rilp, mode);
 
 	g_ril_append_print_buf(gril, "(%d)", mode);
+}
+
+void g_mtk_request_set_initial_attach_apn(GRil *gril, const char *apn,
+						enum ofono_gprs_proto proto,
+						int auth_type,
+						const char *user,
+						const char *passwd,
+						const char *mccmnc,
+						struct parcel *rilp)
+{
+	g_ril_request_set_initial_attach_apn(gril, apn, proto, auth_type,
+						user, passwd, rilp);
+
+	parcel_w_string(rilp, mccmnc);
+
+	g_ril_append_print_buf(gril, "(%s)", mccmnc);
 }
