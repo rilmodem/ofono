@@ -61,6 +61,7 @@
 
 struct ofono_gprs {
 	GSList *contexts;
+	struct ofono_watchlist *contexts_watch;
 	ofono_bool_t attached;
 	ofono_bool_t driver_attached;
 	ofono_bool_t roaming_allowed;
@@ -230,6 +231,22 @@ static gboolean gprs_proto_from_string(const char *str,
 	}
 
 	return FALSE;
+}
+
+static void call_primary_context_watches(struct ofono_gprs *gprs)
+{
+	GSList *l;
+	struct ofono_watchlist_item *watch;
+	ofono_gprs_primary_context_watch_cb_t notify;
+
+	DBG("%p", gprs);
+
+	for (l = gprs->contexts_watch->items; l; l = l->next) {
+		watch = l->data;
+
+		notify = watch->notify;
+		notify(watch->notify_data);
+	}
 }
 
 static unsigned int gprs_cid_alloc(struct ofono_gprs *gprs)
@@ -907,6 +924,8 @@ static DBusMessage *pri_set_apn(struct pri_context *ctx, DBusConnection *conn,
 		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
 	}
 
+	call_primary_context_watches(ctx->gprs);
+
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
 	ofono_dbus_signal_property_changed(conn, ctx->path,
@@ -936,6 +955,8 @@ static DBusMessage *pri_set_username(struct pri_context *ctx,
 					"Username", username);
 		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
 	}
+
+	call_primary_context_watches(ctx->gprs);
 
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
@@ -967,6 +988,8 @@ static DBusMessage *pri_set_password(struct pri_context *ctx,
 		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
 	}
 
+	call_primary_context_watches(ctx->gprs);
+
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
 	ofono_dbus_signal_property_changed(conn, ctx->path,
@@ -995,6 +1018,8 @@ static DBusMessage *pri_set_type(struct pri_context *ctx, DBusConnection *conn,
 		g_key_file_set_string(settings, ctx->key, "Type", type);
 		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
 	}
+
+	call_primary_context_watches(ctx->gprs);
 
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
@@ -1025,6 +1050,8 @@ static DBusMessage *pri_set_proto(struct pri_context *ctx,
 		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
 	}
 
+	call_primary_context_watches(ctx->gprs);
+
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
 	ofono_dbus_signal_property_changed(conn, ctx->path,
@@ -1051,6 +1078,8 @@ static DBusMessage *pri_set_name(struct pri_context *ctx, DBusConnection *conn,
 		g_key_file_set_string(settings, ctx->key, "Name", ctx->name);
 		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
 	}
+
+	call_primary_context_watches(ctx->gprs);
 
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
@@ -1081,6 +1110,8 @@ static DBusMessage *pri_set_message_proxy(struct pri_context *ctx,
 		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
 	}
 
+	call_primary_context_watches(ctx->gprs);
+
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
 	ofono_dbus_signal_property_changed(conn, ctx->path,
@@ -1109,6 +1140,8 @@ static DBusMessage *pri_set_message_center(struct pri_context *ctx,
 							ctx->message_center);
 		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
 	}
+
+	call_primary_context_watches(ctx->gprs);
 
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
@@ -1810,6 +1843,8 @@ static DBusMessage *gprs_add_context(DBusConnection *conn,
 	if (context == NULL)
 		return __ofono_error_failed(msg);
 
+	call_primary_context_watches(gprs);
+
 	path = context->path;
 
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_OBJECT_PATH, &path,
@@ -1880,6 +1915,8 @@ static void gprs_deactivate_for_remove(const struct ofono_error *error,
 	context_dbus_unregister(ctx);
 	gprs->contexts = g_slist_remove(gprs->contexts, ctx);
 
+	call_primary_context_watches(gprs);
+
 	__ofono_dbus_pending_reply(&gprs->pending,
 				dbus_message_new_method_return(gprs->pending));
 
@@ -1933,6 +1970,8 @@ static DBusMessage *gprs_remove_context(DBusConnection *conn,
 	DBG("Unregistering context: %s", ctx->path);
 	context_dbus_unregister(ctx);
 	gprs->contexts = g_slist_remove(gprs->contexts, ctx);
+
+	call_primary_context_watches(gprs);
 
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
@@ -2611,6 +2650,8 @@ static void gprs_remove(struct ofono_atom *atom)
 	if (gprs->driver && gprs->driver->remove)
 		gprs->driver->remove(gprs);
 
+	__ofono_watchlist_free(gprs->contexts_watch);
+
 	g_free(gprs);
 }
 
@@ -2647,6 +2688,7 @@ struct ofono_gprs *ofono_gprs_create(struct ofono_modem *modem,
 	gprs->status = NETWORK_REGISTRATION_STATUS_UNKNOWN;
 	gprs->netreg_status = NETWORK_REGISTRATION_STATUS_UNKNOWN;
 	gprs->pid_map = idmap_new(MAX_CONTEXTS);
+	gprs->contexts_watch = __ofono_watchlist_new(g_free);
 
 	return gprs;
 }
@@ -3001,6 +3043,8 @@ static void ofono_gprs_finish_register(struct ofono_gprs *gprs)
 					netreg_watch, gprs, NULL);
 
 	__ofono_atom_register(gprs->atom, gprs_unregister);
+
+	call_primary_context_watches(gprs);
 }
 
 static void sim_gid1_read_cb(int ok, int total_length, int record,
@@ -3084,4 +3128,46 @@ void ofono_gprs_set_data(struct ofono_gprs *gprs, void *data)
 void *ofono_gprs_get_data(struct ofono_gprs *gprs)
 {
 	return gprs->driver_data;
+}
+
+unsigned int __ofono_gprs_add_primary_context_watch(struct ofono_gprs *gprs,
+		ofono_gprs_primary_context_watch_cb_t cb, void *data,
+		ofono_destroy_func destroy)
+{
+	struct ofono_watchlist_item *watch;
+
+	if (gprs == NULL || cb == NULL)
+		return 0;
+
+	watch = g_new0(struct ofono_watchlist_item, 1);
+
+	watch->notify = cb;
+	watch->notify_data = data;
+	watch->destroy = destroy;
+
+	return __ofono_watchlist_add_item(gprs->contexts_watch, watch);
+}
+
+gboolean __ofono_gprs_remove_primary_context_watch(struct ofono_gprs *gprs,
+							unsigned int id)
+{
+	if (gprs == NULL)
+		return FALSE;
+
+	return __ofono_watchlist_remove_item(gprs->contexts_watch, id);
+}
+
+void __ofono_gprs_foreach_primary_context(struct ofono_gprs *gprs,
+				ofono_gprs_primary_context_foreach_func cb,
+				void *data)
+{
+	GSList *l;
+
+	if (gprs == NULL)
+		return;
+
+	for (l = gprs->contexts; l; l = l->next) {
+		struct pri_context *ctx = l->data;
+		cb(&ctx->context, ctx->type, data);
+	}
 }

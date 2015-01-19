@@ -261,6 +261,23 @@ gboolean __ofono_call_settings_is_busy(struct ofono_call_settings *cs);
 #include <ofono/phonebook.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+
+typedef void (*ofono_gprs_primary_context_foreach_func)(
+		struct ofono_gprs_primary_context *context,
+		enum ofono_gprs_context_type type, void *data);
+
+typedef void (*ofono_gprs_primary_context_watch_cb_t)(void *data);
+
+unsigned int __ofono_gprs_add_primary_context_watch(struct ofono_gprs *gprs,
+		ofono_gprs_primary_context_watch_cb_t cb, void *data,
+		ofono_destroy_func destroy);
+gboolean __ofono_gprs_remove_primary_context_watch(struct ofono_gprs *gprs,
+							unsigned int id);
+
+void __ofono_gprs_foreach_primary_context(struct ofono_gprs *gprs,
+				ofono_gprs_primary_context_foreach_func cb,
+				void *data);
+
 #include <ofono/radio-settings.h>
 #include <ofono/audio-settings.h>
 #include <ofono/ctm.h>
