@@ -70,6 +70,7 @@
 #include "drivers/mtkmodem/mtkrequest.h"
 #include "drivers/mtkmodem/mtkreply.h"
 #include "drivers/mtkmodem/mtksettings.h"
+#include "drivers/mtkmodem/mtkunsol.h"
 
 #define MAX_SIM_STATUS_RETRIES 15
 
@@ -135,6 +136,7 @@ struct mtk_data {
 	int md_type; /* MTK_MD_TYPE_* */
 	gboolean first_switch_modem_type;
 	enum mtk_user_type user_type;
+	int reg_resume_id;
 };
 
 typedef void (*query_modem_type_cb_t)(const struct ofono_error *error,
@@ -439,6 +441,40 @@ static void mtk_radio_state_changed(struct ril_msg *message, gpointer user_data)
 	}
 }
 
+static void mtk_send_resume_registration(GRil *ril, int session_id)
+{
+	struct parcel rilp;
+
+	g_mtk_request_resume_registration(ril, session_id, &rilp);
+
+	if (g_ril_send(ril, MTK_RIL_REQUEST_RESUME_REGISTRATION, &rilp,
+			NULL, NULL, NULL) == 0) {
+		ofono_error("%s: failure sending request", __func__);
+	}
+}
+
+static void mtk_registration_suspended(struct ril_msg *message,
+					gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mtk_data *md = ofono_modem_get_data(modem);
+	int session_id;
+
+	session_id = g_mtk_unsol_parse_registration_suspended(md->ril, message);
+	if (session_id < 0)
+		return;
+
+	if (md->slot == MULTISIM_SLOT_0) {
+
+		if (md->user_type != MTK_USER_TYPE_UNKNOWN)
+			mtk_send_resume_registration(md->ril, session_id);
+		else
+			md->reg_resume_id = session_id;
+
+	} else if (ofono_modem_get_powered(md->modem))
+		mtk_send_resume_registration(md->ril, session_id);
+}
+
 static void sim_removed(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = (struct ofono_modem *) user_data;
@@ -481,6 +517,7 @@ static int mtk_probe(struct ofono_modem *modem)
 	md->md_type = MTK_MD_TYPE_INVALID;
 	md->first_switch_modem_type = TRUE;
 	md->user_type = MTK_USER_TYPE_UNKNOWN;
+	md->reg_resume_id = -1;
 
 	md->slot = ofono_modem_get_integer(modem, "Slot");
 
@@ -582,6 +619,11 @@ static void store_modem_type_on_imsi(struct mtk_data *md)
 			store_modem_type(md, MTK_MD_TYPE_LTG);
 		else
 			store_modem_type(md, MTK_MD_TYPE_LWG);
+	}
+
+	if (md->reg_resume_id >= 0) {
+		mtk_send_resume_registration(md->ril, md->reg_resume_id);
+		md->reg_resume_id = -1;
 	}
 }
 
@@ -1095,6 +1137,9 @@ static void start_slot(struct mtk_data *md, struct socket_data *sock,
 
 	g_ril_register(md->ril, RIL_UNSOL_RESPONSE_RADIO_STATE_CHANGED,
 			mtk_radio_state_changed, md->modem);
+
+	g_ril_register(md->ril, MTK_RIL_UNSOL_RESPONSE_REGISTRATION_SUSPENDED,
+			mtk_registration_suspended, md->modem);
 
 	mtk_connected(md->modem);
 }

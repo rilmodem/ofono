@@ -41,6 +41,9 @@ void g_mtk_unsol_free_call_indication(struct unsol_call_indication *unsol);
 struct unsol_call_indication *g_mtk_unsol_parse_incoming_call_indication(
 					GRil *gril, struct ril_msg *message);
 
+int g_mtk_unsol_parse_registration_suspended(GRil *gril,
+						struct ril_msg *message);
+
 #ifdef __cplusplus
 }
 #endif

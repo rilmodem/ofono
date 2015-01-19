@@ -121,6 +121,12 @@ void g_mtk_request_set_fd_mode(GRil *gril, int mode, int param1,
 void g_mtk_request_set_3g_capability(GRil *gril, struct parcel *rilp);
 
 /*
+ * Request to resume registration.
+ */
+void g_mtk_request_resume_registration(GRil *gril, int session_id,
+							struct parcel *rilp);
+
+/*
  * Set the MTK modem type. See MTK_MD_TYPE_*.
  */
 void g_mtk_request_store_modem_type(GRil *gril, int type, struct parcel *rilp);
