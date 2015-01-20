@@ -178,6 +178,7 @@ static struct ofono_gprs_driver driver = {
 	.remove			= mtk_gprs_remove,
 	.set_attached		= mtk_gprs_set_attached,
 	.attached_status	= ril_gprs_registration_status,
+	.set_ia_apn		= ril_gprs_set_ia_apn,
 };
 
 void mtk_gprs_init(void)
