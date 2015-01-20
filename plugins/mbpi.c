@@ -73,6 +73,7 @@ const char *mbpi_ap_type(enum ofono_gprs_context_type type)
 		_(OFONO_GPRS_CONTEXT_TYPE_MMS);
 		_(OFONO_GPRS_CONTEXT_TYPE_WAP);
 		_(OFONO_GPRS_CONTEXT_TYPE_IMS);
+		_(OFONO_GPRS_CONTEXT_TYPE_IA);
 	}
 
 	return "OFONO_GPRS_CONTEXT_TYPE_<UNKNOWN>";
