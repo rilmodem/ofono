@@ -1593,6 +1593,58 @@ static void netreg_status_changed(int status, int lac, int ci, int tech,
 	gprs_netreg_update(gprs);
 }
 
+static void notify_connection_powered(struct ofono_modem *modem, void *data)
+{
+	struct ofono_atom *atom;
+	struct ofono_gprs *gprs;
+	struct ofono_modem *modem_notif = data;
+	DBusConnection *conn;
+	const char *path = ofono_modem_get_path(modem);
+
+	if (strcmp(path, ofono_modem_get_path(modem_notif)) == 0)
+		return;
+
+	if (!ofono_modem_is_standby(modem))
+		return;
+
+	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_GPRS);
+	if (atom == NULL)
+		return;
+
+	gprs = __ofono_atom_get_data(atom);
+
+	if (gprs->driver->set_attached == NULL)
+		return;
+
+	if (gprs->powered == FALSE)
+		return;
+
+	gprs->powered = FALSE;
+
+	if (gprs->settings) {
+		g_key_file_set_integer(gprs->settings, SETTINGS_GROUP,
+					"Powered", gprs->powered);
+		storage_sync(gprs->imsi, SETTINGS_STORE, gprs->settings);
+	}
+
+	gprs_netreg_update(gprs);
+
+	conn = ofono_dbus_get_connection();
+	ofono_dbus_signal_property_changed(conn, path,
+					OFONO_CONNECTION_MANAGER_INTERFACE,
+					"Powered", DBUS_TYPE_BOOLEAN,
+					&gprs->powered);
+}
+
+static void notify_powered_change(struct ofono_gprs *gprs)
+{
+	if (gprs->powered) {
+		struct ofono_modem *modem = __ofono_atom_get_modem(gprs->atom);
+
+		__ofono_modem_foreach(notify_connection_powered, modem);
+	}
+}
+
 static DBusMessage *gprs_get_properties(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -1709,6 +1761,8 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 		}
 
 		gprs_netreg_update(gprs);
+
+		notify_powered_change(gprs);
 	} else {
 		return __ofono_error_invalid_args(msg);
 	}
@@ -2837,6 +2891,8 @@ static void gprs_load_settings(struct ofono_gprs *gprs, const char *imsi)
 		g_key_file_set_boolean(gprs->settings, SETTINGS_GROUP,
 					"Powered", gprs->powered);
 	}
+
+	notify_powered_change(gprs);
 
 	error = NULL;
 	gprs->roaming_allowed = g_key_file_get_boolean(gprs->settings,
