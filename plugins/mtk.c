@@ -310,6 +310,59 @@ static void mtk_send_query_modem_type(struct mtk_data *md,
 	}
 }
 
+static void set_trm_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct mtk_data *md = user_data;
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+		return;
+	}
+
+	g_ril_print_response_no_args(md->ril, message);
+
+	/*
+	 * rild will close now the socket, so we set our state to power off:
+	 * we will set the modem to powered when we reconnect to the socket.
+	 * TODO: Modify reconnect timeout for this case, as the time is much
+	 * less in arale, compared to krillin.
+	 */
+	md->ofono_online = FALSE;
+	ofono_modem_set_powered(md->modem, FALSE);
+}
+
+static void mtk_send_set_trm(struct mtk_data *md, int mode)
+{
+	struct parcel rilp;
+
+	g_mtk_request_set_trm(md->ril, mode, &rilp);
+
+	if (g_ril_send(md->ril, MTK_RIL_REQUEST_SET_TRM, &rilp,
+			set_trm_cb, md, NULL) == 0) {
+		ofono_error("%s: failure sending request", __func__);
+       }
+}
+
+static void store_modem_type_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct mtk_data *md = user_data;
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+		return;
+	}
+
+	g_ril_print_response_no_args(md->ril, message);
+
+	/*
+	 * Send SET_TRM, which reloads the FW. We do not know the meaning of the
+	 * magic number 0x0B.
+	 */
+	mtk_send_set_trm(md, 0x0B);
+}
+
 static void mtk_send_store_modem_type(struct mtk_data *md, int type)
 {
 	struct parcel rilp;
@@ -317,7 +370,7 @@ static void mtk_send_store_modem_type(struct mtk_data *md, int type)
 	g_mtk_request_store_modem_type(md->ril, type, &rilp);
 
 	if (g_ril_send(md->ril, MTK_RIL_REQUEST_STORE_MODEM_TYPE, &rilp,
-			NULL, NULL, NULL) == 0) {
+			store_modem_type_cb, md, NULL) == 0) {
 		ofono_error("%s: failure sending request", __func__);
        }
 }
