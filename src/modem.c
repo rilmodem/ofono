@@ -2256,3 +2256,11 @@ void __ofono_modem_dec_emergency_mode(struct ofono_modem *modem)
 out:
 	modem->emergency--;
 }
+
+ofono_bool_t ofono_modem_is_standby(struct ofono_modem *modem)
+{
+	if (modem->driver->is_standby == NULL)
+		return FALSE;
+
+	return modem->driver->is_standby(modem);
+}
