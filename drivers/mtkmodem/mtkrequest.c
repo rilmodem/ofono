@@ -32,6 +32,7 @@
 #include <ofono/modem.h>
 #include <ofono/gprs-context.h>
 
+#include "grilrequest.h"
 #include "mtkrequest.h"
 #include "simutil.h"
 #include "util.h"
@@ -132,4 +133,48 @@ void g_mtk_request_set_3g_capability(GRil *gril, struct parcel *rilp)
 	parcel_w_int32(rilp, mode);
 
 	g_ril_append_print_buf(gril, "(%d)", mode);
+}
+
+void g_mtk_request_resume_registration(GRil *gril, int session_id,
+							struct parcel *rilp)
+{
+	parcel_init(rilp);
+	parcel_w_int32(rilp, 1);
+	parcel_w_int32(rilp, session_id);
+
+	g_ril_append_print_buf(gril, "(%d)", session_id);
+}
+
+void g_mtk_request_store_modem_type(GRil *gril, int type, struct parcel *rilp)
+{
+	parcel_init(rilp);
+	parcel_w_int32(rilp, 1);
+	parcel_w_int32(rilp, type);
+
+	g_ril_append_print_buf(gril, "(%d)", type);
+}
+
+void g_mtk_request_set_trm(GRil *gril, int mode, struct parcel *rilp)
+{
+	parcel_init(rilp);
+	parcel_w_int32(rilp, 1);
+	parcel_w_int32(rilp, mode);
+
+	g_ril_append_print_buf(gril, "(%d)", mode);
+}
+
+void g_mtk_request_set_initial_attach_apn(GRil *gril, const char *apn,
+						enum ofono_gprs_proto proto,
+						int auth_type,
+						const char *user,
+						const char *passwd,
+						const char *mccmnc,
+						struct parcel *rilp)
+{
+	g_ril_request_set_initial_attach_apn(gril, apn, proto, auth_type,
+						user, passwd, rilp);
+
+	parcel_w_string(rilp, mccmnc);
+
+	g_ril_append_print_buf(gril, "(%s)", mccmnc);
 }

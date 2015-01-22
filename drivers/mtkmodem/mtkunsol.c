@@ -131,3 +131,33 @@ error:
 
 	return NULL;
 }
+
+int g_mtk_unsol_parse_registration_suspended(GRil *gril,
+						struct ril_msg *message)
+{
+	struct parcel rilp;
+	int numints;
+	int session_id = -1;
+
+	g_ril_init_parcel(message, &rilp);
+
+	numints = parcel_r_int32(&rilp);
+	if (numints < 1) {
+		ofono_error("%s: wrong array size (%d)", __func__, numints);
+		goto error;
+	}
+
+	session_id = parcel_r_int32(&rilp);
+
+	if (rilp.malformed) {
+		ofono_error("%s: malformed parcel", __func__);
+		session_id = -1;
+		goto error;
+	}
+
+	g_ril_append_print_buf(gril, "{%d}", session_id);
+	g_ril_print_unsol(gril, message);
+
+error:
+	return session_id;
+}

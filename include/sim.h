@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 #include <ofono/types.h>
+#include <ofono/modem.h>
 
 struct ofono_sim;
 struct ofono_sim_context;

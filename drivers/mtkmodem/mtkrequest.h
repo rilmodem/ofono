@@ -24,6 +24,7 @@
 
 #include <ofono/types.h>
 #include <ofono/sim.h>
+#include <ofono/gprs-context.h>
 
 #include "gril.h"
 
@@ -51,6 +52,18 @@ extern "C" {
 
 #define MTK_FD_PAR1_SCREEN_OFF 0
 #define MTK_FD_PAR1_SCREEN_ON 1
+
+#define MTK_MD_TYPE_INVALID 0
+#define MTK_MD_TYPE_2G 1
+#define MTK_MD_TYPE_3G 2
+#define MTK_MD_TYPE_WG 3
+#define MTK_MD_TYPE_TG 4
+/* FDD CSFB modem */
+#define MTK_MD_TYPE_LWG 5
+/* TDD CSFB modem */
+#define MTK_MD_TYPE_LTG 6
+/* SGLTE modem */
+#define MTK_MD_TYPE_LTNG 7
 
 /*
  * The meaning of mode seems to be:
@@ -107,6 +120,35 @@ void g_mtk_request_set_fd_mode(GRil *gril, int mode, int param1,
  * capabilities. This makes the other slot just 2G.
  */
 void g_mtk_request_set_3g_capability(GRil *gril, struct parcel *rilp);
+
+/*
+ * Request to resume registration.
+ */
+void g_mtk_request_resume_registration(GRil *gril, int session_id,
+							struct parcel *rilp);
+
+/*
+ * Set the MTK modem type. See MTK_MD_TYPE_*.
+ */
+void g_mtk_request_store_modem_type(GRil *gril, int type, struct parcel *rilp);
+
+/*
+ * Set TRM.
+ */
+void g_mtk_request_set_trm(GRil *gril, int mode, struct parcel *rilp);
+
+/*
+ * MTK doesn't add a new request type for its own version of
+ * RIL_REQUEST_SET_INITIAL_ATTACH_APN. Instead, it appends an additional field
+ * "mccmnc" in the end.
+ */
+void g_mtk_request_set_initial_attach_apn(GRil *gril, const char *apn,
+						enum ofono_gprs_proto proto,
+						int auth_type,
+						const char *user,
+						const char *passwd,
+						const char *mccmnc,
+						struct parcel *rilp);
 
 #ifdef __cplusplus
 }

@@ -70,6 +70,7 @@
 #include "drivers/mtkmodem/mtkrequest.h"
 #include "drivers/mtkmodem/mtkreply.h"
 #include "drivers/mtkmodem/mtksettings.h"
+#include "drivers/mtkmodem/mtkunsol.h"
 
 #define MAX_SIM_STATUS_RETRIES 15
 
@@ -88,6 +89,13 @@
 #define RILD_CONNECT_RETRY_TIME_S 5
 
 #define T_WAIT_DISCONN_MS 1000
+
+enum mtk_user_type {
+	MTK_USER_TYPE_UNKNOWN,
+	MTK_USER_TYPE_1,
+	MTK_USER_TYPE_2,
+	MTK_USER_TYPE_3
+};
 
 static const char hex_slot_0[] = "Slot 0: ";
 static const char hex_slot_1[] = "Slot 1: ";
@@ -125,7 +133,14 @@ struct mtk_data {
 	struct ofono_modem *modem;
 	ofono_bool_t has_3g;
 	struct mtk_settings_data *mtk_settings;
+	int md_type; /* MTK_MD_TYPE_* */
+	gboolean first_switch_modem_type;
+	enum mtk_user_type user_type;
+	int reg_resume_id;
 };
+
+typedef void (*query_modem_type_cb_t)(const struct ofono_error *error,
+					struct mtk_data *md);
 
 /*
  * MTK dual SIM sockets are not completely symmetric: some requests (essentially
@@ -148,6 +163,12 @@ struct socket_data {
 };
 
 static struct socket_data *sock_0, *sock_1;
+
+struct gprs_foreach_data {
+	struct mtk_data *md;
+	struct ofono_gprs_primary_context *first;
+	struct ofono_gprs_primary_context *any;
+};
 
 static int create_gril(struct ofono_modem *modem);
 static gboolean mtk_connected(gpointer user_data);
@@ -262,6 +283,125 @@ static void radio_state_changed(struct ril_msg *message, gpointer user_data)
 	}
 }
 
+static void query_modem_type_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	query_modem_type_cb_t cb = cbd->cb;
+	struct mtk_data *md = (struct mtk_data*)cbd->data;
+	int type = MTK_MD_TYPE_INVALID;
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+	} else {
+		type = g_mtk_reply_parse_query_modem_type(md->ril, message);
+		if (type != MTK_MD_TYPE_INVALID)
+			md->md_type = type;
+	}
+
+	if (!cb)
+		return;
+
+	if (type != MTK_MD_TYPE_INVALID)
+		CALLBACK_WITH_SUCCESS(cb, md);
+
+	else
+		CALLBACK_WITH_FAILURE(cb, md);
+
+}
+
+static void mtk_send_query_modem_type(struct mtk_data *md,
+					query_modem_type_cb_t cb)
+{
+	struct cb_data *cbd = cb_data_new(cb, md, NULL);
+
+	if (g_ril_send(md->ril, MTK_RIL_REQUEST_QUERY_MODEM_TYPE, NULL,
+			query_modem_type_cb, cbd, g_free) == 0) {
+		ofono_error("%s: failure sending request", __func__);
+
+		if (cb)
+			CALLBACK_WITH_FAILURE(cb, cbd->data);
+
+		g_free(cbd);
+	}
+}
+
+static void set_trm_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct mtk_data *md = user_data;
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+		return;
+	}
+
+	g_ril_print_response_no_args(md->ril, message);
+
+	/*
+	 * rild will close now the socket, so we set our state to power off:
+	 * we will set the modem to powered when we reconnect to the socket.
+	 * TODO: Modify reconnect timeout for this case, as the time is much
+	 * less in arale, compared to krillin.
+	 */
+	md->ofono_online = FALSE;
+	ofono_modem_set_powered(md->modem, FALSE);
+}
+
+static void mtk_send_set_trm(struct mtk_data *md, int mode)
+{
+	struct parcel rilp;
+
+	g_mtk_request_set_trm(md->ril, mode, &rilp);
+
+	if (g_ril_send(md->ril, MTK_RIL_REQUEST_SET_TRM, &rilp,
+			set_trm_cb, md, NULL) == 0) {
+		ofono_error("%s: failure sending request", __func__);
+       }
+}
+
+static void store_modem_type_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct mtk_data *md = user_data;
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+		return;
+	}
+
+	g_ril_print_response_no_args(md->ril, message);
+
+	/*
+	 * Send SET_TRM, which reloads the FW. We do not know the meaning of the
+	 * magic number 0x0B.
+	 */
+	mtk_send_set_trm(md, 0x0B);
+}
+
+static void mtk_send_store_modem_type(struct mtk_data *md, int type)
+{
+	struct parcel rilp;
+
+	g_mtk_request_store_modem_type(md->ril, type, &rilp);
+
+	if (g_ril_send(md->ril, MTK_RIL_REQUEST_STORE_MODEM_TYPE, &rilp,
+			store_modem_type_cb, md, NULL) == 0) {
+		ofono_error("%s: failure sending request", __func__);
+       }
+}
+
+static void store_modem_type_if_success(const struct ofono_error *error,
+						struct mtk_data *md)
+{
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR &&
+			md->first_switch_modem_type) {
+		md->first_switch_modem_type = FALSE;
+
+		mtk_send_store_modem_type(md, md->md_type);
+	}
+}
+
 static void mtk_radio_state_changed(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -280,6 +420,13 @@ static void mtk_radio_state_changed(struct ril_msg *message, gpointer user_data)
 
 		switch (radio_state) {
 		case RADIO_STATE_ON:
+			if (!getenv("OFONO_RIL_RAT_LTE"))
+				mtk_send_query_modem_type(md,
+						store_modem_type_if_success);
+			else
+				mtk_send_query_modem_type(md, NULL);
+			break;
+
 		/* MTK */
 		case RADIO_STATE_SIM_NOT_READY:
 		case RADIO_STATE_SIM_LOCKED_OR_ABSENT:
@@ -298,6 +445,40 @@ static void mtk_radio_state_changed(struct ril_msg *message, gpointer user_data)
 			g_assert(FALSE);
 		}
 	}
+}
+
+static void mtk_send_resume_registration(GRil *ril, int session_id)
+{
+	struct parcel rilp;
+
+	g_mtk_request_resume_registration(ril, session_id, &rilp);
+
+	if (g_ril_send(ril, MTK_RIL_REQUEST_RESUME_REGISTRATION, &rilp,
+			NULL, NULL, NULL) == 0) {
+		ofono_error("%s: failure sending request", __func__);
+	}
+}
+
+static void mtk_registration_suspended(struct ril_msg *message,
+					gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mtk_data *md = ofono_modem_get_data(modem);
+	int session_id;
+
+	session_id = g_mtk_unsol_parse_registration_suspended(md->ril, message);
+	if (session_id < 0)
+		return;
+
+	if (md->slot == MULTISIM_SLOT_0) {
+
+		if (md->user_type != MTK_USER_TYPE_UNKNOWN)
+			mtk_send_resume_registration(md->ril, session_id);
+		else
+			md->reg_resume_id = session_id;
+
+	} else if (ofono_modem_get_powered(md->modem))
+		mtk_send_resume_registration(md->ril, session_id);
 }
 
 static void sim_removed(struct ril_msg *message, gpointer user_data)
@@ -328,6 +509,24 @@ static void sim_inserted(struct ril_msg *message, gpointer user_data)
 	}
 }
 
+static void mtk_send_set_initial_attach_apn(struct mtk_data *md,
+						const char *apn,
+						enum ofono_gprs_proto proto,
+						int auth_type, const char *user,
+						const char *passwd,
+						const char *mccmnc)
+{
+	struct parcel rilp;
+
+	g_mtk_request_set_initial_attach_apn(md->ril, apn, proto, auth_type,
+						user, passwd, mccmnc, &rilp);
+
+	if (g_ril_send(md->ril, RIL_REQUEST_SET_INITIAL_ATTACH_APN, &rilp,
+			NULL, NULL, NULL) == 0) {
+		ofono_error("%s: failure sending request", __func__);
+	}
+}
+
 static int mtk_probe(struct ofono_modem *modem)
 {
 	struct mtk_data *md = g_try_new0(struct mtk_data, 1);
@@ -339,6 +538,10 @@ static int mtk_probe(struct ofono_modem *modem)
 
 	md->ofono_online = FALSE;
 	md->radio_state = RADIO_STATE_UNAVAILABLE;
+	md->md_type = MTK_MD_TYPE_INVALID;
+	md->first_switch_modem_type = TRUE;
+	md->user_type = MTK_USER_TYPE_UNKNOWN;
+	md->reg_resume_id = -1;
 
 	md->slot = ofono_modem_get_integer(modem, "Slot");
 
@@ -387,6 +590,116 @@ static void mtk_post_sim(struct ofono_modem *modem)
 	struct mtk_data *md = ofono_modem_get_data(modem);
 
 	DBG("slot %d", md->slot);
+}
+
+static void foreach_gprs_primary_context(
+				struct ofono_gprs_primary_context *context,
+				enum ofono_gprs_context_type type, void *data)
+{
+	struct gprs_foreach_data *gfd = data;
+
+	if (!gfd->first)
+		gfd->first = context;
+
+	if (type == OFONO_GPRS_CONTEXT_TYPE_ANY)
+		gfd->any = context;
+}
+
+static void gprs_primary_contexts_changed(void *data)
+{
+	struct mtk_data *md = data;
+	const char *imsi;
+	int mnc_len;
+	char mccmnc[OFONO_MAX_MCC_LENGTH + OFONO_MAX_MNC_LENGTH + 1];
+	struct gprs_foreach_data gfd;
+	struct ofono_gprs_primary_context *context = NULL;
+
+	imsi = ofono_sim_get_imsi(md->sim);
+	if (!imsi)
+		return;
+
+	/* Copy only (mcc + mnc) chars. */
+	mnc_len = __ofono_sim_mnclength_get_mnclength(imsi);
+	strncpy(mccmnc, imsi, OFONO_MAX_MCC_LENGTH + mnc_len);
+	mccmnc[OFONO_MAX_MCC_LENGTH + mnc_len] = '\0';
+
+	memset(&gfd, 0, sizeof gfd);
+	gfd.md = md;
+
+	__ofono_gprs_foreach_primary_context(md->gprs,
+				foreach_gprs_primary_context, &gfd);
+	if (gfd.first)
+		context = gfd.first;
+	if (gfd.any)
+		context = gfd.any;
+
+	if (context == NULL)
+		mtk_send_set_initial_attach_apn(md, "", OFONO_GPRS_PROTO_IP,
+						-1, "", "", mccmnc);
+	else
+		mtk_send_set_initial_attach_apn(md, context->apn,
+						context->proto, -1,
+						context->username,
+						context->password, mccmnc);
+}
+
+static gboolean find_in_table(const char *str, const char **table, size_t num)
+{
+	size_t i;
+
+	for (i = 0; i < num; i++)
+		if (strncmp(str, table[i], strlen(table[i])) == 0)
+			return TRUE;
+
+	return FALSE;
+}
+
+static enum mtk_user_type get_user_type_by_mccmnc(const char *imsi)
+{
+	/* China Mobile MCC/MNC codes */
+	static const char *type1[] = { "46000", "46002", "46007" };
+	/* China Unicom and China Telecom MCC/MNC codes */
+	static const char *type3[] =
+		{ "46001", "46006", "46009", "45407", "46005", "45502" };
+
+	if (find_in_table(imsi, type1, G_N_ELEMENTS(type1)))
+		return MTK_USER_TYPE_1;
+
+	if (find_in_table(imsi, type3, G_N_ELEMENTS(type3)))
+		return MTK_USER_TYPE_3;
+
+	return MTK_USER_TYPE_2;
+}
+
+static void store_modem_type(struct mtk_data *md, int type)
+{
+	if (type == md->md_type)
+		return;
+
+	mtk_send_store_modem_type(md, type);
+}
+
+static void store_modem_type_on_imsi(struct mtk_data *md)
+{
+	if (md->slot != MULTISIM_SLOT_0)
+		return;
+
+	md->user_type = get_user_type_by_mccmnc(ofono_sim_get_imsi(md->sim));
+
+	if (md->first_switch_modem_type) {
+
+		md->first_switch_modem_type = FALSE;
+
+		if (md->user_type == MTK_USER_TYPE_1)
+			store_modem_type(md, MTK_MD_TYPE_LTG);
+		else
+			store_modem_type(md, MTK_MD_TYPE_LWG);
+	}
+
+	if (md->reg_resume_id >= 0) {
+		mtk_send_resume_registration(md->ril, md->reg_resume_id);
+		md->reg_resume_id = -1;
+	}
 }
 
 /*
@@ -458,9 +771,15 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 			ofono_gprs_add_context(md->gprs, gc);
 		}
 
+		__ofono_gprs_add_primary_context_watch(md->gprs,
+				gprs_primary_contexts_changed, md, NULL);
+
 		md->message_waiting = ofono_message_waiting_create(modem);
 		if (md->message_waiting)
 			ofono_message_waiting_register(md->message_waiting);
+
+		if (getenv("OFONO_RIL_RAT_LTE"))
+			store_modem_type_on_imsi(md);
 
 	} else if (new_state == OFONO_SIM_STATE_LOCKED_OUT) {
 
@@ -502,6 +821,12 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 			ofono_sms_remove(md->sms);
 			md->sms = NULL;
 		}
+
+	} else if (new_state == OFONO_SIM_STATE_NOT_PRESENT) {
+
+		if (getenv("OFONO_RIL_RAT_LTE"))
+			md->first_switch_modem_type = TRUE;
+
 	}
 }
 
@@ -906,6 +1231,9 @@ static void start_slot(struct mtk_data *md, struct socket_data *sock,
 
 	g_ril_register(md->ril, RIL_UNSOL_RESPONSE_RADIO_STATE_CHANGED,
 			mtk_radio_state_changed, md->modem);
+
+	g_ril_register(md->ril, MTK_RIL_UNSOL_RESPONSE_REGISTRATION_SUSPENDED,
+			mtk_registration_suspended, md->modem);
 
 	mtk_connected(md->modem);
 }
