@@ -239,10 +239,38 @@ static const guchar req_set_3g_capability_valid_1[] = {
 	0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
 };
 
-static const struct request_test_data set_set_3g_capability_valid_test_1 = {
+static const struct request_test_data set_3g_capability_valid_test_1 = {
 	.request = NULL,
 	.parcel_data = req_set_3g_capability_valid_1,
 	.parcel_size = sizeof(req_set_3g_capability_valid_1),
+};
+
+/* MTK: store_modem_type tests */
+
+static const guchar req_store_modem_type_valid_1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00,
+};
+
+static int store_modem_type_md_type_1 = MTK_MD_TYPE_LWG;
+
+static const struct request_test_data store_modem_type_valid_test_1 = {
+	.request = &store_modem_type_md_type_1,
+	.parcel_data = req_store_modem_type_valid_1,
+	.parcel_size = sizeof(req_store_modem_type_valid_1),
+};
+
+/* MTK: set_trm tests */
+
+static const guchar req_set_trm_valid_1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x0B, 0x00, 0x00, 0x00,
+};
+
+static int set_trm_argument_1 = 0x0B;
+
+static const struct request_test_data set_trm_valid_test_1 = {
+	.request = &set_trm_argument_1,
+	.parcel_data = req_set_trm_valid_1,
+	.parcel_size = sizeof(req_set_trm_valid_1),
 };
 
 /* Test functions */
@@ -392,6 +420,34 @@ static void test_request_set_3g_capability(gconstpointer data)
 	parcel_free(&rilp);
 }
 
+static void test_request_store_modem_type(gconstpointer data)
+{
+	const struct request_test_data *test_data = data;
+	const int *md_type = test_data->request;
+	struct parcel rilp;
+
+	g_mtk_request_store_modem_type(NULL, *md_type, &rilp);
+
+	g_assert(test_data->parcel_size == rilp.size);
+	g_assert(!memcmp(rilp.data, test_data->parcel_data, rilp.size));
+
+	parcel_free(&rilp);
+}
+
+static void test_request_set_trm(gconstpointer data)
+{
+	const struct request_test_data *test_data = data;
+	const int *trm = test_data->request;
+	struct parcel rilp;
+
+	g_mtk_request_set_trm(NULL, *trm, &rilp);
+
+	g_assert(test_data->parcel_size == rilp.size);
+	g_assert(!memcmp(rilp.data, test_data->parcel_data, rilp.size));
+
+	parcel_free(&rilp);
+}
+
 #endif	/* LITTLE_ENDIAN */
 
 int main(int argc, char **argv)
@@ -453,8 +509,18 @@ int main(int argc, char **argv)
 
 	g_test_add_data_func("/testmtkrequest/mtk-settings: "
 				"valid SET_3G_CAPABILITY Test 1",
-				&set_set_3g_capability_valid_test_1,
+				&set_3g_capability_valid_test_1,
 				test_request_set_3g_capability);
+
+	g_test_add_data_func("/testmtkrequest/modem-fw: "
+				"valid STORE_MODEM_TYPE Test 1",
+				&store_modem_type_valid_test_1,
+				test_request_store_modem_type);
+
+	g_test_add_data_func("/testmtkrequest/modem-fw: "
+				"valid SET_TRM Test 1",
+				&set_trm_valid_test_1,
+				test_request_set_trm);
 
 #endif	/* LITTLE_ENDIAN */
 

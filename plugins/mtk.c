@@ -89,6 +89,12 @@
 
 #define T_WAIT_DISCONN_MS 1000
 
+enum mtk_sim_type {
+	MTK_SIM_TYPE_1 = 1,
+	MTK_SIM_TYPE_2 = 2,
+	MTK_SIM_TYPE_3 = 3
+};
+
 static const char hex_slot_0[] = "Slot 0: ";
 static const char hex_slot_1[] = "Slot 1: ";
 
@@ -328,6 +334,143 @@ static void sim_inserted(struct ril_msg *message, gpointer user_data)
 	}
 }
 
+static void set_trm_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mtk_data *md = ofono_modem_get_data(modem);
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+		return;
+	}
+
+	g_ril_print_response_no_args(md->ril, message);
+
+	/*
+	 * rild will close now the socket, so we set our state to power off:
+	 * we will set the modem to powered when we reconnect to the socket.
+	 * Measurements showed that rild takes around 5 seconds to re-start, but
+	 * we use an 8 seconds timeout as times can vary and that value is also
+	 * compatible with krillin modem.
+	 */
+	md->ofono_online = FALSE;
+	ofono_modem_set_powered(md->modem, FALSE);
+}
+
+static void store_type_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mtk_data *md = ofono_modem_get_data(modem);
+	struct parcel rilp;
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+		return;
+	}
+
+	g_ril_print_response_no_args(md->ril, message);
+
+	/*
+	 * Send SET_TRM, which reloads the FW. We do not know the meaning of the
+	 * magic number 0x0B.
+	 */
+	g_mtk_request_set_trm(md->ril, 0x0B, &rilp);
+
+	if (g_ril_send(md->ril, MTK_RIL_REQUEST_SET_TRM, &rilp,
+			set_trm_cb, modem, NULL) == 0)
+		ofono_error("%s: failure sending request", __func__);
+}
+
+static gboolean find_in_table(const char *str,
+				const char **table, int num_elem)
+{
+	int i;
+
+	for (i = 0; i < num_elem; ++i)
+		if (strncmp(str, table[i], strlen(table[i])) == 0)
+			return TRUE;
+
+	return FALSE;
+}
+
+static enum mtk_sim_type sim_type_for_fw_loading(const char *imsi)
+{
+	/* China Mobile MCC/MNC codes */
+	const char *table_type1[] = { "46000", "46002", "46007" };
+	/* China Unicom and China Telecom MCC/MNC codes */
+	const char *table_type3[] =
+		{ "46001", "46006", "46009", "45407", "46005", "45502" };
+
+	if (find_in_table(imsi, table_type1,
+				sizeof(table_type1)/sizeof(table_type1[0])))
+		return MTK_SIM_TYPE_1;
+
+	if (find_in_table(imsi, table_type3,
+				sizeof(table_type3)/sizeof(table_type3[0])))
+		return MTK_SIM_TYPE_3;
+
+	return MTK_SIM_TYPE_2;
+}
+
+static int sim_modem_fw(const char *imsi)
+{
+	enum mtk_sim_type sim_type;
+	int sim_fw = MTK_MD_TYPE_LWG;
+
+	/* Find out our SIM type */
+	sim_type = sim_type_for_fw_loading(imsi);
+	switch (sim_type) {
+	case MTK_SIM_TYPE_1:
+		/* LTE TDD - TD-SCDMA - GSM */
+		sim_fw = MTK_MD_TYPE_LTG;
+		break;
+	case MTK_SIM_TYPE_2:
+	case MTK_SIM_TYPE_3:
+		/* LTE FDD - WCDMA - GSM */
+		sim_fw = MTK_MD_TYPE_LWG;
+		break;
+	};
+
+	return sim_fw;
+}
+
+static void query_type_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mtk_data *md = ofono_modem_get_data(modem);
+	int current_type, sim_type;
+	struct parcel rilp;
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+		return;
+	}
+
+	current_type = g_mtk_reply_parse_query_modem_type(md->ril, message);
+	if (current_type < 0) {
+		ofono_error("%s: parse error", __func__);
+		return;
+	}
+
+	/* We handle only LWG <-> LTG modem fw changes (arale case) */
+	if (current_type != MTK_MD_TYPE_LTG && current_type != MTK_MD_TYPE_LWG)
+		return;
+
+	sim_type = sim_modem_fw(ofono_sim_get_imsi(md->sim));
+
+	if (current_type == sim_type)
+		return;
+
+	g_mtk_request_store_modem_type(md->ril, sim_type, &rilp);
+
+	if (g_ril_send(md->ril, MTK_RIL_REQUEST_STORE_MODEM_TYPE, &rilp,
+			store_type_cb, modem, NULL) == 0)
+		ofono_error("%s: failure sending request", __func__);
+}
+
 static int mtk_probe(struct ofono_modem *modem)
 {
 	struct mtk_data *md = g_try_new0(struct mtk_data, 1);
@@ -461,6 +604,15 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 		md->message_waiting = ofono_message_waiting_create(modem);
 		if (md->message_waiting)
 			ofono_message_waiting_register(md->message_waiting);
+
+		/*
+		 * Now that we can access IMSI, see if a FW change is needed.
+		 * TODO: Roaming case and timeout case when no network is found.
+		 */
+		if (g_ril_send(md->ril, MTK_RIL_REQUEST_QUERY_MODEM_TYPE,
+				NULL, query_type_cb, modem, NULL) == 0)
+			ofono_error("%s: failure sending QUERY_MODEM_TYPE",
+					__func__);
 
 	} else if (new_state == OFONO_SIM_STATE_LOCKED_OUT) {
 
