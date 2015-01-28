@@ -821,6 +821,40 @@ static const struct request_test_oem_hook_raw_data oem_hook_raw_valid_test_2 = {
 	.parcel_size = sizeof(req_oem_hook_raw_valid_2),
 };
 
+/* set_initial_attach_apn tests */
+
+struct request_test_set_initial_attach_apn {
+	const char *apn;
+	const int proto;
+	const char *user;
+	const char *passwd;
+	const char *mccmnc;
+	const guchar *parcel_data;
+	gsize parcel_size;
+};
+
+static const guchar req_set_initial_attach_apn_valid_1[] = {
+	0x0c, 0x00, 0x00, 0x00, 0x61, 0x00, 0x69, 0x00, 0x72, 0x00, 0x74, 0x00,
+	0x65, 0x00, 0x6c, 0x00, 0x77, 0x00, 0x61, 0x00, 0x70, 0x00, 0x2e, 0x00,
+	0x65, 0x00, 0x73, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+	0x49, 0x00, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
+	0x07, 0x00, 0x00, 0x00, 0x77, 0x00, 0x61, 0x00, 0x70, 0x00, 0x40, 0x00,
+	0x77, 0x00, 0x61, 0x00, 0x70, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00,
+	0x77, 0x00, 0x61, 0x00, 0x70, 0x00, 0x31, 0x00, 0x32, 0x00, 0x35, 0x00,
+	0x00, 0x00, 0x00, 0x00
+};
+
+static const struct request_test_set_initial_attach_apn
+					set_initial_attach_apn_valid_test_1 = {
+	.apn = "airtelwap.es",
+	.proto = OFONO_GPRS_PROTO_IP,
+	.user = "wap@wap",
+	.passwd = "wap125",
+	.mccmnc = "21401",
+	.parcel_data = req_set_initial_attach_apn_valid_1,
+	.parcel_size = sizeof(req_set_initial_attach_apn_valid_1),
+};
+
 /*
  * The following hexadecimal data represents a serialized Binder parcel
  * instance containing a valid RIL_REQUEST_RADIO_POWER 'OFF' message.
@@ -1338,6 +1372,22 @@ static void test_request_set_facility_lock(gconstpointer data)
 	parcel_free(&rilp);
 }
 
+static void test_request_set_initial_attach_apn(gconstpointer data)
+{
+	const struct request_test_set_initial_attach_apn *test_data = data;
+	struct parcel rilp;
+
+	g_ril_request_set_initial_attach_apn(NULL, test_data->apn,
+					test_data->proto, test_data->user,
+					test_data->passwd, test_data->mccmnc,
+					&rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+				test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
 static void test_request_change_barring_password(gconstpointer data)
 {
 	const struct request_test_change_barring_password_data *test_data =
@@ -1627,6 +1677,10 @@ int main(int argc, char **argv)
 				&oem_hook_raw_valid_test_2,
 				test_request_oem_hook_raw);
 
+	g_test_add_data_func("/testgrilrequest/set-ia-apn: "
+				"valid SET_INITIAL_ATTACH_APN Test 1",
+				&set_initial_attach_apn_valid_test_1,
+				test_request_set_initial_attach_apn);
 #endif
 	return g_test_run();
 }

@@ -287,6 +287,41 @@ static const struct request_test_data resume_registration_valid_test_1 = {
 	.parcel_size = sizeof(req_resume_registration_valid_1),
 };
 
+/* MTK specific set_initial_attach_apn tests */
+
+struct request_test_set_initial_attach_apn {
+	const char *apn;
+	const int proto;
+	const char *user;
+	const char *passwd;
+	const char *mccmnc;
+	const guchar *parcel_data;
+	gsize parcel_size;
+};
+
+static const guchar req_set_initial_attach_apn_valid_1[] = {
+	0x0c, 0x00, 0x00, 0x00, 0x61, 0x00, 0x69, 0x00, 0x72, 0x00, 0x74, 0x00,
+	0x65, 0x00, 0x6c, 0x00, 0x77, 0x00, 0x61, 0x00, 0x70, 0x00, 0x2e, 0x00,
+	0x65, 0x00, 0x73, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+	0x49, 0x00, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
+	0x07, 0x00, 0x00, 0x00, 0x77, 0x00, 0x61, 0x00, 0x70, 0x00, 0x40, 0x00,
+	0x77, 0x00, 0x61, 0x00, 0x70, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00,
+	0x77, 0x00, 0x61, 0x00, 0x70, 0x00, 0x31, 0x00, 0x32, 0x00, 0x35, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x32, 0x00, 0x31, 0x00,
+	0x34, 0x00, 0x30, 0x00, 0x31, 0x00, 0x00, 0x00
+};
+
+static const struct request_test_set_initial_attach_apn
+					set_initial_attach_apn_valid_test_1 = {
+	.apn = "airtelwap.es",
+	.proto = OFONO_GPRS_PROTO_IP,
+	.user = "wap@wap",
+	.passwd = "wap125",
+	.mccmnc = "21401",
+	.parcel_data = req_set_initial_attach_apn_valid_1,
+	.parcel_size = sizeof(req_set_initial_attach_apn_valid_1),
+};
+
 /* Test functions */
 
 static void test_mtk_req_sim_read_info_valid(gconstpointer data)
@@ -476,6 +511,25 @@ static void test_request_resume_registration(gconstpointer data)
 	parcel_free(&rilp);
 }
 
+static void test_request_set_initial_attach_apn(gconstpointer data)
+{
+	const struct request_test_set_initial_attach_apn *test_data = data;
+	struct parcel rilp;
+	GRil *gril = g_ril_new(NULL, OFONO_RIL_VENDOR_MTK);
+
+	g_assert(gril != NULL);
+
+	g_ril_request_set_initial_attach_apn(gril, test_data->apn,
+					test_data->proto, test_data->user,
+					test_data->passwd, test_data->mccmnc,
+					&rilp);
+
+	g_assert(test_data->parcel_size == rilp.size);
+	g_assert(!memcmp(rilp.data, test_data->parcel_data, rilp.size));
+
+	parcel_free(&rilp);
+}
+
 #endif	/* LITTLE_ENDIAN */
 
 int main(int argc, char **argv)
@@ -554,6 +608,11 @@ int main(int argc, char **argv)
 				"valid RESUME_REGISTRATION Test 1",
 				&resume_registration_valid_test_1,
 				test_request_resume_registration);
+
+	g_test_add_data_func("/testmtkrequest/set-ia-apn: "
+				"valid SET_INITIAL_ATTACH_APN Test 1",
+				&set_initial_attach_apn_valid_test_1,
+				test_request_set_initial_attach_apn);
 
 #endif	/* LITTLE_ENDIAN */
 
