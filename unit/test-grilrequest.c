@@ -107,24 +107,11 @@ static const struct req_setup_data_call req_setup_data_call_invalid_4 = {
 static const struct req_setup_data_call req_setup_data_call_invalid_5 = {
 	.tech = RADIO_TECH_GPRS,
 	.data_profile = RIL_DATA_PROFILE_DEFAULT,
-	.apn = "",
-};
-
-static const struct req_setup_data_call req_setup_data_call_invalid_6 = {
-	.tech = RADIO_TECH_GPRS,
-	.data_profile = RIL_DATA_PROFILE_DEFAULT,
-	.apn = "12345678901234567890123456789012345678901234567890"
-		"123456789012345678901234567890123456789012345678901",
-};
-
-static const struct req_setup_data_call req_setup_data_call_invalid_7 = {
-	.tech = RADIO_TECH_GPRS,
-	.data_profile = RIL_DATA_PROFILE_DEFAULT,
 	.apn = "test.apn",
 	.auth_type = 4,
 };
 
-static const struct req_setup_data_call req_setup_data_call_invalid_8 = {
+static const struct req_setup_data_call req_setup_data_call_invalid_6 = {
 	.tech = RADIO_TECH_GPRS,
 	.data_profile = RIL_DATA_PROFILE_DEFAULT,
 	.apn = "test.apn",
@@ -171,6 +158,19 @@ static const struct req_setup_data_call req_setup_data_call_valid_4 = {
 	.password = "phablet",
 	.auth_type = RIL_AUTH_BOTH,
 	.protocol = OFONO_GPRS_PROTO_IPV6,
+};
+
+static const struct req_setup_data_call req_setup_data_call_valid_5 = {
+	.tech = RADIO_TECH_GPRS,
+	.data_profile = RIL_DATA_PROFILE_DEFAULT,
+	.apn = "",
+};
+
+static const struct req_setup_data_call req_setup_data_call_valid_6 = {
+	.tech = RADIO_TECH_GPRS,
+	.data_profile = RIL_DATA_PROFILE_DEFAULT,
+	.apn = "12345678901234567890123456789012345678901234567890"
+		"123456789012345678901234567890123456789012345678901",
 };
 
 static const char sim_read_info_path_valid_1[] = {0x3F, 0x00};
@@ -1423,16 +1423,6 @@ int main(int argc, char **argv)
 				test_request_setup_data_call_invalid);
 
 	g_test_add_data_func("/testgrilrequest/gprs-context: "
-				"invalid SETUP_DATA_CALL Test 7",
-				&req_setup_data_call_invalid_7,
-				test_request_setup_data_call_invalid);
-
-	g_test_add_data_func("/testgrilrequest/gprs-context: "
-				"invalid SETUP_DATA_CALL Test 8",
-				&req_setup_data_call_invalid_8,
-				test_request_setup_data_call_invalid);
-
-	g_test_add_data_func("/testgrilrequest/gprs-context: "
 				"valid SETUP_DATA_CALL Test 1",
 				&req_setup_data_call_valid_1,
 				test_request_setup_data_call_valid);
@@ -1450,6 +1440,16 @@ int main(int argc, char **argv)
 	g_test_add_data_func("/testgrilrequest/gprs-context: "
 				"valid SETUP_DATA_CALL Test 4",
 				&req_setup_data_call_valid_4,
+				test_request_setup_data_call_valid);
+
+	g_test_add_data_func("/testgrilrequest/gprs-context: "
+				"valid SETUP_DATA_CALL Test 5",
+				&req_setup_data_call_valid_5,
+				test_request_setup_data_call_valid);
+
+	g_test_add_data_func("/testgrilrequest/gprs-context: "
+				"valid SETUP_DATA_CALL Test 6",
+				&req_setup_data_call_valid_6,
 				test_request_setup_data_call_valid);
 
 	g_test_add_data_func("/testgrilrequest/power: "
