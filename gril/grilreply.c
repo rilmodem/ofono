@@ -1157,7 +1157,7 @@ int g_ril_reply_parse_get_preferred_network_type(GRil *gril,
 						const struct ril_msg *message)
 {
 	struct parcel rilp;
-	int numint, net_type;
+	int numint, parcel_net_type, net_type;
 
 	g_ril_init_parcel(message, &rilp);
 
@@ -1167,7 +1167,27 @@ int g_ril_reply_parse_get_preferred_network_type(GRil *gril,
 		goto error;
 	}
 
-	net_type = parcel_r_int32(&rilp);
+	parcel_net_type = parcel_r_int32(&rilp);
+	net_type = parcel_net_type;
+
+	/* Try to translate special MTK settings */
+	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
+		switch (net_type) {
+		/* 4G preferred */
+		case MTK_PREF_NET_TYPE_LTE_GSM_WCDMA:
+		case MTK_PREF_NET_TYPE_LTE_GSM_WCDMA_MMDC:
+		case MTK_PREF_NET_TYPE_LTE_GSM_TYPE:
+		case MTK_PREF_NET_TYPE_LTE_GSM_MMDC_TYPE:
+			net_type = PREF_NET_TYPE_LTE_GSM_WCDMA;
+			break;
+		/* 3G or 2G preferred over LTE */
+		case MTK_PREF_NET_TYPE_GSM_WCDMA_LTE:
+		case MTK_PREF_NET_TYPE_GSM_WCDMA_LTE_MMDC:
+			net_type = PREF_NET_TYPE_GSM_WCDMA;
+			break;
+		}
+	}
+
 	if (net_type < 0 || net_type > PREF_NET_TYPE_LTE_ONLY) {
 		ofono_error("%s: unknown network type", __func__);
 		goto error;
@@ -1178,7 +1198,7 @@ int g_ril_reply_parse_get_preferred_network_type(GRil *gril,
 		goto error;
 	}
 
-	g_ril_append_print_buf(gril, "{%d}", net_type);
+	g_ril_append_print_buf(gril, "{%d}", parcel_net_type);
 	g_ril_print_response(gril, message);
 
 	return net_type;
