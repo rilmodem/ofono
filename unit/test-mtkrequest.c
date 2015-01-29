@@ -273,6 +273,20 @@ static const struct request_test_data set_trm_valid_test_1 = {
 	.parcel_size = sizeof(req_set_trm_valid_1),
 };
 
+/* MTK: resume_registration tests */
+
+static const guchar req_resume_registration_valid_1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+};
+
+static int resume_registration_argument_1 = 1;
+
+static const struct request_test_data resume_registration_valid_test_1 = {
+	.request = &resume_registration_argument_1,
+	.parcel_data = req_resume_registration_valid_1,
+	.parcel_size = sizeof(req_resume_registration_valid_1),
+};
+
 /* Test functions */
 
 static void test_mtk_req_sim_read_info_valid(gconstpointer data)
@@ -448,6 +462,20 @@ static void test_request_set_trm(gconstpointer data)
 	parcel_free(&rilp);
 }
 
+static void test_request_resume_registration(gconstpointer data)
+{
+	const struct request_test_data *test_data = data;
+	const int *resume = test_data->request;
+	struct parcel rilp;
+
+	g_mtk_request_resume_registration(NULL, *resume, &rilp);
+
+	g_assert(test_data->parcel_size == rilp.size);
+	g_assert(!memcmp(rilp.data, test_data->parcel_data, rilp.size));
+
+	parcel_free(&rilp);
+}
+
 #endif	/* LITTLE_ENDIAN */
 
 int main(int argc, char **argv)
@@ -521,6 +549,11 @@ int main(int argc, char **argv)
 				"valid SET_TRM Test 1",
 				&set_trm_valid_test_1,
 				test_request_set_trm);
+
+	g_test_add_data_func("/testmtkrequest/network: "
+				"valid RESUME_REGISTRATION Test 1",
+				&resume_registration_valid_test_1,
+				test_request_resume_registration);
 
 #endif	/* LITTLE_ENDIAN */
 
