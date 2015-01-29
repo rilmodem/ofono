@@ -1664,7 +1664,8 @@ static int set_modem_property(struct ofono_modem *modem, const char *name,
 	DBG("modem %p property %s", modem, name);
 
 	if (type != PROPERTY_TYPE_STRING &&
-			type != PROPERTY_TYPE_INTEGER)
+			type != PROPERTY_TYPE_INTEGER &&
+			type != PROPERTY_TYPE_BOOLEAN)
 		return -EINVAL;
 
 	property = g_try_new0(struct modem_property, 1);
