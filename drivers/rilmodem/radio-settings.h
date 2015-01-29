@@ -21,6 +21,7 @@
 
 struct radio_data {
 	GRil *ril;
+	struct ofono_modem *modem;
 	gboolean fast_dormancy;
 	gboolean pending_fd;
 };
