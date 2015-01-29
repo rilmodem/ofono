@@ -138,17 +138,14 @@ static void detach_event(struct ril_msg *message, gpointer user_data)
 static int mtk_gprs_probe(struct ofono_gprs *gprs,
 				unsigned int vendor, void *data)
 {
-	struct mtk_gprs_data *gprs_data = data;
-	GRil *ril = gprs_data->gril;
+	struct ril_gprs_driver_data *driver_data = data;
 	struct ril_gprs_data *gd;
 
 	gd = g_try_new0(struct ril_gprs_data, 1);
 	if (gd == NULL)
 		return -ENOMEM;
 
-	ril_gprs_start(ril, gprs, gd);
-
-	gd->modem = gprs_data->modem;
+	ril_gprs_start(driver_data, gprs, gd);
 
 	/*
 	 * In MTK the event emitted when the gprs state changes is different
