@@ -845,6 +845,8 @@ void ofono_handsfree_audio_ref(void)
 	if (ref_count != 1)
 		return;
 
+	__ofono_handsfree_audio_manager_init();
+
 	if (!g_dbus_register_interface(ofono_dbus_get_connection(),
 					OFONO_MANAGER_PATH,
 					HFP_AUDIO_MANAGER_INTERFACE,
@@ -873,6 +875,8 @@ void ofono_handsfree_audio_unref(void)
 		agent_release(agent);
 		agent_free(agent);
 	}
+
+	__ofono_handsfree_audio_manager_cleanup();
 }
 
 int __ofono_handsfree_audio_manager_init(void)
@@ -882,15 +886,11 @@ int __ofono_handsfree_audio_manager_init(void)
 
 void __ofono_handsfree_audio_manager_cleanup(void)
 {
-	if (ref_count == 0)
+	if (ref_count != 0)
 		return;
 
-	ofono_error("Handsfree Audio manager not cleaned up properly,"
-			"fixing...");
-
-	ref_count = 1;
-	ofono_handsfree_audio_unref();
-
-	if (sco_watch > 0)
+	if (sco_watch > 0) {
 		g_source_remove(sco_watch);
+		sco_watch = 0;
+	}
 }
