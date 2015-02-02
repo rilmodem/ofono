@@ -827,7 +827,7 @@ static void at_cpinr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 		for (i = 1; i < len; i++) {
 			if (!strcmp(name, at_sim_name[i].name)) {
-				retries[i] = val;
+				retries[at_sim_name[i].type] = val;
 				break;
 			}
 		}
