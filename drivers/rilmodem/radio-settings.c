@@ -213,11 +213,13 @@ static ofono_bool_t query_modem_rats_cb(gpointer user_data)
 	ofono_bool_t modem_rats[OFONO_RADIO_ACCESS_MODE_LAST] = { FALSE };
 	struct cb_data *cbd = user_data;
 	ofono_radio_settings_modem_rats_query_cb_t cb = cbd->cb;
+	struct ofono_radio_settings *rs = cbd->user;
+	struct radio_data *rd = ofono_radio_settings_get_data(rs);
 
 	modem_rats[OFONO_RADIO_ACCESS_MODE_GSM] = TRUE;
 	modem_rats[OFONO_RADIO_ACCESS_MODE_UMTS] = TRUE;
 
-	if (getenv("OFONO_RIL_RAT_LTE"))
+	if (ofono_modem_get_boolean(rd->modem, MODEM_PROP_LTE_CAPABLE))
 		modem_rats[OFONO_RADIO_ACCESS_MODE_LTE] = TRUE;
 
 	CALLBACK_WITH_SUCCESS(cb, modem_rats, cbd->data);
@@ -249,7 +251,7 @@ void ril_delayed_register(const struct ofono_error *error, void *user_data)
 static int ril_radio_settings_probe(struct ofono_radio_settings *rs,
 					unsigned int vendor, void *user)
 {
-	GRil *ril = user;
+	struct ril_radio_settings_driver_data* rs_init_data = user;
 	struct radio_data *rsd = g_try_new0(struct radio_data, 1);
 
 	if (rsd == NULL) {
@@ -257,7 +259,8 @@ static int ril_radio_settings_probe(struct ofono_radio_settings *rs,
 		return -ENOMEM;
 	}
 
-	rsd->ril = g_ril_clone(ril);
+	rsd->ril = g_ril_clone(rs_init_data->gril);
+	rsd->modem = rs_init_data->modem;
 
 	ofono_radio_settings_set_data(rs, rsd);
 

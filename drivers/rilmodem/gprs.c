@@ -100,6 +100,53 @@ static int ril_tech_to_bearer_tech(int ril_tech)
 	}
 }
 
+static void set_ia_apn_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_gprs_cb_t cb = cbd->cb;
+	struct ofono_gprs *gprs = cbd->user;
+	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: reply failure: %s", __func__,
+				ril_error_to_string(message->error));
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+		return;
+	}
+
+	g_ril_print_response_no_args(gd->ril, message);
+
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+}
+
+void ril_gprs_set_ia_apn(struct ofono_gprs *gprs, const char *apn,
+				enum ofono_gprs_proto proto, const char *user,
+				const char *passwd, const char *mccmnc,
+				ofono_gprs_cb_t cb, void *data)
+{
+	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
+	struct cb_data *cbd;
+	struct parcel rilp;
+
+	if (!ofono_modem_get_boolean(gd->modem, MODEM_PROP_LTE_CAPABLE)) {
+		CALLBACK_WITH_SUCCESS(cb, data);
+		return;
+	}
+
+	cbd = cb_data_new(cb, data, gprs);
+
+	g_ril_request_set_initial_attach_apn(gd->ril, apn, proto, user, passwd,
+						mccmnc, &rilp);
+
+	if (g_ril_send(gd->ril, RIL_REQUEST_SET_INITIAL_ATTACH_APN,
+			&rilp, set_ia_apn_cb, cbd, g_free) == 0) {
+		ofono_error("%s: failure sending request", __func__);
+
+		g_free(cbd);
+		CALLBACK_WITH_FAILURE(cb, data);
+	}
+}
+
 static void ril_gprs_state_change(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_gprs *gprs = user_data;
@@ -421,10 +468,11 @@ static void get_active_data_calls(struct ofono_gprs *gprs)
 		ofono_error("%s: send failed", __func__);
 }
 
-void ril_gprs_start(GRil *ril, struct ofono_gprs *gprs,
-			struct ril_gprs_data *gd)
+void ril_gprs_start(struct ril_gprs_driver_data *driver_data,
+			struct ofono_gprs *gprs, struct ril_gprs_data *gd)
 {
-	gd->ril = g_ril_clone(ril);
+	gd->ril = g_ril_clone(driver_data->gril);
+	gd->modem = driver_data->modem;
 	gd->ofono_attached = FALSE;
 	gd->max_cids = 0;
 	gd->rild_status = -1;
@@ -440,14 +488,14 @@ void ril_gprs_start(GRil *ril, struct ofono_gprs *gprs,
 
 int ril_gprs_probe(struct ofono_gprs *gprs, unsigned int vendor, void *data)
 {
-	GRil *ril = data;
+	struct ril_gprs_driver_data *driver_data = data;
 	struct ril_gprs_data *gd;
 
 	gd = g_try_new0(struct ril_gprs_data, 1);
 	if (gd == NULL)
 		return -ENOMEM;
 
-	ril_gprs_start(ril, gprs, gd);
+	ril_gprs_start(driver_data, gprs, gd);
 
 	return 0;
 }
@@ -473,6 +521,7 @@ static struct ofono_gprs_driver driver = {
 	.remove			= ril_gprs_remove,
 	.set_attached		= ril_gprs_set_attached,
 	.attached_status	= ril_gprs_registration_status,
+	.set_ia_apn		= ril_gprs_set_ia_apn,
 };
 
 void ril_gprs_init(void)

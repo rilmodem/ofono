@@ -132,6 +132,7 @@ struct mtk_data {
 	struct ofono_modem *modem;
 	ofono_bool_t has_3g;
 	struct mtk_settings_data *mtk_settings;
+	int fw_type;
 };
 
 /*
@@ -471,33 +472,34 @@ static int sim_modem_fw(const char *imsi)
 	return sim_fw;
 }
 
-static void query_type_cb(struct ril_msg *message, gpointer user_data)
+static void set_fw_type(struct ofono_modem *modem, int type)
 {
-	struct ofono_modem *modem = user_data;
+	ofono_bool_t lte_cap;
 	struct mtk_data *md = ofono_modem_get_data(modem);
-	int current_type, sim_type;
+
+	md->fw_type = type;
+
+	lte_cap = (type >= MTK_MD_TYPE_LWG) ? TRUE : FALSE;
+	ofono_modem_set_boolean(modem, MODEM_PROP_LTE_CAPABLE, lte_cap);
+}
+
+static void check_modem_fw(struct ofono_modem *modem)
+{
+	struct mtk_data *md = ofono_modem_get_data(modem);
+	int sim_type;
 	struct parcel rilp;
 
-	if (message->error != RIL_E_SUCCESS) {
-		ofono_error("%s: RIL error %s", __func__,
-				ril_error_to_string(message->error));
-		return;
-	}
-
-	current_type = g_mtk_reply_parse_query_modem_type(md->ril, message);
-	if (current_type < 0) {
-		ofono_error("%s: parse error", __func__);
-		return;
-	}
-
 	/* We handle only LWG <-> LTG modem fw changes (arale case) */
-	if (current_type != MTK_MD_TYPE_LTG && current_type != MTK_MD_TYPE_LWG)
+	if (md->fw_type != MTK_MD_TYPE_LTG && md->fw_type != MTK_MD_TYPE_LWG)
 		return;
 
+	/* Right modem fw type for our SIM */
 	sim_type = sim_modem_fw(ofono_sim_get_imsi(md->sim));
 
-	if (current_type == sim_type)
+	if (md->fw_type == sim_type)
 		return;
+
+	set_fw_type(modem, sim_type);
 
 	g_mtk_request_store_modem_type(md->ril, sim_type, &rilp);
 
@@ -582,7 +584,7 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 
 	if (new_state == OFONO_SIM_STATE_READY) {
 		struct ofono_gprs_context *gc;
-		struct mtk_gprs_data gprs_data = { md->ril, modem };
+		struct ril_gprs_driver_data gprs_data = { md->ril, modem };
 		struct ril_gprs_context_data inet_ctx =
 			{ md->ril, OFONO_GPRS_CONTEXT_TYPE_INTERNET };
 		struct ril_gprs_context_data mms_ctx =
@@ -644,10 +646,7 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 		 * Now that we can access IMSI, see if a FW change is needed.
 		 * TODO: Roaming case and timeout case when no network is found.
 		 */
-		if (g_ril_send(md->ril, MTK_RIL_REQUEST_QUERY_MODEM_TYPE,
-				NULL, query_type_cb, modem, NULL) == 0)
-			ofono_error("%s: failure sending QUERY_MODEM_TYPE",
-					__func__);
+		check_modem_fw(modem);
 
 	} else if (new_state == OFONO_SIM_STATE_LOCKED_OUT) {
 
@@ -692,11 +691,10 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 	}
 }
 
-static void mtk_post_online(struct ofono_modem *modem)
+static void create_online_atoms(struct ofono_modem *modem)
 {
 	struct mtk_data *md = ofono_modem_get_data(modem);
-
-	DBG("slot %d", md->slot);
+	struct ril_radio_settings_driver_data rs_data = { md->ril, modem };
 
 	md->sim_data.gril = md->ril;
 	md->sim_data.modem = modem;
@@ -708,7 +706,41 @@ static void mtk_post_online(struct ofono_modem *modem)
 
 	/* Radio settings does not depend on the SIM */
 	ofono_radio_settings_create(modem, OFONO_RIL_VENDOR_MTK,
-					MTKMODEM, md->ril);
+					MTKMODEM, &rs_data);
+}
+
+static void query_type_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mtk_data *md = ofono_modem_get_data(modem);
+	int type;
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+		return;
+	}
+
+	type = g_mtk_reply_parse_query_modem_type(md->ril, message);
+	if (type < 0) {
+		ofono_error("%s: parse error", __func__);
+		return;
+	}
+
+	set_fw_type(modem, type);
+
+	create_online_atoms(modem);
+}
+
+static void mtk_post_online(struct ofono_modem *modem)
+{
+	struct mtk_data *md = ofono_modem_get_data(modem);
+	DBG("slot %d", md->slot);
+
+	/* With modem powered we can query the type in krillin */
+	if (g_ril_send(md->ril, MTK_RIL_REQUEST_QUERY_MODEM_TYPE,
+			NULL, query_type_cb, md->modem, NULL) == 0)
+		ofono_error("%s: failure sending QUERY_MODEM_TYPE", __func__);
 
 	/* Register for changes in SIM insertion */
 	g_ril_register(md->ril, MTK_RIL_UNSOL_SIM_PLUG_OUT,

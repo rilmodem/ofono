@@ -110,11 +110,13 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 		switch (radio_state) {
 		case RADIO_STATE_ON:
 
-			if (rd->radio_settings == NULL)
+			if (rd->radio_settings == NULL) {
+				struct ril_radio_settings_driver_data rs_data =
+							{ rd->ril, modem };
 				rd->radio_settings =
 					ofono_radio_settings_create(modem,
-						rd->vendor, RILMODEM,
-						rd->ril);
+						rd->vendor, RILMODEM, &rs_data);
+			}
 
 			break;
 
@@ -140,6 +142,7 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 
 int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor)
 {
+	ofono_bool_t lte_cap;
 	struct ril_data *rd = g_try_new0(struct ril_data, 1);
 	if (rd == NULL) {
 		errno = ENOMEM;
@@ -151,6 +154,9 @@ int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor)
 	rd->vendor = vendor;
 	rd->ofono_online = FALSE;
 	rd->radio_state = RADIO_STATE_OFF;
+
+	lte_cap = getenv("OFONO_RIL_RAT_LTE") ? TRUE : FALSE;
+	ofono_modem_set_boolean(modem, MODEM_PROP_LTE_CAPABLE, lte_cap);
 
 	ofono_modem_set_data(modem, rd);
 
@@ -207,6 +213,7 @@ void ril_post_sim(struct ofono_modem *modem)
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
 	struct ofono_message_waiting *mw;
+	struct ril_gprs_driver_data gprs_data = { rd->ril, modem };
 	struct ril_gprs_context_data inet_ctx =
 			{ rd->ril, OFONO_GPRS_CONTEXT_TYPE_INTERNET };
 	struct ril_gprs_context_data mms_ctx =
@@ -219,7 +226,7 @@ void ril_post_sim(struct ofono_modem *modem)
 	 */
 	ofono_sms_create(modem, rd->vendor, RILMODEM, rd->ril);
 
-	gprs = ofono_gprs_create(modem, rd->vendor, RILMODEM, rd->ril);
+	gprs = ofono_gprs_create(modem, rd->vendor, RILMODEM, &gprs_data);
 	gc = ofono_gprs_context_create(modem, rd->vendor, RILMODEM, &inet_ctx);
 
 	if (gc) {

@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 #include <ofono/types.h>
+#include <ofono/gprs-context.h>
 
 struct ofono_gprs;
 struct ofono_gprs_context;
@@ -45,6 +46,10 @@ struct ofono_gprs_driver {
 				ofono_gprs_cb_t cb, void *data);
 	void (*attached_status)(struct ofono_gprs *gprs,
 					ofono_gprs_status_cb_t cb, void *data);
+	void (*set_ia_apn)(struct ofono_gprs *gprs, const char *apn,
+				enum ofono_gprs_proto proto, const char *user,
+				const char *passwd, const char *mccmnc,
+				ofono_gprs_cb_t cb, void *data);
 };
 
 enum gprs_suspend_cause {

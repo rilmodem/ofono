@@ -36,6 +36,8 @@
 #define PREFIX_25_NETMASK "255.255.255.128"
 #define PREFIX_24_NETMASK "255.255.255.0"
 
+#define MODEM_PROP_LTE_CAPABLE "lte-capable"
+
 enum ril_util_sms_store {
 	RIL_UTIL_SMS_STORE_SM =	0,
 	RIL_UTIL_SMS_STORE_ME =	1,
@@ -77,6 +79,16 @@ struct ril_gprs_context_data {
 };
 
 struct ril_voicecall_driver_data {
+	GRil *gril;
+	struct ofono_modem *modem;
+};
+
+struct ril_gprs_driver_data {
+	GRil *gril;
+	struct ofono_modem *modem;
+};
+
+struct ril_radio_settings_driver_data {
 	GRil *gril;
 	struct ofono_modem *modem;
 };
