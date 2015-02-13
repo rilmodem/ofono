@@ -38,6 +38,12 @@ static const char *simple_deliver = "07911326040000F0"
 		"040B911346610089F60000208062917314480CC8F71D14969741F977FD07";
 static const char *alnum_sender = "0791447758100650"
 		"040DD0F334FC1CA6970100008080312170224008D4F29CDE0EA7D9";
+static const char *unicode_deliver = "04819999990414D0FBFD7EBFDFEFF77BFE1E001"
+		"9512090801361807E00DC00FC00C400E400D600F600C500E500D800F800C"
+		"600E600C700E700C900E900CA00EA00DF003100320033003400350036003"
+		"7003800390030002000540068006900730020006D0065007300730061006"
+		"7006500200069007300200036003300200075006E00690063006F0064006"
+		"5002000630068006100720073002E";
 static const char *simple_submit = "0011000B916407281553F80000AA"
 		"0AE8329BFD4697D9EC37";
 
@@ -360,6 +366,38 @@ static void test_deliver_encode(void)
 	encoded_pdu = encode_hex(pdu, encoded_pdu_len, 0);
 
 	g_assert(strcmp(alnum_sender, encoded_pdu) == 0);
+
+	g_free(encoded_pdu);
+
+	/* test unicode_deliver*/
+	decoded_pdu = decode_hex(unicode_deliver, -1, &pdu_len, 0);
+	g_assert(decoded_pdu);
+	g_assert(pdu_len == (long)strlen(unicode_deliver) / 2);
+
+	ret = sms_decode(decoded_pdu, pdu_len, FALSE, 149, &sms);
+
+	g_free(decoded_pdu);
+
+	g_assert(ret);
+	g_assert(sms.type == SMS_TYPE_DELIVER);
+
+	ret = sms_encode(&sms, &encoded_pdu_len, &encoded_tpdu_len, pdu);
+
+	if (g_test_verbose()) {
+		int i;
+
+		for (i = 0; i < encoded_pdu_len; i++)
+			g_print("%02X", pdu[i]);
+		g_print("\n");
+	}
+
+	g_assert(ret);
+	g_assert(encoded_tpdu_len == 149);
+	g_assert(encoded_pdu_len == pdu_len);
+
+	encoded_pdu = encode_hex(pdu, encoded_pdu_len, 0);
+
+	g_assert(strcmp(unicode_deliver, encoded_pdu) == 0);
 
 	g_free(encoded_pdu);
 }
