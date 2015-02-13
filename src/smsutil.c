@@ -555,6 +555,11 @@ gboolean sms_encode_address_field(const struct sms_address *in, gboolean sc,
 		if (gsm == NULL)
 			return FALSE;
 
+		if (written > 11) {
+			g_free(gsm);
+			return FALSE;
+		}
+
 		r = pack_7bit_own_buf(gsm, written, 0, FALSE, &packed, 0, p);
 
 		g_free(gsm);
