@@ -133,6 +133,8 @@ struct mtk_data {
 	ofono_bool_t has_3g;
 	struct mtk_settings_data *mtk_settings;
 	int fw_type;
+	ofono_modem_online_cb_t online_cb;
+	void *online_data;
 };
 
 /*
@@ -249,7 +251,7 @@ static void radio_state_changed(struct ril_msg *message, gpointer user_data)
 	if (radio_state != sock->radio_state) {
 		struct socket_data *sock_c = socket_complement(sock);
 
-		ofono_info("%s, state: %s", __func__,
+		ofono_info("%s, %s, state: %s", __func__, sock->path,
 				ril_radio_state_to_string(radio_state));
 
 		/*
@@ -278,6 +280,7 @@ static void mtk_radio_state_changed(struct ril_msg *message, gpointer user_data)
 								message);
 
 	if (radio_state != md->radio_state) {
+		gboolean success = FALSE;
 
 		ofono_info("%s, slot %d: state: %s md->ofono_online: %d",
 				__func__, md->slot,
@@ -288,22 +291,34 @@ static void mtk_radio_state_changed(struct ril_msg *message, gpointer user_data)
 
 		switch (radio_state) {
 		case RADIO_STATE_ON:
-		/* MTK */
+		/* Deprecated in AOSP, but still used by MTK */
 		case RADIO_STATE_SIM_NOT_READY:
 		case RADIO_STATE_SIM_LOCKED_OR_ABSENT:
 		case RADIO_STATE_SIM_READY:
+			if (md->ofono_online)
+				success = TRUE;
 			break;
 
 		case RADIO_STATE_UNAVAILABLE:
 		case RADIO_STATE_OFF:
-			if (md->ofono_online) {
-				ofono_warn("%s, slot %d: radio powered off!",
-						__func__, md->slot);
-			}
+			if (!md->ofono_online)
+				success = TRUE;
 			break;
 		default:
 			/* Malformed parcel; no radio state == broken rild */
 			g_assert(FALSE);
+		}
+
+		if (md->online_cb != NULL) {
+			if (success)
+				CALLBACK_WITH_SUCCESS(md->online_cb,
+							md->online_data);
+			else
+				CALLBACK_WITH_FAILURE(md->online_cb,
+							md->online_data);
+
+			md->online_cb = NULL;
+			md->online_data = NULL;
 		}
 	}
 }
@@ -762,7 +777,20 @@ static void mtk_sim_mode_cb(struct ril_msg *message, gpointer user_data)
 	if (message->error == RIL_E_SUCCESS) {
 		g_ril_print_response_no_args(md->ril, message);
 
-		CALLBACK_WITH_SUCCESS(cb, cbd->data);
+		/*
+		 * Although the request was successful, radio state might not
+		 * have changed yet. In that case we wait for the radio event,
+		 * otherwise RIL requests that depend on radio state will fail.
+		 */
+		if ((md->ofono_online && md->radio_state != RADIO_STATE_OFF) ||
+				(!md->ofono_online &&
+					md->radio_state == RADIO_STATE_OFF)) {
+			CALLBACK_WITH_SUCCESS(cb, cbd->data);
+		} else {
+			/* Wait for the radio state event */
+			md->online_cb = cb;
+			md->online_data = cbd->data;
+		}
 	} else {
 		ofono_error("%s: RIL error %s", __func__,
 				ril_error_to_string(message->error));
