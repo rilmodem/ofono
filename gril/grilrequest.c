@@ -240,7 +240,6 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 	gchar *tech_str;
 	gchar *auth_str;
 	gchar *profile_str;
-	size_t apn_len;
 	int num_param = SETUP_DATA_CALL_PARAMS;
 
 	DBG("");
@@ -294,14 +293,6 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 
 	if (req->apn == NULL)
 		goto error;
-
-	apn_len = strlen(req->apn);
-	if (apn_len == 0 || apn_len > 100) {
-		ofono_error("%s: invalid apn length: %d",
-				__func__,
-				(int) apn_len);
-		goto error;
-	}
 
 	if (req->auth_type > RIL_AUTH_BOTH) {
 		ofono_error("%s: Invalid auth type: %d",
