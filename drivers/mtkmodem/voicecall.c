@@ -57,15 +57,11 @@ static void mtk_set_indication_cb(struct ril_msg *message, gpointer user_data)
 	struct ofono_voicecall *vc = user_data;
 	struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 
-	if (message->error == RIL_E_SUCCESS) {
+	if (message->error == RIL_E_SUCCESS)
 		g_ril_print_response_no_args(vd->ril, message);
-
-		/* Request the call list again */
-		ril_poll_clcc(vc);
-	} else {
+	else
 		ofono_error("%s: RIL error %s", __func__,
 				ril_error_to_string(message->error));
-	}
 }
 
 static void mtk_incoming_notify(struct ril_msg *message, gpointer user_data)
