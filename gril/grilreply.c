@@ -332,9 +332,33 @@ static void set_reg_state(GRil *gril, struct reply_reg_state *reply,
 		g_ril_append_print_buf(gril, "%s0x%x", print_buf, val);
 		break;
 	case RST_IX_RAT:
-		reply->tech = val;
 		g_ril_append_print_buf(gril, "%s%s", print_buf,
 					ril_radio_tech_to_string(val));
+
+		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
+			switch (val) {
+			case MTK_RADIO_TECH_HSDPAP:
+			case MTK_RADIO_TECH_HSDPAP_UPA:
+			case MTK_RADIO_TECH_HSUPAP:
+			case MTK_RADIO_TECH_HSUPAP_DPA:
+				val = RADIO_TECH_HSPAP;
+				break;
+			case MTK_RADIO_TECH_DC_DPA:
+				val = RADIO_TECH_HSDPA;
+				break;
+			case MTK_RADIO_TECH_DC_UPA:
+				val = RADIO_TECH_HSUPA;
+				break;
+			case MTK_RADIO_TECH_DC_HSDPAP:
+			case MTK_RADIO_TECH_DC_HSDPAP_UPA:
+			case MTK_RADIO_TECH_DC_HSDPAP_DPA:
+			case MTK_RADIO_TECH_DC_HSPAP:
+				val = RADIO_TECH_HSPAP;
+				break;
+			}
+		}
+
+		reply->tech = val;
 		break;
 	default:
 		goto no_val;
@@ -1305,22 +1329,36 @@ int *g_ril_reply_parse_retries(GRil *gril, const struct ril_msg *message,
 		g_ril_append_print_buf(gril, "{%d}", retries[passwd_type]);
 		break;
 	case OFONO_RIL_VENDOR_MTK:
-		if (numint != 4) {
-			ofono_error("%s: wrong format", __func__);
-			goto no_data;
-		}
+		/*
+		 * Some versions of MTK modem return just the retries for the
+		 * password just entered while others return the retries for all
+		 * passwords.
+		 */
+		if (numint == 1) {
+			retries[passwd_type] = parcel_r_int32(&rilp);
 
-		retries[OFONO_SIM_PASSWORD_SIM_PIN] = parcel_r_int32(&rilp);
-		retries[OFONO_SIM_PASSWORD_SIM_PIN2] = parcel_r_int32(&rilp);
-		retries[OFONO_SIM_PASSWORD_SIM_PUK] = parcel_r_int32(&rilp);
-		retries[OFONO_SIM_PASSWORD_SIM_PUK2] = parcel_r_int32(&rilp);
+			g_ril_append_print_buf(gril, "{%d}",
+							retries[passwd_type]);
+		} else if (numint == 4) {
+			retries[OFONO_SIM_PASSWORD_SIM_PIN] =
+							parcel_r_int32(&rilp);
+			retries[OFONO_SIM_PASSWORD_SIM_PIN2] =
+							parcel_r_int32(&rilp);
+			retries[OFONO_SIM_PASSWORD_SIM_PUK] =
+							parcel_r_int32(&rilp);
+			retries[OFONO_SIM_PASSWORD_SIM_PUK2] =
+							parcel_r_int32(&rilp);
 
-		g_ril_append_print_buf(gril,
+			g_ril_append_print_buf(gril,
 					"{pin %d, pin2 %d, puk %d, puk2 %d}",
 					retries[OFONO_SIM_PASSWORD_SIM_PIN],
 					retries[OFONO_SIM_PASSWORD_SIM_PIN2],
 					retries[OFONO_SIM_PASSWORD_SIM_PUK],
 					retries[OFONO_SIM_PASSWORD_SIM_PUK2]);
+		} else {
+			ofono_error("%s: wrong format", __func__);
+			goto no_data;
+		}
 		break;
 	case OFONO_RIL_VENDOR_INFINEON:
 		ofono_error("%s: infineon type should not arrive here",

@@ -266,6 +266,26 @@ const char *ril_radio_tech_to_string(int radio_tech)
 		return "HSPAP";
 	case RADIO_TECH_GSM:
 		return "GSM";
+	case MTK_RADIO_TECH_HSDPAP:
+		return "MTK_HSDPAP";
+	case MTK_RADIO_TECH_HSDPAP_UPA:
+		return "MTK_HSDPAP_UPA";
+	case MTK_RADIO_TECH_HSUPAP:
+		return "MTK_HSUPAP";
+	case MTK_RADIO_TECH_HSUPAP_DPA:
+		return "MTK_HSUPAP_DPA";
+	case MTK_RADIO_TECH_DC_DPA:
+		return "MTK_DC_DPA";
+	case MTK_RADIO_TECH_DC_UPA:
+		return "MTK_DC_UPA";
+	case MTK_RADIO_TECH_DC_HSDPAP:
+		return "MTK_DC_HSDPAP";
+	case MTK_RADIO_TECH_DC_HSDPAP_UPA:
+		return "MTK_DC_HSDPAP_UPA";
+	case MTK_RADIO_TECH_DC_HSDPAP_DPA:
+		return "MTK_DC_HSDPAP_DPA";
+	case MTK_RADIO_TECH_DC_HSPAP:
+		return "MTK_DC_HSPAP";
 	default:
 		if (g_snprintf(temp_str, sizeof(temp_str),
 				"<INVALID (%d)>",
