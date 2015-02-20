@@ -46,6 +46,7 @@
 
 static const char *cops_prefix[] = { "+COPS:", NULL };
 static const char *cind_prefix[] = { "+CIND:", NULL };
+static const char *none_prefix[] = { NULL };
 
 struct netreg_data {
 	GAtChat *chat;
@@ -263,7 +264,7 @@ static void hfp_current_operator(struct ofono_netreg *netreg,
 
 	cbd->user = netreg;
 
-	ok = g_at_chat_send(nd->chat, "AT+COPS=3,0", NULL,
+	ok = g_at_chat_send(nd->chat, "AT+COPS=3,0", none_prefix,
 			NULL, cbd, NULL);
 
 	if (ok)
