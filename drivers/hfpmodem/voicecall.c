@@ -1183,8 +1183,8 @@ static int hfp_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 
 	ofono_voicecall_set_data(vc, vd);
 
-	g_at_chat_send(vd->chat, "AT+CLIP=1", NULL, NULL, NULL, NULL);
-	g_at_chat_send(vd->chat, "AT+CCWA=1", NULL,
+	g_at_chat_send(vd->chat, "AT+CLIP=1", none_prefix, NULL, NULL, NULL);
+	g_at_chat_send(vd->chat, "AT+CCWA=1", none_prefix,
 				hfp_voicecall_initialized, vc, NULL);
 	return 0;
 }
