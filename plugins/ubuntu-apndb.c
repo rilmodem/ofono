@@ -191,10 +191,13 @@ static enum ofono_gprs_context_type determine_apn_type(const char *types)
 	 * - mms
 	 */
 
-	if (g_strcmp0(types, "mms") == 0)
-		return OFONO_GPRS_CONTEXT_TYPE_MMS;
-	else if (g_str_has_prefix(types, "default"))
+	/* Default apns can be used for mms and ia, mms can be used for ia */
+	if (strstr(types, "default") != NULL)
 		return OFONO_GPRS_CONTEXT_TYPE_INTERNET;
+	else if (strstr(types, "mms") != NULL)
+		return OFONO_GPRS_CONTEXT_TYPE_MMS;
+	else if (strstr(types, "ia") != NULL)
+		return OFONO_GPRS_CONTEXT_TYPE_IA;
 	else
 		return OFONO_GPRS_CONTEXT_TYPE_ANY;
 }
