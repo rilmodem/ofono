@@ -725,7 +725,7 @@ gboolean is_valid_apn(const char *apn)
 	int i;
 	int last_period = 0;
 
-	if (apn[0] == '.' || apn[0] == '\0')
+	if (apn[0] == '.')
 		return FALSE;
 
 	for (i = 0; apn[i] != '\0'; i++) {
