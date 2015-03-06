@@ -162,3 +162,38 @@ error:
 	return -1;
 
 }
+
+struct parcel_str_array *g_mtk_unsol_parse_plmn_changed(GRil *gril,
+						const struct ril_msg *message)
+{
+	struct parcel rilp;
+	struct parcel_str_array *str_arr;
+	int i;
+
+	g_ril_init_parcel(message, &rilp);
+
+	str_arr = parcel_r_str_array(&rilp);
+	if (str_arr == NULL || str_arr->num_str == 0) {
+		ofono_error("%s: parse error for %s", __func__,
+				ril_request_id_to_string(message->req));
+		parcel_free_str_array(str_arr);
+		str_arr = NULL;
+		goto out;
+	}
+
+	g_ril_append_print_buf(gril, "{");
+
+	for (i = 0; i < str_arr->num_str; ++i) {
+		if (i + 1 == str_arr->num_str)
+			g_ril_append_print_buf(gril, "%s%s}", print_buf,
+						str_arr->str[i]);
+		else
+			g_ril_append_print_buf(gril, "%s%s, ", print_buf,
+						str_arr->str[i]);
+	}
+
+	g_ril_print_unsol(gril, message);
+
+out:
+	return str_arr;
+}
