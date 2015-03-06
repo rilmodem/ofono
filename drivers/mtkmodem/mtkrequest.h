@@ -57,9 +57,9 @@ extern "C" {
 #define MTK_MD_TYPE_3G 2
 #define MTK_MD_TYPE_WG 3
 #define MTK_MD_TYPE_TG 4
-/* FDD CSFB modem */
+/* FDD CSFB modem: LTE FDD - WCDMA - GSM */
 #define MTK_MD_TYPE_LWG 5
-/* TDD CSFB modem */
+/* TDD CSFB modem: LTE TDD - TD-SCDMA - GSM */
 #define MTK_MD_TYPE_LTG 6
 /* SGLTE modem */
 #define MTK_MD_TYPE_LTNG 7
