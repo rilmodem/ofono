@@ -55,6 +55,7 @@
 #include <ofono/types.h>
 
 #include "ofono.h"
+#include <common.h>
 
 #include <gril.h>
 #include <grilreply.h>
@@ -92,6 +93,7 @@
 #define T_SIM_SWITCH_FAILSAFE_MS 1000
 
 #define INVALID_SUSPEND_ID -1
+#define T_FW_SWITCH_S 60
 
 enum mtk_plmn_type {
 	MTK_PLMN_TYPE_UNKNOWN = 0,
@@ -143,6 +145,10 @@ struct mtk_data {
 	enum mtk_plmn_type sensed_plmn_type;
 	int suspend_id;
 	ofono_bool_t trm_pending;
+	unsigned netreg_watch;
+	unsigned status_watch;
+	int netreg_status;
+	guint switch_fw_id;
 };
 
 /*
@@ -421,6 +427,7 @@ static void store_type_cb(struct ril_msg *message, gpointer user_data)
 	if (message->error != RIL_E_SUCCESS) {
 		ofono_error("%s: RIL error %s", __func__,
 				ril_error_to_string(message->error));
+		md->trm_pending = FALSE;
 		return;
 	}
 
@@ -538,11 +545,53 @@ static void set_fw_type(struct ofono_modem *modem, int type)
 	ofono_modem_set_boolean(modem, MODEM_PROP_LTE_CAPABLE, lte_cap);
 }
 
+static const char *fw_type_to_str(int fw_type)
+{
+	switch (fw_type) {
+	case MTK_MD_TYPE_2G:
+		return "2G";
+	case MTK_MD_TYPE_3G:
+		return "3G";
+	case MTK_MD_TYPE_WG:
+		return "WG";
+	case MTK_MD_TYPE_TG:
+		return "TG";
+	case MTK_MD_TYPE_LWG:
+		return "LWG";
+	case MTK_MD_TYPE_LTG:
+		return "LTG";
+	case MTK_MD_TYPE_LTNG:
+		return "LTNG";
+	}
+
+	return "<INVALID>";
+}
+
+static void switch_fw(struct ofono_modem *modem, int fw_type)
+{
+	struct mtk_data *md = ofono_modem_get_data(modem);
+	struct parcel rilp;
+
+	ofono_info("Switching modem FW from %s to %s",
+			fw_type_to_str(md->fw_type), fw_type_to_str(fw_type));
+
+	md->trm_pending = TRUE;
+
+	set_fw_type(modem, fw_type);
+
+	g_mtk_request_store_modem_type(md->ril, fw_type, &rilp);
+
+	if (g_ril_send(md->ril, MTK_RIL_REQUEST_STORE_MODEM_TYPE, &rilp,
+			store_type_cb, modem, NULL) == 0) {
+		ofono_error("%s: failure sending request", __func__);
+		md->trm_pending = FALSE;
+	}
+}
+
 static void check_modem_fw(struct ofono_modem *modem)
 {
 	struct mtk_data *md = ofono_modem_get_data(modem);
 	int best_fw;
-	struct parcel rilp;
 
 	/* We handle only LWG <-> LTG modem fw changes (arale case) */
 	if (md->fw_type != MTK_MD_TYPE_LTG && md->fw_type != MTK_MD_TYPE_LWG)
@@ -568,16 +617,7 @@ static void check_modem_fw(struct ofono_modem *modem)
 	}
 
 	/* We need to reload FW and reset transactionally */
-
-	md->trm_pending = TRUE;
-
-	set_fw_type(modem, best_fw);
-
-	g_mtk_request_store_modem_type(md->ril, best_fw, &rilp);
-
-	if (g_ril_send(md->ril, MTK_RIL_REQUEST_STORE_MODEM_TYPE, &rilp,
-			store_type_cb, modem, NULL) == 0)
-		ofono_error("%s: failure sending request", __func__);
+	switch_fw(modem, best_fw);
 }
 
 static void plmn_changed(struct ril_msg *message, gpointer user_data)
@@ -616,6 +656,99 @@ static void reg_suspended(struct ril_msg *message, gpointer user_data)
 	md->suspend_id = suspend_id;
 
 	check_modem_fw(modem);
+}
+
+static gboolean tout_not_registered(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mtk_data *md = ofono_modem_get_data(modem);
+
+	if (md->trm_pending)
+		goto end;
+
+	DBG("type was %d", md->fw_type);
+
+	if (md->fw_type == MTK_MD_TYPE_LTG)
+		switch_fw(modem, MTK_MD_TYPE_LWG);
+	else
+		switch_fw(modem, MTK_MD_TYPE_LTG);
+
+end:
+	md->switch_fw_id = 0;
+
+	return FALSE;
+}
+
+static void cancel_fw_load_timer(struct mtk_data *md)
+{
+	if (md->switch_fw_id) {
+		g_source_remove(md->switch_fw_id);
+		md->switch_fw_id = 0;
+	}
+}
+
+static void netreg_status_update(struct ofono_modem *modem)
+{
+	struct mtk_data *md = ofono_modem_get_data(modem);
+
+	if (md->sim_plmn_type != MTK_PLMN_TYPE_1)
+		return;
+
+	if (md->fw_type != MTK_MD_TYPE_LTG && md->fw_type != MTK_MD_TYPE_LWG)
+		return;
+
+	DBG("%d", md->netreg_status);
+
+	if (md->switch_fw_id) {
+		if (md->netreg_status == NETWORK_REGISTRATION_STATUS_REGISTERED
+				|| md->netreg_status ==
+					NETWORK_REGISTRATION_STATUS_ROAMING)
+			cancel_fw_load_timer(md);
+		return;
+	}
+
+	if (md->netreg_status == NETWORK_REGISTRATION_STATUS_NOT_REGISTERED)
+		md->switch_fw_id = g_timeout_add_seconds(T_FW_SWITCH_S,
+						tout_not_registered, modem);
+}
+
+static void netreg_status_changed(int status, int lac, int ci, int tech,
+					const char *mcc, const char *mnc,
+					void *data)
+{
+	struct ofono_modem *modem = data;
+	struct mtk_data *md = ofono_modem_get_data(modem);
+
+	if (md->netreg_status == status)
+		return;
+
+	md->netreg_status = status;
+
+	netreg_status_update(modem);
+}
+
+static void netreg_watch(struct ofono_atom *atom,
+				enum ofono_atom_watch_condition cond,
+				void *data)
+{
+	struct ofono_modem *modem = data;
+	struct mtk_data *md = ofono_modem_get_data(modem);
+	void *netreg;
+
+	DBG("%d", cond);
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
+		cancel_fw_load_timer(md);
+		md->status_watch = 0;
+		return;
+	}
+
+	netreg = __ofono_atom_get_data(atom);
+	md->netreg_status = ofono_netreg_get_status(netreg);
+	md->status_watch = __ofono_netreg_add_status_watch(netreg,
+					netreg_status_changed, modem, NULL);
+
+	netreg_status_update(modem);
 }
 
 static int mtk_probe(struct ofono_modem *modem)
@@ -753,7 +886,6 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 
 		/*
 		 * Now that we can access IMSI, see if a FW change is needed.
-		 * TODO: timeout case when no network is found for CMCC
 		 */
 
 	 	md->sim_plmn_type = get_plmn_type(ofono_sim_get_imsi(md->sim));
@@ -819,6 +951,12 @@ static void create_online_atoms(struct ofono_modem *modem)
 	/* Radio settings does not depend on the SIM */
 	ofono_radio_settings_create(modem, OFONO_RIL_VENDOR_MTK,
 					MTKMODEM, &rs_data);
+
+	if (md->netreg_watch == 0)
+		md->netreg_watch =
+			__ofono_modem_add_atom_watch(modem,
+						OFONO_ATOM_TYPE_NETREG,
+						netreg_watch, modem, NULL);
 }
 
 static void query_type_cb(struct ril_msg *message, gpointer user_data)
@@ -1027,11 +1165,15 @@ static void poweron_cb(struct ril_msg *message, gpointer user_data)
 	if (message->error == RIL_E_SUCCESS) {
 		g_ril_print_response_no_args(md->ril, message);
 
-		if (disconnect_expected)
+		if (disconnect_expected) {
+			if (not_disconn_cb_id != 0)
+				g_source_remove(not_disconn_cb_id);
+
 			not_disconn_cb_id = g_timeout_add(T_WAIT_DISCONN_MS,
 						no_disconnect_case, cbd);
-		else
+		} else {
 			mtk_send_sim_mode(mtk_sim_mode_cb, cbd);
+		}
 	} else {
 		ofono_error("%s RADIO_POWERON error %s", __func__,
 				ril_error_to_string(message->error));
@@ -1163,7 +1305,9 @@ static void mtk_set_online(struct ofono_modem *modem, ofono_bool_t online,
 			mtk_data_0->pending_cbd = cbd;
 		}
 	} else if (next_state == NO_SIM_ACTIVE) {
-		if (power_on_off(mtk_data_0->ril, FALSE, cbd))
+		/* Disconnection expected for dual SIM only */
+		if (power_on_off(mtk_data_0->ril, FALSE, cbd)
+				&& mtk_data_1 != NULL)
 			disconnect_expected = TRUE;
 	} else {
 		mtk_send_sim_mode(mtk_sim_mode_cb, cbd);
