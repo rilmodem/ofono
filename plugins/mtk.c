@@ -91,10 +91,13 @@
 #define T_WAIT_DISCONN_MS 1000
 #define T_SIM_SWITCH_FAILSAFE_MS 1000
 
-enum mtk_sim_type {
-	MTK_SIM_TYPE_1 = 1,
-	MTK_SIM_TYPE_2 = 2,
-	MTK_SIM_TYPE_3 = 3
+#define INVALID_SUSPEND_ID -1
+
+enum mtk_plmn_type {
+	MTK_PLMN_TYPE_UNKNOWN = 0,
+	MTK_PLMN_TYPE_1,
+	MTK_PLMN_TYPE_2,
+	MTK_PLMN_TYPE_3
 };
 
 static const char hex_slot_0[] = "Slot 0: ";
@@ -136,6 +139,10 @@ struct mtk_data {
 	int fw_type;
 	ofono_modem_online_cb_t online_cb;
 	void *online_data;
+	enum mtk_plmn_type sim_plmn_type;
+	enum mtk_plmn_type sensed_plmn_type;
+	int suspend_id;
+	ofono_bool_t trm_pending;
 };
 
 /*
@@ -329,7 +336,7 @@ static void mtk_radio_state_changed(struct ril_msg *message, gpointer user_data)
 	exec_online_callback(md);
 }
 
-static void reg_suspended_cb(struct ril_msg *message, gpointer user_data)
+static void resume_reg_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct mtk_data *md = ofono_modem_get_data(modem);
@@ -343,24 +350,21 @@ static void reg_suspended_cb(struct ril_msg *message, gpointer user_data)
 	g_ril_print_response_no_args(md->ril, message);
 }
 
-static void reg_suspended(struct ril_msg *message, gpointer user_data)
+static void resume_reg(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user_data;
 	struct mtk_data *md = ofono_modem_get_data(modem);
 	struct parcel rilp;
-	int session_id;
 
-	session_id = g_mtk_unsol_parse_registration_suspended(md->ril, message);
-	if (session_id < 0) {
-		ofono_error("%s: parse error", __func__);
+	if (md->suspend_id == INVALID_SUSPEND_ID)
 		return;
-	}
 
-	g_mtk_request_resume_registration(md->ril, session_id, &rilp);
+	g_mtk_request_resume_registration(md->ril, md->suspend_id, &rilp);
 
 	if (g_ril_send(md->ril, MTK_RIL_REQUEST_RESUME_REGISTRATION, &rilp,
-			reg_suspended_cb, modem, NULL) == 0)
+			resume_reg_cb, modem, NULL) == 0)
 		ofono_error("%s: failure sending request", __func__);
+
+	md->suspend_id = INVALID_SUSPEND_ID;
 }
 
 static void sim_removed(struct ril_msg *message, gpointer user_data)
@@ -371,6 +375,8 @@ static void sim_removed(struct ril_msg *message, gpointer user_data)
 	DBG("");
 
 	g_ril_print_unsol_no_args(md->ril, message);
+
+	md->sim_plmn_type = MTK_PLMN_TYPE_UNKNOWN;
 
 	ofono_modem_set_powered(modem, FALSE);
 	g_idle_add(mtk_connected, modem);
@@ -403,16 +409,6 @@ static void set_trm_cb(struct ril_msg *message, gpointer user_data)
 	}
 
 	g_ril_print_response_no_args(md->ril, message);
-
-	/*
-	 * rild will close now the socket, so we set our state to power off:
-	 * we will set the modem to powered when we reconnect to the socket.
-	 * Measurements showed that rild takes around 5 seconds to re-start, but
-	 * we use an 8 seconds timeout as times can vary and that value is also
-	 * compatible with krillin modem.
-	 */
-	md->ofono_online = FALSE;
-	ofono_modem_set_powered(md->modem, FALSE);
 }
 
 static void store_type_cb(struct ril_msg *message, gpointer user_data)
@@ -420,6 +416,7 @@ static void store_type_cb(struct ril_msg *message, gpointer user_data)
 	struct ofono_modem *modem = user_data;
 	struct mtk_data *md = ofono_modem_get_data(modem);
 	struct parcel rilp;
+	int trm = 0;
 
 	if (message->error != RIL_E_SUCCESS) {
 		ofono_error("%s: RIL error %s", __func__,
@@ -431,13 +428,30 @@ static void store_type_cb(struct ril_msg *message, gpointer user_data)
 
 	/*
 	 * Send SET_TRM, which reloads the FW. We do not know the meaning of the
-	 * magic number 0x0B.
+	 * magic TRM numbers (no source code for muxreport daemon).
 	 */
-	g_mtk_request_set_trm(md->ril, 0x0B, &rilp);
+	if (md->fw_type == MTK_MD_TYPE_LWG) {
+		trm = 11;
+	} else if (md->fw_type == MTK_MD_TYPE_LTG) {
+		trm = 12;
+	} else {
+		ofono_error("%s: wrong modem type %d", __func__, md->fw_type);
+		g_assert(FALSE);
+	}
+
+	g_mtk_request_set_trm(md->ril, trm, &rilp);
 
 	if (g_ril_send(md->ril, MTK_RIL_REQUEST_SET_TRM, &rilp,
 			set_trm_cb, modem, NULL) == 0)
 		ofono_error("%s: failure sending request", __func__);
+
+	/*
+	 * rild will close now the socket, and the response to SET_TRM might be
+	 * received before that or not.
+	 * Measurements showed that rild takes around 5 seconds to re-start, but
+	 * we use an 8 seconds timeout as times can vary and that value is also
+	 * compatible with krillin modem.
+	 */
 }
 
 static gboolean find_in_table(const char *str,
@@ -452,45 +466,65 @@ static gboolean find_in_table(const char *str,
 	return FALSE;
 }
 
-static enum mtk_sim_type sim_type_for_fw_loading(const char *imsi)
+static enum mtk_plmn_type get_plmn_type(const char *code)
 {
-	/* China Mobile MCC/MNC codes */
+	/* China Mobile (CMCC) MCC/MNC codes */
 	const char *table_type1[] = { "46000", "46002", "46007" };
-	/* China Unicom and China Telecom MCC/MNC codes */
+	/* China Unicom (CU) and China Telecom MCC/MNC codes */
 	const char *table_type3[] =
 		{ "46001", "46006", "46009", "45407", "46005", "45502" };
 
-	if (find_in_table(imsi, table_type1,
-				sizeof(table_type1)/sizeof(table_type1[0])))
-		return MTK_SIM_TYPE_1;
+	if (find_in_table(code, table_type1, G_N_ELEMENTS(table_type1)))
+		return MTK_PLMN_TYPE_1;
 
-	if (find_in_table(imsi, table_type3,
-				sizeof(table_type3)/sizeof(table_type3[0])))
-		return MTK_SIM_TYPE_3;
+	if (find_in_table(code, table_type3, G_N_ELEMENTS(table_type3)))
+		return MTK_PLMN_TYPE_3;
 
-	return MTK_SIM_TYPE_2;
+	return MTK_PLMN_TYPE_2;
 }
 
-static int sim_modem_fw(const char *imsi)
+static int select_modem_fw(enum mtk_plmn_type sim_plmn_type,
+				enum mtk_plmn_type sensed_plmn_type)
 {
-	enum mtk_sim_type sim_type;
-	int sim_fw = MTK_MD_TYPE_LWG;
+	DBG("PLMN (sim, sensed)=(%d, %d)", sim_plmn_type, sensed_plmn_type);
 
-	/* Find out our SIM type */
-	sim_type = sim_type_for_fw_loading(imsi);
-	switch (sim_type) {
-	case MTK_SIM_TYPE_1:
-		/* LTE TDD - TD-SCDMA - GSM */
-		sim_fw = MTK_MD_TYPE_LTG;
-		break;
-	case MTK_SIM_TYPE_2:
-	case MTK_SIM_TYPE_3:
-		/* LTE FDD - WCDMA - GSM */
-		sim_fw = MTK_MD_TYPE_LWG;
-		break;
+	/*
+	 * Outside China (sensed t2) -> FDD always
+	 * In China (sensed t1, t3) -> sim t1 is TDD, t2 or t3 is FDD,
+	 *                             or wait for imsi to know sim type
+	 * Unknown country -> sim t2 or t3 are FDD, wait network if t1, wait
+	 *                    network/imsi events if both unknown
+	 */
+	switch (sensed_plmn_type) {
+	case MTK_PLMN_TYPE_2:
+		return MTK_MD_TYPE_LWG;
+	case MTK_PLMN_TYPE_1:
+	case MTK_PLMN_TYPE_3:
+		switch (sim_plmn_type) {
+			case MTK_PLMN_TYPE_1:
+				return MTK_MD_TYPE_LTG;
+			case MTK_PLMN_TYPE_2:
+			case MTK_PLMN_TYPE_3:
+				return MTK_MD_TYPE_LWG;
+			case MTK_PLMN_TYPE_UNKNOWN:
+				return MTK_MD_TYPE_INVALID;
+		};
+	case MTK_PLMN_TYPE_UNKNOWN:
+		switch (sim_plmn_type) {
+			case MTK_PLMN_TYPE_2:
+			case MTK_PLMN_TYPE_3:
+				return MTK_MD_TYPE_LWG;
+			case MTK_PLMN_TYPE_1:
+			case MTK_PLMN_TYPE_UNKNOWN:
+				return MTK_MD_TYPE_INVALID;
+		};
 	};
 
-	return sim_fw;
+	/* We should never arrive here */
+	ofono_error("%s: UNREACHABLE POINT REACHED, aborting", __func__);
+	g_assert(FALSE);
+
+	return MTK_MD_TYPE_INVALID;
 }
 
 static void set_fw_type(struct ofono_modem *modem, int type)
@@ -507,26 +541,81 @@ static void set_fw_type(struct ofono_modem *modem, int type)
 static void check_modem_fw(struct ofono_modem *modem)
 {
 	struct mtk_data *md = ofono_modem_get_data(modem);
-	int sim_type;
+	int best_fw;
 	struct parcel rilp;
 
 	/* We handle only LWG <-> LTG modem fw changes (arale case) */
 	if (md->fw_type != MTK_MD_TYPE_LTG && md->fw_type != MTK_MD_TYPE_LWG)
 		return;
 
-	/* Right modem fw type for our SIM */
-	sim_type = sim_modem_fw(ofono_sim_get_imsi(md->sim));
+	if (md->trm_pending) {
+		DBG("TRM pending, returning");
+		return;
+	}
 
-	if (md->fw_type == sim_type)
+	/* Right modem fw type for our SIM/sensed PLMN */
+	best_fw = select_modem_fw(md->sim_plmn_type, md->sensed_plmn_type);
+
+	DBG("Modem type selected is %d", best_fw);
+
+	/* Best FW not known yet: wait for imsi/sensed network */
+	if (best_fw == MTK_MD_TYPE_INVALID)
 		return;
 
-	set_fw_type(modem, sim_type);
+	if (md->fw_type == best_fw) {
+		resume_reg(modem);
+		return;
+	}
 
-	g_mtk_request_store_modem_type(md->ril, sim_type, &rilp);
+	/* We need to reload FW and reset transactionally */
+
+	md->trm_pending = TRUE;
+
+	set_fw_type(modem, best_fw);
+
+	g_mtk_request_store_modem_type(md->ril, best_fw, &rilp);
 
 	if (g_ril_send(md->ril, MTK_RIL_REQUEST_STORE_MODEM_TYPE, &rilp,
 			store_type_cb, modem, NULL) == 0)
 		ofono_error("%s: failure sending request", __func__);
+}
+
+static void plmn_changed(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mtk_data *md = ofono_modem_get_data(modem);
+	struct parcel_str_array *plmns;
+
+	plmns = g_mtk_unsol_parse_plmn_changed(md->ril, message);
+	if (plmns == NULL) {
+		ofono_error("%s: parse error", __func__);
+		return;
+	}
+
+	md->sensed_plmn_type = get_plmn_type(plmns->str[0]);
+
+	DBG("Best PLMN is %s (type %d)", plmns->str[0], md->sensed_plmn_type);
+
+	parcel_free_str_array(plmns);
+
+	check_modem_fw(modem);
+}
+
+static void reg_suspended(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mtk_data *md = ofono_modem_get_data(modem);
+	int suspend_id;
+
+	suspend_id = g_mtk_unsol_parse_registration_suspended(md->ril, message);
+	if (suspend_id < 0) {
+		ofono_error("%s: parse error", __func__);
+		return;
+	}
+
+	md->suspend_id = suspend_id;
+
+	check_modem_fw(modem);
 }
 
 static int mtk_probe(struct ofono_modem *modem)
@@ -540,6 +629,7 @@ static int mtk_probe(struct ofono_modem *modem)
 
 	md->ofono_online = FALSE;
 	md->radio_state = RADIO_STATE_UNAVAILABLE;
+	md->suspend_id = INVALID_SUSPEND_ID;
 
 	md->slot = ofono_modem_get_integer(modem, "Slot");
 
@@ -615,9 +705,7 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 
 		/*
 		 * TODO: this function should setup:
-		 *  - phonebook
 		 *  - stk ( SIM toolkit )
-		 *  - radio_settings
 		 */
 		md->sms = ofono_sms_create(modem, OFONO_RIL_VENDOR_MTK,
 						RILMODEM, md->ril);
@@ -665,8 +753,11 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 
 		/*
 		 * Now that we can access IMSI, see if a FW change is needed.
-		 * TODO: Roaming case and timeout case when no network is found.
+		 * TODO: timeout case when no network is found for CMCC
 		 */
+
+	 	md->sim_plmn_type = get_plmn_type(ofono_sim_get_imsi(md->sim));
+
 		check_modem_fw(modem);
 
 	} else if (new_state == OFONO_SIM_STATE_LOCKED_OUT) {
@@ -1272,6 +1363,14 @@ static void socket_disconnected(gpointer user_data)
 	g_ril_unref(md->ril);
 	md->ril = NULL;
 
+	md->sensed_plmn_type = MTK_PLMN_TYPE_UNKNOWN;
+	md->suspend_id = INVALID_SUSPEND_ID;
+	if (md->trm_pending) {
+		md->ofono_online = FALSE;
+		ofono_modem_set_powered(md->modem, FALSE);
+		md->trm_pending = FALSE;
+	}
+
 	/* Disconnection happened so we do not call failsafe function */
 	if (not_disconn_cb_id != 0) {
 		g_source_remove(not_disconn_cb_id);
@@ -1338,6 +1437,8 @@ static int create_gril(struct ofono_modem *modem)
 				RIL_UNSOL_RESPONSE_RADIO_STATE_CHANGED,
 				radio_state_changed, sock);
 
+	g_ril_register(sock->ril, MTK_RIL_UNSOL_RESPONSE_PLMN_CHANGED,
+			plmn_changed, modem);
 	g_ril_register(sock->ril, MTK_RIL_UNSOL_RESPONSE_REGISTRATION_SUSPENDED,
 			reg_suspended, modem);
 
