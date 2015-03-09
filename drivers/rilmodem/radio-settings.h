@@ -42,6 +42,6 @@ void ril_set_fast_dormancy(struct ofono_radio_settings *rs,
 				ofono_bool_t enable,
 				ofono_radio_settings_fast_dormancy_set_cb_t cb,
 				void *data);
-void ril_query_modem_rats(struct ofono_radio_settings *rs,
-				ofono_radio_settings_modem_rats_query_cb_t cb,
-				void *data);
+void ril_query_available_rats(struct ofono_radio_settings *rs,
+			ofono_radio_settings_available_rats_query_cb_t cb,
+			void *data);
