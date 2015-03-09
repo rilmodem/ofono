@@ -126,54 +126,53 @@ static int mtk_radio_settings_probe(struct ofono_radio_settings *rs,
 	return 0;
 }
 
-static void mtk_query_modem_rats_cb(struct ril_msg *message, gpointer user_data)
+static void mtk_query_available_rats_cb(struct ril_msg *message,
+					gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	struct ofono_radio_settings *rs = cbd->user;
 	struct radio_data *rd = ofono_radio_settings_get_data(rs);
-	ofono_radio_settings_modem_rats_query_cb_t cb = cbd->cb;
-	ofono_bool_t modem_rats[OFONO_RADIO_ACCESS_MODE_LAST] = { FALSE };
+	ofono_radio_settings_available_rats_query_cb_t cb = cbd->cb;
+	unsigned int available_rats = OFONO_RADIO_ACCESS_MODE_GSM;
 	int slot_3g, is_3g;
 
 	if (message->error != RIL_E_SUCCESS) {
 		ofono_error("%s: error %s", __func__,
 				ril_error_to_string(message->error));
-		CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
+		CALLBACK_WITH_FAILURE(cb, 0, cbd->data);
 		return;
 	}
 
 	slot_3g = g_mtk_reply_parse_get_3g_capability(rd->ril, message);
 	if (slot_3g < 0) {
 		ofono_error("%s: parse error", __func__);
-		CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
+		CALLBACK_WITH_FAILURE(cb, 0, cbd->data);
 		return;
 	}
 
 	is_3g = (g_ril_get_slot(rd->ril) == slot_3g);
 
-	modem_rats[OFONO_RADIO_ACCESS_MODE_GSM] = TRUE;
-
 	if (is_3g) {
-		modem_rats[OFONO_RADIO_ACCESS_MODE_UMTS] = TRUE;
+		available_rats |= OFONO_RADIO_ACCESS_MODE_UMTS;
 
 		if (ofono_modem_get_boolean(rd->modem, MODEM_PROP_LTE_CAPABLE))
-			modem_rats[OFONO_RADIO_ACCESS_MODE_LTE] = TRUE;
+			available_rats |= OFONO_RADIO_ACCESS_MODE_LTE;
 	}
 
-	CALLBACK_WITH_SUCCESS(cb, modem_rats, cbd->data);
+	CALLBACK_WITH_SUCCESS(cb, available_rats, cbd->data);
 }
 
-static void mtk_query_modem_rats(struct ofono_radio_settings *rs,
-				ofono_radio_settings_modem_rats_query_cb_t cb,
-				void *data)
+static void mtk_query_available_rats(struct ofono_radio_settings *rs,
+			ofono_radio_settings_available_rats_query_cb_t cb,
+			void *data)
 {
 	struct radio_data *rd = ofono_radio_settings_get_data(rs);
 	struct cb_data *cbd = cb_data_new(cb, data, rs);
 
 	if (g_ril_send(rd->ril, MTK_RIL_REQUEST_GET_3G_CAPABILITY, NULL,
-			mtk_query_modem_rats_cb, cbd, g_free) <= 0) {
+			mtk_query_available_rats_cb, cbd, g_free) <= 0) {
 		g_free(cbd);
-		CALLBACK_WITH_FAILURE(cb, NULL, data);
+		CALLBACK_WITH_FAILURE(cb, 0, data);
 	}
 }
 
@@ -185,7 +184,7 @@ static struct ofono_radio_settings_driver driver = {
 	.set_rat_mode		= ril_set_rat_mode,
 	.query_fast_dormancy	= ril_query_fast_dormancy,
 	.set_fast_dormancy	= mtk_set_fast_dormancy,
-	.query_modem_rats	= mtk_query_modem_rats
+	.query_available_rats	= mtk_query_available_rats
 };
 
 void mtk_radio_settings_init(void)
