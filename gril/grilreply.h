@@ -80,9 +80,9 @@ struct reply_sim_app {
 struct reply_sim_status {
 	guint card_state;
 	guint pin_state;
-	guint gsm_umts_index;
-	guint cdma_index;
-	guint ims_index;
+	int gsm_umts_index;
+	int cdma_index;
+	int ims_index;
 	guint num_apps;
 	struct reply_sim_app *apps[MAX_UICC_APPS];
 };

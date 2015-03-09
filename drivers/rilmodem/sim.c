@@ -664,7 +664,10 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 				__func__, status->card_state);
 
 	/* TODO(CDMA): need some kind of logic to set the correct app_index */
-	search_index = status->gsm_umts_index;
+	if (status->gsm_umts_index < 0)
+		search_index = 0;
+	else
+		search_index = status->gsm_umts_index;
 
 	/*
 	 * We cache the current password state. Ideally this should be done by
