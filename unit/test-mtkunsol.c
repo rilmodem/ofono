@@ -92,6 +92,44 @@ static const struct ril_msg unsol_registration_suspended_valid_1 = {
 	.error = 0,
 };
 
+/*
+ * The following hexadecimal data represents a serialized Binder parcel instance
+ * containing a valid MTK_RIL_UNSOL_RESPONSE_PLMN_CHANGED message with the
+ * following parameters:
+ *
+ * {21401}
+ */
+static const guchar unsol_plmn_changed_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00,	0x05, 0x00, 0x00, 0x00, 0x32, 0x00, 0x31, 0x00,
+	0x34, 0x00, 0x30, 0x00, 0x31, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg unsol_plmn_changed_valid_1 = {
+	.buf = (gchar *) &unsol_plmn_changed_parcel1,
+	.buf_len = sizeof(unsol_plmn_changed_parcel1),
+	.unsolicited = TRUE,
+	.req = MTK_RIL_UNSOL_RESPONSE_PLMN_CHANGED,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data represents a serialized Binder parcel instance
+ * containing a MTK_RIL_UNSOL_RESPONSE_PLMN_CHANGED message with no strings.
+ */
+static const guchar unsol_plmn_changed_parcel2[] = {
+	0x00, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg unsol_plmn_changed_invalid_1 = {
+	.buf = (gchar *) &unsol_plmn_changed_parcel2,
+	.buf_len = sizeof(unsol_plmn_changed_parcel2),
+	.unsolicited = TRUE,
+	.req = MTK_RIL_UNSOL_RESPONSE_PLMN_CHANGED,
+	.serial_no = 0,
+	.error = 0,
+};
+
 static void test_unsol_incoming_call_indication_valid(gconstpointer data)
 {
 	struct unsol_call_indication *unsol;
@@ -111,6 +149,25 @@ static void test_unsol_registration_suspended_valid(gconstpointer data)
 						(struct ril_msg *) data);
 
 	g_assert(suspended > 0);
+}
+
+static void test_unsol_plmn_changed_valid(gconstpointer data)
+{
+	struct parcel_str_array *plmns;
+
+	plmns = g_mtk_unsol_parse_plmn_changed(NULL, (struct ril_msg *) data);
+
+	g_assert(plmns != NULL);
+	parcel_free_str_array(plmns);
+}
+
+static void test_unsol_plmn_changed_invalid(gconstpointer data)
+{
+	struct parcel_str_array *plmns;
+
+	plmns = g_mtk_unsol_parse_plmn_changed(NULL, (struct ril_msg *) data);
+
+	g_assert(plmns == NULL);
 }
 
 #endif	/* LITTLE_ENDIAN */
@@ -136,6 +193,16 @@ int main(int argc, char **argv)
 				"valid RESPONSE_REGISTRATION_SUSPENDED Test 1",
 				&unsol_registration_suspended_valid_1,
 				test_unsol_registration_suspended_valid);
+
+	g_test_add_data_func("/testmtkunsol/fw: "
+				"valid RESPONSE_PLMN_CHANGED Test 1",
+				&unsol_plmn_changed_valid_1,
+				test_unsol_plmn_changed_valid);
+
+	g_test_add_data_func("/testmtkunsol/fw: "
+				"invalid RESPONSE_PLMN_CHANGED Test 1",
+				&unsol_plmn_changed_invalid_1,
+				test_unsol_plmn_changed_invalid);
 
 #endif	/* LITTLE_ENDIAN */
 
