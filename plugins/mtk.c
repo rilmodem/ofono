@@ -89,6 +89,7 @@
 #define RILD_CONNECT_RETRY_TIME_S 5
 
 #define T_WAIT_DISCONN_MS 1000
+#define T_SIM_SWITCH_FAILSAFE_MS 1000
 
 enum mtk_sim_type {
 	MTK_SIM_TYPE_1 = 1,
@@ -167,6 +168,7 @@ static void query_3g_caps(struct socket_data *sock);
 static void socket_disconnected(gpointer user_data);
 static void start_slot(struct mtk_data *md, struct socket_data *sock,
 			const char *hex_prefix);
+static void exec_pending_online(struct mtk_data *md);
 
 static void mtk_debug(const char *str, void *user_data)
 {
@@ -272,6 +274,30 @@ static void radio_state_changed(struct ril_msg *message, gpointer user_data)
 	}
 }
 
+static void exec_online_callback(struct mtk_data *md)
+{
+	if (md->online_cb != NULL) {
+		/*
+		 * We assume success, as the sim switch request was successful
+		 * too. Also, the SIM_* states can be returned independently of
+		 * the radio state, so we cannot reliably use it to know if the
+		 * sim switch command really did what was requested.
+		 */
+		CALLBACK_WITH_SUCCESS(md->online_cb, md->online_data);
+		md->online_cb = NULL;
+		md->online_data = NULL;
+
+		if (md->ofono_online)
+			md->mtk_settings =
+				mtk_settings_create(md->modem, md->ril,
+							md->has_3g);
+		else
+			mtk_settings_remove(md->mtk_settings);
+
+		exec_pending_online(md);
+	}
+}
+
 static void mtk_radio_state_changed(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -279,48 +305,28 @@ static void mtk_radio_state_changed(struct ril_msg *message, gpointer user_data)
 	int radio_state = g_ril_unsol_parse_radio_state_changed(md->ril,
 								message);
 
-	if (radio_state != md->radio_state) {
-		gboolean success = FALSE;
+	ofono_info("%s, slot %d: state: %s md->ofono_online: %d",
+			__func__, md->slot,
+			ril_radio_state_to_string(radio_state),
+			md->ofono_online);
 
-		ofono_info("%s, slot %d: state: %s md->ofono_online: %d",
-				__func__, md->slot,
-				ril_radio_state_to_string(radio_state),
-				md->ofono_online);
+	md->radio_state = radio_state;
 
-		md->radio_state = radio_state;
-
-		switch (radio_state) {
-		case RADIO_STATE_ON:
-		/* Deprecated in AOSP, but still used by MTK */
-		case RADIO_STATE_SIM_NOT_READY:
-		case RADIO_STATE_SIM_LOCKED_OR_ABSENT:
-		case RADIO_STATE_SIM_READY:
-			if (md->ofono_online)
-				success = TRUE;
-			break;
-
-		case RADIO_STATE_UNAVAILABLE:
-		case RADIO_STATE_OFF:
-			if (!md->ofono_online)
-				success = TRUE;
-			break;
-		default:
-			/* Malformed parcel; no radio state == broken rild */
-			g_assert(FALSE);
-		}
-
-		if (md->online_cb != NULL) {
-			if (success)
-				CALLBACK_WITH_SUCCESS(md->online_cb,
-							md->online_data);
-			else
-				CALLBACK_WITH_FAILURE(md->online_cb,
-							md->online_data);
-
-			md->online_cb = NULL;
-			md->online_data = NULL;
-		}
+	switch (radio_state) {
+	case RADIO_STATE_ON:
+	/* RADIO_STATE_SIM_* are deprecated in AOSP, but still used by MTK */
+	case RADIO_STATE_SIM_NOT_READY:
+	case RADIO_STATE_SIM_LOCKED_OR_ABSENT:
+	case RADIO_STATE_SIM_READY:
+	case RADIO_STATE_UNAVAILABLE:
+	case RADIO_STATE_OFF:
+		break;
+	default:
+		/* Malformed parcel; no radio state == broken rild */
+		g_assert(FALSE);
 	}
+
+	exec_online_callback(md);
 }
 
 static void reg_suspended_cb(struct ril_msg *message, gpointer user_data)
@@ -764,45 +770,13 @@ static void mtk_post_online(struct ofono_modem *modem)
 			sim_inserted, modem);
 }
 
-static void mtk_sim_mode_cb(struct ril_msg *message, gpointer user_data)
+static void exec_pending_online(struct mtk_data *md)
 {
-	struct cb_data *cbd = user_data;
-	ofono_modem_online_cb_t cb = cbd->cb;
-	struct ofono_modem *modem = cbd->user;
-	struct mtk_data *md = ofono_modem_get_data(modem);
 	struct mtk_data *md_c;
 
+	DBG("");
+
 	mtk_data_0->pending_cb = NULL;
-
-	if (message->error == RIL_E_SUCCESS) {
-		g_ril_print_response_no_args(md->ril, message);
-
-		/*
-		 * Although the request was successful, radio state might not
-		 * have changed yet. In that case we wait for the radio event,
-		 * otherwise RIL requests that depend on radio state will fail.
-		 */
-		if ((md->ofono_online && md->radio_state != RADIO_STATE_OFF) ||
-				(!md->ofono_online &&
-					md->radio_state == RADIO_STATE_OFF)) {
-			CALLBACK_WITH_SUCCESS(cb, cbd->data);
-		} else {
-			/* Wait for the radio state event */
-			md->online_cb = cb;
-			md->online_data = cbd->data;
-		}
-	} else {
-		ofono_error("%s: RIL error %s", __func__,
-				ril_error_to_string(message->error));
-		CALLBACK_WITH_FAILURE(cb, cbd->data);
-	}
-
-	if (md->ofono_online)
-		md->mtk_settings =
-			mtk_settings_create(md->modem, md->ril,
-						md->has_3g);
-	else
-		mtk_settings_remove(md->mtk_settings);
 
 	/* Execute possible pending operation on the other modem */
 
@@ -817,6 +791,44 @@ static void mtk_sim_mode_cb(struct ril_msg *message, gpointer user_data)
 
 		g_free(md_c->pending_online_cbd);
 		md_c->pending_online_cbd = NULL;
+	}
+}
+
+static gboolean sim_switch_failsafe(gpointer user_data)
+{
+	struct mtk_data *md = user_data;
+
+	exec_online_callback(md);
+
+	return FALSE;
+}
+
+static void mtk_sim_mode_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_modem_online_cb_t cb = cbd->cb;
+	struct ofono_modem *modem = cbd->user;
+	struct mtk_data *md = ofono_modem_get_data(modem);
+
+	if (message->error == RIL_E_SUCCESS) {
+		g_ril_print_response_no_args(md->ril, message);
+		/*
+		 * Although the request was successful, radio state might not
+		 * have changed yet. So we wait for the upcoming radio event,
+		 * otherwise RIL requests that depend on radio state will fail.
+		 * If we are switching the 3G slot, we cannot really trust this
+		 * behaviour, so we add a failsafe timer.
+		 */
+		md->online_cb = cb;
+		md->online_data = cbd->data;
+
+		g_timeout_add(T_SIM_SWITCH_FAILSAFE_MS,
+						sim_switch_failsafe, md);
+	} else {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+		exec_pending_online(md);
 	}
 }
 
