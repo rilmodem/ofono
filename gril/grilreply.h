@@ -175,6 +175,9 @@ void g_ril_reply_free_oem_hook(struct reply_oem_hook *oem_hook);
 struct reply_oem_hook *g_ril_reply_oem_hook_raw(GRil *gril,
 						const struct ril_msg *message);
 
+struct parcel_str_array *g_ril_reply_oem_hook_strings(GRil *gril,
+						const struct ril_msg *message);
+
 #ifdef __cplusplus
 }
 #endif
