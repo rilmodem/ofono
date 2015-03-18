@@ -53,6 +53,9 @@
 
 #include "drivers/infineonmodem/infineon_constants.h"
 
+/* Number of passwords in EPINC response */
+#define MTK_EPINC_NUM_PASSWD 4
+
 /*
  * Based on ../drivers/atmodem/sim.c.
  *
@@ -763,11 +766,56 @@ error:
 	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
 }
 
+static void mtk_pin_retries_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_sim_pin_retries_cb_t cb = cbd->cb;
+	struct sim_data *sd = cbd->user;
+	struct parcel_str_array *str_arr = NULL;
+	int pin[MTK_EPINC_NUM_PASSWD];
+	int num_pin;
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("Reply failure: %s",
+				ril_error_to_string(message->error));
+		goto error;
+	}
+
+	str_arr = g_ril_reply_oem_hook_strings(sd->ril, message);
+	if (str_arr == NULL || str_arr->num_str < 1) {
+		ofono_error("%s: parse error", __func__);
+		goto error;
+	}
+
+	num_pin = sscanf(str_arr->str[0], "+EPINC:%d,%d,%d,%d",
+					&pin[0], &pin[1], &pin[2], &pin[3]);
+
+	if (num_pin != MTK_EPINC_NUM_PASSWD) {
+		ofono_error("%s: failed parsing %s", __func__, str_arr->str[0]);
+		goto error;
+	}
+
+	sd->retries[OFONO_SIM_PASSWORD_SIM_PIN] = pin[0];
+	sd->retries[OFONO_SIM_PASSWORD_SIM_PIN2] = pin[1];
+	sd->retries[OFONO_SIM_PASSWORD_SIM_PUK] = pin[2];
+	sd->retries[OFONO_SIM_PASSWORD_SIM_PUK2] = pin[3];
+
+	parcel_free_str_array(str_arr);
+	CALLBACK_WITH_SUCCESS(cb, sd->retries, cbd->data);
+	return;
+
+error:
+	parcel_free_str_array(str_arr);
+	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
+}
+
 static void ril_query_pin_retries(struct ofono_sim *sim,
 					ofono_sim_pin_retries_cb_t cb,
 					void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
+
+	DBG("");
 
 	if (sd->vendor == OFONO_RIL_VENDOR_INFINEON) {
 		struct cb_data *cbd = cb_data_new(cb, data, sd);
@@ -781,6 +829,19 @@ static void ril_query_pin_retries(struct ofono_sim *sim,
 		/* Send request to RIL */
 		if (g_ril_send(sd->ril, RIL_REQUEST_OEM_HOOK_RAW, &rilp,
 				inf_pin_retries_cb, cbd, g_free) == 0) {
+			g_free(cbd);
+			CALLBACK_WITH_FAILURE(cb, NULL, data);
+		}
+	} else if (sd->vendor == OFONO_RIL_VENDOR_MTK) {
+		struct cb_data *cbd = cb_data_new(cb, data, sd);
+		struct parcel rilp;
+		const char *at_epinc[] = { "AT+EPINC", "+EPINC:" };
+
+		g_ril_request_oem_hook_strings(sd->ril, at_epinc,
+						G_N_ELEMENTS(at_epinc), &rilp);
+
+		if (g_ril_send(sd->ril, RIL_REQUEST_OEM_HOOK_STRINGS, &rilp,
+				mtk_pin_retries_cb, cbd, g_free) == 0) {
 			g_free(cbd);
 			CALLBACK_WITH_FAILURE(cb, NULL, data);
 		}
