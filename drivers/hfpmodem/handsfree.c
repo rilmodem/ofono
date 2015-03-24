@@ -45,6 +45,7 @@
 
 static const char *binp_prefix[] = { "+BINP:", NULL };
 static const char *bvra_prefix[] = { "+BVRA:", NULL };
+static const char *none_prefix[] = { NULL };
 
 struct hf_data {
 	GAtChat *chat;
@@ -197,7 +198,7 @@ static void hfp_cnum_query(struct ofono_handsfree *hf,
 	struct hf_data *hd = ofono_handsfree_get_data(hf);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (g_at_chat_send(hd->chat, "AT+CNUM", NULL,
+	if (g_at_chat_send(hd->chat, "AT+CNUM", none_prefix,
 					cnum_query_cb, cbd, g_free) > 0)
 		return;
 
@@ -382,8 +383,8 @@ static void hfp_disable_nrec(struct ofono_handsfree *hf,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	const char *buf = "AT+NREC=0";
 
-	if (g_at_chat_send(hd->chat, buf, NULL, hf_generic_set_cb,
-							cbd, g_free) > 0)
+	if (g_at_chat_send(hd->chat, buf, none_prefix,
+				hf_generic_set_cb, cbd, g_free) > 0)
 		return;
 
 	g_free(cbd);
@@ -401,8 +402,8 @@ static void hfp_hf_indicator(struct ofono_handsfree *hf,
 
 	snprintf(buf, sizeof(buf), "AT+BIEV=%u,%u", indicator, value);
 
-	if (g_at_chat_send(hd->chat, buf, NULL, hf_generic_set_cb,
-							cbd, g_free) > 0)
+	if (g_at_chat_send(hd->chat, buf, none_prefix,
+				hf_generic_set_cb, cbd, g_free) > 0)
 		return;
 
 	g_free(cbd);
