@@ -390,7 +390,8 @@ static void hfp16_card_connect(struct ofono_handsfree_card *card,
 			info->ag_features & HFP_AG_FEATURE_CODEC_NEGOTIATION) {
 		struct cb_data *cbd = cb_data_new(cb, data);
 
-		g_at_chat_send(info->chat, "AT+BCC", NULL, bcc_cb, cbd, g_free);
+		g_at_chat_send(info->chat, "AT+BCC", none_prefix, bcc_cb,
+								cbd, g_free);
 		return;
 	}
 
