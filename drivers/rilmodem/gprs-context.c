@@ -272,10 +272,16 @@ static void ril_gprs_context_activate_primary(struct ofono_gprs_context *gc,
 	request.username = g_strdup(ctx->username);
 	request.password = g_strdup(ctx->password);
 
-	if (g_ril_vendor(gcd->ril) == OFONO_RIL_VENDOR_MTK)
-		request.auth_type = RIL_AUTH_NONE;
-	else
+	/*
+	 * We do the same as in $AOSP/frameworks/opt/telephony/src/java/com/
+	 * android/internal/telephony/dataconnection/DataConnection.java,
+	 * onConnect(), and use authentication or not depending on whether
+	 * the user field is empty or not.
+	 */
+	if (request.username != NULL && request.username[0] != '\0')
 		request.auth_type = RIL_AUTH_BOTH;
+	else
+		request.auth_type = RIL_AUTH_NONE;
 
 	request.protocol = ctx->proto;
 	request.req_cid = ctx->cid;
