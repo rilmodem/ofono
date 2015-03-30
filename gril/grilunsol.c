@@ -416,25 +416,80 @@ int g_ril_unsol_parse_radio_state_changed(GRil *gril, const struct ril_msg *mess
 	return radio_state;
 }
 
-inline static int is_valid_strength(int signal)
+/*
+ * This function makes a similar processing to was is done by validateInput()
+ * and getLteLevel() in $AOSP/frameworks/base/telephony/java/android/telephony/
+ * SignalStrength.java. The main difference is that we linearly transform the
+ * ranges to ofono's one, while AOSP gives number of bars in a non-linear way
+ * (bins for each bar have different size). We rely on the indicator to obtain
+ * a translation to bars that makes sense for humans.
+ */
+static int get_lte_strength(int signal, int rsrp, int rssnr)
 {
-	if (signal != 99 && signal != -1)
-		return 1;
+	int s_rsrp = -1, s_rssnr = -1, s_signal = -1;
+
+	/*
+	 * The range of signal is specified to be [0, 31] by ril.h, but the code
+	 * in SignalStrength.java contradicts this: valid values are (0-63, 99)
+	 * as defined in TS 36.331 for E-UTRA rssi.
+	 */
+	signal = (signal >= 0 && signal <= 63) ? signal : INT_MAX;
+	rsrp = (rsrp >= 44 && rsrp <= 140) ? -rsrp : INT_MAX;
+	rssnr = (rssnr >= -200 && rssnr <= 300) ? rssnr : INT_MAX;
+
+	/* Linearly transform [-140, -44] to [0, 100] */
+	if (rsrp != INT_MAX)
+		s_rsrp = (25 * rsrp + 3500) / 24;
+
+	/* Linearly transform [-200, 300] to [0, 100] */
+	if (rssnr != INT_MAX)
+		s_rssnr = (rssnr + 200) / 5;
+
+	if (s_rsrp != -1 && s_rssnr != -1)
+		return s_rsrp < s_rssnr ? s_rsrp : s_rssnr;
+
+	if (s_rssnr != -1)
+		return s_rssnr;
+
+	if (s_rsrp != -1)
+		return s_rsrp;
+
+	/* Linearly transform [0, 63] to [0, 100] */
+	if (signal != INT_MAX)
+		s_signal = (100 * signal) / 63;
+
+	return s_signal;
+}
+
+/*
+ * Comments to get_lte_strength() apply here also, changing getLteLevel() with
+ * getGsmLevel(). The atmodem driver does exactly the same transformation with
+ * the rssi from AT+CSQ command.
+ */
+static int get_gsm_strength(int signal)
+{
+	/* Checking the range contemplates also the case signal=99 (invalid) */
+	if (signal >= 0 && signal <= 31)
+		return (signal * 100) / 31;
 	else
-		return 0;
+		return -1;
 }
 
 int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
 					int ril_tech)
 {
 	struct parcel rilp;
-	int gw_signal, cdma_dbm, evdo_dbm, lte_signal, signal;
+	int gw_sigstr, gw_signal, cdma_dbm, evdo_dbm;
+	int lte_sigstr = -1, lte_rsrp = -1, lte_rssnr = -1;
+	int lte_signal;
+	int signal;
 
 	g_ril_init_parcel(message, &rilp);
 
 	/* RIL_SignalStrength_v5 */
 	/* GW_SignalStrength */
-	gw_signal = parcel_r_int32(&rilp);
+	gw_sigstr = parcel_r_int32(&rilp);
+	gw_signal = get_gsm_strength(gw_sigstr);
 	parcel_r_int32(&rilp); /* bitErrorRate */
 
 	/*
@@ -453,17 +508,20 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
 	/* Present only for RIL_SignalStrength_v6 or newer */
 	if (parcel_data_avail(&rilp) > 0) {
 		/* LTE_SignalStrength */
-		lte_signal = parcel_r_int32(&rilp);
-		parcel_r_int32(&rilp); /* rsrp */
+		lte_sigstr = parcel_r_int32(&rilp);
+		lte_rsrp = parcel_r_int32(&rilp);
 		parcel_r_int32(&rilp); /* rsrq */
-		parcel_r_int32(&rilp); /* rssnr */
+		lte_rssnr = parcel_r_int32(&rilp);
 		parcel_r_int32(&rilp); /* cqi */
+		lte_signal = get_lte_strength(lte_sigstr, lte_rsrp, lte_rssnr);
 	} else {
 		lte_signal = -1;
 	}
 
-	g_ril_append_print_buf(gril, "{gw: %d, cdma: %d, evdo: %d, lte: %d}",
-				gw_signal, cdma_dbm, evdo_dbm, lte_signal);
+	g_ril_append_print_buf(gril,
+				"{gw: %d, cdma: %d, evdo: %d, lte: %d %d %d}",
+				gw_sigstr, cdma_dbm, evdo_dbm, lte_sigstr,
+				lte_rsrp, lte_rssnr);
 
 	if (message->unsolicited)
 		g_ril_print_unsol(gril, message);
@@ -471,19 +529,19 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
 		g_ril_print_response(gril, message);
 
 	/* Return the first valid one */
-	if (is_valid_strength(gw_signal) && is_valid_strength(lte_signal))
+	if (gw_signal != -1 && lte_signal != -1)
 		if (ril_tech == RADIO_TECH_LTE)
 			signal = lte_signal;
 		else
 			signal = gw_signal;
-	else if (is_valid_strength(gw_signal))
+	else if (gw_signal != -1)
 		signal = gw_signal;
-	else if (is_valid_strength(lte_signal))
+	else if (lte_signal != -1)
 		signal = lte_signal;
 	else
-		return -1;
+		signal = -1;
 
-	return (signal * 100) / 31;
+	return signal;
 }
 
 void g_ril_unsol_free_supp_svc_notif(struct unsol_supp_svc_notif *unsol)
