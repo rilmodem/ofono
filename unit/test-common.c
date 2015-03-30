@@ -146,6 +146,7 @@ static const char *valid_apns[] = {
 	"wap.cingular",
 	"vodafone.co.uk",
 	"vodafone.com",
+	"",
 	NULL
 };
 
@@ -154,7 +155,6 @@ static const char *invalid_apns[] = {
 	"..",
 	"f..f",
 	"foo.bar.#",
-	"",
 	NULL
 };
 
