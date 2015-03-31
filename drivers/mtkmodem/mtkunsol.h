@@ -45,6 +45,13 @@ struct unsol_call_indication *g_mtk_unsol_parse_incoming_call_indication(
 int g_mtk_unsol_parse_registration_suspended(GRil *gril,
 						const struct ril_msg *message);
 
+/*
+ * Returns a minimum of one PLMN or NULL. parcel_free_str_array must be invoked
+ * to free the returned pointer.
+ */
+struct parcel_str_array *g_mtk_unsol_parse_plmn_changed(GRil *gril,
+						const struct ril_msg *message);
+
 #ifdef __cplusplus
 }
 #endif

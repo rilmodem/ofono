@@ -435,6 +435,14 @@ static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
 		goto done;
 	}
 
+	/*
+	 * Adapter might have been removed before the callback, for instance in
+	 * case the SIM state changes due to a modem reset (see
+	 * hfp_ag.c:sim_state_watch())
+	 */
+	if (adapter_address_hash == NULL)
+		goto done;
+
 	DBG("");
 
 	bluetooth_parse_properties(reply,
@@ -900,7 +908,9 @@ static void bluetooth_unref(void)
 	g_dbus_remove_watch(connection, property_watch);
 
 	g_hash_table_destroy(uuid_hash);
+	uuid_hash = NULL;
 	g_hash_table_destroy(adapter_address_hash);
+	adapter_address_hash = NULL;
 }
 
 void bluetooth_get_properties()
