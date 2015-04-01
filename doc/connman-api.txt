@@ -203,6 +203,14 @@ Properties	boolean Active [readwrite]
 			context.  The name should not be empty and limited
 			to a short string for display purposes.
 
+		boolean Preferred [readwrite]
+
+			Holds a boolean.  This value is meant to be used by
+			clients to store an indication on whether this context
+			is preferred compared to others.  ofono just stores and
+			shows this value, but does not use it internally. The
+			exact way in which this is used depends on the clients.
+
 		dict Settings [readonly, optional]
 
 			Holds all the IP network settings
