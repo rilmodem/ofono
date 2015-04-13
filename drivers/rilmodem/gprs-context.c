@@ -105,8 +105,7 @@ static void ril_gprs_context_call_list_changed(struct ril_msg *message,
 	for (iterator = call_list->calls; iterator; iterator = iterator->next) {
 		call = (struct ril_data_call *) iterator->data;
 
-		if ((call->cid == gcd->active_rild_cid) &&
-			gcd->state != STATE_IDLE) {
+		if (call->cid == gcd->active_rild_cid) {
 			active_cid_found = TRUE;
 			DBG("found call - cid: %d", call->cid);
 
@@ -114,19 +113,19 @@ static void ril_gprs_context_call_list_changed(struct ril_msg *message,
 				DBG("call !active; notify disconnect: %d",
 					call->cid);
 				disconnect = TRUE;
-				ofono_gprs_context_deactivated(gc,
-						       gcd->active_ctx_cid);
 			}
 
 			break;
 		}
 	}
 
-	if (disconnect == TRUE || active_cid_found == FALSE) {
-		DBG("Clearing active context; disconnect: %d"
-			" active_cid_found: %d",
-			disconnect, active_cid_found);
+	if ((disconnect == TRUE || active_cid_found == FALSE)
+		&& gcd->state != STATE_IDLE) {
+		ofono_info("Clearing active context; disconnect: %d"
+			" active_cid_found: %d active_ctx_cid: %d",
+			disconnect, active_cid_found, gcd->active_ctx_cid);
 
+		ofono_gprs_context_deactivated(gc, gcd->active_ctx_cid);
 		set_context_disconnected(gcd);
 	}
 
