@@ -1319,6 +1319,7 @@ int *g_ril_reply_parse_retries(GRil *gril, const struct ril_msg *message,
 
 	switch (g_ril_vendor(gril)) {
 	case OFONO_RIL_VENDOR_AOSP:
+	case OFONO_RIL_VENDOR_QCOM_MSIM:
 		/*
 		 * The number of retries is valid only when a wrong password has
 		 * been introduced in Nexus 4. TODO: check Nexus 5 behaviour.
