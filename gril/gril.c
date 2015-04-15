@@ -272,9 +272,6 @@ static struct ril_request *ril_request_create(struct ril_s *ril,
 		return NULL;
 	}
 
-	DBG("req: %s, id: %d, data_len: %u",
-		request_id_to_string(ril, req), id, data_len);
-
 	/* Full request size: header size plus buffer length */
 	r->data_len = data_len + sizeof(header);
 
@@ -375,9 +372,6 @@ static void handle_response(struct ril_s *p, struct ril_msg *message)
 	for (i = 0; i < count; i++) {
 		req = g_queue_peek_nth(p->command_queue, i);
 
-		DBG("comparing req->id: %d to message->serial_no: %d",
-			req->id, message->serial_no);
-
 		if (req->id == message->serial_no) {
 			found = TRUE;
 			message->req = req->req;
@@ -393,7 +387,7 @@ static void handle_response(struct ril_s *p, struct ril_msg *message)
 				req->callback(message, req->user_data);
 
 			len = g_queue_get_length(p->out_queue);
-			DBG("requests in out_queue before removing: %d", len);
+
 			for (i = 0; i < len; i++) {
 				id = GPOINTER_TO_INT(g_queue_peek_nth(
 							p->out_queue, i));
@@ -413,7 +407,7 @@ static void handle_response(struct ril_s *p, struct ril_msg *message)
 	}
 
 	if (found == FALSE)
-		DBG("Reply: %s serial_no: %d without a matching request!",
+		ofono_error("No matching request for reply: %s serial_no: %d!",
 			request_id_to_string(p, message->req),
 			message->serial_no);
 
@@ -584,11 +578,8 @@ static struct ril_msg *read_fixed_record(struct ril_s *p,
 	*/
 
 	message_len = *len - 4;
-	if (message_len < plen) {
-		DBG("Not enough bytes for fixed record; len: %d avail: %d",
-			plen, message_len);
+	if (message_len < plen)
 		return NULL;
-	}
 
 	/* FIXME: add check for message_len = 0? */
 
@@ -738,7 +729,7 @@ out:
 	len = req->data_len;
 
 	towrite = len - ril->req_bytes_written;
-	DBG("req:%d,len:%zu,towrite:%zu", req->id, len, towrite);
+
 #ifdef WRITE_SCHEDULER_DEBUG
 	if (towrite > 5)
 		towrite = 5;
@@ -1168,8 +1159,6 @@ gint g_ril_send(GRil *ril, const gint reqid, struct parcel *rilp,
 
 	g_queue_push_tail(p->command_queue, r);
 
-	DBG("calling wakeup_writer: command_queue len: %d",
-		g_queue_get_length(p->command_queue));
 	ril_wakeup_writer(p);
 
 	if (rilp == NULL)
