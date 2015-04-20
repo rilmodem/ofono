@@ -155,7 +155,12 @@ static void clcc_poll_cb(struct ril_msg *message, gpointer user_data)
 	GSList *n, *o;
 	struct ofono_call *nc, *oc;
 
-	if (message->error != RIL_E_SUCCESS) {
+	/*
+	 * We consider all calls have been dropped if there is no radio, which
+	 * happens, for instance, when flight mode is set whilst in a call.
+	 */
+	if (message->error != RIL_E_SUCCESS &&
+			message->error != RIL_E_RADIO_NOT_AVAILABLE) {
 		ofono_error("We are polling CLCC and received an error");
 		ofono_error("All bets are off for call management");
 		return;
@@ -175,6 +180,11 @@ static void clcc_poll_cb(struct ril_msg *message, gpointer user_data)
 			if (vd->local_release & (1 << oc->id)) {
 				ofono_voicecall_disconnected(vc, oc->id,
 					OFONO_DISCONNECT_REASON_LOCAL_HANGUP,
+					NULL);
+			} else if (message->error ==
+						RIL_E_RADIO_NOT_AVAILABLE) {
+				ofono_voicecall_disconnected(vc, oc->id,
+					OFONO_DISCONNECT_REASON_ERROR,
 					NULL);
 			} else {
 				/* Get disconnect cause before calling core */
