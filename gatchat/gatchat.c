@@ -1135,6 +1135,29 @@ static gboolean at_chat_cancel_group(struct at_chat *chat, guint group)
 	return TRUE;
 }
 
+static gpointer at_chat_get_userdata(struct at_chat *chat,
+						guint group, guint id)
+{
+	GList *l;
+	struct at_command *c;
+
+	if (chat->command_queue == NULL)
+		return NULL;
+
+	l = g_queue_find_custom(chat->command_queue, GUINT_TO_POINTER(id),
+				at_command_compare_by_id);
+
+	if (l == NULL)
+		return NULL;
+
+	c = l->data;
+
+	if (c->gid != group)
+		return NULL;
+
+	return c->user_data;
+}
+
 static guint at_chat_register(struct at_chat *chat, guint group,
 				const char *prefix, GAtNotifyFunc func,
 				gboolean expect_pdu, gpointer user_data,
@@ -1538,6 +1561,14 @@ gboolean g_at_chat_cancel_all(GAtChat *chat)
 		return FALSE;
 
 	return at_chat_cancel_group(chat->parent, chat->group);
+}
+
+gpointer g_at_chat_get_userdata(GAtChat *chat, guint id)
+{
+	if (chat == NULL)
+		return NULL;
+
+	return at_chat_get_userdata(chat->parent, chat->group, id);
 }
 
 guint g_at_chat_register(GAtChat *chat, const char *prefix,
