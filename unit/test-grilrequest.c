@@ -855,6 +855,32 @@ static const struct request_test_set_initial_attach_apn
 	.parcel_size = sizeof(req_set_initial_attach_apn_valid_1),
 };
 
+/* oem_hook_strings tests */
+
+struct request_test_oem_hook_strings {
+	const int num_str;
+	const char **str;
+	const guchar *parcel_data;
+	gsize parcel_size;
+};
+
+static const guchar req_oem_hook_strings_valid_1[] = {
+	0x02, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x41, 0x00, 0x54, 0x00,
+	0x2b, 0x00, 0x45, 0x00, 0x50, 0x00, 0x49, 0x00, 0x4e, 0x00, 0x43, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x2b, 0x00, 0x45, 0x00,
+	0x50, 0x00, 0x49, 0x00, 0x4e, 0x00, 0x43, 0x00, 0x3a, 0x00, 0x00, 0x00
+};
+
+static const char *oem_hook_strings_valid_1[] = { "AT+EPINC", "+EPINC:" };
+
+static const struct request_test_oem_hook_strings
+					oem_hook_strings_valid_test_1 = {
+	.num_str = G_N_ELEMENTS(oem_hook_strings_valid_1),
+	.str = oem_hook_strings_valid_1,
+	.parcel_data = req_oem_hook_strings_valid_1,
+	.parcel_size = sizeof(req_oem_hook_strings_valid_1),
+};
+
 /*
  * The following hexadecimal data represents a serialized Binder parcel
  * instance containing a valid RIL_REQUEST_RADIO_POWER 'OFF' message.
@@ -1418,6 +1444,20 @@ static void test_request_oem_hook_raw(gconstpointer data)
 	parcel_free(&rilp);
 }
 
+static void test_request_oem_hook_strings(gconstpointer data)
+{
+	const struct request_test_oem_hook_strings *test_data = data;
+	struct parcel rilp;
+
+	g_ril_request_oem_hook_strings(NULL, test_data->str,
+					test_data->num_str, &rilp);
+
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+				test_data->parcel_size));
+
+	parcel_free(&rilp);
+}
+
 #endif
 
 int main(int argc, char **argv)
@@ -1681,6 +1721,12 @@ int main(int argc, char **argv)
 				"valid SET_INITIAL_ATTACH_APN Test 1",
 				&set_initial_attach_apn_valid_test_1,
 				test_request_set_initial_attach_apn);
+
+	g_test_add_data_func("/testgrilrequest/oem-hook-strings: "
+				"valid OEM_HOOK_STRINGS Test 1",
+				&oem_hook_strings_valid_test_1,
+				test_request_oem_hook_strings);
+
 #endif
 	return g_test_run();
 }

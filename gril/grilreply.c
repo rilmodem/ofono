@@ -1428,3 +1428,35 @@ struct reply_oem_hook *g_ril_reply_oem_hook_raw(GRil *gril,
 end:
 	return reply;
 }
+
+struct parcel_str_array *g_ril_reply_oem_hook_strings(GRil *gril,
+						const struct ril_msg *message)
+{
+	struct parcel rilp;
+	struct parcel_str_array *str_arr;
+	int i;
+
+	g_ril_init_parcel(message, &rilp);
+
+	str_arr = parcel_r_str_array(&rilp);
+	if (str_arr == NULL) {
+		ofono_error("%s: no strings", __func__);
+		goto out;
+	}
+
+	g_ril_append_print_buf(gril, "{");
+
+	for (i = 0; i < str_arr->num_str; ++i) {
+		if (i + 1 == str_arr->num_str)
+			g_ril_append_print_buf(gril, "%s%s}", print_buf,
+						str_arr->str[i]);
+		else
+			g_ril_append_print_buf(gril, "%s%s, ", print_buf,
+						str_arr->str[i]);
+	}
+
+	g_ril_print_response(gril, message);
+
+out:
+	return str_arr;
+}

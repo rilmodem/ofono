@@ -1073,6 +1073,28 @@ void g_ril_request_oem_hook_raw(GRil *gril, const void *payload, size_t length,
 	g_free(hex_dump);
 }
 
+void g_ril_request_oem_hook_strings(GRil *gril, const char **strs, int num_str,
+							struct parcel *rilp)
+{
+	int i;
+
+	parcel_init(rilp);
+	parcel_w_int32(rilp, num_str);
+
+	g_ril_append_print_buf(gril, "(");
+
+	for (i = 0; i < num_str; ++i) {
+		parcel_w_string(rilp, strs[i]);
+
+		if (i == num_str - 1)
+			g_ril_append_print_buf(gril, "%s%s)",
+							print_buf, strs[i]);
+		else
+			g_ril_append_print_buf(gril, "%s%s, ",
+							print_buf, strs[i]);
+	}
+}
+
 void g_ril_request_set_initial_attach_apn(GRil *gril, const char *apn,
 						int proto,
 						const char *user,

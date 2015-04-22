@@ -85,6 +85,12 @@ struct oem_hook_raw_test {
 	const struct ril_msg msg;
 };
 
+struct oem_hook_strings_test {
+	int num_str;
+	const char **str;
+	const struct ril_msg msg;
+};
+
 /* Invalid RIL_REQUEST_DATA_REGISTRATION_STATE: buffer too small */
 static const struct ril_msg reply_data_reg_state_invalid_1 = {
 	.buf = "XYZ",
@@ -1530,6 +1536,33 @@ static const struct oem_hook_raw_test reply_oem_hook_raw_valid_2 = {
 	}
 };
 
+/*
+ * The following structure contains test data for a valid
+ * RIL_REQUEST_OEM_HOOK_STRINGS reply with parameter {+EPINC: 3, 3, 10, 10}
+ */
+static const guchar reply_oem_hook_strings_valid_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, 0x2b, 0x00, 0x45, 0x00,
+	0x50, 0x00, 0x49, 0x00, 0x4e, 0x00, 0x43, 0x00, 0x3a, 0x00, 0x20, 0x00,
+	0x33, 0x00, 0x2c, 0x00, 0x20, 0x00, 0x33, 0x00, 0x2c, 0x00, 0x20, 0x00,
+	0x31, 0x00, 0x30, 0x00, 0x2c, 0x00, 0x20, 0x00, 0x31, 0x00, 0x30, 0x00,
+	0x00, 0x00, 0x00, 0x00
+};
+
+static const char *strings_valid_parcel1[] = { "+EPINC: 3, 3, 10, 10" };
+
+static const struct oem_hook_strings_test reply_oem_hook_strings_valid_1 = {
+	.msg = {
+		.buf = (gchar *) reply_oem_hook_strings_valid_parcel1,
+		.buf_len = sizeof(reply_oem_hook_strings_valid_parcel1),
+		.unsolicited = FALSE,
+		.req = RIL_REQUEST_OEM_HOOK_STRINGS,
+		.serial_no = 0,
+		.error = RIL_E_SUCCESS,
+	},
+	.num_str = G_N_ELEMENTS(strings_valid_parcel1),
+	.str = strings_valid_parcel1
+};
+
 static void test_reply_voice_reg_state_valid(gconstpointer data)
 {
 	const reg_state_test *test = data;
@@ -1773,6 +1806,24 @@ static void test_reply_oem_hook_raw_valid(gconstpointer data)
 		g_assert(!memcmp(reply->data, test->data, test->size));
 	else
 		g_assert(reply->data == NULL);
+
+	g_ril_reply_free_oem_hook(reply);
+}
+
+static void test_reply_oem_hook_strings_valid(gconstpointer data)
+{
+	int i;
+	const struct oem_hook_strings_test *test = data;
+	struct parcel_str_array *reply =
+		g_ril_reply_oem_hook_strings(NULL, &test->msg);
+
+	g_assert(reply != NULL);
+	g_assert(reply->num_str == test->num_str);
+
+	for (i = 0; i < reply->num_str; ++i)
+		g_assert(strcmp(reply->str[i], test->str[i]) == 0);
+
+	parcel_free_str_array(reply);
 }
 
 #endif
@@ -2078,6 +2129,11 @@ int main(int argc, char **argv)
 				"valid OEM_HOOK_RAW Test 2",
 				&reply_oem_hook_raw_valid_2,
 				test_reply_oem_hook_raw_valid);
+
+	g_test_add_data_func("/testgrilreply/oem: "
+				"valid OEM_HOOK_STRINGS Test 1",
+				&reply_oem_hook_strings_valid_1,
+				test_reply_oem_hook_strings_valid);
 
 #endif
 
