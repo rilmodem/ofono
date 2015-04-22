@@ -101,6 +101,8 @@ static void send_new_connection(const char *card, int fd, uint8_t codec)
 	DBusMessage *msg;
 	DBusMessageIter iter;
 
+	DBG("%p, fd: %d, codec: %hu", card, fd, codec);
+
 	msg = dbus_message_new_method_call(agent->owner, agent->path,
 				HFP_AUDIO_AGENT_INTERFACE, "NewConnection");
 	if (msg == NULL)
@@ -182,6 +184,9 @@ static gboolean sco_accept(GIOChannel *io, GIOCondition cond,
 		close(nsk);
 		return TRUE;
 	}
+
+	DBG("SCO connection setup between local: %s and remote: %s",
+		local, remote);
 
 	send_new_connection(card->path, nsk, card->selected_codec);
 	close(nsk);
