@@ -179,6 +179,7 @@ Properties	boolean Active [readwrite]
 				"mms" - Used by MMS related services
 				"wap" - Used by WAP related services
 				"ims" - Used by IMS related services
+				"ia" - Used by IA related services
 
 		string Username [readwrite]
 
