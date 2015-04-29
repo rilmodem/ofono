@@ -4,6 +4,7 @@
  *
  *  Copyright (C) 2008-2011  Intel Corporation. All rights reserved.
  *  Copyright (C) 2012-2014  Canonical Ltd.
+ *  Copyright (C) 2015 Ratchanan Srirattanamet.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -277,6 +278,12 @@ void g_ril_request_set_initial_attach_apn(GRil *gril, const char *apn,
 						const char *user,
 						const char *passwd,
 						const char *mccmnc,
+						struct parcel *rilp);
+
+void g_ril_request_set_uicc_subscription(GRil *gril, int slot_id,
+						int app_index,
+						int sub_id,
+						int sub_status,
 						struct parcel *rilp);
 
 #ifdef __cplusplus

@@ -1,8 +1,8 @@
 /*
  *
- *  oFono - Open Source Telephony
+ *  RIL constants for Qualcomm multi-sim modem
  *
- *  Copyright (C) 2014  Canonical Ltd. All rights reserved.
+ *  Copyright (C) 2015 Ratchanan Srirattanamet.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -19,14 +19,9 @@
  *
  */
 
-#ifndef RILMODEM_VENDOR_H
-#define RILMODEM_VENDOR_H
+#ifndef QCOM_MSIM_CONSTANTS_H
+#define QCOM_MSIM_CONSTANTS_H
 
-enum ofono_ril_vendor {
-	OFONO_RIL_VENDOR_AOSP = 0,
-	OFONO_RIL_VENDOR_MTK,
-	OFONO_RIL_VENDOR_INFINEON,
-	OFONO_RIL_VENDOR_QCOM_MSIM
-};
+#define QCOM_MSIM_RIL_REQUEST_SET_UICC_SUBSCRIPTION  115
 
-#endif /* RILMODEM_VENDOR_H */
+#endif /* QCOM_MSIM_CONSTANTS_H */

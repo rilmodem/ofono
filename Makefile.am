@@ -126,6 +126,9 @@ builtin_sources += plugins/mtk.c
 builtin_modules += infineon
 builtin_sources += plugins/infineon.c
 
+builtin_modules += qcom_msim
+builtin_sources += plugins/qcom-msim.c
+
 builtin_modules += androidspntable
 builtin_sources += plugins/android-spn-table.c
 
