@@ -87,6 +87,7 @@ struct ofono_gprs {
 	unsigned int spn_watch;
 	struct ofono_sim *sim;
 	struct ofono_sim_context *sim_context;
+	char *gid1;
 };
 
 struct ipv4_settings {
@@ -141,6 +142,9 @@ struct pri_context {
 
 static void gprs_netreg_update(struct ofono_gprs *gprs);
 static void gprs_deactivate_next(struct ofono_gprs *gprs);
+static void provision_contexts(struct ofono_gprs *gprs, const char *mcc,
+				const char *mnc, const char *spn,
+				const char *gid1);
 
 static GSList *g_drivers = NULL;
 static GSList *g_context_drivers = NULL;
@@ -1888,36 +1892,12 @@ static struct pri_context *add_context(struct ofono_gprs *gprs,
 	return context;
 }
 
-static DBusMessage *gprs_add_context(DBusConnection *conn,
-					DBusMessage *msg, void *data)
+static void send_context_added_signal(struct ofono_gprs *gprs,
+					struct pri_context *context,
+					DBusConnection *conn)
 {
-	struct ofono_gprs *gprs = data;
-	struct pri_context *context;
-	const char *typestr;
-	const char *name;
 	const char *path;
-	enum ofono_gprs_context_type type;
 	DBusMessage *signal;
-
-	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &typestr,
-					DBUS_TYPE_INVALID))
-		return __ofono_error_invalid_args(msg);
-
-	if (gprs_context_string_to_type(typestr, &type) == FALSE)
-		return __ofono_error_invalid_format(msg);
-
-	name = gprs_context_default_name(type);
-	if (name == NULL)
-		name = typestr;
-
-	context = add_context(gprs, name, type);
-	if (context == NULL)
-		return __ofono_error_failed(msg);
-
-	path = context->path;
-
-	g_dbus_send_reply(conn, msg, DBUS_TYPE_OBJECT_PATH, &path,
-					DBUS_TYPE_INVALID);
 
 	path = __ofono_atom_get_path(gprs->atom);
 	signal = dbus_message_new_signal(path,
@@ -1942,6 +1922,39 @@ static DBusMessage *gprs_add_context(DBusConnection *conn,
 
 		g_dbus_send_message(conn, signal);
 	}
+}
+
+static DBusMessage *gprs_add_context(DBusConnection *conn,
+					DBusMessage *msg, void *data)
+{
+	struct ofono_gprs *gprs = data;
+	struct pri_context *context;
+	const char *typestr;
+	const char *name;
+	const char *path;
+	enum ofono_gprs_context_type type;
+
+	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &typestr,
+					DBUS_TYPE_INVALID))
+		return __ofono_error_invalid_args(msg);
+
+	if (gprs_context_string_to_type(typestr, &type) == FALSE)
+		return __ofono_error_invalid_format(msg);
+
+	name = gprs_context_default_name(type);
+	if (name == NULL)
+		name = typestr;
+
+	context = add_context(gprs, name, type);
+	if (context == NULL)
+		return __ofono_error_failed(msg);
+
+	path = context->path;
+
+	g_dbus_send_reply(conn, msg, DBUS_TYPE_OBJECT_PATH, &path,
+					DBUS_TYPE_INVALID);
+
+	send_context_added_signal(gprs, context, conn);
 
 	return NULL;
 }
@@ -2176,6 +2189,75 @@ static DBusMessage *gprs_get_contexts(DBusConnection *conn,
 	return reply;
 }
 
+static void remove_non_active_context(struct ofono_gprs *gprs,
+				struct pri_context *ctx, DBusConnection *conn)
+{
+	char *path;
+	const char *atompath;
+
+	if (gprs->settings) {
+		g_key_file_remove_group(gprs->settings, ctx->key, NULL);
+		storage_sync(gprs->imsi, SETTINGS_STORE, gprs->settings);
+	}
+
+	/* Make a backup copy of path for signal emission below */
+	path = g_strdup(ctx->path);
+
+	context_dbus_unregister(ctx);
+	gprs->contexts = g_slist_remove(gprs->contexts, ctx);
+
+	atompath = __ofono_atom_get_path(gprs->atom);
+	g_dbus_emit_signal(conn, atompath, OFONO_CONNECTION_MANAGER_INTERFACE,
+				"ContextRemoved", DBUS_TYPE_OBJECT_PATH, &path,
+				DBUS_TYPE_INVALID);
+	g_free(path);
+}
+
+static DBusMessage *reset_contexts(DBusConnection *conn,
+					DBusMessage *msg, void *data)
+{
+	struct ofono_gprs *gprs = data;
+	DBusMessage *reply;
+	GSList *l;
+
+	if (gprs->pending)
+		return __ofono_error_busy(msg);
+
+	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_INVALID))
+		return __ofono_error_invalid_args(msg);
+
+	for (l = gprs->contexts; l; l = l->next) {
+		struct pri_context *ctx = l->data;
+
+		if (ctx->active)
+			return __ofono_error_not_allowed(msg);
+	}
+
+	reply = dbus_message_new_method_return(msg);
+	if (reply == NULL)
+		return NULL;
+
+	/* Remove first the current contexts, re-provision after */
+
+	while (gprs->contexts != NULL) {
+		struct pri_context *ctx = gprs->contexts->data;
+		remove_non_active_context(gprs, ctx, conn);
+	}
+
+	gprs->last_context_id = 0;
+
+	provision_contexts(gprs, ofono_sim_get_mcc(gprs->sim),
+				ofono_sim_get_mnc(gprs->sim),
+				ofono_sim_get_spn(gprs->sim), gprs->gid1);
+
+	for (l = gprs->contexts; l; l = l->next) {
+		struct pri_context *ctx = l->data;
+		send_context_added_signal(gprs, ctx, conn);
+	}
+
+	return reply;
+}
+
 static const GDBusMethodTable manager_methods[] = {
 	{ GDBUS_METHOD("GetProperties",
 			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
@@ -2195,6 +2277,8 @@ static const GDBusMethodTable manager_methods[] = {
 	{ GDBUS_METHOD("GetContexts", NULL,
 			GDBUS_ARGS({ "contexts_with_properties", "a(oa{sv})" }),
 			gprs_get_contexts) },
+	{ GDBUS_ASYNC_METHOD("ResetContexts", NULL, NULL,
+			reset_contexts) },
 	{ }
 };
 
@@ -2710,6 +2794,8 @@ static void gprs_remove(struct ofono_atom *atom)
 		gc->gprs = NULL;
 	}
 
+	g_free(gprs->gid1);
+
 	g_slist_free(gprs->context_drivers);
 
 	if (gprs->driver && gprs->driver->remove)
@@ -3166,20 +3252,17 @@ static void sim_gid1_read_cb(int ok, int total_length, int record,
 				int record_length, void *userdata)
 {
 	struct ofono_gprs *gprs	= userdata;
-	char *gid1;
 
 	if (ok) {
-		gid1 = encode_hex(data, record_length, '\0');
+		gprs->gid1 = encode_hex(data, record_length, '\0');
 	} else {
 		ofono_error("%s: error reading EF_GID1", __func__);
-		gid1 = NULL;
+		gprs->gid1 = NULL;
 	}
 
 	provision_contexts(gprs, ofono_sim_get_mcc(gprs->sim),
 				ofono_sim_get_mnc(gprs->sim),
-				ofono_sim_get_spn(gprs->sim), gid1);
-
-	g_free(gid1);
+				ofono_sim_get_spn(gprs->sim), gprs->gid1);
 
 	ofono_gprs_finish_register(gprs);
 }
