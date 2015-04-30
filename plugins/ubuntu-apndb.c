@@ -346,9 +346,11 @@ static void toplevel_apndb_start(GMarkupParseContext *context,
 		if (g_strcmp0(protocol, "IP") == 0) {
 			proto = OFONO_GPRS_PROTO_IP;
 		} else if (g_strcmp0(protocol, "IPV6") == 0) {
-			proto = OFONO_GPRS_PROTO_IPV6;
+			/* TODO: Use OFONO_GPRS_PROTO_IPV6 when supported */
+			proto = OFONO_GPRS_PROTO_IP;
 		} else if (g_strcmp0(protocol, "IPV4V6") == 0) {
-			proto = OFONO_GPRS_PROTO_IPV4V6;
+			/* TODO: Use OFONO_GPRS_PROTO_IPV4V6 when supported */
+			proto = OFONO_GPRS_PROTO_IP;
 		} else {
 			ofono_error("%s: APN %s has invalid protocol=%s"
 					"attribute", __func__, carrier,
