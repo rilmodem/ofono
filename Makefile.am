@@ -390,8 +390,8 @@ builtin_sources += plugins/stemgr.c
 builtin_modules += caif
 builtin_sources += plugins/caif.c
 
-builtin_modules += tc65
-builtin_sources += plugins/tc65.c
+builtin_modules += cinterion
+builtin_sources += plugins/cinterion.c
 
 builtin_modules += nokia
 builtin_sources += plugins/nokia.c

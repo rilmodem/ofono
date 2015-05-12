@@ -52,23 +52,23 @@
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
 
-static int tc65_probe(struct ofono_modem *modem)
+static int cinterion_probe(struct ofono_modem *modem)
 {
 	return 0;
 }
 
-static void tc65_remove(struct ofono_modem *modem)
+static void cinterion_remove(struct ofono_modem *modem)
 {
 }
 
-static void tc65_debug(const char *str, void *user_data)
+static void cinterion_debug(const char *str, void *user_data)
 {
 	const char *prefix = user_data;
 
 	ofono_info("%s%s", prefix, str);
 }
 
-static int tc65_enable(struct ofono_modem *modem)
+static int cinterion_enable(struct ofono_modem *modem)
 {
 	GAtChat *chat;
 	GIOChannel *channel;
@@ -102,7 +102,10 @@ static int tc65_enable(struct ofono_modem *modem)
 		return -EIO;
 
 	/*
-	 * TC65 works almost as the 27.007 says. But for example after
+         * (Cinterion plugin is based on tc65 plugin. Comment left in but may
+         * not be applicable in the general case)
+         *
+         * TC65 works almost as the 27.007 says. But for example after
 	 * AT+CRSM the modem replies with the data in the queried EF and
 	 * writes three pairs of <CR><LF> after the data and before OK.
 	 */
@@ -116,14 +119,14 @@ static int tc65_enable(struct ofono_modem *modem)
 		return -ENOMEM;
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(chat, tc65_debug, "");
+		g_at_chat_set_debug(chat, cinterion_debug, "");
 
 	ofono_modem_set_data(modem, chat);
 
 	return 0;
 }
 
-static int tc65_disable(struct ofono_modem *modem)
+static int cinterion_disable(struct ofono_modem *modem)
 {
 	GAtChat *chat = ofono_modem_get_data(modem);
 
@@ -149,7 +152,7 @@ static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, cbd->data);
 }
 
-static void tc65_set_online(struct ofono_modem *modem, ofono_bool_t online,
+static void cinterion_set_online(struct ofono_modem *modem, ofono_bool_t online,
 			ofono_modem_online_cb_t cb, void *user_data)
 {
 	GAtChat *chat = ofono_modem_get_data(modem);
@@ -166,7 +169,7 @@ static void tc65_set_online(struct ofono_modem *modem, ofono_bool_t online,
 	CALLBACK_WITH_FAILURE(cb, cbd->data);
 }
 
-static void tc65_pre_sim(struct ofono_modem *modem)
+static void cinterion_pre_sim(struct ofono_modem *modem)
 {
 	GAtChat *chat = ofono_modem_get_data(modem);
 	struct ofono_sim *sim;
@@ -181,7 +184,7 @@ static void tc65_pre_sim(struct ofono_modem *modem)
 		ofono_sim_inserted_notify(sim, TRUE);
 }
 
-static void tc65_post_sim(struct ofono_modem *modem)
+static void cinterion_post_sim(struct ofono_modem *modem)
 {
 	GAtChat *chat = ofono_modem_get_data(modem);
 
@@ -192,7 +195,7 @@ static void tc65_post_sim(struct ofono_modem *modem)
 	ofono_sms_create(modem, 0, "atmodem", chat);
 }
 
-static void tc65_post_online(struct ofono_modem *modem)
+static void cinterion_post_online(struct ofono_modem *modem)
 {
 	GAtChat *chat = ofono_modem_get_data(modem);
 	struct ofono_message_waiting *mw;
@@ -219,27 +222,27 @@ static void tc65_post_online(struct ofono_modem *modem)
 		ofono_message_waiting_register(mw);
 }
 
-static struct ofono_modem_driver tc65_driver = {
-	.name		= "tc65",
-	.probe		= tc65_probe,
-	.remove		= tc65_remove,
-	.enable		= tc65_enable,
-	.disable	= tc65_disable,
-	.set_online	= tc65_set_online,
-	.pre_sim	= tc65_pre_sim,
-	.post_sim	= tc65_post_sim,
-	.post_online	= tc65_post_online,
+static struct ofono_modem_driver cinterion_driver = {
+	.name		= "cinterion",
+	.probe		= cinterion_probe,
+	.remove		= cinterion_remove,
+	.enable		= cinterion_enable,
+	.disable	= cinterion_disable,
+	.set_online	= cinterion_set_online,
+	.pre_sim	= cinterion_pre_sim,
+	.post_sim	= cinterion_post_sim,
+	.post_online	= cinterion_post_online,
 };
 
-static int tc65_init(void)
+static int cinterion_init(void)
 {
-	return ofono_modem_driver_register(&tc65_driver);
+	return ofono_modem_driver_register(&cinterion_driver);
 }
 
-static void tc65_exit(void)
+static void cinterion_exit(void)
 {
-	ofono_modem_driver_unregister(&tc65_driver);
+	ofono_modem_driver_unregister(&cinterion_driver);
 }
 
-OFONO_PLUGIN_DEFINE(tc65, "Cinterion TC65 driver plugin", VERSION,
-		OFONO_PLUGIN_PRIORITY_DEFAULT, tc65_init, tc65_exit)
+OFONO_PLUGIN_DEFINE(cinterion, "Cinterion driver plugin", VERSION,
+		OFONO_PLUGIN_PRIORITY_DEFAULT, cinterion_init, cinterion_exit)
