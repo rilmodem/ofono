@@ -245,6 +245,8 @@ static void add_modem(struct udev_device *udev_device)
 
 		if(g_strcmp0(driver, "tc65") == 0)
 			driver = "cinterion";
+		if(g_strcmp0(driver, "ehs6") == 0)
+			driver = "cinterion";
 
 		modem = ofono_modem_create(NULL, driver);
 		if (modem == NULL)
