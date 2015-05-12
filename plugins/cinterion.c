@@ -52,6 +52,8 @@
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
 
+#include <drivers/atmodem/vendor.h>
+
 static int cinterion_probe(struct ofono_modem *modem)
 {
 	return 0;
@@ -207,7 +209,7 @@ static void cinterion_post_online(struct ofono_modem *modem)
 	ofono_ussd_create(modem, 0, "atmodem", chat);
 	ofono_call_forwarding_create(modem, 0, "atmodem", chat);
 	ofono_call_settings_create(modem, 0, "atmodem", chat);
-	ofono_netreg_create(modem, 0, "atmodem", chat);
+	ofono_netreg_create(modem, OFONO_VENDOR_CINTERION, "atmodem", chat);
 	ofono_call_meter_create(modem, 0, "atmodem", chat);
 	ofono_call_barring_create(modem, 0, "atmodem", chat);
 
