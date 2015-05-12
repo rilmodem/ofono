@@ -838,6 +838,39 @@ static void telit_ciev_notify(GAtResult *result, gpointer user_data)
 	ofono_netreg_strength_notify(netreg, strength);
 }
 
+static void cinterion_ciev_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	const char *signal_identifier = "rssi";
+	const char *ind_str;
+	int strength;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CIEV:"))
+		return;
+
+	if (!g_at_result_iter_next_unquoted_string(&iter, &ind_str))
+		return;
+
+	if (!g_str_equal(signal_identifier, ind_str))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &strength))
+		return;
+
+	DBG("rssi %d", strength);
+
+	if (strength == nd->signal_invalid)
+		strength = -1;
+	else
+		strength = (strength * 100) / (nd->signal_max - nd->signal_min);
+
+	ofono_netreg_strength_notify(netreg, strength);
+}
+
 static void ctzv_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
@@ -1914,6 +1947,27 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 						FALSE, netreg, NULL);
 		g_at_chat_send(nd->chat, "AT*TLTS=1", none_prefix,
 						NULL, NULL, NULL);
+		break;
+	case OFONO_VENDOR_CINTERION:
+		/*
+		 * We can't set rssi bounds from Cinterion responses
+		 * so set them up to specified values here
+		 *
+		 * Cinterion rssi signal strength specified as:
+		 * 0      <= -112dBm
+		 * 1 - 4  signal strengh in 15 dB steps
+		 * 5      >= -51 dBm
+		 * 99     not known or undetectable
+		 */
+		nd->signal_min = 0;
+		nd->signal_max = 5;
+		nd->signal_invalid = 99;
+
+		/* Register for specific signal strength reports */
+		g_at_chat_send(nd->chat, "AT^SIND=\"rssi\",1", none_prefix,
+				NULL, NULL, NULL);
+		g_at_chat_register(nd->chat, "+CIEV:",
+				cinterion_ciev_notify, FALSE, netreg, NULL);
 		break;
 	case OFONO_VENDOR_NOKIA:
 	case OFONO_VENDOR_SAMSUNG:
