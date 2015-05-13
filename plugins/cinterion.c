@@ -166,9 +166,9 @@ static void cinterion_set_online(struct ofono_modem *modem, ofono_bool_t online,
 	if (g_at_chat_send(chat, command, NULL, set_online_cb, cbd, g_free))
 		return;
 
-	g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, cbd->data);
+
+	g_free(cbd);
 }
 
 static void cinterion_pre_sim(struct ofono_modem *modem)
