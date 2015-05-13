@@ -60,6 +60,16 @@ Methods		dict GetProperties()
 					 [service].Error.NotFound
 					 [service].Error.Failed
 
+		void ResetContexts()
+
+			Removes all contexts and re-provisions from the APN
+			database. Contexts must all be deactivated for this
+			method to work.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.InvalidArguments
+					 [service].Error.NotAllowed
+
 Signals		PropertyChanged(string property, variant value)
 
 			This signal indicates a changed value of the given
