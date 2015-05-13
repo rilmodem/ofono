@@ -128,9 +128,8 @@ static void bt_connect(struct dundee_device *device,
 	if (status == 0)
 		return;
 
-	g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
+	g_free(cbd);
 }
 
 struct dundee_device_driver bluetooth_driver = {
