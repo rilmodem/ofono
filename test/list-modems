@@ -1,6 +1,27 @@
 #!/usr/bin/python3
 
+import argparse
 import dbus
+import re
+
+def parse_arguments():
+	"""Parses command-line arguments.
+	"""
+
+	parser = argparse.ArgumentParser(description="list-modems script")
+
+	parser.add_argument("-p",
+			"--private",
+			dest="priv",
+			help="""Specifies that properties considered private
+			should be output as clear-text vs. obfuscated""",
+			action="store_false",
+			default="true"
+			)
+
+	return parser.parse_args()
+
+args = parse_arguments()
 
 bus = dbus.SystemBus()
 
@@ -13,6 +34,9 @@ except dbus.exceptions.DBusException as e:
 
 modems = manager.GetModems()
 
+if args.priv:
+	p = re.compile(".");
+
 for path, properties in modems:
 	print("[ %s ]" % (path))
 
@@ -21,6 +45,8 @@ for path, properties in modems:
 			val = ""
 			for i in properties[key]:
 				val += i + " "
+		elif key in ["Serial"] and len(properties[key]) and args.priv:
+			val = p.sub("X", properties[key])
 		else:
 			val = properties[key]
 		print("    %s = %s" % (key, val))
@@ -40,7 +66,6 @@ for path, properties in modems:
 			if key in ["Calls",
 					"MultipartyCalls",
 					"EmergencyNumbers",
-					"SubscriberNumbers",
 					"PreferredLanguages",
 					"PrimaryContexts",
 					"LockedPins",
@@ -49,6 +74,14 @@ for path, properties in modems:
 				val = ""
 				for i in properties[key]:
 					val += i + " "
+
+			elif key in ["SubscriberNumbers"]:
+				val = ""
+				for i in properties[key]:
+					if args.priv:
+						val += p.sub("X", i) + " "
+					else:
+						val += i + " "
 			elif key in ["ServiceNumbers"]:
 				val = ""
 				for i in properties[key]:
@@ -80,6 +113,18 @@ for path, properties in modems:
 					else:
 						val += properties[key][i]
 				val += " }"
+
+			elif (key in ["CardIdentifier",
+					"CellId",
+					"LocationAreaCode",
+					"SubscriberIdentity",
+					"VoiceUnconditional",
+					"VoiceBusy",
+					"VoiceNoReply",
+					"VoiceNotReachable"]
+					and len(str(properties[key]))
+					and args.priv):
+				val = p.sub("X", str(properties[key]))
 			else:
 				val = properties[key]
 			print("        %s = %s" % (key, val))
