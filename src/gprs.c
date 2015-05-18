@@ -2318,6 +2318,11 @@ static DBusMessage *gprs_reset_contexts(DBusConnection *conn,
 	if (gprs->pending)
 		return __ofono_error_busy(msg);
 
+	/*
+	 * We want __ofono_error_busy to take precedence over
+	 * __ofono_error_not_allowed errors, so we check it first.
+	 */
+
 	for (l = gprs->contexts; l; l = l->next) {
 		struct pri_context *ctx = l->data;
 
