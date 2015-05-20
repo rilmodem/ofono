@@ -3,37 +3,70 @@
 import sys
 import dbus
 
-if len(sys.argv) < 4:
-	print("Usage: set-context-property <context> <name> <value>")
-	sys.exit(1)
-
 bus = dbus.SystemBus()
 
-manager = dbus.Interface(bus.get_object('org.ofono', '/'),
-						'org.ofono.Manager')
+manager = dbus.Interface(bus.get_object('org.ofono', '/'), 'org.ofono.Manager')
 
-modems = manager.GetModems()
+if (len(sys.argv) == 3):
+	modems = manager.GetModems()
+	modem = modems[0][0]
+	context_idx = 0
+	property = sys.argv[1]
+	value = sys.argv[2]
 
-for path, properties in modems:
-	if "org.ofono.ConnectionManager" not in properties["Interfaces"]:
-		continue
+	if property.startswith("/"):
+		print("name can't start with '/'")
+		exit(1)
 
-	connman = dbus.Interface(bus.get_object('org.ofono', path),
-					'org.ofono.ConnectionManager')
+elif (len(sys.argv) == 4):
+	modems = manager.GetModems()
+	modem = modems[0][0]
+	context_idx = int(sys.argv[1]) - 1
+	property = sys.argv[2]
+	value = sys.argv[3]
+elif (len(sys.argv) == 5):
+	modem = sys.argv[1]
+	context_idx = int(sys.argv[2]) - 1
+	property = sys.argv[3]
+	value = sys.argv[4]
+else:
+	print("Usage: set-context-property [modem] [context_number] <name> <value>")
+	sys.exit(1)
 
-	contexts = connman.GetContexts()
-
-	if (len(contexts) == 0):
-		print("No context available")
+if property == "Active" or property == "Preferred":
+	if value == "false" or value == "0":
+		value = dbus.Boolean(False, variant_level=1)
+	elif value == "true" or value == "1":
+		value = dbus.Boolean(True, variant_level=1)
+	else:
+		print("Must specify 0|1 or false|true for property %s"
+			% property)
 		sys.exit(1)
 
-	path = contexts[int(sys.argv[1])][0]
-	context = dbus.Interface(bus.get_object('org.ofono', path),
-					'org.ofono.ConnectionContext')
+modemapi = dbus.Interface(bus.get_object('org.ofono', modem), 'org.ofono.Modem')
+properties = modemapi.GetProperties()
 
-	try:
-		context.SetProperty(sys.argv[2], sys.argv[3])
-	except dbus.DBusException as e:
-		print("Error setting context %s property %s: %s" %\
-				(path, sys.argv[2], str(e)))
-		exit(2)
+if "org.ofono.ConnectionManager" not in properties["Interfaces"]:
+	print("org.ofono.ConnectionManager not found")
+	exit(2)
+
+connman = dbus.Interface(bus.get_object('org.ofono', modem),
+					'org.ofono.ConnectionManager')
+
+contexts = connman.GetContexts()
+
+if (len(contexts) == 0):
+	print("No context available")
+	sys.exit(1)
+
+path = contexts[context_idx][0]
+
+context = dbus.Interface(bus.get_object('org.ofono', path),
+				'org.ofono.ConnectionContext')
+
+try:
+	context.SetProperty(property, value)
+except dbus.DBusException as e:
+	print("Error setting context %s property %s: %s" %\
+			(path, property, str(e)))
+	exit(2)
