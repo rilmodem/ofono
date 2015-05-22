@@ -67,7 +67,7 @@ class TestNoSimsOffline(SimTestCase):
 		self.validate_modem_properties(path, False, False)
 
 		# krillin doesn't expose SimManager when offline
-		if (self.product != "krillin"):
+		if (self.product != "krillin" and self.product != "arale"):
 			self.assertTrue(self.check_no_sim_present(path))
 
 		self.validate_emergency_numbers(path)

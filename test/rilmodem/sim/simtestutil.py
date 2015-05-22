@@ -176,7 +176,7 @@ class SimTestCase(unittest.TestCase):
 							path),
 							'org.ofono.SimManager')
 	def if_supports_sim_offline(self):
-		if self.product != "krillin":
+		if self.product != "krillin" and self.product != "arale":
 			return True
 		else:
 			return False
@@ -225,7 +225,7 @@ class SimTestCase(unittest.TestCase):
 			else:
                                 check_features = no_sim_online_features[:]
 		else:
-			if self.product == "krillin":
+			if self.product == "krillin" or self.product == "arale":
 				check_features = []
 			else:
 				if test_sims:
@@ -264,7 +264,7 @@ class SimTestCase(unittest.TestCase):
 		else:
 
 			# krillin no diff between sim/no-SIM when offline
-			if self.product == "krillin":
+			if self.product == "krillin" or self.product == "arale":
 				check_ifaces = no_sim_offline_ifaces[:]
 				check_ifaces.append("org.ofono.NetworkTime")
 			else:
@@ -298,7 +298,7 @@ class SimTestCase(unittest.TestCase):
 		#
 		# https://bugs.launchpad.net/ubuntu/+source/ofono/+bug/1396317
 
-		if self.product == "krillin":
+		if self.product == "krillin" or self.product == "arale":
 			self.assertTrue(properties["Muted"] == 0)
 		else:
 			self.assertTrue(properties["Muted"] == 1)
