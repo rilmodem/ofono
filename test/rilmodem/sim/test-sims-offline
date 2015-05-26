@@ -89,7 +89,7 @@ class TestSimsOffline(SimTestCase):
 		self.validate_modem_properties(path, False, True)
 
 		# krillin: no SIM access when modem offline
-		if (self.product != "krillin"):
+		if (self.product != "krillin" and self.product != "arale"):
 			self.validate_sim_properties(path, self.args.mcc,
 							self.args.mnc,
 							self.args.subscriber)
