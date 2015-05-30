@@ -30,7 +30,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
+#ifdef __GLIBC__
 #include <execinfo.h>
+#endif
 #include <dlfcn.h>
 
 #include "ofono.h"
@@ -113,6 +115,7 @@ void ofono_debug(const char *format, ...)
 	va_end(ap);
 }
 
+#ifdef __GLIBC__
 static void print_backtrace(unsigned int offset)
 {
 	void *frames[99];
@@ -240,6 +243,7 @@ static void signal_setup(sighandler_t handler)
 	sigaction(SIGABRT, &sa, NULL);
 	sigaction(SIGPIPE, &sa, NULL);
 }
+#endif
 
 extern struct ofono_debug_desc __start___debug[];
 extern struct ofono_debug_desc __stop___debug[];
@@ -305,7 +309,9 @@ int __ofono_log_init(const char *program, const char *debug,
 	if (detach == FALSE)
 		option |= LOG_PERROR;
 
+#ifdef __GLIBC__
 	signal_setup(signal_handler);
+#endif
 
 	openlog(basename(program), option, LOG_DAEMON);
 
@@ -320,7 +326,9 @@ void __ofono_log_cleanup(void)
 
 	closelog();
 
+#ifdef __GLIBC__
 	signal_setup(SIG_DFL);
+#endif
 
 	g_strfreev(enabled);
 }
