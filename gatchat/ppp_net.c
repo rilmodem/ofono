@@ -67,7 +67,7 @@ gboolean ppp_net_set_mtu(struct ppp_net *net, guint16 mtu)
 	strncpy(ifr.ifr_name, net->if_name, sizeof(ifr.ifr_name));
 	ifr.ifr_mtu = mtu;
 
-	err = ioctl(sk, SIOCSIFMTU, (caddr_t) &ifr);
+	err = ioctl(sk, SIOCSIFMTU, (void *) &ifr);
 
 	close(sk);
 
