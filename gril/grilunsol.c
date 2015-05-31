@@ -635,3 +635,17 @@ error:
 
 	return NULL;
 }
+
+gboolean g_ril_unsol_parse_ringback_tone(GRil *gril,
+		struct ril_msg *message)
+{
+	struct parcel rilp;
+	gboolean playTone = FALSE;
+
+	g_ril_init_parcel(message, &rilp);
+	if (parcel_r_int32(&rilp) > 0)
+		playTone = parcel_r_int32(&rilp);
+
+	return playTone;
+}
+

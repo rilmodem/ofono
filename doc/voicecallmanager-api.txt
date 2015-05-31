@@ -198,6 +198,25 @@ Methods		dict GetProperties()
 					 [service].Error.InvalidFormat
 					 [service].Error.Failed
 
+		void RegisterVoicecallAgent(object path)
+
+			Registers an agent which will be called whenever a
+			specific voice call related event requiring a client
+			action occurs. Currently, the only such action is
+			playing a ringback tone locally.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
+
+		void UnregisterVoicecallAgent(object path)
+
+			Unregisters an agent.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.Failed
+
 Signals		CallAdded(object path, dict properties)
 
 			Signal that is sent when a new call is added.  It
@@ -257,3 +276,24 @@ Properties	array{string} EmergencyNumbers [readonly]
 			of numbers provided by the specification and any
 			extra numbers provisioned by the carrier on the
 			SIM.
+
+VoiceCallAgent Hierarchy
+========================
+
+Service		unique name
+Interface	org.ofono.VoiceCallAgent
+Object path	freely definable
+
+Methods		void RingbackTone(boolean play_tone)
+
+			Requests the client to generate an alerting tone locally
+			(3GPP 24.008; 5.2.1.5). This can happen when an outgoing voice call
+			is made and network is not providing the alerting tone. True stands
+			for "start playing ringback tone" and False for "stop playing
+			ringback tone".
+
+			void Release() [noreply]
+
+			Agent is being released, possibly because of oFono terminating,
+			voicecall interface is being torn down or modem is switched off. No
+			UnregisterVoiceCallManagerAgent call is needed.

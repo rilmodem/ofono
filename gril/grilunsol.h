@@ -92,6 +92,8 @@ void g_ril_unsol_free_ussd(struct unsol_ussd *unsol);
 
 struct unsol_ussd *g_ril_unsol_parse_ussd(GRil *gril, struct ril_msg *message);
 
+gboolean g_ril_unsol_parse_ringback_tone(GRil *gril, struct ril_msg *message);
+
 #ifdef __cplusplus
 }
 #endif

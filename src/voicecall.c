@@ -3,6 +3,7 @@
  *  oFono - Open Source Telephony
  *
  *  Copyright (C) 2008-2011  Intel Corporation. All rights reserved.
+ *  Copyright (C) 2014 Jolla Ltd.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -38,6 +39,7 @@
 #include "simutil.h"
 #include "smsutil.h"
 #include "storage.h"
+#include "voicecallagent.h"
 
 #define MAX_VOICE_CALLS 16
 
@@ -75,6 +77,7 @@ struct ofono_voicecall {
 	ofono_voicecall_cb_t release_queue_done_cb;
 	struct ofono_emulator *pending_em;
 	unsigned int pending_id;
+	struct voicecall_agent *vc_agent;
 };
 
 struct voicecall {
@@ -2140,6 +2143,72 @@ static DBusMessage *manager_get_calls(DBusConnection *conn,
 	return reply;
 }
 
+static void voicecall_agent_notify(gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	vc->vc_agent = NULL;
+}
+
+static DBusMessage *voicecall_register_agent(DBusConnection *conn,
+					DBusMessage *msg, void *data)
+{
+	struct ofono_voicecall *vc = data;
+	const char *agent_path;
+
+	if (vc->vc_agent)
+		return __ofono_error_busy(msg);
+
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_OBJECT_PATH,
+				&agent_path, DBUS_TYPE_INVALID) == FALSE)
+		return __ofono_error_invalid_args(msg);
+
+	if (!__ofono_dbus_valid_object_path(agent_path))
+		return __ofono_error_invalid_format(msg);
+
+	vc->vc_agent = voicecall_agent_new(agent_path,
+						dbus_message_get_sender(msg));
+
+	if (vc->vc_agent == NULL)
+		return __ofono_error_failed(msg);
+
+	voicecall_agent_set_removed_notify(vc->vc_agent,
+			voicecall_agent_notify, vc);
+
+	return dbus_message_new_method_return(msg);
+}
+
+static DBusMessage *voicecall_unregister_agent(DBusConnection *conn,
+						DBusMessage *msg, void *data)
+{
+	struct ofono_voicecall *vc = data;
+	const char *agent_path;
+	const char *agent_bus = dbus_message_get_sender(msg);
+
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_OBJECT_PATH, &agent_path,
+					DBUS_TYPE_INVALID) == FALSE)
+		return __ofono_error_invalid_args(msg);
+
+	if (vc->vc_agent == NULL)
+		return __ofono_error_failed(msg);
+
+	if (!voicecall_agent_matches(vc->vc_agent, agent_path, agent_bus))
+		return __ofono_error_access_denied(msg);
+
+	if (vc->vc_agent) {
+		voicecall_agent_free(vc->vc_agent);
+		vc->vc_agent = NULL;
+	}
+
+	return dbus_message_new_method_return(msg);
+}
+
+void ofono_voicecall_ringback_tone_notify(struct ofono_voicecall *vc,
+						const ofono_bool_t play_tone)
+{
+	if (vc->vc_agent)
+		voicecall_agent_ringback_tone(vc->vc_agent, play_tone);
+}
+
 static const GDBusMethodTable manager_methods[] = {
 	{ GDBUS_METHOD("GetProperties",
 			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
@@ -2172,6 +2241,12 @@ static const GDBusMethodTable manager_methods[] = {
 	{ GDBUS_METHOD("GetCalls",
 		NULL, GDBUS_ARGS({ "calls_with_properties", "a(oa{sv})" }),
 		manager_get_calls) },
+	{ GDBUS_ASYNC_METHOD("RegisterVoicecallAgent",
+				GDBUS_ARGS({ "path", "o" }), NULL,
+				voicecall_register_agent) },
+	{ GDBUS_ASYNC_METHOD("UnregisterVoicecallAgent",
+				GDBUS_ARGS({ "path", "o" }), NULL,
+				voicecall_unregister_agent) },
 	{ }
 };
 
@@ -2703,6 +2778,11 @@ static void voicecall_unregister(struct ofono_atom *atom)
 	emulator_hfp_unregister(atom);
 
 	voicecall_close_settings(vc);
+
+	if (vc->vc_agent) {
+		voicecall_agent_free(vc->vc_agent);
+		vc->vc_agent = NULL;
+	}
 
 	if (vc->sim_state_watch) {
 		ofono_sim_remove_state_watch(vc->sim, vc->sim_state_watch);
