@@ -13,10 +13,11 @@ def parse_arguments():
 	parser.add_argument("-p",
 			"--private",
 			dest="priv",
-			help="""Specifies that properties considered private
-			should be output as clear-text vs. obfuscated""",
-			action="store_false",
-			default="true"
+			help="""Specifies that properties considered
+			private	should be output obfuscated vs.
+			cleartext (default).""",
+			action="store_true",
+			default=False
 			)
 
 	return parser.parse_args()
