@@ -338,7 +338,7 @@ static void radio_band_set_callback(const struct ofono_error *error,
 	radio_set_band(rs);
 }
 
-static void radio_set_rat_mode(struct ofono_radio_settings *rs,
+void ofono_radio_settings_set_rat_mode(struct ofono_radio_settings *rs,
 				enum ofono_radio_access_mode mode)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -378,7 +378,7 @@ static void radio_mode_set_callback(const struct ofono_error *error, void *data)
 	reply = dbus_message_new_method_return(rs->pending);
 	__ofono_dbus_pending_reply(&rs->pending, reply);
 
-	radio_set_rat_mode(rs, rs->pending_mode);
+	ofono_radio_settings_set_rat_mode(rs, rs->pending_mode);
 }
 
 static void radio_send_properties_reply(struct ofono_radio_settings *rs)
@@ -513,7 +513,7 @@ static void radio_rat_mode_query_callback(const struct ofono_error *error,
 		return;
 	}
 
-	radio_set_rat_mode(rs, mode);
+	ofono_radio_settings_set_rat_mode(rs, mode);
 	radio_query_band(rs);
 }
 
