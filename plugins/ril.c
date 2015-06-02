@@ -63,6 +63,7 @@
 #include "ril.h"
 #include "drivers/rilmodem/rilmodem.h"
 #include "drivers/rilmodem/vendor.h"
+#include "drivers/qcommsimmodem/qcom_msim_modem.h"
 
 #define MAX_SIM_STATUS_RETRIES 15
 
@@ -112,11 +113,19 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 		case RADIO_STATE_ON:
 
 			if (rd->radio_settings == NULL) {
+				char *rs_driver;
 				struct ril_radio_settings_driver_data rs_data =
 							{ rd->ril, modem };
+
+				if (rd->vendor == OFONO_RIL_VENDOR_QCOM_MSIM)
+					rs_driver = QCOMMSIMMODEM;
+				else
+					rs_driver = RILMODEM;
+
 				rd->radio_settings =
 					ofono_radio_settings_create(modem,
-						rd->vendor, RILMODEM, &rs_data);
+							rd->vendor, rs_driver,
+							&rs_data);
 			}
 
 			break;
