@@ -1134,6 +1134,10 @@ static void hfp_clcc_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_voicecall *vc = user_data;
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	unsigned int mpty_ids;
+	GSList *n;
+	struct ofono_call *nc;
+	unsigned int num_active = 0;
+	unsigned int num_held = 0;
 
 	if (!ok)
 		return;
@@ -1142,6 +1146,22 @@ static void hfp_clcc_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_slist_foreach(vd->calls, voicecall_notify, vc);
 	ofono_voicecall_mpty_hint(vc, mpty_ids);
+
+	n = vd->calls;
+
+	while (n) {
+		nc = n->data;
+
+		if (nc->status == CALL_STATUS_ACTIVE)
+			num_active++;
+		else if (nc->status == CALL_STATUS_HELD)
+			num_held++;
+
+		n = n->next;
+	}
+
+	if ((num_active > 1 || num_held > 1) && !vd->clcc_source)
+		vd->clcc_source = g_timeout_add(POLL_CLCC_INTERVAL, poll_clcc, vc);
 }
 
 static void hfp_voicecall_initialized(gboolean ok, GAtResult *result,
