@@ -168,6 +168,10 @@ builtin_sources += drivers/rilmodem/rilmodem.h \
 			drivers/rilmodem/radio-settings.c \
 			drivers/rilmodem/call-barring.c \
 			drivers/rilmodem/phonebook.c
+
+builtin_modules += qcommsimmodem
+builtin_sources += drivers/qcommsimmodem/qcom_msim_modem.c \
+			drivers/qcommsimmodem/radio-settings.c
 endif
 
 if ISIMODEM
