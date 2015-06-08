@@ -35,6 +35,8 @@
 #include <net/route.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <resolv.h>
+#include <netdb.h>
 
 #include <glib.h>
 #include <gdbus.h>
@@ -536,9 +538,176 @@ static void pri_context_signal_settings(struct pri_context *ctx,
 				context_settings_append_ipv6);
 }
 
-static void pri_parse_proxy(struct pri_context *ctx, const char *proxy)
+static void set_default_dns(char **dns_servers)
 {
-	char *scheme, *host, *port, *path;
+	struct in_addr server_in_addr;
+	int i;
+
+	/*
+	 * In this function we modify the global variable _res from resolv.h to
+	 * be able to use a specific DNS server to resolve the MMS proxy/MMSC
+	 * address. This is a hack, although used in some places. See
+	 * http://docstore.mik.ua/orelly/networking_2ndEd/dns/ch15_02.htm and
+	 * http://git.busybox.net/busybox/tree/networking/nslookup.c
+	 * Also, the IPv6 case cannot be handled this way. ldns is a possible
+	 * option (http://www.nlnetlabs.nl/projects/ldns/), but it would
+	 * introduce new dependences. TODO: search alternatives.
+	 */
+
+	/* This is the number of name servers */
+	_res.nscount = 0;
+
+	for (i = 0; dns_servers[i] != NULL; ++i) {
+		if (inet_pton(AF_INET, dns_servers[i], &server_in_addr) != 1)
+			continue;
+
+		_res.nsaddr_list[_res.nscount].sin_addr = server_in_addr;
+		++(_res.nscount);
+
+		/* Size of nsaddr_list array (see resolv.h) */
+		if (_res.nscount == MAXNS)
+			break;
+	}
+}
+
+static gboolean lookup_address(const struct context_settings *settings,
+						const char *proxy,
+						struct sockaddr_in *addr)
+{
+	static gboolean first_time = TRUE;
+	struct addrinfo *result = NULL;
+	struct addrinfo hint;
+	int rc, ret = FALSE;
+
+	DBG("hostname is %s", proxy);
+
+	/*
+	 * We need to initialize the resolv library before changing the DNS
+	 * server. gethostbyname("localhost") does that and at the same time
+	 * does not generate network traffic. Calling directly res_init does
+	 * not really work: that function is called internally again in the
+	 * first call to a resolv function. See link to busybox implementation
+	 * in set_default_dns().
+	 */
+	if (first_time) {
+		gethostbyname("localhost");
+		first_time = FALSE;
+	}
+
+	set_default_dns(settings->ipv4->dns);
+
+	memset(&hint, 0, sizeof(hint));
+	hint.ai_socktype = SOCK_STREAM;
+	rc = getaddrinfo(proxy, NULL /* service */, &hint, &result);
+
+	if (rc == 0) {
+		struct sockaddr *res_addr = result->ai_addr;
+
+		if (res_addr->sa_family == AF_INET) {
+			memcpy(addr, res_addr, sizeof(*addr));
+			ret = TRUE;
+		}
+
+		freeaddrinfo(result);
+	}
+
+	return ret;
+}
+
+static void set_route(const struct context_settings *settings,
+							const char *ipstr)
+{
+	struct rtentry rt;
+	struct sockaddr_in addr;
+	int sk;
+
+	/* TODO Handle IPv6 case */
+
+	DBG("%s", ipstr);
+
+	if (settings->interface == NULL)
+		return;
+
+	sk = socket(PF_INET, SOCK_DGRAM, 0);
+	if (sk < 0)
+		return;
+
+	memset(&rt, 0, sizeof(rt));
+	rt.rt_flags = RTF_UP | RTF_HOST;
+	rt.rt_dev = (char *) settings->interface;
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = inet_addr(ipstr);
+
+	if (addr.sin_addr.s_addr == INADDR_NONE) {
+		ofono_error("Cannot set route for invalid IP %s", ipstr);
+		return;
+	}
+
+	memcpy(&rt.rt_dst, &addr, sizeof(rt.rt_dst));
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = INADDR_ANY;
+	memcpy(&rt.rt_gateway, &addr, sizeof(rt.rt_gateway));
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = INADDR_ANY;
+	memcpy(&rt.rt_genmask, &addr, sizeof(rt.rt_genmask));
+
+	if (ioctl(sk, SIOCADDRT, &rt) < 0)
+		ofono_error("Failed to add proxy host route");
+
+	close(sk);
+}
+
+static struct in_addr get_proxy_ip(const struct context_settings *settings,
+							const char *host)
+{
+	struct in_addr addr;
+	struct sockaddr_in sockaddr;
+	int i;
+
+	if (inet_pton(AF_INET, host, &addr) == 1)
+		return addr;
+
+	/* Not an IP -> use DNS if possible */
+
+	addr.s_addr = 0;
+
+	if (settings->ipv4 == NULL || settings->ipv4->dns == NULL ||
+			settings->ipv4->dns[0] == NULL) {
+		ofono_error("No DNS to find IP for MMS proxy/MMSC %s", host);
+		return addr;
+	}
+
+	for (i = 0; settings->ipv4->dns[i] != NULL; ++i)
+		set_route(settings, settings->ipv4->dns[i]);
+
+	if (lookup_address(settings, host, &sockaddr))
+		addr = sockaddr.sin_addr;
+	else
+		ofono_error("Cannot find IP for MMS proxy/MMSC %s", host);
+
+	return addr;
+}
+
+static void pri_parse_proxy(struct pri_context *ctx)
+{
+	char *proxy, *scheme, *host, *port, *path;
+	struct in_addr addr;
+
+	g_free(ctx->proxy_host);
+	ctx->proxy_host = NULL;
+
+	if (ctx->message_proxy[0] != '\0')
+		proxy = ctx->message_proxy;
+	else if (ctx->message_center[0] != '\0')
+		proxy = ctx->message_center;
+	else
+		return;
 
 	scheme = g_strdup(proxy);
 	if (scheme == NULL)
@@ -577,8 +746,10 @@ static void pri_parse_proxy(struct pri_context *ctx, const char *proxy)
 		}
 	}
 
-	g_free(ctx->proxy_host);
-	ctx->proxy_host = g_strdup(host);
+	addr = get_proxy_ip(ctx->context_driver->settings, host);
+
+	if (addr.s_addr != 0)
+		ctx->proxy_host = g_strdup(inet_ntoa(addr));
 
 	g_free(scheme);
 }
@@ -662,44 +833,6 @@ done:
 	close(sk);
 }
 
-static void pri_setproxy(const char *interface, const char *proxy)
-{
-	struct rtentry rt;
-	struct sockaddr_in addr;
-	int sk;
-
-	if (interface == NULL)
-		return;
-
-	sk = socket(PF_INET, SOCK_DGRAM, 0);
-	if (sk < 0)
-		return;
-
-	memset(&rt, 0, sizeof(rt));
-	rt.rt_flags = RTF_UP | RTF_HOST;
-	rt.rt_dev = (char *) interface;
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = inet_addr(proxy);
-	memcpy(&rt.rt_dst, &addr, sizeof(rt.rt_dst));
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = INADDR_ANY;
-	memcpy(&rt.rt_gateway, &addr, sizeof(rt.rt_gateway));
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = INADDR_ANY;
-	memcpy(&rt.rt_genmask, &addr, sizeof(rt.rt_genmask));
-
-	if (ioctl(sk, SIOCADDRT, &rt) < 0)
-		ofono_error("Failed to add proxy host route");
-
-	close(sk);
-}
-
 static void pri_reset_context_settings(struct pri_context *ctx)
 {
 	struct context_settings *settings;
@@ -744,14 +877,15 @@ static void pri_update_mms_context_settings(struct pri_context *ctx)
 	if (ctx->message_proxy)
 		settings->ipv4->proxy = g_strdup(ctx->message_proxy);
 
-	pri_parse_proxy(ctx, ctx->message_proxy);
-
-	DBG("proxy %s port %u", ctx->proxy_host, ctx->proxy_port);
-
 	pri_set_ipv4_addr(settings->interface, settings->ipv4->ip);
 
+	pri_parse_proxy(ctx);
+
+	DBG("proxy %s port %u", ctx->proxy_host ? ctx->proxy_host : "NULL",
+							ctx->proxy_port);
+
 	if (ctx->proxy_host)
-		pri_setproxy(settings->interface, ctx->proxy_host);
+		set_route(settings, ctx->proxy_host);
 }
 
 static void append_context_properties(struct pri_context *ctx,
