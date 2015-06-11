@@ -28,6 +28,7 @@
 #include <gril.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/log.h>
@@ -120,39 +121,33 @@ static gboolean cpin_check(gpointer userdata)
 	return FALSE;
 }
 
-gchar *ril_util_get_netmask(const gchar *address)
+char *ril_util_get_ipv4_netmask(const char *prefix_length)
 {
 	char *result;
+	char *endp;
+	int bits;
+	uint32_t mask = 0;
+	int max_bits = sizeof(mask) * CHAR_BIT;
 
-	if (g_str_has_suffix(address, "/30")) {
-		result = PREFIX_30_NETMASK;
-	} else if (g_str_has_suffix(address, "/29")) {
-		result = PREFIX_29_NETMASK;
-	} else if (g_str_has_suffix(address, "/28")) {
-		result = PREFIX_28_NETMASK;
-	} else if (g_str_has_suffix(address, "/27")) {
-		result = PREFIX_27_NETMASK;
-	} else if (g_str_has_suffix(address, "/26")) {
-		result = PREFIX_26_NETMASK;
-	} else if (g_str_has_suffix(address, "/25")) {
-		result = PREFIX_25_NETMASK;
-	} else if (g_str_has_suffix(address, "/24")) {
-		result = PREFIX_24_NETMASK;
+	result = g_try_malloc(sizeof(mask) * 4);
+	if (result == NULL)
+		return result;
+
+	if (prefix_length == NULL || prefix_length[0] == '\0') {
+		bits = max_bits;
 	} else {
-		/*
-		 * This handles the case where the
-		 * Samsung RILD returns an address without
-		 * a prefix, however it explicitly sets a
-		 * /24 netmask ( which isn't returned as
-		 * an attribute of the DATA_CALL.
-		 *
-		 * TODO/OEM: this might need to be quirked
-		 * for specific devices.
-		 */
-		result = PREFIX_24_NETMASK;
+		bits = (int) strtol(prefix_length, &endp, 10);
+		if (*endp != '\0' || bits < 0 || bits > max_bits)
+			bits = max_bits;
 	}
 
-	DBG("address: %s netmask: %s", address, result);
+	for (; bits > 0; --bits)
+		mask |= 1 << (max_bits - bits);
+
+	sprintf(result, "%d.%d.%d.%d", mask >> 24, (mask >> 16) & 0xFF,
+					(mask >> 8) & 0xFF, mask & 0xFF);
+
+	DBG("netmask: %s", result);
 
 	return result;
 }
