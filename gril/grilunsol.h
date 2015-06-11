@@ -37,7 +37,8 @@ struct ril_data_call {
 	guint active;
 	guint protocol;
 	char *ifname;
-	gchar *ip_addr;
+	gchar **ip_addrs;
+	gchar **prefix_lengths;
 	gchar **dns_addrs;
 	gchar **gateways;
 };
