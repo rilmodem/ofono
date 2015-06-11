@@ -897,14 +897,10 @@ static void pri_deactivate_callback(const struct ofono_error *error, void *data)
 					"Active", DBUS_TYPE_BOOLEAN, &value);
 }
 
-static DBusMessage *pri_set_preferred(struct pri_context *ctx,
-					DBusConnection *conn,
-					DBusMessage *msg, gboolean preferred)
+static void set_preferred(struct pri_context *ctx, DBusConnection *conn,
+							gboolean preferred)
 {
 	GKeyFile *settings = ctx->gprs->settings;
-
-	if (ctx->preferred == preferred)
-		return dbus_message_new_method_return(msg);
 
 	ctx->preferred = preferred;
 
@@ -914,12 +910,22 @@ static DBusMessage *pri_set_preferred(struct pri_context *ctx,
 		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
 	}
 
-	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
-
 	ofono_dbus_signal_property_changed(conn, ctx->path,
 					OFONO_CONNECTION_CONTEXT_INTERFACE,
 					"Preferred", DBUS_TYPE_BOOLEAN,
 					&preferred);
+}
+
+static DBusMessage *pri_set_preferred(struct pri_context *ctx,
+					DBusConnection *conn,
+					DBusMessage *msg, gboolean preferred)
+{
+	if (ctx->preferred == preferred)
+		return dbus_message_new_method_return(msg);
+
+	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
+
+	set_preferred(ctx, conn, preferred);
 
 	return NULL;
 }
@@ -3186,20 +3192,48 @@ remove:
 static struct pri_context *gprs_context_for_ia(struct ofono_gprs *gprs)
 {
 	GSList *l;
+	struct pri_context *ctx_ia = NULL;
+	struct pri_context *ctx_inet_pref = NULL;
+	struct pri_context *ctx_inet = NULL;
+	struct pri_context *ctx_other_pref = NULL;
 
 	for (l = gprs->contexts; l; l = l->next) {
 		struct pri_context *ctx = l->data;
 
-		if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_IA)
-			return ctx;
+		if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_IA) {
+			if (ctx->preferred)
+				return ctx;
+
+			if (ctx_ia == NULL)
+				ctx_ia = ctx;
+		} else if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_INTERNET) {
+
+			if (ctx->preferred && ctx_inet_pref == NULL)
+				ctx_inet_pref = ctx;
+			else if (ctx_inet == NULL)
+				ctx_inet = ctx;
+
+		} else if (ctx->preferred && ctx_other_pref == NULL) {
+			ctx_other_pref = ctx;
+		}
 	}
 
-	for (l = gprs->contexts; l; l = l->next) {
-		struct pri_context *ctx = l->data;
-
-		if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_INTERNET)
-			return ctx;
+	if (ctx_ia != NULL) {
+		set_preferred(ctx_ia, ofono_dbus_get_connection(), TRUE);
+		return ctx_ia;
 	}
+
+	if (ctx_inet_pref != NULL)
+		return ctx_inet_pref;
+
+	if (ctx_inet != NULL)
+		return ctx_inet;
+
+	if (ctx_other_pref != NULL)
+		return ctx_other_pref;
+
+	if (gprs->contexts == NULL)
+		return NULL;
 
 	return gprs->contexts->data;
 }
@@ -3213,10 +3247,15 @@ static void set_ia_apn_cb(const struct ofono_error *error, void *data)
 static void set_ia_apn(struct ofono_gprs *gprs)
 {
 	struct pri_context *ctx = gprs_context_for_ia(gprs);
-	struct ofono_gprs_primary_context *ofono_ctx = &ctx->context;
+	struct ofono_gprs_primary_context *ofono_ctx;
 	char mccmnc[OFONO_MAX_MCC_LENGTH + OFONO_MAX_MNC_LENGTH + 1];
 	const char *mcc = ofono_sim_get_mcc(gprs->sim);
 	const char *mnc = ofono_sim_get_mnc(gprs->sim);
+
+	if (ctx == NULL)
+		return;
+
+	ofono_ctx = &ctx->context;
 
 	strcpy(mccmnc, mcc);
 	strcpy(mccmnc + strlen(mcc), mnc);
