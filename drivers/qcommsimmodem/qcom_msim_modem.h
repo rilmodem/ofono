@@ -1,8 +1,8 @@
 /*
  *
- *  RIL constants for Qualcomm multi-sim modem
+ *  oFono - Open Source Telephony - RIL Modem Support
  *
- *  Copyright (C) 2015 Ratchanan Srirattanamet.
+ *  Copyright (C) 2015 Ratchanan Srirattanamet
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -19,11 +19,7 @@
  *
  */
 
-#ifndef QCOM_MSIM_CONSTANTS_H
-#define QCOM_MSIM_CONSTANTS_H
+#define QCOMMSIMMODEM "qcommsimmodem"
 
-#define QCOMMSIM_NUM_SLOTS_MAX 2
-
-#define QCOM_MSIM_RIL_REQUEST_SET_UICC_SUBSCRIPTION  115
-
-#endif /* QCOM_MSIM_CONSTANTS_H */
+extern void qcom_msim_radio_settings_init(void);
+extern void qcom_msim_radio_settings_exit(void);

@@ -229,7 +229,7 @@ static ofono_bool_t query_modem_rats_cb(gpointer user_data)
 	return FALSE;
 }
 
-static void ril_query_modem_rats(struct ofono_radio_settings *rs,
+void ril_query_modem_rats(struct ofono_radio_settings *rs,
 				ofono_radio_settings_modem_rats_query_cb_t cb,
 				void *data)
 {

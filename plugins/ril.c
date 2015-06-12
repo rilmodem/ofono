@@ -63,6 +63,7 @@
 #include "ril.h"
 #include "drivers/rilmodem/rilmodem.h"
 #include "drivers/rilmodem/vendor.h"
+#include "drivers/qcommsimmodem/qcom_msim_modem.h"
 
 #define MAX_SIM_STATUS_RETRIES 15
 
@@ -70,7 +71,8 @@
 #define RILD_MAX_CONNECT_RETRIES 5
 #define RILD_CONNECT_RETRY_TIME_S 5
 
-#define RILD_CMD_SOCKET "/dev/socket/rild"
+char *RILD_CMD_SOCKET[] = {"/dev/socket/rild", "/dev/socket/rild1"};
+char *GRIL_HEX_PREFIX[] = {"Device 0: ", "Device 1: "};
 
 struct ril_data {
 	GRil *ril;
@@ -111,11 +113,19 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 		case RADIO_STATE_ON:
 
 			if (rd->radio_settings == NULL) {
+				char *rs_driver;
 				struct ril_radio_settings_driver_data rs_data =
 							{ rd->ril, modem };
+
+				if (rd->vendor == OFONO_RIL_VENDOR_QCOM_MSIM)
+					rs_driver = QCOMMSIMMODEM;
+				else
+					rs_driver = RILMODEM;
+
 				rd->radio_settings =
 					ofono_radio_settings_create(modem,
-						rd->vendor, RILMODEM, &rs_data);
+							rd->vendor, rs_driver,
+							&rs_data);
 			}
 
 			break;
@@ -337,8 +347,11 @@ static void ril_connected(struct ril_msg *message, gpointer user_data)
 static int create_gril(struct ofono_modem *modem)
 {
 	struct ril_data *rd = ofono_modem_get_data(modem);
+	int slot_id = ofono_modem_get_integer(modem, "Slot");
 
-	rd->ril = g_ril_new(RILD_CMD_SOCKET, OFONO_RIL_VENDOR_AOSP);
+	ofono_info("Using %s as socket for slot %d.",
+					RILD_CMD_SOCKET[slot_id], slot_id);
+	rd->ril = g_ril_new(RILD_CMD_SOCKET[slot_id], OFONO_RIL_VENDOR_AOSP);
 
 	/* NOTE: Since AT modems open a tty, and then call
 	 * g_at_chat_new(), they're able to return -EIO if
@@ -352,12 +365,13 @@ static int create_gril(struct ofono_modem *modem)
 		ofono_error("g_ril_new() failed to create modem!");
 		return -EIO;
 	}
+	g_ril_set_slot(rd->ril, slot_id);
 
 	if (getenv("OFONO_RIL_TRACE"))
 		g_ril_set_trace(rd->ril, TRUE);
 
 	if (getenv("OFONO_RIL_HEX_TRACE"))
-		g_ril_set_debugf(rd->ril, ril_debug, "Device: ");
+		g_ril_set_debugf(rd->ril, ril_debug, GRIL_HEX_PREFIX[slot_id]);
 
 	g_ril_register(rd->ril, RIL_UNSOL_RIL_CONNECTED,
 			ril_connected, modem);
