@@ -65,6 +65,8 @@ struct ofono_gprs {
 	ofono_bool_t driver_attached;
 	ofono_bool_t roaming_allowed;
 	ofono_bool_t powered;
+	ofono_bool_t powered_for_mms;
+	ofono_bool_t detach_forced;
 	ofono_bool_t suspended;
 	int status;
 	int flags;
@@ -857,7 +859,16 @@ static void pri_activate_callback(const struct ofono_error *error, void *data)
 	if (gc->settings->interface != NULL) {
 		pri_ifupdown(gc->settings->interface, TRUE);
 
-		if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS &&
+		/*
+		 * Activate route when NetworkManager does not do that for us.
+		 * In the case of combined contexts that can happen if we have
+		 * not activated cellular data.
+		 * TODO: Consider using only ofono for setting up routes to the
+		 * MMS proxy.
+		 */
+		if ((ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS ||
+				(ctx->type == OFONO_GPRS_CONTEXT_TYPE_INTERNET
+						&& !ctx->gprs->powered)) &&
 				gc->settings->ipv4)
 			pri_update_mms_context_settings(ctx);
 
@@ -1599,6 +1610,11 @@ static void gprs_netreg_removed(struct ofono_gprs *gprs)
 	gprs_attached_update(gprs);
 }
 
+static ofono_bool_t gprs_is_powered(struct ofono_gprs *gprs)
+{
+	return (gprs->powered || gprs->powered_for_mms) && !gprs->detach_forced;
+}
+
 static void gprs_netreg_update(struct ofono_gprs *gprs)
 {
 	ofono_bool_t attach;
@@ -1608,7 +1624,7 @@ static void gprs_netreg_update(struct ofono_gprs *gprs)
 	attach = attach || (gprs->roaming_allowed &&
 		gprs->netreg_status == NETWORK_REGISTRATION_STATUS_ROAMING);
 
-	attach = attach && gprs->powered;
+	attach = attach && gprs_is_powered(gprs);
 
 	if (gprs->driver_attached == attach)
 		return;
@@ -1692,6 +1708,46 @@ static void notify_powered_change(struct ofono_gprs *gprs)
 	}
 }
 
+static void modem_notify_mms_powered_change(struct ofono_modem *modem,
+								void *data)
+{
+	struct ofono_atom *atom;
+	struct ofono_gprs *gprs;
+	struct ofono_modem *modem_notif = data;
+	struct ofono_atom *atom_notif;
+	struct ofono_gprs *gprs_notif;
+	const char *path = ofono_modem_get_path(modem);
+
+	if (strcmp(path, ofono_modem_get_path(modem_notif)) == 0)
+		return;
+
+	if (!ofono_modem_is_standby(modem))
+		return;
+
+	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_GPRS);
+	if (atom == NULL)
+		return;
+
+	gprs = __ofono_atom_get_data(atom);
+
+	if (gprs->driver->set_attached == NULL)
+		return;
+
+	atom_notif = __ofono_modem_find_atom(modem_notif, OFONO_ATOM_TYPE_GPRS);
+	gprs_notif = __ofono_atom_get_data(atom_notif);
+
+	gprs->detach_forced = gprs_notif->powered_for_mms;
+
+	gprs_netreg_update(gprs);
+}
+
+static void notify_mms_powered_change(struct ofono_gprs *gprs)
+{
+	struct ofono_modem *modem = __ofono_atom_get_modem(gprs->atom);
+
+	__ofono_modem_foreach(modem_notify_mms_powered_change, modem);
+}
+
 static DBusMessage *gprs_get_properties(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -1727,6 +1783,10 @@ static DBusMessage *gprs_get_properties(DBusConnection *conn,
 
 	value = gprs->powered;
 	ofono_dbus_dict_append(&dict, "Powered", DBUS_TYPE_BOOLEAN, &value);
+
+	value = gprs->powered_for_mms;
+	ofono_dbus_dict_append(&dict, "PoweredForMMS",
+						DBUS_TYPE_BOOLEAN, &value);
 
 	if (gprs->attached) {
 		value = gprs->suspended;
@@ -1810,6 +1870,23 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 		gprs_netreg_update(gprs);
 
 		notify_powered_change(gprs);
+	} else if (!strcmp(property, "PoweredForMMS")) {
+		if (gprs->driver->set_attached == NULL)
+			return __ofono_error_not_implemented(msg);
+
+		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BOOLEAN)
+			return __ofono_error_invalid_args(msg);
+
+		dbus_message_iter_get_basic(&var, &value);
+
+		if (gprs->powered_for_mms == (ofono_bool_t) value)
+			return dbus_message_new_method_return(msg);
+
+		gprs->powered_for_mms = value;
+
+		gprs_netreg_update(gprs);
+
+		notify_mms_powered_change(gprs);
 	} else {
 		return __ofono_error_invalid_args(msg);
 	}
@@ -2342,7 +2419,7 @@ static DBusMessage *gprs_reset_contexts(DBusConnection *conn,
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_INVALID))
 		return __ofono_error_invalid_args(msg);
 
-	if (gprs->powered)
+	if (gprs_is_powered(gprs))
 		return __ofono_error_not_allowed(msg);
 
 	for (l = gprs->contexts; l; l = l->next) {
@@ -2455,7 +2532,7 @@ void ofono_gprs_status_notify(struct ofono_gprs *gprs, int status)
 		return;
 
 	/* We registered without being powered */
-	if (gprs->powered == FALSE)
+	if (gprs_is_powered(gprs) == FALSE)
 		goto detach;
 
 	if (gprs->roaming_allowed == FALSE &&

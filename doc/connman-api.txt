@@ -140,8 +140,17 @@ Properties	boolean Attached [readonly]
 		boolean Powered [readwrite]
 
 			Controls whether packet radio use is allowed. Setting
-			this value to off detaches the modem from the
-			Packet Domain network.
+			this value and PoweredForMMS to off detaches the modem
+			from the Packet Domain network.
+
+		boolean PoweredForMMS [readwrite]
+
+			As Powered, it controls whether packet radio use is
+			allowed. When any of them is set, the use of packet
+			radio is allowed. When both are false, the modem is
+			asked to detach from the Packet Domain. The reason for
+			having both is to be able to send/receive MMS without
+			internet data on.
 
 Connection Context hierarchy
 =================
