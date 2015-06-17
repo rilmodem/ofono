@@ -390,11 +390,14 @@ static int ste_gprs_context_probe(struct ofono_gprs_context *gc,
 
 	ofono_gprs_context_set_data(gc, gcd);
 
+	caif_rtnl_init();
+
 	err = caif_rtnl_create_interface(IFLA_CAIF_IPV4_CONNID,
 					gcd->channel_id, FALSE,
 					rtnl_callback, gcd);
 	if (err < 0) {
 		DBG("Failed to create IP interface for CAIF");
+		caif_rtnl_exit();
 		return err;
 	}
 
@@ -421,6 +424,8 @@ static void ste_gprs_context_remove(struct ofono_gprs_context *gc)
 			gcd->channel_id, gcd->interface, gcd->ifindex);
 
 out:
+	caif_rtnl_exit();
+
 	ofono_gprs_context_set_data(gc, NULL);
 
 	g_at_chat_unref(gcd->chat);
@@ -437,12 +442,10 @@ static struct ofono_gprs_context_driver driver = {
 
 void ste_gprs_context_init(void)
 {
-	caif_rtnl_init();
 	ofono_gprs_context_driver_register(&driver);
 }
 
 void ste_gprs_context_exit(void)
 {
 	ofono_gprs_context_driver_unregister(&driver);
-	caif_rtnl_exit();
 }
