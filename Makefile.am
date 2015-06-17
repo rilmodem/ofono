@@ -587,7 +587,8 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
 			src/cdma-provision.c src/handsfree.c \
 			src/sim-mnclength.c src/spn-table.c
 
-src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ -ldl
+src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ \
+					@NETLINK_LIBS@ @NETLINKROUTE_LIBS@ -ldl
 
 src_ofonod_LDFLAGS = -Wl,--export-dynamic \
 				-Wl,--version-script=$(srcdir)/src/ofono.ver
@@ -605,6 +606,7 @@ build_plugindir = $(plugindir)
 endif
 
 AM_CFLAGS = @DBUS_CFLAGS@ @GLIB_CFLAGS@ @USB_CFLAGS@ \
+					@NETLINK_CFLAGS@ @NETLINKROUTE_CFLAGS@ \
 					$(builtin_cflags) \
 					-DOFONO_PLUGIN_BUILTIN \
 					-DPLUGINDIR=\""$(build_plugindir)"\"
