@@ -2758,7 +2758,6 @@ static void sim_pin_query_cb(const struct ofono_error *error,
 				password_is_pin(pin_type) == FALSE)
 			pin_type = puk2pin(pin_type);
 
-
 		if (pin_type != OFONO_SIM_PASSWORD_INVALID
 				&& pin_type != OFONO_SIM_PASSWORD_NONE) {
 			lock_changed = !sim->locked_pins[pin_type];
@@ -2777,6 +2776,7 @@ static void sim_pin_query_cb(const struct ofono_error *error,
 				g_strfreev(locked_pins);
 			}
 		}
+
 		ofono_dbus_signal_property_changed(conn, path,
 						OFONO_SIM_MANAGER_INTERFACE,
 						"PinRequired", DBUS_TYPE_STRING,
