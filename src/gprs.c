@@ -98,6 +98,7 @@ struct ipv4_settings {
 	char *gateway;
 	char **dns;
 	char *proxy;
+	uint16_t proxy_port;
 };
 
 struct ipv6_settings {
@@ -378,11 +379,11 @@ static void context_settings_append_ipv4(struct context_settings *settings,
 	ofono_dbus_dict_append(&array, "Interface",
 				DBUS_TYPE_STRING, &settings->interface);
 
-	/* If we have a Proxy, no other settings are relevant */
 	if (settings->ipv4->proxy) {
 		ofono_dbus_dict_append(&array, "Proxy", DBUS_TYPE_STRING,
 					&settings->ipv4->proxy);
-		goto done;
+		ofono_dbus_dict_append(&array, "ProxyPort", DBUS_TYPE_UINT16,
+					&settings->ipv4->proxy_port);
 	}
 
 	if (settings->ipv4->static_ip == TRUE)
@@ -590,7 +591,7 @@ static gboolean lookup_address(const struct context_settings *settings,
 	 */
 	if (first_time) {
 		gethostbyname("localhost");
-		first_time = FALSE;
+		//first_time = FALSE;
 	}
 
 	set_default_dns(settings->ipv4->dns);
@@ -950,23 +951,21 @@ static void pri_reset_context_settings(struct pri_context *ctx)
 	g_free(interface);
 }
 
-static void pri_update_mms_context_settings(struct pri_context *ctx)
+static void pri_update_mms_proxy_settings(struct pri_context *ctx)
 {
 	struct ofono_gprs_context *gc = ctx->context_driver;
 	struct context_settings *settings = gc->settings;
-
-	if (ctx->message_proxy)
-		settings->ipv4->proxy = g_strdup(ctx->message_proxy);
-
-	pri_set_ipv4_addr(settings->interface, settings->ipv4->ip);
 
 	pri_parse_proxy(ctx);
 
 	DBG("proxy %s port %u", ctx->proxy_host ? ctx->proxy_host : "NULL",
 							ctx->proxy_port);
 
-	if (ctx->proxy_host)
+	if (ctx->proxy_host) {
+		settings->ipv4->proxy = g_strdup(ctx->proxy_host);
+		settings->ipv4->proxy_port = ctx->proxy_port;
 		set_route(ctx->gprs, settings, ctx->proxy_host);
+	}
 }
 
 static void append_context_properties(struct pri_context *ctx,
@@ -1072,9 +1071,13 @@ static void pri_activate_callback(const struct ofono_error *error, void *data)
 	if (gc->settings->interface != NULL) {
 		pri_ifupdown(gc->settings->interface, TRUE);
 
-		if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS &&
-				gc->settings->ipv4)
-			pri_update_mms_context_settings(ctx);
+		if (gc->settings->ipv4) {
+			if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS)
+				pri_set_ipv4_addr(gc->settings->interface,
+							gc->settings->ipv4->ip);
+
+			pri_update_mms_proxy_settings(ctx);
+		}
 
 		pri_context_signal_settings(ctx, gc->settings->ipv4 != NULL,
 						gc->settings->ipv6 != NULL);
