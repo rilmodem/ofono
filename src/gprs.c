@@ -30,11 +30,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <net/if.h>
-#include <net/route.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <resolv.h>
+#include <netlink/netlink.h>
+#include <netlink/route/route.h>
+#include <netlink/cli/link.h>
 
 #include <glib.h>
 #include <gdbus.h>
@@ -88,6 +88,7 @@ struct ofono_gprs {
 	struct ofono_sim *sim;
 	struct ofono_sim_context *sim_context;
 	char *gid1;
+	struct nl_sock *sock;
 };
 
 struct ipv4_settings {
@@ -97,6 +98,7 @@ struct ipv4_settings {
 	char *gateway;
 	char **dns;
 	char *proxy;
+	uint16_t proxy_port;
 };
 
 struct ipv6_settings {
@@ -377,11 +379,11 @@ static void context_settings_append_ipv4(struct context_settings *settings,
 	ofono_dbus_dict_append(&array, "Interface",
 				DBUS_TYPE_STRING, &settings->interface);
 
-	/* If we have a Proxy, no other settings are relevant */
 	if (settings->ipv4->proxy) {
 		ofono_dbus_dict_append(&array, "Proxy", DBUS_TYPE_STRING,
 					&settings->ipv4->proxy);
-		goto done;
+		ofono_dbus_dict_append(&array, "ProxyPort", DBUS_TYPE_UINT16,
+					&settings->ipv4->proxy_port);
 	}
 
 	if (settings->ipv4->static_ip == TRUE)
@@ -536,9 +538,258 @@ static void pri_context_signal_settings(struct pri_context *ctx,
 				context_settings_append_ipv6);
 }
 
-static void pri_parse_proxy(struct pri_context *ctx, const char *proxy)
+static void set_default_dns(char **dns_servers)
 {
-	char *scheme, *host, *port, *path;
+	struct in_addr server_in_addr;
+	int i;
+
+	/*
+	 * In this function we modify the global variable _res from resolv.h to
+	 * be able to use a specific DNS server to resolve the MMS proxy/MMSC
+	 * address. This is a hack, although used in some places. See
+	 * http://docstore.mik.ua/orelly/networking_2ndEd/dns/ch15_02.htm and
+	 * http://git.busybox.net/busybox/tree/networking/nslookup.c
+	 * Also, the IPv6 case cannot be handled this way. ldns is a possible
+	 * option (http://www.nlnetlabs.nl/projects/ldns/), but it would
+	 * introduce new dependences. TODO: search alternatives.
+	 */
+
+	/* This is the number of name servers */
+	_res.nscount = 0;
+
+	for (i = 0; dns_servers[i] != NULL; ++i) {
+		if (inet_pton(AF_INET, dns_servers[i], &server_in_addr) != 1)
+			continue;
+
+		_res.nsaddr_list[_res.nscount].sin_addr = server_in_addr;
+		++(_res.nscount);
+
+		/* Size of nsaddr_list array (see resolv.h) */
+		if (_res.nscount == MAXNS)
+			break;
+	}
+}
+
+static gboolean lookup_address(const struct context_settings *settings,
+						const char *proxy,
+						struct sockaddr_in *addr)
+{
+	static gboolean first_time = TRUE;
+	struct addrinfo *result = NULL;
+	struct addrinfo hint;
+	int rc, ret = FALSE;
+
+	DBG("hostname is %s", proxy);
+
+	/*
+	 * We need to initialize the resolv library before changing the DNS
+	 * server. gethostbyname("localhost") does that and at the same time
+	 * does not generate network traffic. Calling directly res_init does
+	 * not really work: that function is called internally again in the
+	 * first call to a resolv function. See link to busybox implementation
+	 * in set_default_dns().
+	 */
+	if (first_time) {
+		gethostbyname("localhost");
+		//first_time = FALSE;
+	}
+
+	set_default_dns(settings->ipv4->dns);
+
+	memset(&hint, 0, sizeof(hint));
+	hint.ai_socktype = SOCK_STREAM;
+	rc = getaddrinfo(proxy, NULL /* service */, &hint, &result);
+
+	if (rc == 0) {
+		struct sockaddr *res_addr = result->ai_addr;
+
+		if (res_addr->sa_family == AF_INET) {
+			memcpy(addr, res_addr, sizeof(*addr));
+			ret = TRUE;
+		}
+
+		freeaddrinfo(result);
+	}
+
+	return ret;
+}
+
+static void set_route(struct ofono_gprs *gprs,
+					const struct context_settings *settings,
+					const char *ipstr)
+{
+	struct rtnl_route *route = NULL;
+	struct nl_addr *dst = NULL;
+	struct rtnl_nexthop *nh = NULL;
+	struct nl_cache *link_cache = NULL;
+	int rc, ifidx, proto;
+
+	DBG("%s", ipstr);
+
+	/* Allocate memory for route */
+
+	route = rtnl_route_alloc();
+	if (route == NULL) {
+		ofono_error("OOM while calling rtnl_route_alloc");
+		goto end;
+	}
+
+	/* Set destination */
+
+	/* AF_UNSPEC to let nl_addr_parse find out the address family */
+	/* NOTE: nl_addr_parse accepts prefix length. Useful for IPv6? */
+	rc = nl_addr_parse(ipstr, AF_UNSPEC, &dst);
+	if (rc != 0) {
+		ofono_error("nl_addr_parse: %s (%d)", nl_geterror(rc), rc);
+		goto end;
+	}
+
+	rtnl_route_set_dst(route, dst);
+
+	/* Set next hop */
+
+	rc = rtnl_link_alloc_cache(gprs->sock, AF_UNSPEC, &link_cache);
+	if (rc != 0) {
+		ofono_error("rtnl_link_alloc_cache: %s (%d)",
+							nl_geterror(rc), rc);
+		goto end;
+	}
+
+	ifidx = rtnl_link_name2i(link_cache, settings->interface);
+	if (ifidx == 0) {
+		ofono_error("Cannot find link index for %s",
+							settings->interface);
+		goto end;
+	}
+
+	nh = rtnl_route_nh_alloc();
+	if (nh == NULL) {
+		ofono_error("OOM while calling rtnl_route_nh_alloc");
+		goto end;
+	}
+
+	rtnl_route_nh_set_ifindex(nh, ifidx);
+	rtnl_route_add_nexthop(route, nh);
+
+	/* Set protocol to static to avoid manipulation from routing daemon */
+
+	proto = rtnl_route_str2proto("static");
+	rtnl_route_set_protocol(route, proto);
+
+	/* Set route */
+
+	/* NLM_F_REPLACE to avoid errors if already exists */
+	rc = rtnl_route_add(gprs->sock, route, NLM_F_REPLACE);
+	if (rc != 0) {
+		ofono_error("rtnl_route_add: %s (%d)", nl_geterror(rc), rc);
+		goto end;
+	}
+
+end:
+	if (link_cache != NULL)
+		nl_cache_free(link_cache);
+
+	if (dst != NULL)
+		nl_addr_put(dst);
+
+	/* Deallocates nh too */
+	if (route != NULL)
+		rtnl_route_put(route);
+}
+
+static void delete_route(struct ofono_gprs *gprs, const char *ipstr)
+{
+	struct rtnl_route *route = NULL;
+	struct nl_addr *dst = NULL;
+	int rc;
+
+	DBG("%s", ipstr);
+
+	/* Allocate memory for route */
+
+	route = rtnl_route_alloc();
+	if (route == NULL) {
+		ofono_error("OOM while calling rtnl_route_alloc");
+		goto end;
+	}
+
+	/* Set destination */
+
+	/* AF_UNSPEC to let nl_addr_parse find out the address family */
+	rc = nl_addr_parse(ipstr, AF_UNSPEC, &dst);
+	if (rc != 0) {
+		ofono_error("nl_addr_parse: %s (%d)", nl_geterror(rc), rc);
+		goto end;
+	}
+
+	rtnl_route_set_dst(route, dst);
+
+	/* Delete route */
+
+	/* NLM_F_REPLACE to avoid errors if already exists */
+	rc = rtnl_route_delete(gprs->sock, route, 0);
+	if (rc != 0) {
+		ofono_error("rtnl_route_add: %s (%d)", nl_geterror(rc), rc);
+		goto end;
+	}
+
+end:
+	if (dst != NULL)
+		nl_addr_put(dst);
+
+	if (route != NULL)
+		rtnl_route_put(route);
+}
+
+static struct in_addr get_proxy_ip(struct ofono_gprs *gprs,
+					const struct context_settings *settings,
+					const char *host)
+{
+	struct in_addr addr;
+	struct sockaddr_in sockaddr;
+	int i;
+
+	if (inet_pton(AF_INET, host, &addr) == 1)
+		return addr;
+
+	/* Not an IP -> use DNS if possible */
+
+	addr.s_addr = 0;
+
+	if (settings->ipv4 == NULL || settings->ipv4->dns == NULL ||
+			settings->ipv4->dns[0] == NULL) {
+		ofono_error("No DNS to find IP for MMS proxy/MMSC %s", host);
+		return addr;
+	}
+
+	for (i = 0; settings->ipv4->dns[i] != NULL; ++i)
+		set_route(gprs, settings, settings->ipv4->dns[i]);
+
+	if (lookup_address(settings, host, &sockaddr))
+		addr = sockaddr.sin_addr;
+	else
+		ofono_error("Cannot find IP for MMS proxy/MMSC %s", host);
+
+	for (i = 0; settings->ipv4->dns[i] != NULL; ++i)
+		delete_route(gprs, settings->ipv4->dns[i]);
+
+	return addr;
+}
+
+static void pri_parse_proxy(struct pri_context *ctx)
+{
+	char *proxy, *scheme, *host, *port, *path;
+	struct in_addr addr;
+
+	g_free(ctx->proxy_host);
+	ctx->proxy_host = NULL;
+
+	if (ctx->message_proxy[0] != '\0')
+		proxy = ctx->message_proxy;
+	else if (ctx->message_center[0] != '\0')
+		proxy = ctx->message_center;
+	else
+		return;
 
 	scheme = g_strdup(proxy);
 	if (scheme == NULL)
@@ -577,8 +828,10 @@ static void pri_parse_proxy(struct pri_context *ctx, const char *proxy)
 		}
 	}
 
-	g_free(ctx->proxy_host);
-	ctx->proxy_host = g_strdup(host);
+	addr = get_proxy_ip(ctx->gprs, ctx->context_driver->settings, host);
+
+	if (addr.s_addr != 0)
+		ctx->proxy_host = g_strdup(inet_ntoa(addr));
 
 	g_free(scheme);
 }
@@ -662,44 +915,6 @@ done:
 	close(sk);
 }
 
-static void pri_setproxy(const char *interface, const char *proxy)
-{
-	struct rtentry rt;
-	struct sockaddr_in addr;
-	int sk;
-
-	if (interface == NULL)
-		return;
-
-	sk = socket(PF_INET, SOCK_DGRAM, 0);
-	if (sk < 0)
-		return;
-
-	memset(&rt, 0, sizeof(rt));
-	rt.rt_flags = RTF_UP | RTF_HOST;
-	rt.rt_dev = (char *) interface;
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = inet_addr(proxy);
-	memcpy(&rt.rt_dst, &addr, sizeof(rt.rt_dst));
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = INADDR_ANY;
-	memcpy(&rt.rt_gateway, &addr, sizeof(rt.rt_gateway));
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = INADDR_ANY;
-	memcpy(&rt.rt_genmask, &addr, sizeof(rt.rt_genmask));
-
-	if (ioctl(sk, SIOCADDRT, &rt) < 0)
-		ofono_error("Failed to add proxy host route");
-
-	close(sk);
-}
-
 static void pri_reset_context_settings(struct pri_context *ctx)
 {
 	struct context_settings *settings;
@@ -736,22 +951,21 @@ static void pri_reset_context_settings(struct pri_context *ctx)
 	g_free(interface);
 }
 
-static void pri_update_mms_context_settings(struct pri_context *ctx)
+static void pri_update_mms_proxy_settings(struct pri_context *ctx)
 {
 	struct ofono_gprs_context *gc = ctx->context_driver;
 	struct context_settings *settings = gc->settings;
 
-	if (ctx->message_proxy)
-		settings->ipv4->proxy = g_strdup(ctx->message_proxy);
+	pri_parse_proxy(ctx);
 
-	pri_parse_proxy(ctx, ctx->message_proxy);
+	DBG("proxy %s port %u", ctx->proxy_host ? ctx->proxy_host : "NULL",
+							ctx->proxy_port);
 
-	DBG("proxy %s port %u", ctx->proxy_host, ctx->proxy_port);
-
-	pri_set_ipv4_addr(settings->interface, settings->ipv4->ip);
-
-	if (ctx->proxy_host)
-		pri_setproxy(settings->interface, ctx->proxy_host);
+	if (ctx->proxy_host) {
+		settings->ipv4->proxy = g_strdup(ctx->proxy_host);
+		settings->ipv4->proxy_port = ctx->proxy_port;
+		set_route(ctx->gprs, settings, ctx->proxy_host);
+	}
 }
 
 static void append_context_properties(struct pri_context *ctx,
@@ -857,9 +1071,13 @@ static void pri_activate_callback(const struct ofono_error *error, void *data)
 	if (gc->settings->interface != NULL) {
 		pri_ifupdown(gc->settings->interface, TRUE);
 
-		if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS &&
-				gc->settings->ipv4)
-			pri_update_mms_context_settings(ctx);
+		if (gc->settings->ipv4) {
+			if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS)
+				pri_set_ipv4_addr(gc->settings->interface,
+							gc->settings->ipv4->ip);
+
+			pri_update_mms_proxy_settings(ctx);
+		}
 
 		pri_context_signal_settings(ctx, gc->settings->ipv4 != NULL,
 						gc->settings->ipv6 != NULL);
@@ -2892,6 +3110,28 @@ static void gprs_unregister(struct ofono_atom *atom)
 					OFONO_CONNECTION_MANAGER_INTERFACE);
 }
 
+static struct nl_sock *create_nl_socket(void)
+{
+	struct nl_sock *sock;
+	int rc;
+
+	sock = nl_socket_alloc();
+	if (sock == NULL) {
+		ofono_error("OOM while calling nl_socket_alloc");
+		goto done;
+	}
+
+	rc = nl_connect(sock, NETLINK_ROUTE);
+	if (rc != 0) {
+		ofono_error("nl_connect: %s (%d)", nl_geterror(rc), rc);
+		nl_socket_free(sock);
+		sock = NULL;
+	}
+
+done:
+	return sock;
+}
+
 static void gprs_remove(struct ofono_atom *atom)
 {
 	struct ofono_gprs *gprs = __ofono_atom_get_data(atom);
@@ -2904,6 +3144,9 @@ static void gprs_remove(struct ofono_atom *atom)
 
 	if (gprs->suspend_timeout)
 		g_source_remove(gprs->suspend_timeout);
+
+	if (gprs->sock != NULL)
+		nl_socket_free(gprs->sock);
 
 	if (gprs->pid_map) {
 		idmap_free(gprs->pid_map);
@@ -2939,6 +3182,12 @@ struct ofono_gprs *ofono_gprs_create(struct ofono_modem *modem,
 	gprs = g_try_new0(struct ofono_gprs, 1);
 	if (gprs == NULL)
 		return NULL;
+
+	gprs->sock = create_nl_socket();
+	if (gprs->sock == NULL) {
+		g_free(gprs);
+		return NULL;
+	}
 
 	gprs->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_GPRS,
 						gprs_remove, gprs);

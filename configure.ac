@@ -188,6 +188,16 @@ AC_SUBST(BLUEZ_CFLAGS)
 AC_SUBST(BLUEZ_LIBS)
 AM_CONDITIONAL(BLUETOOTH, test "${enable_bluetooth}" != "no")
 
+PKG_CHECK_MODULES(NETLINK, libnl-3.0, dummy=yes,
+		   			AC_MSG_ERROR(libnl-3.0 is required))
+AC_SUBST(NETLINK_CFLAGS)
+AC_SUBST(NETLINK_LIBS)
+
+PKG_CHECK_MODULES(NETLINKROUTE, libnl-route-3.0, dummy=yes,
+				AC_MSG_ERROR(libnl-route-3.0 is required))
+AC_SUBST(NETLINKROUTE_CFLAGS)
+AC_SUBST(NETLINKROUTE_LIBS)
+
 AC_ARG_ENABLE(nettime, AC_HELP_STRING([--disable-nettime],
                                 [disable Nettime plugin]),
                                         [enable_nettime=${enableval}])
