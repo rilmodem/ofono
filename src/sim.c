@@ -2485,10 +2485,13 @@ void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted)
 	sim_inserted_update(sim);
 	call_state_watches(sim);
 
-	if (inserted)
+	if (inserted) {
 		sim_initialize(sim);
-	else
+	} else {
+		sim->pin_type = OFONO_SIM_PASSWORD_NONE;
+
 		sim_free_state(sim);
+	}
 }
 
 unsigned int ofono_sim_add_state_watch(struct ofono_sim *sim,
