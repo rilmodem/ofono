@@ -48,6 +48,7 @@
 #include "idmap.h"
 #include "simutil.h"
 #include "util.h"
+#include "dns-client.h"
 
 #define GPRS_FLAG_ATTACHING 0x1
 #define GPRS_FLAG_RECHECK 0x2
@@ -60,6 +61,7 @@
 #define MAX_MESSAGE_CENTER_LENGTH 255
 #define MAX_CONTEXTS 256
 #define SUSPEND_TIMEOUT 8
+#define DNS_LOOKUP_TOUT_MS 15000
 
 struct ofono_gprs {
 	GSList *contexts;
@@ -141,6 +143,7 @@ struct pri_context {
 	struct ofono_gprs_primary_context context;
 	struct ofono_gprs_context *context_driver;
 	struct ofono_gprs *gprs;
+	ofono_dns_client_request_t lookup_req;
 };
 
 static void gprs_netreg_update(struct ofono_gprs *gprs);
@@ -539,214 +542,173 @@ static void pri_context_signal_settings(struct pri_context *ctx,
 				context_settings_append_ipv6);
 }
 
-static void set_default_dns(char **dns_servers)
+static void set_route(const struct context_settings *settings,
+					const char *ipstr, gboolean create)
 {
-	struct in_addr server_in_addr;
-	int i;
+	struct rtentry rt;
+	struct sockaddr_in addr;
+	int sk;
+	const char *debug_str = create ? "create" : "remove";
 
-	/*
-	 * In this function we modify the global variable _res from resolv.h to
-	 * be able to use a specific DNS server to resolve the MMS proxy/MMSC
-	 * address. This is a hack, although used in some places. See
-	 * http://docstore.mik.ua/orelly/networking_2ndEd/dns/ch15_02.htm and
-	 * http://git.busybox.net/busybox/tree/networking/nslookup.c
-	 * Also, the IPv6 case cannot be handled this way. ldns is a possible
-	 * option (http://www.nlnetlabs.nl/projects/ldns/), but it would
-	 * introduce new dependences. TODO: search alternatives.
-	 */
+	/* TODO Handle IPv6 case */
 
-	/* This is the number of name servers */
-	_res.nscount = 0;
+	DBG("%s for %s", ipstr, debug_str);
 
-	for (i = 0; dns_servers[i] != NULL; ++i) {
-		if (inet_pton(AF_INET, dns_servers[i], &server_in_addr) != 1)
-			continue;
+	if (settings->interface == NULL)
+		return;
 
-		_res.nsaddr_list[_res.nscount].sin_addr = server_in_addr;
-		++(_res.nscount);
+	sk = socket(PF_INET, SOCK_DGRAM, 0);
+	if (sk < 0)
+		return;
 
-		/* Size of nsaddr_list array (see resolv.h) */
-		if (_res.nscount == MAXNS)
-			break;
+	memset(&rt, 0, sizeof(rt));
+	rt.rt_dev = (char *) settings->interface;
+	rt.rt_flags = RTF_HOST;
+
+	if (create)
+		rt.rt_flags |= RTF_UP;
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = inet_addr(ipstr);
+	if (addr.sin_addr.s_addr == INADDR_NONE) {
+		ofono_error("Cannot %s route for invalid IP %s",
+							debug_str, ipstr);
+		return;
 	}
+	memcpy(&rt.rt_dst, &addr, sizeof(rt.rt_dst));
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = INADDR_ANY;
+	memcpy(&rt.rt_gateway, &addr, sizeof(rt.rt_gateway));
+	memcpy(&rt.rt_genmask, &addr, sizeof(rt.rt_genmask));
+
+	if (ioctl(sk, create ? SIOCADDRT : SIOCDELRT, &rt) < 0)
+		ofono_error("Failed to %s proxy host route: %s (%d)",
+					debug_str, strerror(errno), errno);
+
+	close(sk);
 }
 
-static gboolean lookup_address(const struct context_settings *settings,
-						const char *proxy,
-						struct sockaddr_in *addr)
+static void pri_activate_finish(struct pri_context *ctx)
 {
-	static gboolean first_time = TRUE;
-	struct addrinfo *result = NULL;
-	struct addrinfo hint;
-	int rc, ret = FALSE;
+	struct ofono_gprs_context *gc = ctx->context_driver;
+	struct context_settings *settings = gc->settings;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	dbus_bool_t value;
+
+	DBG("proxy %s port %u", ctx->proxy_host ? ctx->proxy_host : "NULL",
+							ctx->proxy_port);
+
+	if (ctx->proxy_host) {
+		settings->ipv4->proxy = g_strdup(ctx->proxy_host);
+		settings->ipv4->proxy_port = ctx->proxy_port;
+
+		if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS)
+			set_route(settings, ctx->proxy_host, TRUE);
+	}
+
+	ctx->active = TRUE;
+	__ofono_dbus_pending_reply(&ctx->pending,
+				dbus_message_new_method_return(ctx->pending));
+
+	if (gc->settings->interface != NULL)
+		pri_context_signal_settings(ctx, settings->ipv4 != NULL,
+							settings->ipv6 != NULL);
+
+	value = ctx->active;
+	ofono_dbus_signal_property_changed(conn, ctx->path,
+					OFONO_CONNECTION_CONTEXT_INTERFACE,
+					"Active", DBUS_TYPE_BOOLEAN, &value);
+}
+
+static void clean_dns_routes(struct pri_context *ctx)
+{
+	struct context_settings *settings = ctx->context_driver->settings;
+	int i;
+
+	for (i = 0; settings->ipv4->dns[i] != NULL; ++i)
+		set_route(settings, settings->ipv4->dns[i], FALSE);
+}
+
+static void lookup_address_cb(void *data, ofono_dns_client_status_t status,
+						struct sockaddr *ip_addr)
+{
+	struct pri_context *ctx = data;
+	char str[INET_ADDRSTRLEN];
+
+	if (status == OFONO_DNS_CLIENT_SUCCESS) {
+		void *addr;
+
+		if (ip_addr->sa_family == AF_INET) {
+			struct sockaddr_in *ip4 = (void *) ip_addr;
+			addr = &ip4->sin_addr;
+		} else {
+			/* Assume ipv6 */
+			struct sockaddr_in6 *ip6 = (void *) ip_addr;
+			addr = &ip6->sin6_addr;
+		}
+
+		if (inet_ntop(ip_addr->sa_family, addr, str, sizeof(str)))
+			ctx->proxy_host = g_strdup(str);
+		else
+			ofono_error("%s: Cannot convert type %d to address",
+						__func__, ip_addr->sa_family);
+	} else {
+		ofono_error("DNS error %s",
+					__ofono_dns_client_strerror(status));
+	}
+
+	ctx->lookup_req = NULL;
+
+	clean_dns_routes(ctx);
+	pri_activate_finish(ctx);
+}
+
+static void lookup_address(struct pri_context *ctx, const char *proxy)
+{
+	struct context_settings *settings = ctx->context_driver->settings;
 
 	DBG("hostname is %s", proxy);
 
-	/*
-	 * We need to initialize the resolv library before changing the DNS
-	 * server. gethostbyname("localhost") does that and at the same time
-	 * does not generate network traffic. Calling directly res_init does
-	 * not really work: that function is called internally again in the
-	 * first call to a resolv function. See link to busybox implementation
-	 * in set_default_dns().
-	 */
-	if (first_time) {
-		gethostbyname("localhost");
-		first_time = FALSE;
-	}
-
-	set_default_dns(settings->ipv4->dns);
-
-	memset(&hint, 0, sizeof(hint));
-	hint.ai_socktype = SOCK_STREAM;
-	rc = getaddrinfo(proxy, NULL /* service */, &hint, &result);
-
-	if (rc == 0) {
-		struct sockaddr *res_addr = result->ai_addr;
-
-		if (res_addr->sa_family == AF_INET) {
-			memcpy(addr, res_addr, sizeof(*addr));
-			ret = TRUE;
-		}
-
-		freeaddrinfo(result);
-	}
-
-	return ret;
+	ctx->lookup_req = __ofono_dns_client_submit_request(
+					proxy, settings->interface,
+					(const char **) settings->ipv4->dns,
+					DNS_LOOKUP_TOUT_MS,
+					lookup_address_cb, ctx);
+	if (ctx->lookup_req == NULL)
+		clean_dns_routes(ctx);
 }
 
-static void set_route(const struct context_settings *settings,
-							const char *ipstr)
+static void get_proxy_ip(struct pri_context *ctx, const char *host)
 {
-	struct rtentry rt;
-	struct sockaddr_in addr;
-	int sk;
-
-	/* TODO Handle IPv6 case */
-
-	DBG("%s", ipstr);
-
-	if (settings->interface == NULL)
-		return;
-
-	sk = socket(PF_INET, SOCK_DGRAM, 0);
-	if (sk < 0)
-		return;
-
-	memset(&rt, 0, sizeof(rt));
-	rt.rt_flags = RTF_UP | RTF_HOST;
-	rt.rt_dev = (char *) settings->interface;
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = inet_addr(ipstr);
-
-	if (addr.sin_addr.s_addr == INADDR_NONE) {
-		ofono_error("Cannot set route for invalid IP %s", ipstr);
-		return;
-	}
-
-	memcpy(&rt.rt_dst, &addr, sizeof(rt.rt_dst));
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = INADDR_ANY;
-	memcpy(&rt.rt_gateway, &addr, sizeof(rt.rt_gateway));
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = INADDR_ANY;
-	memcpy(&rt.rt_genmask, &addr, sizeof(rt.rt_genmask));
-
-	if (ioctl(sk, SIOCADDRT, &rt) < 0)
-		ofono_error("Failed to add proxy host route: %s (%d)",
-						strerror(errno), errno);
-
-	close(sk);
-}
-
-static void delete_route(const struct context_settings *settings,
-							const char *ipstr)
-{
-	struct rtentry rt;
-	struct sockaddr_in addr;
-	int sk;
-
-	/* TODO Handle IPv6 case */
-
-	DBG("%s", ipstr);
-
-	if (settings->interface == NULL)
-		return;
-
-	sk = socket(PF_INET, SOCK_DGRAM, 0);
-	if (sk < 0)
-		return;
-
-	memset(&rt, 0, sizeof(rt));
-	rt.rt_flags = RTF_UP | RTF_HOST;
-	rt.rt_dev = (char *) settings->interface;
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = inet_addr(ipstr);
-	if (addr.sin_addr.s_addr == INADDR_NONE) {
-		ofono_error("Cannot delete route for invalid IP %s", ipstr);
-		return;
-	}
-	memcpy(&rt.rt_dst, &addr, sizeof(rt.rt_dst));
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = INADDR_ANY;
-	memcpy(&rt.rt_gateway, &addr, sizeof(rt.rt_gateway));
-	memcpy(&rt.rt_genmask, &addr, sizeof(rt.rt_genmask));
-
-	if (ioctl(sk, SIOCDELRT, &rt) < 0)
-		ofono_error("Failed to delete proxy host route: %s (%d)",
-						strerror(errno), errno);
-
-	close(sk);
-}
-
-static struct in_addr get_proxy_ip(const struct context_settings *settings,
-							const char *host)
-{
+	struct context_settings *settings = ctx->context_driver->settings;
 	struct in_addr addr;
-	struct sockaddr_in sockaddr;
 	int i;
 
-	if (inet_pton(AF_INET, host, &addr) == 1)
-		return addr;
+	if (inet_pton(AF_INET, host, &addr) == 1) {
+		ctx->proxy_host = g_strdup(host);
+		return;
+	}
 
 	/* Not an IP -> use DNS if possible */
-
-	addr.s_addr = 0;
 
 	if (settings->ipv4 == NULL || settings->ipv4->dns == NULL ||
 			settings->ipv4->dns[0] == NULL) {
 		ofono_error("No DNS to find IP for MMS proxy/MMSC %s", host);
-		return addr;
+		return;
 	}
 
 	for (i = 0; settings->ipv4->dns[i] != NULL; ++i)
-		set_route(settings, settings->ipv4->dns[i]);
+		set_route(settings, settings->ipv4->dns[i], TRUE);
 
-	if (lookup_address(settings, host, &sockaddr))
-		addr = sockaddr.sin_addr;
-	else
-		ofono_error("Cannot find IP for MMS proxy/MMSC %s", host);
-
-	for (i = 0; settings->ipv4->dns[i] != NULL; ++i)
-		delete_route(settings, settings->ipv4->dns[i]);
-
-	return addr;
+	lookup_address(ctx, host);
 }
 
 static void pri_parse_proxy(struct pri_context *ctx)
 {
 	char *proxy, *scheme, *host, *port, *path;
-	struct in_addr addr;
 
 	g_free(ctx->proxy_host);
 	ctx->proxy_host = NULL;
@@ -795,10 +757,7 @@ static void pri_parse_proxy(struct pri_context *ctx)
 		}
 	}
 
-	addr = get_proxy_ip(ctx->context_driver->settings, host);
-
-	if (addr.s_addr != 0)
-		ctx->proxy_host = g_strdup(inet_ntoa(addr));
+	get_proxy_ip(ctx, host);
 
 	g_free(scheme);
 }
@@ -918,25 +877,6 @@ static void pri_reset_context_settings(struct pri_context *ctx)
 	g_free(interface);
 }
 
-static void pri_update_proxy_settings(struct pri_context *ctx)
-{
-	struct ofono_gprs_context *gc = ctx->context_driver;
-	struct context_settings *settings = gc->settings;
-
-	pri_parse_proxy(ctx);
-
-	DBG("proxy %s port %u", ctx->proxy_host ? ctx->proxy_host : "NULL",
-							ctx->proxy_port);
-
-	if (ctx->proxy_host) {
-		settings->ipv4->proxy = g_strdup(ctx->proxy_host);
-		settings->ipv4->proxy_port = ctx->proxy_port;
-
-		if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS)
-			set_route(settings, ctx->proxy_host);
-	}
-}
-
 static void append_context_properties(struct pri_context *ctx,
 					DBusMessageIter *dict)
 {
@@ -1018,8 +958,6 @@ static void pri_activate_callback(const struct ofono_error *error, void *data)
 {
 	struct pri_context *ctx = data;
 	struct ofono_gprs_context *gc = ctx->context_driver;
-	DBusConnection *conn = ofono_dbus_get_connection();
-	dbus_bool_t value;
 
 	DBG("%p", ctx);
 
@@ -1033,10 +971,6 @@ static void pri_activate_callback(const struct ofono_error *error, void *data)
 		return;
 	}
 
-	ctx->active = TRUE;
-	__ofono_dbus_pending_reply(&ctx->pending,
-				dbus_message_new_method_return(ctx->pending));
-
 	if (gc->settings->interface != NULL) {
 		pri_ifupdown(gc->settings->interface, TRUE);
 
@@ -1045,17 +979,15 @@ static void pri_activate_callback(const struct ofono_error *error, void *data)
 				pri_set_ipv4_addr(gc->settings->interface,
 							gc->settings->ipv4->ip);
 
-			pri_update_proxy_settings(ctx);
-		}
+			pri_parse_proxy(ctx);
 
-		pri_context_signal_settings(ctx, gc->settings->ipv4 != NULL,
-						gc->settings->ipv6 != NULL);
+			/* Not answer yet if waiting for DNS lookup */
+			if (ctx->lookup_req != NULL)
+				return;
+		}
 	}
 
-	value = ctx->active;
-	ofono_dbus_signal_property_changed(conn, ctx->path,
-					OFONO_CONNECTION_CONTEXT_INTERFACE,
-					"Active", DBUS_TYPE_BOOLEAN, &value);
+	pri_activate_finish(ctx);
 }
 
 static void pri_deactivate_callback(const struct ofono_error *error, void *data)
