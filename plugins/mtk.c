@@ -830,9 +830,9 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 		struct ofono_gprs_context *gc;
 		struct ril_gprs_driver_data gprs_data = { md->ril, modem };
 		struct ril_gprs_context_data inet_ctx =
-			{ md->ril, OFONO_GPRS_CONTEXT_TYPE_INTERNET };
+			{ md->ril, modem, OFONO_GPRS_CONTEXT_TYPE_INTERNET };
 		struct ril_gprs_context_data mms_ctx =
-			{ md->ril, OFONO_GPRS_CONTEXT_TYPE_MMS };
+			{ md->ril, modem, OFONO_GPRS_CONTEXT_TYPE_MMS };
 
 		DBG("SIM ready, creating more atoms");
 
@@ -1345,6 +1345,16 @@ void mtk_reset_all_modems(void)
 		mtk_set_online(mtk_data_0->modem, FALSE, set_offline_cb, NULL);
 	else
 		mtk_set_online(mtk_data_1->modem, FALSE, set_offline_cb, NULL);
+}
+
+void mtk_reset_modem(struct ofono_modem *modem)
+{
+
+	if (ofono_modem_get_powered(modem) == FALSE)
+		return;
+
+	ofono_modem_set_powered(modem, FALSE);
+	g_idle_add(mtk_connected, modem);
 }
 
 static void create_atoms_on_connection(struct ofono_modem *modem)
