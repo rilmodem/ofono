@@ -75,6 +75,7 @@ struct ril_sim_data {
 
 struct ril_gprs_context_data {
 	GRil *gril;
+	struct ofono_modem *modem;
 	enum ofono_gprs_context_type type;
 };
 

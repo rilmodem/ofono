@@ -35,6 +35,7 @@ void mtk_set_attach_state(struct ofono_modem *modem, ofono_bool_t attached);
 void mtk_detach_received(struct ofono_modem *modem);
 
 void mtk_reset_all_modems(void);
+void mtk_reset_modem(struct ofono_modem *modem);
 
 const char *mtk_request_id_to_string(int req);
 const char *mtk_unsol_request_to_string(int req);

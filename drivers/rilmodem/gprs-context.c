@@ -46,6 +46,10 @@
 
 #include "gprs.h"
 #include "rilmodem.h"
+#include "drivers/mtkmodem/mtkutil.h"
+
+#define NUM_DEACTIVATION_RETRIES 4
+#define TIME_BETWEEN_DEACT_RETRIES_S 2
 
 enum state {
 	STATE_IDLE,
@@ -56,18 +60,23 @@ enum state {
 
 struct gprs_context_data {
 	GRil *ril;
+	struct ofono_modem *modem;
+	unsigned vendor;
 	gint active_ctx_cid;
 	gint active_rild_cid;
 	enum state state;
 	guint call_list_id;
 	char *apn;
 	enum ofono_gprs_context_type type;
+	int deact_retries;
 };
 
 static void ril_gprs_context_deactivate_primary(struct ofono_gprs_context *gc,
 						unsigned int id,
 						ofono_gprs_context_cb_t cb,
 						void *data);
+static void ril_deactivate_data_call_cb(struct ril_msg *message,
+					gpointer user_data);
 
 static void set_context_disconnected(struct gprs_context_data *gcd)
 {
@@ -318,6 +327,52 @@ error:
 	}
 }
 
+static gboolean reset_modem(gpointer data)
+{
+	mtk_reset_modem(data);
+
+	return FALSE;
+}
+
+static gboolean retry_deactivate(gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_gprs_context_cb_t cb = cbd->cb;
+	struct ofono_gprs_context *gc = cbd->user;
+	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+	struct req_deactivate_data_call request;
+	struct parcel rilp;
+	struct ofono_error error;
+
+	/* We might have received a call list update while waiting */
+	if (gcd->state == STATE_IDLE) {
+		if (cb)
+			CALLBACK_WITH_SUCCESS(cb, cbd->data);
+
+		g_free(cbd);
+
+		return FALSE;
+	}
+
+	request.cid = gcd->active_rild_cid;
+	request.reason = RIL_DEACTIVATE_DATA_CALL_NO_REASON;
+
+	g_ril_request_deactivate_data_call(gcd->ril, &request, &rilp, &error);
+
+	if (g_ril_send(gcd->ril, RIL_REQUEST_DEACTIVATE_DATA_CALL, &rilp,
+			ril_deactivate_data_call_cb, cbd, g_free) == 0) {
+
+		ofono_error("%s: send DEACTIVATE_DATA_CALL failed for apn: %s",
+				__func__, gcd->apn);
+		if (cb)
+			CALLBACK_WITH_FAILURE(cb, cbd->data);
+
+		g_free(cbd);
+	}
+
+	return FALSE;
+}
+
 static void ril_deactivate_data_call_cb(struct ril_msg *message,
 					gpointer user_data)
 {
@@ -329,7 +384,6 @@ static void ril_deactivate_data_call_cb(struct ril_msg *message,
 
 	DBG("*gc: %p", gc);
 
-	/* Reply has no data... */
 	if (message->error == RIL_E_SUCCESS) {
 
 		g_ril_print_response_no_args(gcd->ril, message);
@@ -337,9 +391,9 @@ static void ril_deactivate_data_call_cb(struct ril_msg *message,
 		active_ctx_cid = gcd->active_ctx_cid;
 		set_context_disconnected(gcd);
 
-		/* If the deactivate was a result of a shutdown,
-		 * there won't be call back, so _deactivated()
-		 * needs to be called directly.
+		/*
+		 * If the deactivate was a result of a shutdown, there won't be
+		 * call back, so _deactivated() needs to be called directly.
 		 */
 		if (cb)
 			CALLBACK_WITH_SUCCESS(cb, cbd->data);
@@ -351,8 +405,31 @@ static void ril_deactivate_data_call_cb(struct ril_msg *message,
 				__func__, gcd->apn,
 				ril_error_to_string(message->error));
 
-		if (cb)
-			CALLBACK_WITH_FAILURE(cb, cbd->data);
+		/*
+		 * It has been detected that some modems fail the deactivation
+		 * temporarily. We do retries to handle that case.
+		 */
+		if (--(gcd->deact_retries) > 0) {
+			struct cb_data *cbd2;
+
+			cbd2 = cb_data_new(cb, cbd->data, gc);
+			g_timeout_add_seconds(TIME_BETWEEN_DEACT_RETRIES_S,
+							retry_deactivate, cbd2);
+		} else {
+			ofono_error("%s: retry limit hit", __func__);
+
+			if (cb)
+				CALLBACK_WITH_FAILURE(cb, cbd->data);
+
+			/*
+			 * Reset modem if MTK. TODO Failures deactivating a
+			 * context have not been reported for other modems, but
+			 * it would be good to have a generic method to force an
+			 * internal reset nonetheless.
+			 */
+			if (gcd->vendor == OFONO_RIL_VENDOR_MTK)
+				g_idle_add(reset_modem, gcd->modem);
+		}
 	}
 }
 
@@ -402,6 +479,7 @@ static void ril_gprs_context_deactivate_primary(struct ofono_gprs_context *gc,
 		goto error;
 	}
 
+	gcd->deact_retries = NUM_DEACTIVATION_RETRIES;
 	ret = g_ril_send(gcd->ril, RIL_REQUEST_DEACTIVATE_DATA_CALL, &rilp,
 				ril_deactivate_data_call_cb, cbd, g_free);
 
@@ -438,6 +516,8 @@ static int ril_gprs_context_probe(struct ofono_gprs_context *gc,
 		return -ENOMEM;
 
 	gcd->ril = g_ril_clone(ril_data->gril);
+	gcd->modem = ril_data->modem;
+	gcd->vendor = vendor;
 	set_context_disconnected(gcd);
 	gcd->call_list_id = -1;
 	gcd->type = ril_data->type;
