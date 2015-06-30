@@ -35,6 +35,8 @@
 #include <net/route.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <resolv.h>
+#include <netdb.h>
 
 #include <glib.h>
 #include <gdbus.h>
@@ -46,6 +48,7 @@
 #include "idmap.h"
 #include "simutil.h"
 #include "util.h"
+#include "dns-client.h"
 
 #define GPRS_FLAG_ATTACHING 0x1
 #define GPRS_FLAG_RECHECK 0x2
@@ -58,6 +61,7 @@
 #define MAX_MESSAGE_CENTER_LENGTH 255
 #define MAX_CONTEXTS 256
 #define SUSPEND_TIMEOUT 8
+#define DNS_LOOKUP_TOUT_MS 15000
 
 struct ofono_gprs {
 	GSList *contexts;
@@ -97,6 +101,7 @@ struct ipv4_settings {
 	char *gateway;
 	char **dns;
 	char *proxy;
+	uint16_t proxy_port;
 };
 
 struct ipv6_settings {
@@ -138,6 +143,7 @@ struct pri_context {
 	struct ofono_gprs_primary_context context;
 	struct ofono_gprs_context *context_driver;
 	struct ofono_gprs *gprs;
+	ofono_dns_client_request_t lookup_req;
 };
 
 static void gprs_netreg_update(struct ofono_gprs *gprs);
@@ -377,11 +383,11 @@ static void context_settings_append_ipv4(struct context_settings *settings,
 	ofono_dbus_dict_append(&array, "Interface",
 				DBUS_TYPE_STRING, &settings->interface);
 
-	/* If we have a Proxy, no other settings are relevant */
 	if (settings->ipv4->proxy) {
 		ofono_dbus_dict_append(&array, "Proxy", DBUS_TYPE_STRING,
 					&settings->ipv4->proxy);
-		goto done;
+		ofono_dbus_dict_append(&array, "ProxyPort", DBUS_TYPE_UINT16,
+					&settings->ipv4->proxy_port);
 	}
 
 	if (settings->ipv4->static_ip == TRUE)
@@ -536,9 +542,183 @@ static void pri_context_signal_settings(struct pri_context *ctx,
 				context_settings_append_ipv6);
 }
 
-static void pri_parse_proxy(struct pri_context *ctx, const char *proxy)
+static void set_route(const struct context_settings *settings,
+					const char *ipstr, gboolean create)
 {
-	char *scheme, *host, *port, *path;
+	struct rtentry rt;
+	struct sockaddr_in addr;
+	int sk;
+	const char *debug_str = create ? "create" : "remove";
+
+	/* TODO Handle IPv6 case */
+
+	DBG("%s for %s", ipstr, debug_str);
+
+	if (settings->interface == NULL)
+		return;
+
+	sk = socket(PF_INET, SOCK_DGRAM, 0);
+	if (sk < 0)
+		return;
+
+	memset(&rt, 0, sizeof(rt));
+	rt.rt_dev = (char *) settings->interface;
+	rt.rt_flags = RTF_HOST;
+
+	if (create)
+		rt.rt_flags |= RTF_UP;
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = inet_addr(ipstr);
+	if (addr.sin_addr.s_addr == INADDR_NONE) {
+		ofono_error("Cannot %s route for invalid IP %s",
+							debug_str, ipstr);
+		return;
+	}
+	memcpy(&rt.rt_dst, &addr, sizeof(rt.rt_dst));
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = INADDR_ANY;
+	memcpy(&rt.rt_gateway, &addr, sizeof(rt.rt_gateway));
+	memcpy(&rt.rt_genmask, &addr, sizeof(rt.rt_genmask));
+
+	if (ioctl(sk, create ? SIOCADDRT : SIOCDELRT, &rt) < 0)
+		ofono_error("Failed to %s proxy host route: %s (%d)",
+					debug_str, strerror(errno), errno);
+
+	close(sk);
+}
+
+static void pri_activate_finish(struct pri_context *ctx)
+{
+	struct ofono_gprs_context *gc = ctx->context_driver;
+	struct context_settings *settings = gc->settings;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	dbus_bool_t value;
+
+	DBG("proxy %s port %u", ctx->proxy_host ? ctx->proxy_host : "NULL",
+							ctx->proxy_port);
+
+	if (ctx->proxy_host) {
+		settings->ipv4->proxy = g_strdup(ctx->proxy_host);
+		settings->ipv4->proxy_port = ctx->proxy_port;
+
+		if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS)
+			set_route(settings, ctx->proxy_host, TRUE);
+	}
+
+	ctx->active = TRUE;
+	__ofono_dbus_pending_reply(&ctx->pending,
+				dbus_message_new_method_return(ctx->pending));
+
+	if (gc->settings->interface != NULL)
+		pri_context_signal_settings(ctx, settings->ipv4 != NULL,
+							settings->ipv6 != NULL);
+
+	value = ctx->active;
+	ofono_dbus_signal_property_changed(conn, ctx->path,
+					OFONO_CONNECTION_CONTEXT_INTERFACE,
+					"Active", DBUS_TYPE_BOOLEAN, &value);
+}
+
+static void clean_dns_routes(struct pri_context *ctx)
+{
+	struct context_settings *settings = ctx->context_driver->settings;
+	int i;
+
+	for (i = 0; settings->ipv4->dns[i] != NULL; ++i)
+		set_route(settings, settings->ipv4->dns[i], FALSE);
+}
+
+static void lookup_address_cb(void *data, ofono_dns_client_status_t status,
+						struct sockaddr *ip_addr)
+{
+	struct pri_context *ctx = data;
+	char str[INET_ADDRSTRLEN];
+
+	if (status == OFONO_DNS_CLIENT_SUCCESS) {
+		void *addr;
+
+		if (ip_addr->sa_family == AF_INET) {
+			struct sockaddr_in *ip4 = (void *) ip_addr;
+			addr = &ip4->sin_addr;
+		} else {
+			/* Assume ipv6 */
+			struct sockaddr_in6 *ip6 = (void *) ip_addr;
+			addr = &ip6->sin6_addr;
+		}
+
+		if (inet_ntop(ip_addr->sa_family, addr, str, sizeof(str)))
+			ctx->proxy_host = g_strdup(str);
+		else
+			ofono_error("%s: Cannot convert type %d to address",
+						__func__, ip_addr->sa_family);
+	} else {
+		ofono_error("DNS error %s",
+					__ofono_dns_client_strerror(status));
+	}
+
+	ctx->lookup_req = NULL;
+
+	clean_dns_routes(ctx);
+	pri_activate_finish(ctx);
+}
+
+static void lookup_address(struct pri_context *ctx, const char *proxy)
+{
+	struct context_settings *settings = ctx->context_driver->settings;
+
+	DBG("hostname is %s", proxy);
+
+	ctx->lookup_req = __ofono_dns_client_submit_request(
+					proxy, settings->interface,
+					(const char **) settings->ipv4->dns,
+					DNS_LOOKUP_TOUT_MS,
+					lookup_address_cb, ctx);
+	if (ctx->lookup_req == NULL)
+		clean_dns_routes(ctx);
+}
+
+static void get_proxy_ip(struct pri_context *ctx, const char *host)
+{
+	struct context_settings *settings = ctx->context_driver->settings;
+	struct in_addr addr;
+	int i;
+
+	if (inet_pton(AF_INET, host, &addr) == 1) {
+		ctx->proxy_host = g_strdup(host);
+		return;
+	}
+
+	/* Not an IP -> use DNS if possible */
+
+	if (settings->ipv4 == NULL || settings->ipv4->dns == NULL ||
+			settings->ipv4->dns[0] == NULL) {
+		ofono_error("No DNS to find IP for MMS proxy/MMSC %s", host);
+		return;
+	}
+
+	for (i = 0; settings->ipv4->dns[i] != NULL; ++i)
+		set_route(settings, settings->ipv4->dns[i], TRUE);
+
+	lookup_address(ctx, host);
+}
+
+static void pri_parse_proxy(struct pri_context *ctx)
+{
+	char *proxy, *scheme, *host, *port, *path;
+
+	g_free(ctx->proxy_host);
+	ctx->proxy_host = NULL;
+
+	if (ctx->message_proxy[0] != '\0')
+		proxy = ctx->message_proxy;
+	else if (ctx->message_center[0] != '\0')
+		proxy = ctx->message_center;
+	else
+		return;
 
 	scheme = g_strdup(proxy);
 	if (scheme == NULL)
@@ -577,8 +757,7 @@ static void pri_parse_proxy(struct pri_context *ctx, const char *proxy)
 		}
 	}
 
-	g_free(ctx->proxy_host);
-	ctx->proxy_host = g_strdup(host);
+	get_proxy_ip(ctx, host);
 
 	g_free(scheme);
 }
@@ -662,44 +841,6 @@ done:
 	close(sk);
 }
 
-static void pri_setproxy(const char *interface, const char *proxy)
-{
-	struct rtentry rt;
-	struct sockaddr_in addr;
-	int sk;
-
-	if (interface == NULL)
-		return;
-
-	sk = socket(PF_INET, SOCK_DGRAM, 0);
-	if (sk < 0)
-		return;
-
-	memset(&rt, 0, sizeof(rt));
-	rt.rt_flags = RTF_UP | RTF_HOST;
-	rt.rt_dev = (char *) interface;
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = inet_addr(proxy);
-	memcpy(&rt.rt_dst, &addr, sizeof(rt.rt_dst));
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = INADDR_ANY;
-	memcpy(&rt.rt_gateway, &addr, sizeof(rt.rt_gateway));
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = INADDR_ANY;
-	memcpy(&rt.rt_genmask, &addr, sizeof(rt.rt_genmask));
-
-	if (ioctl(sk, SIOCADDRT, &rt) < 0)
-		ofono_error("Failed to add proxy host route");
-
-	close(sk);
-}
-
 static void pri_reset_context_settings(struct pri_context *ctx)
 {
 	struct context_settings *settings;
@@ -734,24 +875,6 @@ static void pri_reset_context_settings(struct pri_context *ctx)
 	pri_ifupdown(interface, FALSE);
 
 	g_free(interface);
-}
-
-static void pri_update_mms_context_settings(struct pri_context *ctx)
-{
-	struct ofono_gprs_context *gc = ctx->context_driver;
-	struct context_settings *settings = gc->settings;
-
-	if (ctx->message_proxy)
-		settings->ipv4->proxy = g_strdup(ctx->message_proxy);
-
-	pri_parse_proxy(ctx, ctx->message_proxy);
-
-	DBG("proxy %s port %u", ctx->proxy_host, ctx->proxy_port);
-
-	pri_set_ipv4_addr(settings->interface, settings->ipv4->ip);
-
-	if (ctx->proxy_host)
-		pri_setproxy(settings->interface, ctx->proxy_host);
 }
 
 static void append_context_properties(struct pri_context *ctx,
@@ -835,8 +958,6 @@ static void pri_activate_callback(const struct ofono_error *error, void *data)
 {
 	struct pri_context *ctx = data;
 	struct ofono_gprs_context *gc = ctx->context_driver;
-	DBusConnection *conn = ofono_dbus_get_connection();
-	dbus_bool_t value;
 
 	DBG("%p", ctx);
 
@@ -850,25 +971,23 @@ static void pri_activate_callback(const struct ofono_error *error, void *data)
 		return;
 	}
 
-	ctx->active = TRUE;
-	__ofono_dbus_pending_reply(&ctx->pending,
-				dbus_message_new_method_return(ctx->pending));
-
 	if (gc->settings->interface != NULL) {
 		pri_ifupdown(gc->settings->interface, TRUE);
 
-		if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS &&
-				gc->settings->ipv4)
-			pri_update_mms_context_settings(ctx);
+		if (gc->settings->ipv4) {
+			if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS)
+				pri_set_ipv4_addr(gc->settings->interface,
+							gc->settings->ipv4->ip);
 
-		pri_context_signal_settings(ctx, gc->settings->ipv4 != NULL,
-						gc->settings->ipv6 != NULL);
+			pri_parse_proxy(ctx);
+
+			/* Not answer yet if waiting for DNS lookup */
+			if (ctx->lookup_req != NULL)
+				return;
+		}
 	}
 
-	value = ctx->active;
-	ofono_dbus_signal_property_changed(conn, ctx->path,
-					OFONO_CONNECTION_CONTEXT_INTERFACE,
-					"Active", DBUS_TYPE_BOOLEAN, &value);
+	pri_activate_finish(ctx);
 }
 
 static void pri_deactivate_callback(const struct ofono_error *error, void *data)

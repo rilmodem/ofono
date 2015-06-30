@@ -188,6 +188,17 @@ AC_SUBST(BLUEZ_CFLAGS)
 AC_SUBST(BLUEZ_LIBS)
 AM_CONDITIONAL(BLUETOOTH, test "${enable_bluetooth}" != "no")
 
+AC_ARG_ENABLE(cares, AC_HELP_STRING([--disable-cares],
+				[disable DNS client using c-ares library]),
+						[enable_cares=${enableval}])
+if (test "${enable_cares}" != "no"); then
+	PKG_CHECK_MODULES(CARES, libcares, dummy=yes,
+					AC_MSG_ERROR(libcares is required))
+fi
+AC_SUBST(CARES_CFLAGS)
+AC_SUBST(CARES_LIBS)
+AM_CONDITIONAL(CARES, test "${enable_cares}" != "no")
+
 AC_ARG_ENABLE(nettime, AC_HELP_STRING([--disable-nettime],
                                 [disable Nettime plugin]),
                                         [enable_nettime=${enableval}])
