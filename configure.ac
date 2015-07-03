@@ -188,7 +188,7 @@ AC_ARG_WITH([provisiondb], AC_HELP_STRING([--with-provisiondb=FILE],
 	[location of provision database]), [path_provisiondb=${withval}])
 
 AC_ARG_ENABLE(provision, AC_HELP_STRING([--disable-provision],
-				[disable provisioning suport]),
+				[disable provisioning support]),
 					[enable_provision=${enableval}])
 if (test "${enable_provision}" != "no"); then
 	if (test -n "${path_provisiondb}"); then
