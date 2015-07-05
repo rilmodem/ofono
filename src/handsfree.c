@@ -606,7 +606,7 @@ static DBusMessage *handsfree_request_phone_number(DBusConnection *conn,
 }
 
 static const GDBusMethodTable handsfree_methods[] = {
-	{ GDBUS_METHOD("GetProperties",
+	{ GDBUS_ASYNC_METHOD("GetProperties",
 			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
 			handsfree_get_properties) },
 	{ GDBUS_ASYNC_METHOD("SetProperty",
