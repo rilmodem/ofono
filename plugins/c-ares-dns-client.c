@@ -86,6 +86,19 @@ struct ares_watch {
 static GList *pending_requests = NULL;
 
 /*
+ * Table of number of requests per device. Key is a pointer to a string, value
+ * is a pointer to an integer. Used to know whether we need to (de)activate the
+ * device rp filter or not.
+ */
+static GTree *req_per_dev_cnt;
+
+/*
+ * Total number of requests that have specified a specific device. Used to know
+ * whether we need to (de)activate the generic rp filter or not.
+ */
+static int req_using_dev_cnt;
+
+/*
  * ares requests are often stopped from within ares callbacks. In these cases,
  * we defer deletion of the ares_request struct to the idle loop. This is the
  * glib source id associated with the deferred deletion task.
@@ -96,15 +109,11 @@ static void reset_ares_timeout(struct ares_request *request,
 			       gboolean destroy_old_source);
 static void stop_ares_request(struct ares_request *request);
 
-/*#define USE_RP_FILTER*/
+#define IFACE_ALL "all"
 
 /*
- * Set/unset reverse path filtering (from connman). Using this should make
- * setting routes for the DNS servers unnecessary, but unfortunately that is not
- * happening.
- * TODO Investigate why this is not working.
+ * Set/unset rp_filter file content for an interface (from connman)
  */
-#ifdef USE_RP_FILTER
 static void rp_filter_set(const char *interface, gboolean enabled)
 {
 	int fd;
@@ -122,11 +131,45 @@ static void rp_filter_set(const char *interface, gboolean enabled)
 		ofono_error("%s: cannot write (%s)", __func__, strerror(errno));
 	close(fd);
 }
-#else
-static void rp_filter_set(const char *interface, gboolean enabled)
+
+static void disable_rp_filter(const char *interface)
 {
+	int *if_cnt;
+
+	if ((if_cnt = g_tree_lookup(req_per_dev_cnt, interface)) == NULL) {
+		if_cnt = g_malloc0(sizeof(*if_cnt));
+		g_tree_insert(req_per_dev_cnt, g_strdup(interface), if_cnt);
+	}
+
+	/*
+	 * Both "all" and device specific rp_filter files have to be set to 0 to
+	 * disable rp filter for an interface. See
+	 * Documentation/networking/ip-sysctl.txt in kernel documentation.
+	 */
+
+	if ((*if_cnt)++ == 0)
+		rp_filter_set(interface, FALSE);
+
+	if (req_using_dev_cnt++ == 0)
+		rp_filter_set(IFACE_ALL, FALSE);
 }
-#endif
+
+static void enable_rp_filter(const char *interface)
+{
+	int *if_cnt;
+
+	if (--req_using_dev_cnt == 0)
+		rp_filter_set(IFACE_ALL, TRUE);
+
+	if ((if_cnt = g_tree_lookup(req_per_dev_cnt, interface)) == NULL) {
+		ofono_error("%s: %s interface not found!!!",
+							__func__, interface);
+		return;
+	}
+
+	if (--(*if_cnt) == 0)
+		rp_filter_set(interface, TRUE);
+}
 
 /*
  * Callback invoked when it's time to give control back to c-ares. Controlled by
@@ -361,7 +404,7 @@ static void destroy_ares_request(struct ares_request *request)
 	ares_destroy(request->channel);
 	g_free(request->hostname);
 	if (request->interface) {
-		rp_filter_set(request->interface, TRUE);
+		enable_rp_filter(request->interface);
 		g_free(request->interface);
 	}
 	for (node = request->servers; node != NULL; node = next) {
@@ -679,15 +722,22 @@ ofono_dns_client_submit_request(const char *hostname,
 	}
 
 	/*
-	 * If the caller has provided a preferred interface, tell c-ares to
-	 * send requests out that interface, and unset rf filter.
+	 * If the caller has provided a preferred interface, tell c-ares to send
+	 * requests out that interface (it uses internally SO_BINDTODEVICE to
+	 * force it), and unset rf filter (so we can receive packages which
+	 * source address is "unexpected" at this interface). This avoids the
+	 * need for routes to the DNS servers and forces using the provided
+	 * interface for the query. Unsetting the reverse path filter this way
+	 * works only for IPv4. TODO IPv6 uses ip6tables to enable/disable rp
+	 * filtering, and it is not clear if it is enabled by default. Needs
+	 * more investigation.
 	 */
 	if (interface != NULL) {
 		DBG("caller has specified device %s", interface);
 
 		request->interface = g_strdup(interface);
 		ares_set_local_dev(request->channel, request->interface);
-		rp_filter_set(request->interface, FALSE);
+		disable_rp_filter(request->interface);
 	}
 
 	request->cb = cb;
@@ -744,6 +794,10 @@ static int c_ares_init(void)
 				ares_strerror(ares_status));
 		return -1;
 	}
+
+	req_per_dev_cnt = g_tree_new_full((GCompareDataFunc) strcmp, NULL,
+								g_free, g_free);
+
 	return ofono_dns_client_driver_register(&dns_driver);
 }
 
@@ -753,6 +807,10 @@ static void c_ares_exit(void)
 	DBG("");
 
 	ofono_dns_client_driver_unregister(&dns_driver);
+
+	g_tree_destroy(req_per_dev_cnt);
+	req_per_dev_cnt = NULL;
+	req_using_dev_cnt = 0;
 
 	if (deferred_deletion_g_source_id != 0) {
 		g_source_remove(deferred_deletion_g_source_id);
