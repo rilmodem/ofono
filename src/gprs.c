@@ -623,15 +623,6 @@ static void pri_activate_finish(struct pri_context *ctx)
 					"Active", DBUS_TYPE_BOOLEAN, &value);
 }
 
-static void clean_dns_routes(struct pri_context *ctx)
-{
-	struct context_settings *settings = ctx->context_driver->settings;
-	int i;
-
-	for (i = 0; settings->ipv4->dns[i] != NULL; ++i)
-		set_route(settings, settings->ipv4->dns[i], FALSE);
-}
-
 static void lookup_address_cb(void *data, ofono_dns_client_status_t status,
 						struct sockaddr *ip_addr)
 {
@@ -662,7 +653,6 @@ static void lookup_address_cb(void *data, ofono_dns_client_status_t status,
 
 	ctx->lookup_req = NULL;
 
-	clean_dns_routes(ctx);
 	pri_activate_finish(ctx);
 }
 
@@ -677,15 +667,12 @@ static void lookup_address(struct pri_context *ctx, const char *proxy)
 					(const char **) settings->ipv4->dns,
 					DNS_LOOKUP_TOUT_MS,
 					lookup_address_cb, ctx);
-	if (ctx->lookup_req == NULL)
-		clean_dns_routes(ctx);
 }
 
 static void get_proxy_ip(struct pri_context *ctx, const char *host)
 {
 	struct context_settings *settings = ctx->context_driver->settings;
 	struct in_addr addr;
-	int i;
 
 	if (inet_pton(AF_INET, host, &addr) == 1) {
 		ctx->proxy_host = g_strdup(host);
@@ -699,9 +686,6 @@ static void get_proxy_ip(struct pri_context *ctx, const char *host)
 		ofono_error("No DNS to find IP for MMS proxy/MMSC %s", host);
 		return;
 	}
-
-	for (i = 0; settings->ipv4->dns[i] != NULL; ++i)
-		set_route(settings, settings->ipv4->dns[i], TRUE);
 
 	lookup_address(ctx, host);
 }
