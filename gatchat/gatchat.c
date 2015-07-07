@@ -583,7 +583,7 @@ static void have_line(struct at_chat *p, char *str)
 		return;
 
 	/* Check for echo, this should not happen, but lets be paranoid */
-	if (!strncmp(str, "AT", 2) == TRUE)
+	if (!strncmp(str, "AT", 2))
 		goto done;
 
 	cmd = g_queue_peek_head(p->command_queue);
