@@ -238,7 +238,7 @@ static void mtc_reachable_cb(const GIsiMessage *msg, void *data)
 	struct ofono_modem *modem = data;
 	struct isi_data *isi = ofono_modem_get_data(modem);
 
-	if (!g_isi_msg_error(msg) < 0)
+	if (g_isi_msg_error(msg) < 0)
 		return;
 
 	ISI_RESOURCE_DBG(msg);
