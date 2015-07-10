@@ -738,8 +738,17 @@ static void modem_register_from_proxy(GDBusProxy *proxy, const char *path)
 		return;
 
 	dbus_message_iter_get_basic(&iter, &paired);
-	if (paired == FALSE)
+
+	if (paired == FALSE) {
+		modem = ofono_modem_find(device_path_compare, (void *) path);
+
+		if (modem != NULL) {
+			ofono_modem_remove(modem);
+			g_dbus_proxy_set_removed_watch(proxy, NULL, NULL);
+			g_dbus_proxy_set_property_watch(proxy, NULL, NULL);
+		}
 		return;
+	}
 
 	if (g_dbus_proxy_get_property(proxy, "UUIDs", &iter) == FALSE)
 		return;
