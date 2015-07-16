@@ -481,7 +481,7 @@ static void mw_mwis_read_cb(int ok, int total_length, int record,
 	status = data[0];
 	data++;
 
-	for (i = 0; i < 5 && i < record_length - 1; i++) {
+	for (i = 0; i < 5 && i < record_length - 1; i++, data++) {
 		info.indication = (status >> i) & 1;
 		info.message_count = info.indication ? data[0] : 0;
 
