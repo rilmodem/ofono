@@ -1781,6 +1781,8 @@ static void gprs_netreg_update(struct ofono_gprs *gprs)
 
 	attach = attach && gprs->powered;
 
+	DBG("attach: %u, driver_attached: %u", attach, gprs->driver_attached);
+
 	if (gprs->driver_attached == attach)
 		return;
 
@@ -1802,9 +1804,6 @@ static void netreg_status_changed(int status, int lac, int ci, int tech,
 	struct ofono_gprs *gprs = data;
 
 	DBG("%d", status);
-
-	if (gprs->netreg_status == status)
-		return;
 
 	gprs->netreg_status = status;
 
