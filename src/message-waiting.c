@@ -481,7 +481,7 @@ static void mw_mwis_read_cb(int ok, int total_length, int record,
 	status = data[0];
 	data++;
 
-	for (i = 0; i < 5 && i < record_length - 1; i++) {
+	for (i = 0; i < 5 && i < record_length - 1; i++, data++) {
 		info.indication = (status >> i) & 1;
 		info.message_count = info.indication ? data[0] : 0;
 
@@ -732,6 +732,7 @@ static void mw_set_indicator(struct ofono_message_waiting *mw, int profile,
 		efmwis[i + 1] = mw->messages[i].message_count;
 
 	/* Fill in indicator state bits in byte 0 */
+	efmwis[0] = 0;
 	for (i = 0; i < 5 && i < mw->efmwis_length - 1; i++)
 		if (mw->messages[i].indication)
 			efmwis[0] |= 1 << i;
