@@ -89,7 +89,7 @@ static void cdma_connman_ifupdown(const char *interface, ofono_bool_t active)
 		return;
 
 	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, interface, IFNAMSIZ);
+	strncpy(ifr.ifr_name, interface, IFNAMSIZ - 1);
 
 	if (ioctl(sk, SIOCGIFFLAGS, &ifr) < 0)
 		goto done;
