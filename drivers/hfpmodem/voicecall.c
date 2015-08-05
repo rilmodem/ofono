@@ -333,6 +333,10 @@ static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		}
 	}
 
+	if (!ok && vd->calls)
+		g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
+					clcc_poll_cb, req->vc, NULL);
+
 	req->cb(&error, req->data);
 }
 
