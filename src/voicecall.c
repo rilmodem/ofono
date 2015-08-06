@@ -1513,6 +1513,9 @@ static int voicecall_dial(struct ofono_voicecall *vc, const char *number,
 	if (g_slist_length(vc->call_list) >= MAX_VOICE_CALLS)
 		return -EPERM;
 
+	if (valid_ussd_string(number, vc->call_list != NULL))
+		return -EINVAL;
+
 	if (!valid_long_phone_number_format(number))
 		return -EINVAL;
 
