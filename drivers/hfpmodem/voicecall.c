@@ -715,6 +715,16 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 				at_util_call_compare_by_status))
 		return;
 
+	/* some phones may send extra CCWA after active call is ended
+	 * this would trigger creation of second call in state 'WAITING'
+	 * as our previous WAITING call has been promoted to INCOMING
+	 */
+	if (g_slist_find_custom(vd->calls,
+				GINT_TO_POINTER(CALL_STATUS_INCOMING),
+				at_util_call_compare_by_status))
+		return;
+
+
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "+CCWA:"))
