@@ -1946,9 +1946,6 @@ static gboolean extract_app_port_common(struct sms_udh_iter *iter, int *dst,
 			if (((addr_hdr[0] << 8) | addr_hdr[1]) > 49151)
 				break;
 
-			if (((addr_hdr[2] << 8) | addr_hdr[3]) > 49151)
-				break;
-
 			dstport = (addr_hdr[0] << 8) | addr_hdr[1];
 			srcport = (addr_hdr[2] << 8) | addr_hdr[3];
 			is_addr_8bit = FALSE;
