@@ -22,6 +22,7 @@
 #include "ppp_cp.h"
 
 #define LCP_PROTOCOL	0xc021
+#define PAP_PROTOCOL	0xc023
 #define CHAP_PROTOCOL	0xc223
 #define IPCP_PROTO	0x8021
 #define IPV6CP_PROTO	0x8057
@@ -38,6 +39,7 @@
 
 struct ppp_chap;
 struct ppp_net;
+struct ppp_pap;
 
 struct ppp_header {
 	guint8 address;
@@ -107,6 +109,13 @@ void ipv6cp_free(struct pppcp_data *data);
 struct ppp_chap *ppp_chap_new(GAtPPP *ppp, guint8 method);
 void ppp_chap_free(struct ppp_chap *chap);
 void ppp_chap_process_packet(struct ppp_chap *chap, const guint8 *new_packet,
+				gsize len);
+
+/* PAP related functions */
+struct ppp_pap *ppp_pap_new(GAtPPP *ppp);
+void ppp_pap_free(struct ppp_pap *pap);
+gboolean ppp_pap_start(struct ppp_pap *pap);
+void ppp_pap_process_packet(struct ppp_pap *pap, const guint8 *new_packet,
 				gsize len);
 
 /* TUN / Network related functions */

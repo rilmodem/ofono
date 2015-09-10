@@ -61,15 +61,18 @@
 #include <ofono/gprs-context.h>
 #include <ofono/gnss.h>
 #include <ofono/handsfree.h>
+#include <ofono/siri.h>
 
 #include <drivers/atmodem/vendor.h>
 #include <drivers/atmodem/atutil.h>
 #include <drivers/hfpmodem/slc.h>
 
+#include "hfp.h"
 #include "ofono.h"
 
 static const char *none_prefix[] = { NULL };
 static const char *ptty_prefix[] = { "+PTTY:", NULL };
+static const char *simstate_prefix[] = { "+SIMSTATE:", NULL };
 static int next_iface = 0;
 static const char CONTROL_PATH[] = "/";
 static const char CONTROL_INTERFACE[] = "org.ofono.phonesim.Manager";
@@ -83,6 +86,7 @@ struct phonesim_data {
 	struct hfp_slc_info hfp_info;
 	unsigned int hfp_watch;
 	int batt_level;
+	struct ofono_sim *sim;
 };
 
 struct gprs_context_data {
@@ -350,12 +354,79 @@ static void phonesim_ctm_set(struct ofono_ctm *ctm, ofono_bool_t enable,
 	g_free(cbd);
 }
 
+static gboolean phonesim_radio_settings_register(gpointer user)
+{
+	struct ofono_radio_settings *rs = user;
+
+	ofono_radio_settings_register(rs);
+
+	return FALSE;
+}
+
+static int phonesim_radio_settings_probe(struct ofono_radio_settings *rs,
+					unsigned int vendor, void *data)
+{
+	GAtChat *chat;
+
+	DBG("");
+
+	chat = g_at_chat_clone(data);
+
+	ofono_radio_settings_set_data(rs, chat);
+	g_idle_add(phonesim_radio_settings_register, rs);
+
+	return 0;
+}
+
+static void phonesim_radio_settings_remove(struct ofono_radio_settings *rs)
+{
+	GAtChat *chat = ofono_radio_settings_get_data(rs);
+
+	DBG("");
+
+	ofono_radio_settings_set_data(rs, NULL);
+
+	g_at_chat_unref(chat);
+}
+
+static void phonesim_query_rat_mode(struct ofono_radio_settings *rs,
+                                ofono_radio_settings_rat_mode_query_cb_t cb,
+				void *data)
+{
+	DBG("");
+
+	CALLBACK_WITH_SUCCESS(cb, OFONO_RADIO_ACCESS_MODE_ANY, data);
+}
+
+static void phonesim_query_available_rats(struct ofono_radio_settings *rs,
+			ofono_radio_settings_available_rats_query_cb_t cb,
+			void *data)
+{
+	uint32_t techs = 0;
+
+	DBG("");
+
+	techs |= OFONO_RADIO_ACCESS_MODE_GSM;
+	techs |= OFONO_RADIO_ACCESS_MODE_UMTS;
+	techs |= OFONO_RADIO_ACCESS_MODE_LTE;
+
+	CALLBACK_WITH_SUCCESS(cb, techs, data);
+}
+
 static struct ofono_gprs_context_driver context_driver = {
 	.name			= "phonesim",
 	.probe			= phonesim_context_probe,
 	.remove			= phonesim_context_remove,
 	.activate_primary	= phonesim_activate_primary,
 	.deactivate_primary	= phonesim_deactivate_primary,
+};
+
+static struct ofono_radio_settings_driver radio_settings_driver = {
+	.name			= "phonesim",
+	.probe			= phonesim_radio_settings_probe,
+	.remove			= phonesim_radio_settings_remove,
+	.query_rat_mode		= phonesim_query_rat_mode,
+	.query_available_rats	= phonesim_query_available_rats,
 };
 
 static struct ofono_ctm_driver ctm_driver = {
@@ -394,6 +465,52 @@ static void phonesim_remove(struct ofono_modem *modem)
 static void phonesim_debug(const char *str, void *prefix)
 {
 	ofono_info("%s%s", (const char *) prefix, str);
+}
+
+static void simstate_query(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct phonesim_data *data = ofono_modem_get_data(modem);
+	GAtResultIter iter;
+	int inserted;
+
+	/* Assume that is this fails we are dealing with an older phonesim */
+	if (ok == FALSE)
+		goto done;
+
+	g_at_result_iter_init(&iter, result);
+	if (!g_at_result_iter_next(&iter, "+SIMSTATE:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &inserted))
+		return;
+
+	if (inserted != 1)
+		return;
+
+done:
+	ofono_sim_inserted_notify(data->sim, TRUE);
+}
+
+static void usimstate_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct phonesim_data *data = ofono_modem_get_data(modem);
+	GAtResultIter iter;
+	int inserted;
+
+	if (data->sim == NULL)
+		return;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+USIMSTATE:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &inserted))
+		return;
+
+	ofono_sim_inserted_notify(data->sim, inserted);
 }
 
 static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -650,6 +767,11 @@ static int phonesim_enable(struct ofono_modem *modem)
 
 	g_at_chat_send(data->chat, "AT+CBC", none_prefix, NULL, NULL, NULL);
 
+	g_at_chat_send(data->chat, "AT+SIMSTATE?", simstate_prefix,
+					simstate_query, modem, NULL);
+	g_at_chat_register(data->chat, "+USIMSTATE:", usimstate_notify,
+						FALSE, modem, NULL);
+
 	data->hfp_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_EMULATOR_HFP,
 					emulator_hfp_watch, data, NULL);
@@ -710,20 +832,16 @@ static int phonesim_disable(struct ofono_modem *modem)
 static void phonesim_pre_sim(struct ofono_modem *modem)
 {
 	struct phonesim_data *data = ofono_modem_get_data(modem);
-	struct ofono_sim *sim;
 
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
-	sim = ofono_sim_create(modem, 0, "atmodem", data->chat);
+	data->sim = ofono_sim_create(modem, 0, "atmodem", data->chat);
 
 	if (data->calypso)
 		ofono_voicecall_create(modem, 0, "calypsomodem", data->chat);
 	else
 		ofono_voicecall_create(modem, 0, "atmodem", data->chat);
-
-	if (sim)
-		ofono_sim_inserted_notify(sim, TRUE);
 }
 
 static void phonesim_post_sim(struct ofono_modem *modem)
@@ -743,6 +861,8 @@ static void phonesim_post_sim(struct ofono_modem *modem)
 
 	if (!data->calypso)
 		ofono_sms_create(modem, 0, "atmodem", data->chat);
+
+	ofono_radio_settings_create(modem, 0, "phonesim", data->chat);
 }
 
 static void phonesim_post_online(struct ofono_modem *modem)
@@ -910,6 +1030,7 @@ static void localhfp_pre_sim(struct ofono_modem *modem)
 	ofono_netreg_create(modem, 0, "hfpmodem", info);
 	ofono_call_volume_create(modem, 0, "hfpmodem", info);
 	ofono_handsfree_create(modem, 0, "hfpmodem", info);
+	ofono_siri_create(modem, 0, "hfpmodem", info);
 }
 
 static struct ofono_modem_driver localhfp_driver = {
@@ -1104,7 +1225,7 @@ static DBusMessage *control_reset(DBusConnection *conn,
 
 static const GDBusMethodTable control_methods[] = {
 	{ GDBUS_METHOD("Add",
-		GDBUS_ARGS({ "name", "s" }, {"address", "s"}, {"port", "s"}),
+		GDBUS_ARGS({"name", "s"}, {"address", "s"}, {"port", "s"}),
 		NULL,
 		control_add) },
 	{ GDBUS_METHOD("RemoveAll",
@@ -1142,6 +1263,7 @@ static void shutdown_control_channel(void)
 static int phonesim_init(void)
 {
 	int err;
+
 	err = ofono_modem_driver_register(&phonesim_driver);
 	if (err < 0)
 		return err;
@@ -1150,6 +1272,7 @@ static int phonesim_init(void)
 
 	ofono_gprs_context_driver_register(&context_driver);
 	ofono_ctm_driver_register(&ctm_driver);
+	ofono_radio_settings_driver_register(&radio_settings_driver);
 
 	parse_config();
 
@@ -1168,6 +1291,7 @@ static void phonesim_exit(void)
 
 	modem_list = NULL;
 
+	ofono_radio_settings_driver_unregister(&radio_settings_driver);
 	ofono_ctm_driver_unregister(&ctm_driver);
 
 	ofono_gprs_context_driver_unregister(&context_driver);

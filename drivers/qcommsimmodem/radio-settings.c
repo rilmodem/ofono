@@ -256,7 +256,7 @@ static struct ofono_radio_settings_driver driver = {
 	.set_rat_mode		= qcom_msim_set_rat_mode,
 	.query_fast_dormancy	= ril_query_fast_dormancy,
 	.set_fast_dormancy	= ril_set_fast_dormancy,
-	.query_modem_rats	= ril_query_modem_rats
+	.query_available_rats	= ril_query_available_rats
 };
 
 void qcom_msim_radio_settings_init(void)

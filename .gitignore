@@ -22,6 +22,8 @@ ltmain.sh
 missing
 stamp-h1
 autom4te.cache
+test-driver
+test-suite.log
 
 ofono.pc
 include/ofono
@@ -50,6 +52,8 @@ unit/test-mnclength
 unit/test-mtkreply
 unit/test-mtkrequest
 unit/test-mtkunsol
+unit/test-*.log
+unit/test-*.trs
 
 tools/huawei-audio
 tools/auto-enable

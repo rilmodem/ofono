@@ -26,11 +26,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include <glib.h>
 
 #include "ofono.h"
 #include "common.h"
+#include "hfp.h"
 #include "gatserver.h"
 #include "gatppp.h"
 
@@ -41,17 +43,18 @@ struct ofono_emulator {
 	enum ofono_emulator_type type;
 	GAtServer *server;
 	GAtPPP *ppp;
-	gboolean slc;
 	int l_features;
 	int r_features;
-	int events_mode;
-	gboolean events_ind;
-	unsigned char cmee_mode;
 	GSList *indicators;
 	guint callsetup_source;
-	gboolean clip;
-	gboolean ccwa;
 	int pns_id;
+	bool slc : 1;
+	unsigned int events_mode : 2;
+	bool events_ind : 1;
+	unsigned int cmee_mode : 2;
+	bool clip : 1;
+	bool ccwa : 1;
+	bool ddr_active : 1;
 };
 
 struct indicator {
@@ -452,7 +455,7 @@ static void brsf_cb(GAtServer *server, GAtServerRequestType type,
 		if (g_at_result_iter_next_number(&iter, &val) == FALSE)
 			goto fail;
 
-		if (val < 0 || val > 127)
+		if (val < 0 || val > 0xffff)
 			goto fail;
 
 		em->r_features = val;
@@ -635,7 +638,8 @@ done:
 
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 
-		em->slc = TRUE;
+		__ofono_emulator_slc_condition(em,
+					OFONO_EMULATOR_SLC_CONDITION_CMER);
 		break;
 	}
 
@@ -825,6 +829,113 @@ fail:
 	}
 }
 
+static void bind_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
+{
+	struct ofono_emulator *em = user_data;
+	char buf[128];
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_QUERY:
+		g_at_server_send_info(em->server, "+BIND: 1,1", TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+
+		__ofono_emulator_slc_condition(em,
+					OFONO_EMULATOR_SLC_CONDITION_BIND);
+		break;
+
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		sprintf(buf, "+BIND: (1)");
+		g_at_server_send_info(em->server, buf, TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+	{
+		GAtResultIter iter;
+		int hf_indicator;
+		int num_hf_indicators = 0;
+
+		g_at_result_iter_init(&iter, result);
+		g_at_result_iter_next(&iter, "");
+
+		/* check validity of the request */
+		while (num_hf_indicators < 20 &&
+				g_at_result_iter_next_number(&iter,
+							&hf_indicator)) {
+			if (hf_indicator > 0xffff)
+				goto fail;
+
+			num_hf_indicators += 1;
+		}
+
+		/* Check that we have nothing extra in the stream */
+		if (g_at_result_iter_skip_next(&iter) == TRUE)
+			goto fail;
+
+		/* request is valid, update the indicator activation status */
+		g_at_result_iter_init(&iter, result);
+		g_at_result_iter_next(&iter, "");
+
+		while (g_at_result_iter_next_number(&iter, &hf_indicator))
+			ofono_info("HF supports indicator: 0x%04x",
+					hf_indicator);
+
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+
+		break;
+	}
+
+	default:
+fail:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+}
+
+static void biev_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
+{
+	struct ofono_emulator *em = user_data;
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+	{
+		GAtResultIter iter;
+		int hf_indicator;
+		int val;
+
+		g_at_result_iter_init(&iter, result);
+		g_at_result_iter_next(&iter, "");
+
+		if (g_at_result_iter_next_number(&iter, &hf_indicator) == FALSE)
+			goto fail;
+
+		if (hf_indicator != HFP_HF_INDICATOR_ENHANCED_SAFETY)
+			goto fail;
+
+		if (em->ddr_active == FALSE)
+			goto fail;
+
+		if (g_at_result_iter_next_number(&iter, &val) == FALSE)
+			goto fail;
+
+		if (val < 0 || val > 1)
+			goto fail;
+
+		ofono_info("Enhanced Safety indicator: %d", val);
+
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	}
+
+	default:
+fail:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+}
+
 static void emulator_add_indicator(struct ofono_emulator *em, const char* name,
 					int min, int max, int dflt,
 					gboolean mandatory)
@@ -905,6 +1016,8 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 						em);
 
 	if (em->type == OFONO_EMULATOR_TYPE_HFP) {
+		em->ddr_active = true;
+
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_SERVICE, 0, 1, 0,
 									FALSE);
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_CALL, 0, 1, 0,
@@ -927,6 +1040,8 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 		g_at_server_register(em->server, "+CCWA", ccwa_cb, em, NULL);
 		g_at_server_register(em->server, "+CMEE", cmee_cb, em, NULL);
 		g_at_server_register(em->server, "+BIA", bia_cb, em, NULL);
+		g_at_server_register(em->server, "+BIND", bind_cb, em, NULL);
+		g_at_server_register(em->server, "+BIEV", biev_cb, em, NULL);
 	}
 
 	__ofono_atom_register(em->atom, emulator_unregister);
@@ -980,6 +1095,7 @@ struct ofono_emulator *ofono_emulator_create(struct ofono_modem *modem,
 	em->l_features |= HFP_AG_FEATURE_ENHANCED_CALL_STATUS;
 	em->l_features |= HFP_AG_FEATURE_ENHANCED_CALL_CONTROL;
 	em->l_features |= HFP_AG_FEATURE_EXTENDED_RES_CODE;
+	em->l_features |= HFP_AG_FEATURE_HF_INDICATORS;
 	em->events_mode = 3;	/* default mode is forwarding events */
 	em->cmee_mode = 0;	/* CME ERROR disabled by default */
 
@@ -1071,15 +1187,10 @@ struct ofono_emulator_request {
 };
 
 static void handler_proxy(GAtServer *server, GAtServerRequestType type,
-				GAtResult *result, gpointer userdata)
+					GAtResult *result, gpointer userdata)
 {
 	struct handler *h = userdata;
 	struct ofono_emulator_request req;
-
-	if (h->em->type == OFONO_EMULATOR_TYPE_HFP && h->em->slc == FALSE) {
-		g_at_server_send_final(h->em->server, G_AT_SERVER_RESULT_ERROR);
-		return;
-	}
 
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
@@ -1101,6 +1212,33 @@ static void handler_proxy(GAtServer *server, GAtServerRequestType type,
 	h->cb(h->em, &req, h->data);
 }
 
+static void handler_proxy_need_slc(GAtServer *server,
+					GAtServerRequestType type,
+					GAtResult *result, gpointer userdata)
+{
+	struct handler *h = userdata;
+
+	if (h->em->slc == FALSE) {
+		g_at_server_send_final(h->em->server, G_AT_SERVER_RESULT_ERROR);
+		return;
+	}
+
+	handler_proxy(server, type, result, userdata);
+}
+
+static void handler_proxy_chld(GAtServer *server, GAtServerRequestType type,
+				GAtResult *result, gpointer userdata)
+{
+	struct handler *h = userdata;
+
+	if (h->em->slc == FALSE && type != G_AT_SERVER_REQUEST_TYPE_SUPPORT) {
+		g_at_server_send_final(h->em->server, G_AT_SERVER_RESULT_ERROR);
+		return;
+	}
+
+	handler_proxy(server, type, result, userdata);
+}
+
 static void handler_destroy(gpointer userdata)
 {
 	struct handler *h = userdata;
@@ -1117,6 +1255,7 @@ ofono_bool_t ofono_emulator_add_handler(struct ofono_emulator *em,
 					void *data, ofono_destroy_func destroy)
 {
 	struct handler *h;
+	GAtServerNotifyFunc func = handler_proxy;
 
 	h = g_new0(struct handler, 1);
 	h->cb = cb;
@@ -1124,7 +1263,14 @@ ofono_bool_t ofono_emulator_add_handler(struct ofono_emulator *em,
 	h->destroy = destroy;
 	h->em = em;
 
-	if (g_at_server_register(em->server, prefix, handler_proxy, h,
+	if (em->type == OFONO_EMULATOR_TYPE_HFP) {
+		func = handler_proxy_need_slc;
+
+		if (!strcmp(prefix, "+CHLD"))
+			func = handler_proxy_chld;
+	}
+
+	if (g_at_server_register(em->server, prefix, func, h,
 					handler_destroy) == TRUE)
 		return TRUE;
 
@@ -1264,4 +1410,53 @@ void __ofono_emulator_set_indicator_forced(struct ofono_emulator *em,
 		} else
 			ind->deferred = TRUE;
 	}
+}
+
+void __ofono_emulator_slc_condition(struct ofono_emulator *em,
+					enum ofono_emulator_slc_condition cond)
+{
+	if (em->slc == TRUE)
+		return;
+
+	switch (cond) {
+	case OFONO_EMULATOR_SLC_CONDITION_CMER:
+		if ((em->r_features & HFP_HF_FEATURE_3WAY) &&
+				(em->l_features & HFP_AG_FEATURE_3WAY))
+			return;
+		/* Fall Through */
+
+	case OFONO_EMULATOR_SLC_CONDITION_CHLD:
+		if ((em->r_features & HFP_HF_FEATURE_HF_INDICATORS) &&
+				(em->l_features & HFP_HF_FEATURE_HF_INDICATORS))
+			return;
+		/* Fall Through */
+
+	case OFONO_EMULATOR_SLC_CONDITION_BIND:
+		ofono_info("SLC reached");
+		em->slc = TRUE;
+
+	default:
+		break;
+	}
+}
+
+void ofono_emulator_set_hf_indicator_active(struct ofono_emulator *em,
+						int indicator,
+						ofono_bool_t active)
+{
+	char buf[64];
+
+	if (!(em->l_features & HFP_HF_FEATURE_HF_INDICATORS))
+		return;
+
+	if (!(em->r_features & HFP_HF_FEATURE_HF_INDICATORS))
+		return;
+
+	if (indicator != HFP_HF_INDICATOR_ENHANCED_SAFETY)
+		return;
+
+	em->ddr_active = active;
+
+	sprintf(buf, "+BIND: %d,%d", HFP_HF_INDICATOR_ENHANCED_SAFETY, active);
+	g_at_server_send_unsolicited(em->server, buf);
 }

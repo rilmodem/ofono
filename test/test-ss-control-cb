@@ -12,7 +12,7 @@ def print_properties(cb):
 	properties = cb.GetProperties()
 
 	for p in properties:
-	    print("property %s, value: %s" % (p, properties[p]))
+		print("property %s, value: %s" % (p, properties[p]))
 
 if __name__ == "__main__":
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)

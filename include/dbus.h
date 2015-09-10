@@ -60,6 +60,7 @@ extern "C" {
 #define OFONO_GNSS_INTERFACE "org.ofono.AssistedSatelliteNavigation"
 #define OFONO_GNSS_POSR_AGENT_INTERFACE "org.ofono.PositioningRequestAgent"
 #define OFONO_HANDSFREE_INTERFACE OFONO_SERVICE ".Handsfree"
+#define OFONO_SIRI_INTERFACE OFONO_SERVICE ".Siri"
 #define OFONO_NETWORK_TIME_INTERFACE OFONO_SERVICE ".NetworkTime"
 
 /* CDMA Interfaces */
@@ -78,29 +79,29 @@ extern "C" {
 DBusConnection *ofono_dbus_get_connection(void);
 
 void ofono_dbus_dict_append(DBusMessageIter *dict, const char *key, int type,
-				void *value);
+				const void *value);
 
 void ofono_dbus_dict_append_array(DBusMessageIter *dict, const char *key,
-					int type, void *val);
+					int type, const void *val);
 
 void ofono_dbus_dict_append_dict(DBusMessageIter *dict, const char *key,
-					int type, void *val);
+					int type, const void *val);
 
 int ofono_dbus_signal_property_changed(DBusConnection *conn, const char *path,
 					const char *interface, const char *name,
-					int type, void *value);
+					int type, const void *value);
 
 int ofono_dbus_signal_array_property_changed(DBusConnection *conn,
 						const char *path,
 						const char *interface,
 						const char *name, int type,
-						void *value);
+						const void *value);
 
 int ofono_dbus_signal_dict_property_changed(DBusConnection *conn,
 						const char *path,
 						const char *interface,
 						const char *name, int type,
-						void *value);
+						const void *value);
 
 #ifdef __cplusplus
 }

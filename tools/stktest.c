@@ -205,8 +205,6 @@ static DBusMessage *stktest_error_busy(DBusMessage *msg)
 static DBusMessage *agent_release(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
-	g_print("Got Release\n");
-
 	if (pending) {
 		dbus_message_unref(pending);
 		pending = NULL;
@@ -602,7 +600,8 @@ static void listen_again(gpointer user_data)
 
 static void setup_emulator(GAtServer *server)
 {
-	g_at_server_set_debug(server, server_debug, "Server");
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_server_set_debug(server, server_debug, "Server");
 
 	g_at_server_register(server, "+CGMI", cgmi_cb, NULL, NULL);
 	g_at_server_register(server, "+CGMM", cgmm_cb, NULL, NULL);
@@ -678,8 +677,6 @@ static gboolean create_tcp(void)
 		close(sk);
 		return FALSE;
 	}
-
-	g_print("new tcp is created at tcp port %d\n", LISTEN_PORT);
 
 	server_io = g_io_channel_unix_new(sk);
 	g_io_channel_set_close_on_unref(server_io, TRUE);
@@ -867,8 +864,6 @@ static void register_agent()
 {
 	const char *path = "/default";
 	int status;
-
-	g_print("Gained STK interface, registering agent...\n");
 
 	status = send_with_reply(STKTEST_PATH, OFONO_STK_INTERFACE,
 					"RegisterAgent", NULL,

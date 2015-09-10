@@ -247,6 +247,32 @@ static gboolean gprs_proto_from_string(const char *str,
 	return FALSE;
 }
 
+static const char *gprs_auth_method_to_string(enum ofono_gprs_auth_method auth)
+{
+	switch (auth) {
+	case OFONO_GPRS_AUTH_METHOD_CHAP:
+		return "chap";
+	case OFONO_GPRS_AUTH_METHOD_PAP:
+		return "pap";
+	};
+
+	return NULL;
+}
+
+static gboolean gprs_auth_method_from_string(const char *str,
+					enum ofono_gprs_auth_method *auth)
+{
+	if (g_str_equal(str, "chap")) {
+		*auth = OFONO_GPRS_AUTH_METHOD_CHAP;
+		return TRUE;
+	} else if (g_str_equal(str, "pap")) {
+		*auth = OFONO_GPRS_AUTH_METHOD_PAP;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
 static unsigned int gprs_cid_alloc(struct ofono_gprs *gprs)
 {
 	return idmap_alloc(gprs->cid_map);
@@ -895,6 +921,10 @@ static void append_context_properties(struct pri_context *ctx,
 	ofono_dbus_dict_append(dict, "Password", DBUS_TYPE_STRING,
 				&strvalue);
 
+	strvalue = gprs_auth_method_to_string(ctx->context.auth_method);
+	ofono_dbus_dict_append(dict, "AuthenticationMethod", DBUS_TYPE_STRING,
+				&strvalue);
+
 	if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS ||
 		(ctx->message_center && strlen(ctx->message_center) > 0)) {
 		strvalue = ctx->message_proxy;
@@ -1267,6 +1297,37 @@ static DBusMessage *pri_set_message_center(struct pri_context *ctx,
 	return NULL;
 }
 
+static DBusMessage *pri_set_auth_method(struct pri_context *ctx,
+					DBusConnection *conn,
+					DBusMessage *msg, const char *str)
+{
+	GKeyFile *settings = ctx->gprs->settings;
+	enum ofono_gprs_auth_method auth;
+
+	if (gprs_auth_method_from_string(str, &auth) == FALSE)
+		return __ofono_error_invalid_format(msg);
+
+	if (ctx->context.auth_method == auth)
+		return dbus_message_new_method_return(msg);
+
+	ctx->context.auth_method = auth;
+
+	if (settings) {
+		g_key_file_set_string(settings, ctx->key,
+					"AuthenticationMethod", str);
+		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
+	}
+
+	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
+
+	ofono_dbus_signal_property_changed(conn, ctx->path,
+					OFONO_CONNECTION_CONTEXT_INTERFACE,
+					"AuthenticationMethod",
+					DBUS_TYPE_STRING, &str);
+
+	return NULL;
+}
+
 static DBusMessage *pri_set_property(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -1386,6 +1447,13 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 		dbus_message_iter_get_basic(&var, &str);
 
 		return pri_set_name(ctx, conn, msg, str);
+	} else if (!strcmp(property, "AuthenticationMethod")) {
+		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
+			return __ofono_error_invalid_args(msg);
+
+		dbus_message_iter_get_basic(&var, &str);
+
+		return pri_set_auth_method(ctx, conn, msg, str);
 	}
 
 	if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_ANY ||
@@ -1928,6 +1996,8 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 static void write_context_settings(struct ofono_gprs *gprs,
 					struct pri_context *context)
 {
+	const char *auth_method;
+
 	g_key_file_set_string(gprs->settings, context->key,
 				"Name", context->name);
 	g_key_file_set_string(gprs->settings, context->key,
@@ -1936,6 +2006,11 @@ static void write_context_settings(struct ofono_gprs *gprs,
 				"Username", context->context.username);
 	g_key_file_set_string(gprs->settings, context->key,
 				"Password", context->context.password);
+
+	auth_method = gprs_auth_method_to_string(context->context.auth_method);
+	g_key_file_set_string(gprs->settings, context->key,
+				"AuthenticationMethod", auth_method);
+
 	g_key_file_set_string(gprs->settings, context->key, "Type",
 				gprs_context_type_to_string(context->type));
 	g_key_file_set_string(gprs->settings, context->key, "Protocol",
@@ -2349,6 +2424,8 @@ static void provision_context(const struct ofono_gprs_provision_data *ap,
 
 	if (ap->password != NULL)
 		strcpy(context->context.password, ap->password);
+
+	context->context.auth_method = ap->auth_method;
 
 	strcpy(context->context.apn, ap->apn);
 	context->context.proto = ap->proto;
@@ -3095,12 +3172,14 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	char *apn = NULL;
 	char *msgproxy = NULL;
 	char *msgcenter = NULL;
+	char *authstr = NULL;
 	gboolean ret = FALSE;
 	gboolean legacy = FALSE;
 	gboolean preferred;
 	struct pri_context *context;
 	enum ofono_gprs_context_type type;
 	enum ofono_gprs_proto proto;
+	enum ofono_gprs_auth_method auth;
 	unsigned int id;
 
 	if (sscanf(group, "context%d", &id) != 1) {
@@ -3148,6 +3227,14 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	if (password == NULL)
 		goto error;
 
+	authstr = g_key_file_get_string(gprs->settings, group,
+						"AuthenticationMethod", NULL);
+	if (authstr == NULL)
+		authstr = g_strdup("chap");
+
+	if (gprs_auth_method_from_string(authstr, &auth) == FALSE)
+		goto error;
+
 	if (strlen(password) > OFONO_GPRS_MAX_PASSWORD_LENGTH)
 		goto error;
 
@@ -3187,6 +3274,7 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	strcpy(context->context.apn, apn);
 	context->context.proto = proto;
 	context->preferred = preferred;
+	context->context.auth_method = auth;
 
 	if (msgproxy != NULL)
 		strcpy(context->message_proxy, msgproxy);
@@ -3216,6 +3304,7 @@ error:
 	g_free(apn);
 	g_free(msgproxy);
 	g_free(msgcenter);
+	g_free(authstr);
 
 	return ret;
 }

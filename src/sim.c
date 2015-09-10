@@ -267,10 +267,12 @@ static char **get_locked_pins(struct ofono_sim *sim)
 	return ret;
 }
 
-static void **get_pin_retries(struct ofono_sim *sim)
+static void get_pin_retries(struct ofono_sim *sim, void ***out_dict,
+				unsigned char **out_retries)
 {
 	int i, nelem;
-	void **ret;
+	void **dict;
+	unsigned char *retries;
 
 	for (i = 1, nelem = 0; i < OFONO_SIM_PASSWORD_INVALID; i++) {
 		if (sim->pin_retries[i] == -1)
@@ -279,17 +281,22 @@ static void **get_pin_retries(struct ofono_sim *sim)
 		nelem += 1;
 	}
 
-	ret = g_new0(void *, nelem * 2 + 1);
+	dict = g_new0(void *, nelem * 2 + 1);
+	retries = g_new0(unsigned char, nelem);
 
 	for (i = 1, nelem = 0; i < OFONO_SIM_PASSWORD_INVALID; i++) {
 		if (sim->pin_retries[i] == -1)
 			continue;
 
-		ret[nelem++] = (void *) sim_passwd_name(i);
-		ret[nelem++] = &sim->pin_retries[i];
+		retries[nelem] = sim->pin_retries[i];
+
+		dict[nelem * 2] = (void *) sim_passwd_name(i);
+		dict[nelem * 2 + 1] = &retries[nelem];
+		nelem += 1;
 	}
 
-	return ret;
+	*out_dict = dict;
+	*out_retries = retries;
 }
 
 static char **get_service_numbers(GSList *service_numbers)
@@ -344,7 +351,8 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 	char **service_numbers;
 	char **locked_pins;
 	const char *pin_name;
-	void **pin_retries;
+	void **pin_retries_dict;
+	unsigned char *dbus_retries;
 	dbus_bool_t present = sim->state != OFONO_SIM_STATE_NOT_PRESENT;
 	dbus_bool_t fdn;
 	dbus_bool_t bdn;
@@ -419,10 +427,11 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 				DBUS_TYPE_STRING,
 				(void *) &pin_name);
 
-	pin_retries = get_pin_retries(sim);
+	get_pin_retries(sim, &pin_retries_dict, &dbus_retries);
 	ofono_dbus_dict_append_dict(&dict, "Retries", DBUS_TYPE_BYTE,
-								&pin_retries);
-	g_free(pin_retries);
+							&pin_retries_dict);
+	g_free(pin_retries_dict);
+	g_free(dbus_retries);
 
 done:
 	dbus_message_iter_close_container(&iter, &dict);
@@ -437,7 +446,8 @@ static void sim_pin_retries_query_cb(const struct ofono_error *error,
 	struct ofono_sim *sim = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(sim->atom);
-	void **pin_retries;
+	void **pin_retries_dict;
+	unsigned char *dbus_retries;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_error("Querying remaining pin retries failed");
@@ -449,11 +459,12 @@ static void sim_pin_retries_query_cb(const struct ofono_error *error,
 
 	memcpy(sim->pin_retries, retries, sizeof(sim->pin_retries));
 
-	pin_retries = get_pin_retries(sim);
+	get_pin_retries(sim, &pin_retries_dict, &dbus_retries);
 	ofono_dbus_signal_dict_property_changed(conn, path,
 					OFONO_SIM_MANAGER_INTERFACE, "Retries",
-					DBUS_TYPE_BYTE,	&pin_retries);
-	g_free(pin_retries);
+					DBUS_TYPE_BYTE,	&pin_retries_dict);
+	g_free(pin_retries_dict);
+	g_free(dbus_retries);
 }
 
 static void sim_pin_retries_check(struct ofono_sim *sim)

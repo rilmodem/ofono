@@ -191,6 +191,10 @@ Properties	boolean Active [readwrite]
 				"ims" - Used by IMS related services
 				"ia" - Used by IA related services
 
+		string AuthenticationMethod [readwrite]
+			Holds the PPP authentication method to use.  Valid
+			values are "pap" and "chap".  Defaults to "chap".
+
 		string Username [readwrite]
 
 			Holds the username to be used for authentication

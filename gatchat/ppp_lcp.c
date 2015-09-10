@@ -238,25 +238,49 @@ static enum rcr_result lcp_rcr(struct pppcp_data *pppcp,
 			guint8 method = option_data[2];
 			guint8 *option;
 
-			if ((proto == CHAP_PROTOCOL) && (method == MD5))
-				break;
+			switch (g_at_ppp_get_auth_method(ppp)) {
+			case G_AT_PPP_AUTH_METHOD_CHAP:
+				if (proto == CHAP_PROTOCOL && method == MD5)
+					break;
 
-			/*
-			 * try to suggest CHAP & MD5.  If we are out
-			 * of memory, just reject.
-			 */
+				/*
+				 * Try to suggest CHAP/MD5.
+				 * Just reject if we run out of memory.
+				 */
+				option = g_try_malloc0(5);
+				if (option == NULL)
+					return RCR_REJECT;
 
-			option = g_try_malloc0(5);
-			if (option == NULL)
-				return RCR_REJECT;
+				option[0] = AUTH_PROTO;
+				option[1] = 5;
+				put_network_short(&option[2], CHAP_PROTOCOL);
+				option[4] = MD5;
+				*new_options = option;
+				*new_len = 5;
 
-			option[0] = AUTH_PROTO;
-			option[1] = 5;
-			put_network_short(&option[2], CHAP_PROTOCOL);
-			option[4] = MD5;
-			*new_options = option;
-			*new_len = 5;
-			return RCR_NAK;
+				return RCR_NAK;
+
+			case G_AT_PPP_AUTH_METHOD_PAP:
+				if (proto == PAP_PROTOCOL)
+					break;
+
+				/*
+				 * Try to suggest PAP.
+				 * Just reject if we run out of memory.
+				 */
+				option = g_try_malloc0(4);
+				if (option == NULL)
+					return RCR_REJECT;
+
+				option[0] = AUTH_PROTO;
+				option[1] = 4;
+				put_network_short(&option[2], PAP_PROTOCOL);
+				*new_options = option;
+				*new_len = 4;
+
+				return RCR_NAK;
+			}
+			break;
 		}
 		case ACCM:
 		case PFC:

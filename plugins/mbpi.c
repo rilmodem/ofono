@@ -130,6 +130,37 @@ static const GMarkupParser text_parser = {
 	NULL,
 };
 
+static void authentication_start(GMarkupParseContext *context,
+			const gchar **attribute_names,
+			const gchar **attribute_values,
+			enum ofono_gprs_auth_method *auth_method,
+			GError **error)
+{
+	const char *text = NULL;
+	int i;
+
+	for (i = 0; attribute_names[i]; i++)
+		if (g_str_equal(attribute_names[i], "method") == TRUE)
+			text = attribute_values[i];
+
+	if (text == NULL) {
+		mbpi_g_set_error(context, error, G_MARKUP_ERROR,
+					G_MARKUP_ERROR_MISSING_ATTRIBUTE,
+					"Missing attribute: method");
+		return;
+	}
+
+	if (strcmp(text, "chap") == 0)
+		*auth_method = OFONO_GPRS_AUTH_METHOD_CHAP;
+	else if (strcmp(text, "pap") == 0)
+		*auth_method = OFONO_GPRS_AUTH_METHOD_PAP;
+	else
+		mbpi_g_set_error(context, error, G_MARKUP_ERROR,
+					G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE,
+					"Unknown authentication method: %s",
+					text);
+}
+
 static void usage_start(GMarkupParseContext *context,
 			const gchar **attribute_names,
 			const gchar **attribute_values,
@@ -176,6 +207,15 @@ static void apn_start(GMarkupParseContext *context, const gchar *element_name,
 	else if (g_str_equal(element_name, "password"))
 		g_markup_parse_context_push(context, &text_parser,
 						&apn->password);
+	else if (g_str_equal(element_name, "authentication"))
+		authentication_start(context, attribute_names,
+				attribute_values, &apn->auth_method, error);
+	else if (g_str_equal(element_name, "mmsc"))
+		g_markup_parse_context_push(context, &text_parser,
+						&apn->message_center);
+	else if (g_str_equal(element_name, "mmsproxy"))
+		g_markup_parse_context_push(context, &text_parser,
+						&apn->message_proxy);
 	else if (g_str_equal(element_name, "usage"))
 		usage_start(context, attribute_names, attribute_values,
 				&apn->type, error);
@@ -186,7 +226,9 @@ static void apn_end(GMarkupParseContext *context, const gchar *element_name,
 {
 	if (g_str_equal(element_name, "name") ||
 			g_str_equal(element_name, "username") ||
-			g_str_equal(element_name, "password"))
+			g_str_equal(element_name, "password") ||
+			g_str_equal(element_name, "mmsc") ||
+			g_str_equal(element_name, "mmsproxy"))
 		g_markup_parse_context_pop(context);
 }
 
@@ -285,6 +327,7 @@ static void apn_handler(GMarkupParseContext *context, struct gsm_data *gsm,
 	ap->apn = g_strdup(apn);
 	ap->type = OFONO_GPRS_CONTEXT_TYPE_INTERNET;
 	ap->proto = OFONO_GPRS_PROTO_IP;
+	ap->auth_method = OFONO_GPRS_AUTH_METHOD_CHAP;
 
 	g_markup_parse_context_push(context, &apn_parser, ap);
 }

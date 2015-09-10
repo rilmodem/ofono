@@ -115,13 +115,14 @@ gint at_util_call_compare(gconstpointer a, gconstpointer b)
 	return 0;
 }
 
-GSList *at_util_parse_clcc(GAtResult *result)
+GSList *at_util_parse_clcc(GAtResult *result, unsigned int *ret_mpty_ids)
 {
 	GAtResultIter iter;
 	GSList *l = NULL;
 	int id, dir, status, type;
 	ofono_bool_t mpty;
 	struct ofono_call *call;
+	unsigned int mpty_ids = 0;
 
 	g_at_result_iter_init(&iter, result);
 
@@ -173,7 +174,13 @@ GSList *at_util_parse_clcc(GAtResult *result)
 			call->clip_validity = 2;
 
 		l = g_slist_insert_sorted(l, call, at_util_call_compare);
+
+		if (mpty)
+			mpty_ids |= 1 << id;
 	}
+
+	if (ret_mpty_ids)
+		*ret_mpty_ids = mpty_ids;
 
 	return l;
 }

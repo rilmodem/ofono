@@ -1656,6 +1656,8 @@ static void cind_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	int min = 0;
 	int max = 0;
 	int tmp_min, tmp_max, invalid;
+	int i, len;
+	char buf[256];
 
 	if (!ok)
 		goto error;
@@ -1715,8 +1717,30 @@ static void cind_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (nd->signal_index == 0)
 		goto error;
 
-	g_at_chat_send(nd->chat, "AT+CMER=?", cmer_prefix,
+	/* Turn off all CIEV indicators except the signal indicator */
+	len = sprintf(buf, "AT+CIND=");
+
+	for (i = 1; i < index - 1; i++)
+		len += sprintf(buf + len, i == nd->signal_index ? "1," : "0,");
+
+	len += sprintf(buf + len, i == nd->signal_index ? "1" : "0");
+	g_at_chat_send(nd->chat, buf, NULL, NULL, NULL, NULL);
+
+	switch (nd->vendor) {
+	case OFONO_VENDOR_MBM:
+		/*
+		 * MBM devices report 'CMER: (0,3),(0,2),0,(0-1),0' when
+		 * +CMER=? is executed, which cannot be parsed.  Simply
+		 * send the desired settings in this case.
+		 */
+		g_at_chat_send(nd->chat, "AT+CMER=3,0,0,1", none_prefix,
+				at_cmer_set_cb, netreg, NULL);
+		break;
+	default:
+		g_at_chat_send(nd->chat, "AT+CMER=?", cmer_prefix,
 				at_cmer_query_cb, netreg, NULL);
+		break;
+	}
 
 	return;
 
@@ -1740,6 +1764,14 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 
 	switch (nd->vendor) {
+	case OFONO_VENDOR_SIMCOM:
+		/* Register for CSQ changes */
+		g_at_chat_send(nd->chat, "AT+AUTOCSQ=1,1", none_prefix,
+				NULL, NULL, NULL);
+
+		g_at_chat_register(nd->chat, "+CSQ:",
+					csq_notify, FALSE, netreg, NULL);
+		break;
 	case OFONO_VENDOR_PHONESIM:
 		g_at_chat_register(nd->chat, "+CSQ:",
 					csq_notify, FALSE, netreg, NULL);
@@ -1885,7 +1917,6 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		break;
 	case OFONO_VENDOR_NOKIA:
 	case OFONO_VENDOR_SAMSUNG:
-	case OFONO_VENDOR_SIMCOM:
 		/* Signal strength reporting via CIND is not supported */
 		break;
 	default:

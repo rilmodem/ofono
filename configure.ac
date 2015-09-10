@@ -1,8 +1,8 @@
 AC_PREREQ(2.60)
-AC_INIT(ofono, 1.12)
+AC_INIT(ofono, 1.16)
 
 AM_INIT_AUTOMAKE([foreign subdir-objects color-tests])
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS(config.h)
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
@@ -116,12 +116,6 @@ AM_CONDITIONAL(TEST, test "${enable_test}" = "yes")
 
 AC_ARG_ENABLE(tools, AC_HELP_STRING([--enable-tools],
 		[enable testing tools]), [enable_tools=${enableval}])
-if (test "${enable_tools}" = "yes"); then
-	PKG_CHECK_MODULES(USB, libusb-1.0, dummy=yes,
-				AC_MSG_ERROR(USB library is required))
-	AC_SUBST(USB_CFLAGS)
-	AC_SUBST(USB_LIBS)
-fi
 AM_CONDITIONAL(TOOLS, test "${enable_tools}" = "yes")
 
 AC_ARG_ENABLE(dundee, AC_HELP_STRING([--enable-dundee],
@@ -178,14 +172,21 @@ AC_ARG_ENABLE(qmimodem, AC_HELP_STRING([--disable-qmimodem],
 AM_CONDITIONAL(QMIMODEM, test "${enable_qmimodem}" != "no")
 
 AC_ARG_ENABLE(bluetooth, AC_HELP_STRING([--disable-bluetooth],
-				[disable Bluetooth modem support]),
+				[disable BlueZ 4 and BlueZ 5 plugins support]),
 					[enable_bluetooth=${enableval}])
-if (test "${enable_bluetooth}" != "no"); then
-	PKG_CHECK_MODULES(BLUEZ, bluez >= 4.99, dummy=yes,
-			AC_MSG_ERROR(Bluetooth library >= 4.99 is required))
+
+AC_ARG_ENABLE(bluez4, AC_HELP_STRING([--enable-bluez4],
+				[enable BlueZ 4 plugins support prior to BlueZ 5]),
+					[enable_bluez4=${enableval}])
+
+if (test "${enable_bluez4}" = "yes"); then
+	PKG_CHECK_MODULES(BLUEZ, bluez >= 4.99 bluez < 5, dummy=yes,
+			  AC_MSG_ERROR(Bluetooth library >= 4.99 and < 5 is required))
+	AC_SUBST(BLUEZ_CFLAGS)
+	AC_SUBST(BLUEZ_LIBS)
 fi
-AC_SUBST(BLUEZ_CFLAGS)
-AC_SUBST(BLUEZ_LIBS)
+
+AM_CONDITIONAL(BLUEZ4, test "${enable_bluetooth}" != "no" && test "${enable_bluez4}" = "yes")
 AM_CONDITIONAL(BLUETOOTH, test "${enable_bluetooth}" != "no")
 
 AC_ARG_ENABLE(cares, AC_HELP_STRING([--disable-cares],

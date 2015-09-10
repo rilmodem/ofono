@@ -119,7 +119,8 @@ static void get_file_attributes_cb(struct qmi_result *result, void *user_data)
 		break;
 	case 0x02:	/* USIM application */
 		ok = sim_parse_3g_get_response(attr->raw_value, raw_len,
-					 &flen, &rlen, &str, access, NULL);
+						&flen, &rlen, &str, access,
+						NULL);
 		file_status = EF_STATUS_VALID;
 		break;
 	default:

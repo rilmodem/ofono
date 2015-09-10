@@ -37,13 +37,16 @@
 #include <ofono/voicecall.h>
 
 #include "common.h"
+#include "hfp.h"
 
 #include "hfpmodem.h"
 #include "slc.h"
 
 #define POLL_CLCC_INTERVAL 2000
 #define POLL_CLCC_DELAY 50
+#define EXPECT_RELEASE_DELAY 50
 #define CLIP_TIMEOUT 500
+#define EXPECT_RING_DELAY 200
 
 static const char *none_prefix[] = { NULL };
 static const char *clcc_prefix[] = { "+CLCC:", NULL };
@@ -57,6 +60,7 @@ struct voicecall_data {
 	int cind_val[HFP_INDICATOR_LAST];
 	unsigned int local_release;
 	unsigned int clcc_source;
+	unsigned int expect_release_source;
 	unsigned int clip_source;
 };
 
@@ -89,6 +93,14 @@ static GSList *find_dialing(GSList *calls)
 					at_util_call_compare_by_status);
 
 	return c;
+}
+
+static void voicecall_notify(gpointer value, gpointer user)
+{
+	struct ofono_call *call = value;
+	struct ofono_voicecall *vc = user;
+
+	ofono_voicecall_notify(vc, call);
 }
 
 static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
@@ -186,6 +198,11 @@ static void release_with_status(struct ofono_voicecall *vc, int status)
 		c = c->next;
 		g_slist_free_1(t);
 	}
+
+	if (vd->expect_release_source) {
+		g_source_remove(vd->expect_release_source);
+		vd->expect_release_source = 0;
+	}
 }
 
 static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -197,11 +214,13 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_call *nc, *oc;
 	unsigned int num_active = 0;
 	unsigned int num_held = 0;
+	GSList *notify_calls = NULL;
+	unsigned int mpty_ids;
 
 	if (!ok)
 		return;
 
-	calls = at_util_parse_clcc(result);
+	calls = at_util_parse_clcc(result, &mpty_ids);
 
 	n = calls;
 	o = vd->calls;
@@ -234,7 +253,7 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		} else if (nc && (oc == NULL || (nc->id < oc->id))) {
 			/* new call, signal it */
 			if (nc->type == 0)
-				ofono_voicecall_notify(vc, nc);
+				notify_calls = g_slist_append(notify_calls, nc);
 
 			n = n->next;
 		} else {
@@ -249,12 +268,23 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 			if (memcmp(nc, oc, sizeof(struct ofono_call)) &&
 					!nc->type)
-				ofono_voicecall_notify(vc, nc);
+				notify_calls = g_slist_prepend(notify_calls,
+									nc);
 
 			n = n->next;
 			o = o->next;
 		}
 	}
+
+	/*
+	 * Disconnections were already reported, so process the rest of the
+	 * notifications. Note that the new calls are placed at the end of the
+	 * list, after other state changes
+	 */
+	g_slist_foreach(notify_calls, voicecall_notify, vc);
+	g_slist_free(notify_calls);
+
+	ofono_voicecall_mpty_hint(vc, mpty_ids);
 
 	g_slist_foreach(vd->calls, (GFunc) g_free, NULL);
 	g_slist_free(vd->calls);
@@ -265,7 +295,7 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	 * we won't get indicator update if any of them is released by CHLD=1x.
 	 * So we have to poll it.
 	 */
-	if (num_active > 1 || num_held > 1)
+	if ((num_active > 1 || num_held > 1) && !vd->clcc_source)
 		vd->clcc_source = g_timeout_add(POLL_CLCC_INTERVAL, poll_clcc,
 							vc);
 }
@@ -405,8 +435,13 @@ static void hfp_answer(struct ofono_voicecall *vc,
 static void hfp_hangup(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data)
 {
+	unsigned int affected = (1 << CALL_STATUS_INCOMING) |
+				(1 << CALL_STATUS_DIALING) |
+				(1 << CALL_STATUS_ALERTING) |
+				(1 << CALL_STATUS_ACTIVE);
+
 	/* Hangup current active call */
-	hfp_template("AT+CHUP", vc, generic_cb, 0x1, cb, data);
+	hfp_template("AT+CHUP", vc, generic_cb, affected, cb, data);
 }
 
 static void hfp_hold_all_active(struct ofono_voicecall *vc,
@@ -414,7 +449,7 @@ static void hfp_hold_all_active(struct ofono_voicecall *vc,
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 
-	if (vd->ag_mpty_features & AG_CHLD_2) {
+	if (vd->ag_mpty_features & HFP_AG_CHLD_2) {
 		hfp_template("AT+CHLD=2", vc, generic_cb, 0, cb, data);
 		return;
 	}
@@ -428,7 +463,7 @@ static void hfp_release_all_held(struct ofono_voicecall *vc,
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	unsigned int held_status = 1 << CALL_STATUS_HELD;
 
-	if (vd->ag_mpty_features & AG_CHLD_0) {
+	if (vd->ag_mpty_features & HFP_AG_CHLD_0) {
 		hfp_template("AT+CHLD=0", vc, generic_cb, held_status,
 				cb, data);
 		return;
@@ -441,10 +476,9 @@ static void hfp_set_udub(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	unsigned int incoming_or_waiting =
-		(1 << CALL_STATUS_INCOMING) | (1 << CALL_STATUS_WAITING);
+	unsigned int incoming_or_waiting = 1 << CALL_STATUS_WAITING;
 
-	if (vd->ag_mpty_features & AG_CHLD_0) {
+	if (vd->ag_mpty_features & HFP_AG_CHLD_0) {
 		hfp_template("AT+CHLD=0", vc, generic_cb, incoming_or_waiting,
 				cb, data);
 		return;
@@ -453,13 +487,65 @@ static void hfp_set_udub(struct ofono_voicecall *vc,
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
+static gboolean expect_release(gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+
+	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
+				clcc_poll_cb, vc, NULL);
+
+	vd->expect_release_source = 0;
+
+	return FALSE;
+}
+
+static gboolean expect_ring(gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+
+	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
+				clcc_poll_cb, vc, NULL);
+
+	vd->clip_source = 0;
+
+	return FALSE;
+}
+
+static void release_all_active_cb(gboolean ok, GAtResult *result,
+							gpointer user_data)
+{
+	struct change_state_req *req = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(req->vc);
+
+	if (!ok)
+		goto out;
+
+	if (vd->expect_release_source)
+		g_source_remove(vd->expect_release_source);
+
+	/*
+	 * Some phones, like Nokia 500, do not send CIEV after accepting
+	 * the CHLD=1 command, even though the spec states that they should.
+	 * So simply poll to force the status update if the AG is misbehaving.
+	 */
+	vd->expect_release_source = g_timeout_add(EXPECT_RELEASE_DELAY,
+							expect_release,
+							req->vc);
+
+out:
+	generic_cb(ok, result, user_data);
+}
+
 static void hfp_release_all_active(struct ofono_voicecall *vc,
 					ofono_voicecall_cb_t cb, void *data)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 
-	if (vd->ag_mpty_features & AG_CHLD_1) {
-		hfp_template("AT+CHLD=1", vc, generic_cb, 0x1, cb, data);
+	if (vd->ag_mpty_features & HFP_AG_CHLD_1) {
+		hfp_template("AT+CHLD=1", vc, release_all_active_cb, 0x1, cb,
+									data);
 		return;
 	}
 
@@ -488,7 +574,7 @@ static void hfp_release_specific(struct ofono_voicecall *vc, int id,
 	struct release_id_req *req = NULL;
 	char buf[32];
 
-	if (!(vd->ag_mpty_features & AG_CHLD_1x))
+	if (!(vd->ag_mpty_features & HFP_AG_CHLD_1x))
 		goto error;
 
 	req = g_try_new0(struct release_id_req, 1);
@@ -519,7 +605,7 @@ static void hfp_private_chat(struct ofono_voicecall *vc, int id,
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	char buf[32];
 
-	if (vd->ag_mpty_features & AG_CHLD_2x) {
+	if (vd->ag_mpty_features & HFP_AG_CHLD_2x) {
 		snprintf(buf, sizeof(buf), "AT+CHLD=2%d", id);
 
 		hfp_template(buf, vc, generic_cb, 0, cb, data);
@@ -535,7 +621,7 @@ static void hfp_create_multiparty(struct ofono_voicecall *vc,
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 
-	if (vd->ag_mpty_features & AG_CHLD_3) {
+	if (vd->ag_mpty_features & HFP_AG_CHLD_3) {
 		hfp_template("AT+CHLD=3", vc, generic_cb, 0, cb, data);
 
 		return;
@@ -554,7 +640,7 @@ static void hfp_transfer(struct ofono_voicecall *vc,
 	 */
 	unsigned int transfer = 0x1 | 0x2 | 0x4 | 0x8;
 
-	if (vd->ag_mpty_features & AG_CHLD_4) {
+	if (vd->ag_mpty_features & HFP_AG_CHLD_4) {
 		hfp_template("AT+CHLD=4", vc, generic_cb, transfer, cb, data);
 
 		return;
@@ -568,8 +654,10 @@ static void hfp_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct change_state_req *req = g_try_new0(struct change_state_req, 1);
+	int len = strlen(dtmf);
 	char *buf;
 	int s;
+	int i;
 
 	if (req == NULL)
 		goto error;
@@ -579,12 +667,15 @@ static void hfp_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 	req->data = data;
 	req->affected_types = 0;
 
-	/* strlen("AT+VTS=) = 7 + NULL */
-	buf = g_try_new(char, strlen(dtmf) + 8);
+	/* strlen("AT") + (n-1) * strlen("+VTS=T;") + strlen(+VTS=T) + null */
+	buf = g_try_new(char, len * 7 + 2);
 	if (buf == NULL)
 		goto error;
 
-	sprintf(buf, "AT+VTS=%s", dtmf);
+	s = sprintf(buf, "AT+VTS=%c", dtmf[0]);
+
+	for (i = 1; i < len; i++)
+		s += sprintf(buf + s, ";+VTS=%c", dtmf[i]);
 
 	s = g_at_chat_send(vd->chat, buf, none_prefix,
 				generic_cb, req, g_free);
@@ -679,6 +770,11 @@ static void ring_notify(GAtResult *result, gpointer user_data)
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct ofono_call *call;
 	GSList *waiting;
+
+	if (vd->clip_source) {
+		g_source_remove(vd->clip_source);
+		vd->clip_source = 0;
+	}
 
 	/* RING can repeat, ignore if we already have an incoming call */
 	if (g_slist_find_custom(vd->calls,
@@ -904,7 +1000,15 @@ static void ciev_callsetup_notify(struct ofono_voicecall *vc,
 		break;
 
 	case 1:
-		/* Handled in RING/CCWA */
+		/*
+		 * Handled in RING/CCWA most of the time, however sometimes
+		 * the call is answered before the RING unsolicited
+		 * notification has a chance to be generated on the device.
+		 * In this case, we use a failsafe CLCC poll in expect_ring
+		 * callback.
+		 * */
+		vd->clip_source = g_timeout_add(EXPECT_RING_DELAY,
+							expect_ring, vc);
 		break;
 
 	case 2:
@@ -1029,15 +1133,15 @@ static void hfp_clcc_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	GSList *l;
+	unsigned int mpty_ids;
 
 	if (!ok)
 		return;
 
-	vd->calls = at_util_parse_clcc(result);
+	vd->calls = at_util_parse_clcc(result, &mpty_ids);
 
-	for (l = vd->calls; l; l = l->next)
-		ofono_voicecall_notify(vc, l->data);
+	g_slist_foreach(vd->calls, voicecall_notify, vc);
+	ofono_voicecall_mpty_hint(vc, mpty_ids);
 }
 
 static void hfp_voicecall_initialized(gboolean ok, GAtResult *result,
@@ -1094,6 +1198,9 @@ static void hfp_voicecall_remove(struct ofono_voicecall *vc)
 
 	if (vd->clip_source)
 		g_source_remove(vd->clip_source);
+
+	if (vd->expect_release_source)
+		g_source_remove(vd->expect_release_source);
 
 	g_slist_foreach(vd->calls, (GFunc) g_free, NULL);
 	g_slist_free(vd->calls);

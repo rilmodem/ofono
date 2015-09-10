@@ -37,7 +37,7 @@
 #include <ofono/log.h>
 
 #include <btio.h>
-#include "bluetooth.h"
+#include "bluez4.h"
 
 static DBusConnection *connection;
 static GHashTable *uuid_hash = NULL;
@@ -995,5 +995,5 @@ void bluetooth_unregister_server(struct server *server)
 	bluetooth_unref();
 }
 
-OFONO_PLUGIN_DEFINE(bluetooth, "Bluetooth Utils Plugins", VERSION,
-			OFONO_PLUGIN_PRIORITY_DEFAULT, NULL, NULL)
+OFONO_PLUGIN_DEFINE(bluez4, "Bluetooth Utils Plugins", VERSION,
+				OFONO_PLUGIN_PRIORITY_DEFAULT, NULL, NULL)

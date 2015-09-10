@@ -1,3 +1,40 @@
+ver 1.16:
+	Fix issue with PIN retry handling.
+	Fix issue with HFP and multiple calls.
+	Add support for Distracted Driving Reduction.
+	Add support for available technologies property.
+	Add support for Telit location reporting driver.
+	Add support for u-blox SARA-U270 modems.
+	Add support for Quectel UC15 modems.
+
+ver 1.15:
+	Fix issue with EF_PNN access affecting PLMN display.
+	Fix issue with SIM detection and Telit HE910 modems.
+	Fix issue with Mobile Provider Database provisioning.
+	Fix issue with bit-shifting and ID mapping allocations.
+	Fix issue with Handsfree and unsolicited notifications.
+	Fix issue with Handsfree and three way calling feature.
+	Add support for Handsfree subscriber number feature.
+	Add support for Handsfree multiple DTMF characters.
+	Add support for PAP authentication.
+
+ver 1.14:
+	Add support for Apple Siri specific Handsfree commands.
+	Add support for provisioning of MMSC and Message Proxy.
+	Add support for Telit HE910 modems.
+
+ver 1.13:
+	Fix issue with parsing SS control strings.
+	Fix issue with error reporting and Sierra modems.
+	Fix issue with GPRS activation and SIM900 modems.
+	Fix issue with serial receiver and SIM900 modems.
+	Fix issue with signal strength and SIM900 modems.
+	Fix issue with AT+CNMI handling and SIM900 modems.
+	Fix issue with broken +CMER behavior and MBM modems.
+	Fix issue with handling +CIEV and release and swap.
+	Add support for Handsfree profile 1.6 functionality.
+	Add support for Handsfree audio interface.
+
 ver 1.12:
 	Fix issue with alpha ID and self explanatory icons.
 	Fix issue with SIM Refresh handling and resetting state.

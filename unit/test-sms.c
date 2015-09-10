@@ -41,6 +41,9 @@ static const char *alnum_sender = "0791447758100650"
 static const char *simple_submit = "0011000B916407281553F80000AA"
 		"0AE8329BFD4697D9EC37";
 
+static const char *simple_mwi = "07913366002020F8040B913366600600F100C8318070"
+				"6174148000";
+
 static void print_scts(struct sms_scts *scts, const char *prefix)
 {
 	time_t ts;
@@ -469,6 +472,107 @@ static void test_submit_encode(void)
 	g_assert(strcmp(simple_submit, encoded_pdu) == 0);
 
 	g_free(encoded_pdu);
+}
+
+static void test_simple_mwi(void)
+{
+	struct sms sms;
+	unsigned char *decoded_pdu;
+	long pdu_len;
+	gboolean ret;
+	enum sms_mwi_type type;
+	gboolean active;
+	gboolean discard;
+
+	decoded_pdu = decode_hex(simple_mwi, -1, &pdu_len, 0);
+
+	g_assert(decoded_pdu);
+	g_assert(pdu_len == (long)strlen(simple_mwi) / 2);
+
+	ret = sms_decode(decoded_pdu, pdu_len, FALSE, 19, &sms);
+
+	g_free(decoded_pdu);
+
+	g_assert(ret);
+	g_assert(sms.type == SMS_TYPE_DELIVER);
+
+	if (g_test_verbose())
+		dump_details(&sms);
+
+	g_assert(sms.sc_addr.number_type == SMS_NUMBER_TYPE_INTERNATIONAL);
+	g_assert(sms.sc_addr.numbering_plan == SMS_NUMBERING_PLAN_ISDN);
+	g_assert(strcmp(sms.sc_addr.address, "33660002028") == 0);
+
+	g_assert(sms.deliver.oaddr.number_type ==
+			SMS_NUMBER_TYPE_INTERNATIONAL);
+	g_assert(sms.deliver.oaddr.numbering_plan ==
+			SMS_NUMBERING_PLAN_ISDN);
+	g_assert(strcmp(sms.deliver.oaddr.address, "33660660001") == 0);
+
+	g_assert(sms.deliver.pid == 0);
+	g_assert(sms.deliver.dcs == 200);
+
+	g_assert(sms.deliver.scts.year == 13);
+	g_assert(sms.deliver.scts.month == 8);
+	g_assert(sms.deliver.scts.day == 7);
+	g_assert(sms.deliver.scts.hour == 16);
+	g_assert(sms.deliver.scts.minute == 47);
+	g_assert(sms.deliver.scts.second == 41);
+	g_assert(sms.deliver.scts.timezone == 8);
+
+	g_assert(sms.deliver.udl == 0);
+
+	if (sms.deliver.udhi) {
+		struct sms_udh_iter iter;
+		enum sms_iei iei;
+
+		ret = sms_udh_iter_init(&sms, &iter);
+		g_assert(ret);
+
+		while ((iei = sms_udh_iter_get_ie_type(&iter)) !=
+				SMS_IEI_INVALID) {
+			switch (iei) {
+			case SMS_IEI_ENHANCED_VOICE_MAIL_INFORMATION:
+			{
+				unsigned char evm_iei[140];
+				sms_udh_iter_get_ie_data(&iter, evm_iei);
+				sms_udh_iter_get_ie_length(&iter);
+
+				if (g_test_verbose())
+					g_print("Enhanced Voicemail IEI\n");
+				break;
+			}
+
+			case SMS_IEI_SPECIAL_MESSAGE_INDICATION:
+			{
+				unsigned char special_iei[4];
+
+				sms_udh_iter_get_ie_data(&iter, special_iei);
+				sms_udh_iter_get_ie_length(&iter);
+
+				if (g_test_verbose())
+					g_print("Special Voicemail IEI\n");
+
+				break;
+			}
+
+			default:
+				break;
+			}
+
+			sms_udh_iter_next(&iter);
+		}
+	}
+
+	ret = sms_mwi_dcs_decode(sms.deliver.dcs, &type, NULL, &active,
+					&discard);
+	g_assert(ret);
+
+	if (g_test_verbose()) {
+		g_print("Type: %d, Active: %d, Discard: %d\n",
+				type, active, discard);
+
+	}
 }
 
 struct sms_charset_data {
@@ -1682,6 +1786,7 @@ int main(int argc, char **argv)
 	g_test_add_func("/testsms/Test Deliver Encode", test_deliver_encode);
 	g_test_add_func("/testsms/Test Simple Submit", test_simple_submit);
 	g_test_add_func("/testsms/Test Submit Encode", test_submit_encode);
+	g_test_add_func("/testsms/Test Simple MWI", test_simple_mwi);
 
 	g_test_add_data_func("/testsms/Test "
 		"GSM 7 bit Default Alphabet Decode",

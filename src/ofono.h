@@ -30,6 +30,9 @@ void __ofono_exit(void);
 int __ofono_manager_init(void);
 void __ofono_manager_cleanup(void);
 
+int __ofono_handsfree_audio_manager_init(void);
+void __ofono_handsfree_audio_manager_cleanup(void);
+
 void __ofono_modem_shutdown(void);
 
 #include <ofono/log.h>
@@ -148,6 +151,7 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_CDMA_SMS,
 	OFONO_ATOM_TYPE_CDMA_NETREG,
 	OFONO_ATOM_TYPE_HANDSFREE,
+	OFONO_ATOM_TYPE_SIRI,
 };
 
 enum ofono_atom_watch_condition {
@@ -502,8 +506,17 @@ void __ofono_gprs_provision_free_settings(
 				int count);
 
 #include <ofono/emulator.h>
+
+enum ofono_emulator_slc_condition {
+	OFONO_EMULATOR_SLC_CONDITION_CMER,
+	OFONO_EMULATOR_SLC_CONDITION_CHLD,
+	OFONO_EMULATOR_SLC_CONDITION_BIND,
+};
+
 void __ofono_emulator_set_indicator_forced(struct ofono_emulator *em,
 						const char *name, int value);
+void __ofono_emulator_slc_condition(struct ofono_emulator *em,
+					enum ofono_emulator_slc_condition cond);
 
 #include <ofono/gnss.h>
 #include <ofono/cdma-sms.h>

@@ -54,6 +54,38 @@ enum chap_code {
 	FAILURE
 };
 
+struct pap_header {
+	guint8 code;
+	guint8 identifier;
+	guint16 length;
+	guint8 data[0];
+} __attribute__((packed));
+
+struct ppp_pap {
+	GAtPPP *ppp;
+	struct ppp_header *authreq;
+	guint16 authreq_len;
+	guint retry_timer;
+	guint retries;
+};
+
+enum pap_code {
+	PAP_REQUEST = 1,
+	PAP_ACK,
+	PAP_NAK
+};
+
+/*
+ * RFC 1334 2.1.1:
+ *   The Authenticate-Request packet MUST be repeated until a valid
+ *   reply packet is received, or an optional retry counter expires.
+ *
+ * If we don't get a reply after this many attempts, we can safely
+ * assume we're never going to get one.
+ */
+#define PAP_MAX_RETRY	3  /* attempts */
+#define PAP_TIMEOUT	10 /* seconds */
+
 static void chap_process_challenge(struct ppp_chap *chap, const guint8 *packet)
 {
 	const struct chap_header *header = (const struct chap_header *) packet;
@@ -165,4 +197,115 @@ struct ppp_chap *ppp_chap_new(GAtPPP *ppp, guint8 method)
 	chap->method = G_CHECKSUM_MD5;
 
 	return chap;
+}
+
+void ppp_pap_process_packet(struct ppp_pap *pap, const guint8 *new_packet,
+				gsize len)
+{
+	guint8 code;
+
+	if (len < sizeof(struct pap_header))
+		return;
+
+	code = new_packet[0];
+
+	switch (code) {
+	case PAP_ACK:
+		g_source_remove(pap->retry_timer);
+		pap->retry_timer = 0;
+		ppp_auth_notify(pap->ppp, TRUE);
+		break;
+	case PAP_NAK:
+		g_source_remove(pap->retry_timer);
+		pap->retry_timer = 0;
+		ppp_auth_notify(pap->ppp, FALSE);
+		break;
+	default:
+		break;
+	}
+}
+
+static gboolean ppp_pap_timeout(gpointer user_data)
+{
+	struct ppp_pap *pap = (struct ppp_pap *)user_data;
+	struct pap_header *authreq;
+
+	if (++pap->retries >= PAP_MAX_RETRY) {
+		pap->retry_timer = 0;
+		ppp_auth_notify(pap->ppp, FALSE);
+		return FALSE;
+	}
+
+	/*
+	 * RFC 1334 2.2.1:
+	 * The Identifier field MUST be changed each time an
+	 * Authenticate-Request packet is issued.
+	 */
+	authreq = (struct pap_header *)&pap->authreq->info;
+	authreq->identifier++;
+
+	ppp_transmit(pap->ppp, (guint8 *)pap->authreq, pap->authreq_len);
+
+	return TRUE;
+}
+
+gboolean ppp_pap_start(struct ppp_pap *pap)
+{
+	struct pap_header *authreq;
+	struct ppp_header *packet;
+	const char *username = g_at_ppp_get_username(pap->ppp);
+	const char *password = g_at_ppp_get_password(pap->ppp);
+	guint16 length;
+
+	length = sizeof(*authreq) + strlen(username) + strlen(password) + 2;
+
+	packet = ppp_packet_new(length, PAP_PROTOCOL);
+	if (packet == NULL)
+		return FALSE;
+
+	pap->authreq = packet;
+	pap->authreq_len = length;
+
+	authreq = (struct pap_header *)&packet->info;
+	authreq->code = PAP_REQUEST;
+	authreq->identifier = 1;
+	authreq->length = htons(length);
+
+	authreq->data[0] = (unsigned char) strlen(username);
+	memcpy(authreq->data + 1, username, strlen(username));
+	authreq->data[strlen(username) + 1] = (unsigned char)strlen(password);
+	memcpy(authreq->data + 1 + strlen(username) + 1, password,
+					strlen(password));
+
+	/* Transmit the packet and schedule a retry. */
+	ppp_transmit(pap->ppp, (guint8 *)packet, length);
+	pap->retries = 0;
+	pap->retry_timer = g_timeout_add_seconds(PAP_TIMEOUT,
+							ppp_pap_timeout, pap);
+
+	return TRUE;
+}
+
+void ppp_pap_free(struct ppp_pap *pap)
+{
+	if (pap->retry_timer != 0)
+		g_source_remove(pap->retry_timer);
+
+	if (pap->authreq != NULL)
+		g_free(pap->authreq);
+
+	g_free(pap);
+}
+
+struct ppp_pap *ppp_pap_new(GAtPPP *ppp)
+{
+	struct ppp_pap *pap;
+
+	pap = g_try_new0(struct ppp_pap, 1);
+	if (pap == NULL)
+		return NULL;
+
+	pap->ppp = ppp;
+
+	return pap;
 }

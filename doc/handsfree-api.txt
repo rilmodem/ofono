@@ -19,6 +19,8 @@ Methods		dict GetProperties()
 
 			Possible Errors: [service].Error.InProgress
 					 [service].Error.InvalidArguments
+					 [service].Error.NotImplemented
+					 [service].Error.NotSupported
 
 		string RequestPhoneNumber()
 
@@ -44,6 +46,14 @@ Properties	array{string} Features [readonly]
 			supported values are:
 				"voice-recognition"
 				"attach-voice-tag"
+				"echo-canceling-and-noise-reduction"
+				"three-way-calling"
+				"release-all-held"
+				"release-specified-active-call"
+				"private-chat"
+				"create-multiparty"
+				"transfer"
+				"hf-indicators"
 
 		boolean InbandRinging [readonly]
 
@@ -56,7 +66,27 @@ Properties	array{string} Features [readonly]
 			to activate or deactivate the function from the HF, or
 			the AG could autonomously initiate it.
 
+		boolean EchoCancelingNoiseReduction [readwrite, optional]
+
+			Non-persistent Boolean property representing whether
+			echo canceling and noise reduction is enabled in the
+			AG. This feature can only be disabled once from the
+			HF unit; the current specification does not allow the
+			HF unit from enabling this feature on the AG once
+			it has been disabled.
+
 		byte BatteryChargeLevel [readonly]
 
 			The current charge level of the battery.  The value
 			can be between 0 and 5 respectively.
+
+		array{string} SubscriberNumbers [readonly]
+
+			List of subscriber numbers provided by the AG.
+
+		boolean DistractedDrivingReduction [readwrite, optional]
+
+			Non-persistent property representing whether
+			distracted driving reduction mode should be enabled in
+			the AG.  Support for this feature is optional on the
+			AG.

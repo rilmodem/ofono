@@ -2318,7 +2318,7 @@ static gboolean handle_command_refresh(const struct stk_command *cmd,
 		g_slist_foreach(file_list, (GFunc) g_free, NULL);
 		g_slist_free(file_list);
 
-		return TRUE;
+		return FALSE;
 	}
 
 	rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
@@ -3095,8 +3095,14 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 		break;
 
 	case STK_COMMAND_TYPE_REFRESH:
-		ok = handle_command_refresh(stk->pending_cmd, NULL, stk);
-		break;
+		/*
+		 * On a refresh we should not try to free the pending command,
+		 * as the stk atom itself likely disappeared as a result.
+		 * If it has not, then any subsequent proactive command, or
+		 * session end notification will free it anyway
+		 */
+		handle_command_refresh(stk->pending_cmd, NULL, stk);
+		return;
 	}
 
 out:

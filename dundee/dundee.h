@@ -26,6 +26,8 @@
 
 #include <ofono/types.h>
 
+#define DUN_VERSION_1_2 0x0102
+
 void __dundee_exit(void);
 
 enum dundee_error_type {
@@ -94,6 +96,7 @@ void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply);
 
 DBusMessage *__dundee_error_invalid_args(DBusMessage *msg);
 DBusMessage *__dundee_error_failed(DBusMessage *msg);
+DBusMessage *__dundee_error_in_progress(DBusMessage *msg);
 DBusMessage *__dundee_error_timed_out(DBusMessage *msg);
 
 
@@ -127,6 +130,9 @@ struct dundee_device_driver {
 struct dundee_device *dundee_device_create(struct dundee_device_driver *d);
 int dundee_device_register(struct dundee_device *device);
 void dundee_device_unregister(struct dundee_device *device);
+
+void dundee_device_disconnect(const struct dundee_error *error,
+						struct dundee_device *device);
 
 void dundee_device_set_data(struct dundee_device *device, void *data);
 void *dundee_device_get_data(struct dundee_device *device);

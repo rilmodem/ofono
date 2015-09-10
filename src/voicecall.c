@@ -2355,6 +2355,46 @@ error:
 		g_free(v);
 }
 
+void ofono_voicecall_mpty_hint(struct ofono_voicecall *vc, unsigned int ids)
+{
+	GSList *old;
+	GSList *l;
+
+	DBG("ids: %u", ids);
+
+	/* id of 0 is never valid for a call */
+	if (ids & 0x1)
+		return;
+
+	/* Ignore the hint if there's nothing to do */
+	if (__builtin_popcount(ids) < 2 && vc->multiparty_list == NULL)
+		return;
+
+	old = vc->multiparty_list;
+	vc->multiparty_list = NULL;
+
+	for (l = vc->call_list; l; l = l->next) {
+		struct voicecall *v = l->data;
+
+		if (ids & (1 << v->call->id))
+			vc->multiparty_list =
+				g_slist_prepend(vc->multiparty_list, v);
+	}
+
+	if (vc->multiparty_list)
+		vc->multiparty_list = g_slist_reverse(vc->multiparty_list);
+
+	if (g_slist_length(vc->multiparty_list) == 1) {
+		ofono_error("Created multiparty list length is 1"
+				", which would indicate a bug in the driver"
+				" or the remote device");
+		vc->multiparty_list = NULL;
+	}
+
+	voicecalls_multiparty_changed(old, vc->multiparty_list);
+	g_slist_free(old);
+}
+
 static void send_ciev_after_swap_callback(const struct ofono_error *error,
 								void *data)
 {
@@ -3277,6 +3317,10 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 
 		ofono_emulator_send_info(em, buf, TRUE);
 		result.type = OFONO_ERROR_TYPE_NO_ERROR;
+
+		__ofono_emulator_slc_condition(em,
+					OFONO_EMULATOR_SLC_CONDITION_CHLD);
+
 		break;
 
 	case OFONO_EMULATOR_REQUEST_TYPE_QUERY:

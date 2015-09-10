@@ -281,6 +281,11 @@ static void filter_data_free(struct filter_data *data)
 {
 	GSList *l;
 
+	/* Remove filter if there are no listeners left for the connection */
+	if (filter_data_find(data->connection) == NULL)
+		dbus_connection_remove_filter(data->connection, message_filter,
+									NULL);
+
 	for (l = data->callbacks; l != NULL; l = l->next)
 		g_free(l->data);
 
@@ -357,11 +362,10 @@ static void service_data_free(struct service_data *data)
 	callback->data = NULL;
 }
 
+/* Returns TRUE if data is freed */
 static gboolean filter_data_remove_callback(struct filter_data *data,
 						struct filter_callback *cb)
 {
-	DBusConnection *connection;
-
 	data->callbacks = g_slist_remove(data->callbacks, cb);
 	data->processed = g_slist_remove(data->processed, cb);
 
@@ -380,21 +384,13 @@ static gboolean filter_data_remove_callback(struct filter_data *data,
 	/* Don't remove the filter if other callbacks exist or data is lock
 	 * processing callbacks */
 	if (data->callbacks || data->lock)
-		return TRUE;
+		return FALSE;
 
 	if (data->registered && !remove_match(data))
 		return FALSE;
 
-	connection = dbus_connection_ref(data->connection);
 	listeners = g_slist_remove(listeners, data);
-
-	/* Remove filter if there are no listeners left for the connection */
-	if (filter_data_find(connection) == NULL)
-		dbus_connection_remove_filter(connection, message_filter,
-						NULL);
-
 	filter_data_free(data);
-	dbus_connection_unref(connection);
 
 	return TRUE;
 }
@@ -410,7 +406,9 @@ static DBusHandlerResult signal_filter(DBusConnection *connection,
 
 		if (cb->signal_func && !cb->signal_func(connection, message,
 							cb->user_data)) {
-			filter_data_remove_callback(data, cb);
+			if (filter_data_remove_callback(data, cb))
+				break;
+
 			continue;
 		}
 
@@ -494,7 +492,9 @@ static DBusHandlerResult service_filter(DBusConnection *connection,
 		/* Only auto remove if it is a bus name watch */
 		if (data->argument[0] == ':' &&
 				(cb->conn_func == NULL || cb->disc_func == NULL)) {
-			filter_data_remove_callback(data, cb);
+			if (filter_data_remove_callback(data, cb))
+				break;
+
 			continue;
 		}
 
@@ -524,6 +524,8 @@ static DBusHandlerResult message_filter(DBusConnection *connection,
 	dbus_message_get_args(message, NULL, DBUS_TYPE_STRING, &arg, DBUS_TYPE_INVALID);
 
 	/* Sender is always the owner */
+	if (sender == NULL)
+		return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
 	for (current = listeners; current != NULL; current = current->next) {
 		data = current->data;
@@ -563,6 +565,9 @@ static DBusHandlerResult message_filter(DBusConnection *connection,
 								current);
 	}
 
+	if (delete_listener == NULL)
+		return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+
 	for (current = delete_listener; current != NULL;
 					current = delete_listener->next) {
 		GSList *l = current->data;
@@ -581,11 +586,6 @@ static DBusHandlerResult message_filter(DBusConnection *connection,
 
 	g_slist_free(delete_listener);
 
-	/* Remove filter if there are no listeners left for the connection */
-	if (filter_data_find(connection) == NULL)
-		dbus_connection_remove_filter(connection, message_filter,
-						NULL);
-
 	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
 
@@ -593,12 +593,15 @@ static gboolean update_service(void *user_data)
 {
 	struct service_data *data = user_data;
 	struct filter_callback *cb = data->callback;
+	DBusConnection *conn;
 
-	update_name_cache(data->name, data->owner);
-	if (cb->conn_func)
-		cb->conn_func(data->conn, cb->user_data);
-
+	conn = dbus_connection_ref(data->conn);
 	service_data_free(data);
+
+	if (cb->conn_func)
+		cb->conn_func(conn, cb->user_data);
+
+	dbus_connection_unref(conn);
 
 	return FALSE;
 }
@@ -700,7 +703,8 @@ guint g_dbus_add_service_watch(DBusConnection *connection, const char *name,
 	if (name == NULL)
 		return 0;
 
-	data = filter_data_get(connection, service_filter, NULL, NULL,
+	data = filter_data_get(connection, service_filter,
+				DBUS_SERVICE_DBUS, DBUS_PATH_DBUS,
 				DBUS_INTERFACE_DBUS, "NameOwnerChanged",
 				name);
 	if (data == NULL)
@@ -810,6 +814,4 @@ void g_dbus_remove_all_watches(DBusConnection *connection)
 		listeners = g_slist_remove(listeners, data);
 		filter_data_call_and_free(data);
 	}
-
-	dbus_connection_remove_filter(connection, message_filter, NULL);
 }

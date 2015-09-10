@@ -48,7 +48,7 @@ struct error_mapping_entry cme_errors_mapping[] = {
 };
 
 static void append_variant(DBusMessageIter *iter,
-				int type, void *value)
+				int type, const void *value)
 {
 	char sig[2];
 	DBusMessageIter valueiter;
@@ -65,7 +65,7 @@ static void append_variant(DBusMessageIter *iter,
 }
 
 void ofono_dbus_dict_append(DBusMessageIter *dict,
-			const char *key, int type, void *value)
+			const char *key, int type, const void *value)
 {
 	DBusMessageIter keyiter;
 
@@ -85,7 +85,8 @@ void ofono_dbus_dict_append(DBusMessageIter *dict,
 	dbus_message_iter_close_container(dict, &keyiter);
 }
 
-static void append_array_variant(DBusMessageIter *iter, int type, void *val)
+static void append_array_variant(DBusMessageIter *iter, int type,
+				const void *val)
 {
 	DBusMessageIter variant, array;
 	char typesig[2];
@@ -113,7 +114,7 @@ static void append_array_variant(DBusMessageIter *iter, int type, void *val)
 }
 
 void ofono_dbus_dict_append_array(DBusMessageIter *dict, const char *key,
-				int type, void *val)
+				int type, const void *val)
 {
 	DBusMessageIter entry;
 
@@ -127,7 +128,8 @@ void ofono_dbus_dict_append_array(DBusMessageIter *dict, const char *key,
 	dbus_message_iter_close_container(dict, &entry);
 }
 
-static void append_dict_variant(DBusMessageIter *iter, int type, void *val)
+static void append_dict_variant(DBusMessageIter *iter, int type,
+				const void *val)
 {
 	DBusMessageIter variant, array, entry;
 	char typesig[5];
@@ -182,7 +184,7 @@ static void append_dict_variant(DBusMessageIter *iter, int type, void *val)
 }
 
 void ofono_dbus_dict_append_dict(DBusMessageIter *dict, const char *key,
-				int type, void *val)
+				int type, const void *val)
 {
 	DBusMessageIter entry;
 
@@ -200,7 +202,7 @@ int ofono_dbus_signal_property_changed(DBusConnection *conn,
 					const char *path,
 					const char *interface,
 					const char *name,
-					int type, void *value)
+					int type, const void *value)
 {
 	DBusMessage *signal;
 	DBusMessageIter iter;
@@ -225,7 +227,7 @@ int ofono_dbus_signal_array_property_changed(DBusConnection *conn,
 						const char *path,
 						const char *interface,
 						const char *name,
-						int type, void *value)
+						int type, const void *value)
 
 {
 	DBusMessage *signal;
@@ -251,7 +253,7 @@ int ofono_dbus_signal_dict_property_changed(DBusConnection *conn,
 						const char *path,
 						const char *interface,
 						const char *name,
-						int type, void *value)
+						int type, const void *value)
 
 {
 	DBusMessage *signal;

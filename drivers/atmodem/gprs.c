@@ -282,6 +282,44 @@ static void telit_mode_notify(GAtResult *result, gpointer user_data)
 	ofono_gprs_bearer_notify(gprs, bearer);
 }
 
+static void ublox_ureg_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_gprs *gprs = user_data;
+	GAtResultIter iter;
+	gint state, bearer;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+UREG:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &state))
+		return;
+
+	switch (state) {
+	case 4:
+		bearer = 5;
+		break;
+	case 5:
+		bearer = 4;
+		break;
+	case 7:
+		/* XXX: reserved - assume none. */
+		bearer = 0;
+		break;
+	case 8:
+		bearer = 1;
+		break;
+	case 9:
+		bearer = 2;
+		break;
+	default:
+		bearer = state;
+	}
+
+	ofono_gprs_bearer_notify(gprs, bearer);
+}
+
 static void cpsb_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_gprs *gprs = user_data;
@@ -315,6 +353,12 @@ static void gprs_initialized(gboolean ok, GAtResult *result, gpointer user_data)
 	case OFONO_VENDOR_HUAWEI:
 		g_at_chat_register(gd->chat, "^MODE:", huawei_mode_notify,
 						FALSE, gprs, NULL);
+		break;
+	case OFONO_VENDOR_UBLOX:
+		g_at_chat_register(gd->chat, "+UREG:", ublox_ureg_notify,
+						FALSE, gprs, NULL);
+		g_at_chat_send(gd->chat, "AT+UREG=1", none_prefix,
+						NULL, NULL, NULL);
 		break;
 	case OFONO_VENDOR_TELIT:
 		g_at_chat_register(gd->chat, "#PSNT:", telit_mode_notify,

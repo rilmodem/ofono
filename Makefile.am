@@ -1,6 +1,8 @@
 
 AM_MAKEFLAGS = --no-print-directory
 
+noinst_LTLIBRARIES =
+
 pkginclude_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/dbus.h include/modem.h include/types.h \
 			include/call-barring.h include/call-forwarding.h \
@@ -19,6 +21,7 @@ pkginclude_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/cdma-connman.h include/gnss.h \
 			include/private-network.h include/cdma-netreg.h \
 			include/cdma-provision.h include/handsfree.h \
+			include/handsfree-audio.h include/siri.h \
 			include/sim-mnclength.h include/spn-table.h \
 			include/dns-client.h
 
@@ -57,7 +60,10 @@ builtin_sources =
 builtin_libadd =
 builtin_cflags =
 
-gdbus_sources = gdbus/gdbus.h gdbus/mainloop.c gdbus/watch.c \
+noinst_LTLIBRARIES += gdbus/libgdbus-internal.la
+
+gdbus_libgdbus_internal_la_SOURCES = gdbus/gdbus.h \
+				gdbus/mainloop.c gdbus/watch.c \
 				gdbus/object.c gdbus/client.c gdbus/polkit.c
 
 gatchat_sources = gatchat/gatchat.h gatchat/gatchat.c \
@@ -336,6 +342,12 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/mbmmodem/stk.c \
 			drivers/mbmmodem/location-reporting.c
 
+builtin_modules += telitmodem
+builtin_sources += drivers/atmodem/atutil.h \
+			drivers/telitmodem/telitmodem.h \
+			drivers/telitmodem/telitmodem.c \
+			drivers/telitmodem/location-reporting.c
+
 builtin_modules += hsomodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/hsomodem/hsomodem.h \
@@ -383,7 +395,8 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/hfpmodem/network-registration.c \
 			drivers/hfpmodem/call-volume.c \
 			drivers/hfpmodem/devinfo.c \
-			drivers/hfpmodem/handsfree.c
+			drivers/hfpmodem/handsfree.c \
+			drivers/hfpmodem/siri.c
 
 builtin_modules += speedupmodem
 builtin_sources += drivers/atmodem/atutil.h \
@@ -481,31 +494,54 @@ builtin_sources += plugins/samsung.c
 builtin_modules += sim900
 builtin_sources += plugins/sim900.c
 
-if BLUETOOTH
-builtin_modules += bluetooth
-builtin_sources += plugins/bluetooth.c plugins/bluetooth.h
-
-builtin_modules += telit
-builtin_sources += plugins/telit.c plugins/bluetooth.h
-
-builtin_modules += sap
-builtin_sources += plugins/sap.c plugins/bluetooth.h
-
-builtin_modules += hfp
-builtin_sources += plugins/hfp_hf.c plugins/bluetooth.h
-
-builtin_modules += hfp_ag
-builtin_sources += plugins/hfp_ag.c plugins/bluetooth.h
-
-builtin_modules += dun_gw
-builtin_sources += plugins/dun_gw.c plugins/bluetooth.h
-
 builtin_modules += connman
 builtin_sources += plugins/connman.c
+
+builtin_modules += he910
+builtin_sources += plugins/he910.c
+
+builtin_modules += quectel
+builtin_sources += plugins/quectel.c
+
+builtin_modules += ublox
+builtin_sources += plugins/ublox.c
+
+if BLUETOOTH
+if BLUEZ4
+builtin_modules += bluez4
+builtin_sources += plugins/bluez4.c plugins/bluez4.h
+
+builtin_modules += telit
+builtin_sources += plugins/telit.c plugins/bluez4.h
+
+builtin_modules += sap
+builtin_sources += plugins/sap.c plugins/bluez4.h
+
+builtin_modules += hfp_bluez4
+builtin_sources += plugins/hfp_hf_bluez4.c plugins/bluez4.h
+
+builtin_modules += hfp_ag_bluez4
+builtin_sources += plugins/hfp_ag_bluez4.c plugins/bluez4.h
+
+builtin_modules += dun_gw_bluez4
+builtin_sources += plugins/dun_gw_bluez4.c plugins/bluez4.h
 
 builtin_sources += $(btio_sources)
 builtin_cflags += @BLUEZ_CFLAGS@
 builtin_libadd += @BLUEZ_LIBS@
+else
+builtin_modules += bluez5
+builtin_sources += plugins/bluez5.c plugins/bluez5.h
+
+builtin_modules += hfp_bluez5
+builtin_sources += plugins/hfp_hf_bluez5.c plugins/bluez5.h
+
+builtin_modules += hfp_ag_bluez5
+builtin_sources += plugins/hfp_ag_bluez5.c plugins/bluez5.h
+
+builtin_modules += dun_gw_bluez5
+builtin_sources += plugins/dun_gw_bluez5.c plugins/bluez5.h
+endif
 endif
 endif
 
@@ -557,6 +593,9 @@ builtin_sources += examples/private-network.c
 
 builtin_modules += stktest
 builtin_sources += plugins/stktest.c
+
+builtin_modules += emulator_fuzz
+builtin_sources += plugins/emulator_fuzz.c
 endif
 
 builtin_modules += smart_messaging
@@ -570,7 +609,7 @@ builtin_sources += plugins/smshistory.c
 
 sbin_PROGRAMS = src/ofonod
 
-src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
+src_ofonod_SOURCES = $(builtin_sources) src/ofono.ver \
 			src/main.c src/ofono.h src/log.c src/plugin.c \
 			src/modem.c src/common.h src/common.c \
 			src/manager.c src/dbus.c src/util.h src/util.c \
@@ -594,10 +633,13 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
 			src/cdma-smsutil.h src/cdma-smsutil.c \
 			src/cdma-sms.c src/private-network.c src/cdma-netreg.c \
 			src/cdma-provision.c src/handsfree.c \
+			src/handsfree-audio.c src/bluetooth.h \
+			src/hfp.h src/siri.c \
 			src/sim-mnclength.c src/spn-table.c \
 			src/dns-client.c
 
-src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ -ldl
+src_ofonod_LDADD = gdbus/libgdbus-internal.la $(builtin_libadd) \
+			@GLIB_LIBS@ @DBUS_LIBS@ -ldl
 
 src_ofonod_LDFLAGS = -Wl,--export-dynamic \
 				-Wl,--version-script=$(srcdir)/src/ofono.ver
@@ -614,12 +656,11 @@ else
 build_plugindir = $(plugindir)
 endif
 
-AM_CFLAGS = @DBUS_CFLAGS@ @GLIB_CFLAGS@ @USB_CFLAGS@ \
-					$(builtin_cflags) \
+AM_CFLAGS = @DBUS_CFLAGS@ @GLIB_CFLAGS@ $(builtin_cflags) \
 					-DOFONO_PLUGIN_BUILTIN \
 					-DPLUGINDIR=\""$(build_plugindir)"\"
 
-INCLUDES = -I$(builddir)/include -I$(builddir)/src -I$(srcdir)/src \
+AM_CPPFLAGS = -I$(builddir)/include -I$(builddir)/src -I$(srcdir)/src \
 			-I$(srcdir)/gdbus -I$(srcdir)/gisi -I$(srcdir)/gatchat \
 			-I$(srcdir)/btio -I$(srcdir)/gril
 
@@ -639,7 +680,8 @@ doc_files = doc/overview.txt doc/ofono-paper.txt doc/release-faq.txt \
 			doc/audio-settings-api.txt doc/text-telephony-api.txt \
 			doc/calypso-modem.txt doc/message-api.txt \
 			doc/location-reporting-api.txt \
-			doc/certification.txt
+			doc/certification.txt doc/siri-api.txt \
+			doc/telit-modem.txt
 
 
 test_scripts = test/backtrace \
@@ -731,10 +773,12 @@ test_scripts = test/backtrace \
 		test/hold-and-answer \
 		test/hangup-multiparty \
 		test/hangup-call \
+		test/display-icon \
+		test/set-msisdn \
 		test/rilmodem/test-hangup \
 		test/rilmodem/test-modem-offline \
-		test/rilmodem/test-sim-online
-
+		test/rilmodem/test-sim-online \
+		test/set-ddr
 
 if TEST
 testdir = $(pkglibdir)/test
@@ -861,11 +905,11 @@ noinst_PROGRAMS += tools/huawei-audio tools/auto-enable \
 			tools/get-location tools/lookup-apn \
 			tools/lookup-provider-name tools/tty-redirector
 
-tools_huawei_audio_SOURCES = $(gdbus_sources) tools/huawei-audio.c
-tools_huawei_audio_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
+tools_huawei_audio_SOURCES = tools/huawei-audio.c
+tools_huawei_audio_LDADD = gdbus/libgdbus-internal.la @GLIB_LIBS@ @DBUS_LIBS@
 
-tools_auto_enable_SOURCES = $(gdbus_sources) tools/auto-enable.c
-tools_auto_enable_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
+tools_auto_enable_SOURCES = tools/auto-enable.c
+tools_auto_enable_LDADD = gdbus/libgdbus-internal.la @GLIB_LIBS@ @DBUS_LIBS@
 
 tools_get_location_SOURCES = tools/get-location.c
 tools_get_location_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
@@ -890,21 +934,22 @@ endif
 if MAINTAINER_MODE
 noinst_PROGRAMS += tools/stktest
 
-tools_stktest_SOURCES = $(gatchat_sources) $(gdbus_sources) tools/stktest.c \
+tools_stktest_SOURCES = $(gatchat_sources) tools/stktest.c \
 				unit/stk-test-data.h
-tools_stktest_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
+tools_stktest_LDADD = gdbus/libgdbus-internal.la @GLIB_LIBS@ @DBUS_LIBS@
 endif
 endif
 
+if BLUETOOTH
 if DUNDEE
 sbin_PROGRAMS += dundee/dundee
 
-dundee_dundee_SOURCES = $(gdbus_sources) $(gatchat_sources) $(btio_sources) \
-			src/log.c src/dbus.c plugins/bluetooth.c \
-			dundee/dundee.h dundee/main.c dundee/dbus.c \
-			dundee/manager.c dundee/device.c dundee/bluetooth.c
+dundee_common_sources = $(gatchat_sources) \
+			src/log.c src/dbus.c dundee/dundee.h dundee/main.c \
+			dundee/dbus.c dundee/manager.c dundee/device.c
 
-dundee_dundee_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ -ldl
+dundee_dundee_LDADD = $(builtin_libadd) gdbus/libgdbus-internal.la \
+			@GLIB_LIBS@ @DBUS_LIBS@ -ldl
 
 if DATAFILES
 dist_dbusconf_DATA += dundee/dundee.conf
@@ -914,6 +959,14 @@ systemdunit_DATA += dundee/dundee.service
 endif
 endif
 
+if BLUEZ4
+dundee_dundee_SOURCES = $(dundee_common_sources) $(btio_sources) \
+			plugins/bluez4.c dundee/bluez4.c
+else
+dundee_dundee_SOURCES = $(dundee_common_sources) plugins/bluez5.c \
+			dundee/bluez5.c
+endif
+endif
 endif
 
 noinst_PROGRAMS += gatchat/gsmdial gatchat/test-server gatchat/test-qcdm

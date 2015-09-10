@@ -302,6 +302,9 @@ static gboolean hfp_netreg_register(gpointer user_data)
 
 	nd->register_source = 0;
 
+	g_at_chat_register(nd->chat, "+CIEV:", ciev_notify, FALSE,
+							netreg, NULL);
+
 	ofono_netreg_register(netreg);
 
 	return FALSE;
@@ -320,9 +323,6 @@ static int hfp_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 	memcpy(nd->cind_val, info->cind_val, HFP_INDICATOR_LAST);
 
 	ofono_netreg_set_data(netreg, nd);
-
-	g_at_chat_register(nd->chat, "+CIEV:", ciev_notify, FALSE,
-				netreg, NULL);
 
 	nd->register_source = g_idle_add(hfp_netreg_register, netreg);
 

@@ -270,11 +270,13 @@ err:
 	device->pending = NULL;
 }
 
-static void disconnect_callback(const struct dundee_error *error, void *data)
+void dundee_device_disconnect(const struct dundee_error *error,
+						struct dundee_device *device)
 {
-	struct dundee_device *device = data;
+	if (device == NULL)
+		return;
 
-	DBG("%p", device);
+	DBG("%s", device->path);
 
 	g_at_chat_unref(device->chat);
 	device->chat = NULL;
@@ -293,6 +295,12 @@ static void disconnect_callback(const struct dundee_error *error, void *data)
 
 out:
 	device->pending = NULL;
+}
+
+static void disconnect_callback(const struct dundee_error *error, void *data)
+{
+	struct dundee_device *device = data;
+	dundee_device_disconnect(error, device);
 }
 
 static gboolean ppp_connect_timeout(gpointer user_data)
@@ -447,6 +455,9 @@ static DBusMessage *set_property_active(struct dundee_device *device,
 
 	if (dbus_message_iter_get_arg_type(var) != DBUS_TYPE_BOOLEAN)
 		return __dundee_error_invalid_args(msg);
+
+	if (device->pending)
+		return __dundee_error_in_progress(msg);
 
 	dbus_message_iter_get_basic(var, &active);
 

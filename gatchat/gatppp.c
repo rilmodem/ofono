@@ -64,11 +64,13 @@ struct _GAtPPP {
 	struct pppcp_data *ipcp;
 	struct ppp_net *net;
 	struct ppp_chap *chap;
+	struct ppp_pap *pap;
 	GAtHDLC *hdlc;
 	gint mru;
 	gint mtu;
 	char username[256];
 	char password[256];
+	GAtPPPAuthMethod auth_method;
 	GAtPPPConnectFunc connect_cb;
 	gpointer connect_data;
 	GAtPPPDisconnectFunc disconnect_cb;
@@ -150,13 +152,15 @@ static inline gboolean ppp_drop_packet(GAtPPP *ppp, guint16 protocol)
 			return TRUE;
 		break;
 	case PPP_PHASE_AUTHENTICATION:
-		if (protocol != LCP_PROTOCOL && protocol != CHAP_PROTOCOL)
+		if (protocol != LCP_PROTOCOL && protocol != CHAP_PROTOCOL &&
+					protocol != PAP_PROTOCOL)
 			return TRUE;
 		break;
 	case PPP_PHASE_DEAD:
 		return TRUE;
 	case PPP_PHASE_NETWORK:
 		if (protocol != LCP_PROTOCOL && protocol != CHAP_PROTOCOL &&
+					protocol != PAP_PROTOCOL &&
 					protocol != IPCP_PROTO)
 			return TRUE;
 		break;
@@ -221,6 +225,13 @@ static void ppp_receive(const unsigned char *buf, gsize len, void *data)
 		break;
 	case IPCP_PROTO:
 		pppcp_process_packet(ppp->ipcp, packet, len - offset);
+		break;
+	case PAP_PROTOCOL:
+		if (ppp->pap)
+			ppp_pap_process_packet(ppp->pap, packet, len - offset);
+		else
+			pppcp_send_protocol_reject(ppp->lcp, buf, len);
+
 		break;
 	case CHAP_PROTOCOL:
 		if (ppp->chap) {
@@ -359,6 +370,12 @@ void ppp_set_auth(GAtPPP *ppp, const guint8* auth_data)
 	guint16 proto = get_host_short(auth_data);
 
 	switch (proto) {
+	case PAP_PROTOCOL:
+		if (ppp->pap)
+			ppp_pap_free(ppp->pap);
+
+		ppp->pap = ppp_pap_new(ppp);
+		break;
 	case CHAP_PROTOCOL:
 		if (ppp->chap)
 			ppp_chap_free(ppp->chap);
@@ -437,9 +454,18 @@ void ppp_ipcp_finished_notify(GAtPPP *ppp)
 
 void ppp_lcp_up_notify(GAtPPP *ppp)
 {
-	/* Wait for the peer to send us a challenge if we expect auth */
 	if (ppp->chap != NULL) {
+		/* Wait for the peer to send us a challenge. */
 		ppp_enter_phase(ppp, PPP_PHASE_AUTHENTICATION);
+		return;
+	} else if (ppp->pap != NULL) {
+		/* Try to send an Authenticate-Request and wait for reply. */
+		if (ppp_pap_start(ppp->pap) == TRUE)
+			ppp_enter_phase(ppp, PPP_PHASE_AUTHENTICATION);
+		else
+			/* It'll never work out. */
+			ppp_auth_notify(ppp, FALSE);
+
 		return;
 	}
 
@@ -588,6 +614,22 @@ const char *g_at_ppp_get_password(GAtPPP *ppp)
 	return ppp->password;
 }
 
+gboolean g_at_ppp_set_auth_method(GAtPPP *ppp, GAtPPPAuthMethod method)
+{
+	if (method != G_AT_PPP_AUTH_METHOD_CHAP &&
+					method != G_AT_PPP_AUTH_METHOD_PAP)
+		return FALSE;
+
+	ppp->auth_method = method;
+
+	return TRUE;
+}
+
+GAtPPPAuthMethod g_at_ppp_get_auth_method(GAtPPP *ppp)
+{
+	return ppp->auth_method;
+}
+
 void g_at_ppp_set_recording(GAtPPP *ppp, const char *filename)
 {
 	if (ppp == NULL)
@@ -727,6 +769,9 @@ void g_at_ppp_unref(GAtPPP *ppp)
 	else if (ppp->fd >= 0)
 		close(ppp->fd);
 
+	if (ppp->pap)
+		ppp_pap_free(ppp->pap);
+
 	if (ppp->chap)
 		ppp_chap_free(ppp->chap);
 
@@ -793,6 +838,9 @@ static GAtPPP *ppp_init_common(gboolean is_server, guint32 ip)
 
 	/* initialize IPCP state */
 	ppp->ipcp = ipcp_new(ppp, is_server, ip);
+
+	/* chap authentication by default */
+	ppp->auth_method = G_AT_PPP_AUTH_METHOD_CHAP;
 
 	return ppp;
 }

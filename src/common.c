@@ -554,7 +554,7 @@ gboolean parse_ss_control_string(char *str, int *ss_type,
 
 	cur = 1;
 
-	if (str[1] != '*' && str[1] != '#' && str[1] > '9' && str[1] < '0')
+	if (str[1] != '*' && str[1] != '#' && (str[1] > '9' || str[1] < '0'))
 		goto out;
 
 	if (str[0] == '#' && str[1] == '*')

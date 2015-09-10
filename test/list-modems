@@ -71,7 +71,7 @@ for path, properties in modems:
 					"PrimaryContexts",
 					"LockedPins",
 					"Features",
-					"ModemTechnologies"]:
+					"AvailableTechnologies"]:
 				val = ""
 				for i in properties[key]:
 					val += i + " "
@@ -130,4 +130,4 @@ for path, properties in modems:
 				val = properties[key]
 			print("        %s = %s" % (key, val))
 
-	print()
+	print('')

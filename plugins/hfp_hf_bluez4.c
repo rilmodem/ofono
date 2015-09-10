@@ -44,10 +44,11 @@
 #include <ofono/voicecall.h>
 #include <ofono/call-volume.h>
 #include <ofono/handsfree.h>
+#include <ofono/siri.h>
 
 #include <drivers/hfpmodem/slc.h>
 
-#include "bluetooth.h"
+#include "bluez4.h"
 
 #define	BLUEZ_GATEWAY_INTERFACE		BLUEZ_SERVICE ".HandsfreeGateway"
 
@@ -490,6 +491,7 @@ static void hfp_pre_sim(struct ofono_modem *modem)
 	ofono_netreg_create(modem, 0, "hfpmodem", &data->info);
 	ofono_call_volume_create(modem, 0, "hfpmodem", &data->info);
 	ofono_handsfree_create(modem, 0, "hfpmodem", &data->info);
+	ofono_siri_create(modem, 0, "hfpmodem", &data->info);
 }
 
 static void hfp_post_sim(struct ofono_modem *modem)
@@ -548,5 +550,5 @@ static void hfp_exit(void)
 	g_hash_table_destroy(modem_hash);
 }
 
-OFONO_PLUGIN_DEFINE(hfp, "Hands-Free Profile Plugins", VERSION,
+OFONO_PLUGIN_DEFINE(hfp_bluez4, "Hands-Free Profile Plugins", VERSION,
 			OFONO_PLUGIN_PRIORITY_DEFAULT, hfp_init, hfp_exit)

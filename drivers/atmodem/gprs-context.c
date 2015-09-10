@@ -59,6 +59,7 @@ enum state {
 struct gprs_context_data {
 	GAtChat *chat;
 	unsigned int active_context;
+	GAtPPPAuthMethod auth_method;
 	char username[OFONO_GPRS_MAX_USERNAME_LENGTH + 1];
 	char password[OFONO_GPRS_MAX_PASSWORD_LENGTH + 1];
 	GAtPPP *ppp;
@@ -154,6 +155,7 @@ static gboolean setup_ppp(struct ofono_gprs_context *gc)
 	if (getenv("OFONO_PPP_DEBUG"))
 		g_at_ppp_set_debug(gcd->ppp, ppp_debug, "PPP");
 
+	g_at_ppp_set_auth_method(gcd->ppp, gcd->auth_method);
 	g_at_ppp_set_credentials(gcd->ppp, gcd->username, gcd->password);
 
 	/* set connect and disconnect callbacks */
@@ -208,7 +210,11 @@ static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	sprintf(buf, "AT+CGDATA=\"PPP\",%u", gcd->active_context);
+	if (gcd->vendor == OFONO_VENDOR_SIMCOM_SIM900)
+		sprintf(buf, "ATD*99***%u#", gcd->active_context);
+	else
+		sprintf(buf, "AT+CGDATA=\"PPP\",%u", gcd->active_context);
+
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				at_cgdata_cb, gc, NULL) > 0)
 		return;
@@ -239,6 +245,18 @@ static void at_gprs_activate_primary(struct ofono_gprs_context *gc,
 	memcpy(gcd->username, ctx->username, sizeof(ctx->username));
 	memcpy(gcd->password, ctx->password, sizeof(ctx->password));
 
+	/* We only support CHAP and PAP */
+	switch (ctx->auth_method) {
+	case OFONO_GPRS_AUTH_METHOD_CHAP:
+		gcd->auth_method = G_AT_PPP_AUTH_METHOD_CHAP;
+		break;
+	case OFONO_GPRS_AUTH_METHOD_PAP:
+		gcd->auth_method = G_AT_PPP_AUTH_METHOD_PAP;
+		break;
+	default:
+		goto error;
+	}
+
 	gcd->state = STATE_ENABLING;
 
 	if (gcd->vendor == OFONO_VENDOR_ZTE) {
@@ -264,9 +282,34 @@ static void at_gprs_activate_primary(struct ofono_gprs_context *gc,
 
 	len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IP\"", ctx->cid);
 
-	if (ctx->apn)
-		snprintf(buf + len, sizeof(buf) - len - 3, ",\"%s\"",
-				ctx->apn);
+	if (ctx->apn) {
+		switch (gcd->vendor) {
+		case OFONO_VENDOR_UBLOX:
+			/*
+			 * U-blox modems require a magic prefix to the APN to
+			 * specify the authentication method to use in the
+			 * network.  See UBX-13002752 - R21.
+			 *
+			 * As the response of the read command omits this magic
+			 * prefix, this is the least invasive place to set it.
+			 */
+			switch (ctx->auth_method) {
+			case OFONO_GPRS_AUTH_METHOD_CHAP:
+				snprintf(buf + len, sizeof(buf) - len - 3,
+						",\"CHAP:%s\"", ctx->apn);
+				break;
+			case OFONO_GPRS_AUTH_METHOD_PAP:
+				snprintf(buf + len, sizeof(buf) - len - 3,
+						",\"PAP:%s\"", ctx->apn);
+				break;
+			}
+			break;
+		default:
+			snprintf(buf + len, sizeof(buf) - len - 3, ",\"%s\"",
+					ctx->apn);
+			break;
+		}
+	}
 
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				at_cgdcont_cb, gc, NULL) > 0)

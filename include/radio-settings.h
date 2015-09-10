@@ -29,14 +29,11 @@ extern "C" {
 #include <ofono/types.h>
 
 enum ofono_radio_access_mode {
-	OFONO_RADIO_ACCESS_MODE_ANY	= 0,
-	OFONO_RADIO_ACCESS_MODE_GSM	= 1,
-	OFONO_RADIO_ACCESS_MODE_UMTS	= 2,
-	OFONO_RADIO_ACCESS_MODE_LTE	= 3,
+	OFONO_RADIO_ACCESS_MODE_ANY	= 0x0,
+	OFONO_RADIO_ACCESS_MODE_GSM	= 0x1,
+	OFONO_RADIO_ACCESS_MODE_UMTS	= 0x2,
+	OFONO_RADIO_ACCESS_MODE_LTE	= 0x4,
 };
-
-/* Set this to latest in ofono_radio_access_mode + 1 */
-#define OFONO_RADIO_ACCESS_MODE_LAST (OFONO_RADIO_ACCESS_MODE_LTE + 1)
 
 enum ofono_radio_band_gsm {
 	OFONO_RADIO_BAND_GSM_ANY,
@@ -82,10 +79,9 @@ typedef void (*ofono_radio_settings_fast_dormancy_query_cb_t)(
 						const struct ofono_error *error,
 						ofono_bool_t enable,
 						void *data);
-
-typedef void (*ofono_radio_settings_modem_rats_query_cb_t)(
+typedef void (*ofono_radio_settings_available_rats_query_cb_t)(
 						const struct ofono_error *error,
-						const ofono_bool_t rats[],
+						unsigned int available_rats,
 						void *data);
 
 struct ofono_radio_settings_driver {
@@ -115,9 +111,9 @@ struct ofono_radio_settings_driver {
 				ofono_bool_t enable,
 				ofono_radio_settings_fast_dormancy_set_cb_t,
 				void *data);
-	void (*query_modem_rats)(struct ofono_radio_settings *rs,
-				ofono_radio_settings_modem_rats_query_cb_t cb,
-				void *data);
+	void (*query_available_rats)(struct ofono_radio_settings *rs,
+			ofono_radio_settings_available_rats_query_cb_t cb,
+			void *data);
 };
 
 int ofono_radio_settings_driver_register(
