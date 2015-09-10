@@ -129,12 +129,8 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 			}
 
 			break;
+
 		case RADIO_STATE_UNAVAILABLE:
-			/*
-			 * This state can be received right before the phone is
-			 * powered off: do nothing.
-			 */
-			break;
 		case RADIO_STATE_OFF:
 
 			/*
