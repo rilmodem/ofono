@@ -669,18 +669,19 @@ static void read_record_cb(int ok, int total_length, int record,
 			export_and_return(TRUE, cbd);
 		} else {
 			struct pb_ref_rec *ref;
-			struct pb_file_info *file_info;
 
 			DBG("Next EFpbr record");
 
 			ref = pbd->pb_ref_next->data;
 
-			ref->pb_next = ref->pb_files;
-			file_info = ref->pb_files->data;
-
-			if (!file_info) {
+			if (!ref->pb_files) {
 				export_and_return(TRUE, cbd);
 			} else {
+				struct pb_file_info *file_info;
+
+				ref->pb_next = ref->pb_files;
+				file_info = ref->pb_files->data;
+
 				ofono_sim_read_info(pbd->sim_context,
 						file_info->file_id,
 						OFONO_SIM_FILE_STRUCTURE_FIXED,
@@ -921,7 +922,6 @@ static void pb_reference_data_cb(int ok, int total_length, int record,
 					ptr[i]);
 				DBG("File ID=%04X", file_id);
 
-
 				file_info->pbr_type = pbr_type;
 				file_info->file_type = ptr[i];
 				file_info->file_id = file_id;
@@ -944,7 +944,7 @@ static void pb_reference_data_cb(int ok, int total_length, int record,
 	pbd->pb_refs = g_slist_append(pbd->pb_refs, ref_rec);
 
 	if (record*record_length >= total_length) {
-		struct pb_ref_rec *ref; 
+		struct pb_ref_rec *ref;
 		struct pb_file_info *file_info;
 
 		DBG("All EFpbr records read");
@@ -952,13 +952,14 @@ static void pb_reference_data_cb(int ok, int total_length, int record,
 		pbd->pb_ref_next = pbd->pb_refs;
 		ref = pbd->pb_ref_next->data;
 
-		ref->pb_next = ref->pb_files;
-		file_info = ref->pb_files->data;
-		if (file_info == NULL) {
+		if (ref->pb_files == NULL) {
 			ofono_error("%s: no files to read", __func__);
 			export_and_return(FALSE, cbd);
 			return;
 		}
+
+		ref->pb_next = ref->pb_files;
+		file_info = ref->pb_files->data;
 
 		/* Start reading process for first EF_PBR entry */
 
