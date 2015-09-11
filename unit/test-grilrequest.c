@@ -1548,7 +1548,7 @@ int main(int argc, char **argv)
 				test_request_power_valid);
 
 	g_test_add_data_func("/testgrilrequest/power: "
-				"valid POWER Test 1",
+				"valid POWER Test 2",
 				&power_valid_test_2,
 				test_request_power_valid);
 
