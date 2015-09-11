@@ -69,6 +69,9 @@ struct gprs_context_data {
 	char *apn;
 	enum ofono_gprs_context_type type;
 	int deact_retries;
+	guint retry_ev_id;
+	struct cb_data *retry_cbd;
+	guint reset_ev_id;
 };
 
 static void ril_gprs_context_deactivate_primary(struct ofono_gprs_context *gc,
@@ -329,7 +332,12 @@ error:
 
 static gboolean reset_modem(gpointer data)
 {
-	mtk_reset_modem(data);
+	struct gprs_context_data *gcd = data;
+	struct ofono_modem *modem = gcd->modem;
+
+	gcd->reset_ev_id = 0;
+
+	mtk_reset_modem(modem);
 
 	return FALSE;
 }
@@ -343,6 +351,8 @@ static gboolean retry_deactivate(gpointer user_data)
 	struct req_deactivate_data_call request;
 	struct parcel rilp;
 	struct ofono_error error;
+
+	gcd->retry_ev_id = 0;
 
 	/* We might have received a call list update while waiting */
 	if (gcd->state == STATE_IDLE) {
@@ -392,8 +402,9 @@ static void ril_deactivate_data_call_cb(struct ril_msg *message,
 		set_context_disconnected(gcd);
 
 		/*
-		 * If the deactivate was a result of a shutdown, there won't be
-		 * call back, so _deactivated() needs to be called directly.
+		 * If the deactivate was a result of a data network detach or of
+		 * an error in data call establishment, there won't be call
+		 * back, so _deactivated() needs to be called directly.
 		 */
 		if (cb)
 			CALLBACK_WITH_SUCCESS(cb, cbd->data);
@@ -410,11 +421,11 @@ static void ril_deactivate_data_call_cb(struct ril_msg *message,
 		 * temporarily. We do retries to handle that case.
 		 */
 		if (--(gcd->deact_retries) > 0) {
-			struct cb_data *cbd2;
-
-			cbd2 = cb_data_new(cb, cbd->data, gc);
-			g_timeout_add_seconds(TIME_BETWEEN_DEACT_RETRIES_S,
-							retry_deactivate, cbd2);
+			gcd->retry_cbd = cb_data_new(cb, cbd->data, gc);
+			gcd->retry_ev_id =
+				g_timeout_add_seconds(
+					TIME_BETWEEN_DEACT_RETRIES_S,
+					retry_deactivate, gcd->retry_cbd);
 		} else {
 			ofono_error("%s: retry limit hit", __func__);
 
@@ -428,7 +439,7 @@ static void ril_deactivate_data_call_cb(struct ril_msg *message,
 			 * internal reset nonetheless.
 			 */
 			if (gcd->vendor == OFONO_RIL_VENDOR_MTK)
-				g_idle_add(reset_modem, gcd->modem);
+				gcd->reset_ev_id = g_idle_add(reset_modem, gcd);
 		}
 	}
 }
@@ -533,9 +544,27 @@ static void ril_gprs_context_remove(struct ofono_gprs_context *gc)
 
 	DBG("*gc: %p", gc);
 
-	if (gcd->state != STATE_IDLE) {
-		ril_gprs_context_detach_shutdown(gc, 0);
+	if (gcd->state != STATE_IDLE && gcd->state != STATE_DISABLING) {
+		struct req_deactivate_data_call request;
+		struct parcel rilp;
+		struct ofono_error error;
+
+		request.cid = gcd->active_rild_cid;
+		request.reason = RIL_DEACTIVATE_DATA_CALL_NO_REASON;
+		g_ril_request_deactivate_data_call(gcd->ril, &request,
+								&rilp, &error);
+
+		g_ril_send(gcd->ril, RIL_REQUEST_DEACTIVATE_DATA_CALL,
+						&rilp, NULL, NULL, NULL);
 	}
+
+	if (gcd->retry_ev_id > 0) {
+		g_source_remove(gcd->retry_ev_id);
+		g_free(gcd->retry_cbd);
+	}
+
+	if (gcd->reset_ev_id > 0)
+		g_source_remove(gcd->reset_ev_id);
 
 	ofono_gprs_context_set_data(gc, NULL);
 
