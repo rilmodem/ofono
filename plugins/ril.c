@@ -29,6 +29,8 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <unistd.h>
 #include <glib.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
@@ -134,13 +136,17 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 		case RADIO_STATE_OFF:
 
 			/*
-			 * If radio powers off asychronously, then
-			 * assert, and let upstart re-start the stack.
+			 * Unexpected radio state change, as we are supposed to
+			 * be online. UNAVAILABLE has been seen occassionally
+			 * when powering off the phone. We wait 5 secs to avoid
+			 * too fast re-spawns, then exit with error to make
+			 * upstart re-start ofono.
 			 */
 			if (rd->ofono_online) {
 				ofono_error("%s: radio self-powered off!",
 						__func__);
-				g_assert(FALSE);
+				sleep(5);
+				exit(1);
 			}
 			break;
 		default:
