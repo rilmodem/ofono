@@ -5,6 +5,7 @@ from gi.repository import GLib
 import argparse
 import dbus
 import dbus.mainloop.glib
+import sys
 
 def property_changed(property, value):
 	print("CallForwarding property %s changed to %s" % (property, value))
@@ -12,7 +13,9 @@ def property_changed(property, value):
 def print_properties(cf):
 	properties = cf.GetProperties()
 
-	for p in properties:
+	for p in ["VoiceBusy", "VoiceNoReplyTimeout", "VoiceNotReachable",
+			"VoiceUnconditional", "VoiceNoReply",
+			"ForwardingFlagOnSim"]:
 		if len(properties[p].__str__()) > 0:
 			print("%s call forwarding rule is: %s" % (p, properties[p]))
 		else:
@@ -40,6 +43,16 @@ def parse_arguments():
 	parser.add_argument("--uncond-num",
 			dest="uncond_num",
 			help="""Specify an unconditional forwarding number""",
+			default="+155555",
+			)
+	parser.add_argument("--unreach-num",
+			dest="unreach_num",
+			help="""Specify an un-reachable forwarding number""",
+			default="+155555",
+			)
+	parser.add_argument("--busy-num",
+			dest="busy_num",
+			help="""Specify a busy forwarding number""",
 			default="+155555",
 			)
 	parser.add_argument("--noreply-timeout",
@@ -140,9 +153,21 @@ def main(args):
 	except dbus.DBusException as e:
 		print("Unable to set Voice Unconditional - Bad")
 
+	try:
+		cf.SetProperty("VoiceBusy", args.busy_num)
+	except dbus.DBusException as e:
+		print("Unable to set Voice Busy - Bad")
+
+	try:
+		cf.SetProperty("VoiceNotReachable", args.unreach_num)
+	except dbus.DBusException as e:
+		print("Unable to set Voice Not Reachable - Bad")
+
 	properties = cf.GetProperties()
 
 	print(properties["VoiceUnconditional"])
+	print(properties["VoiceBusy"])
+	print(properties["VoiceNotReachable"])
 
 	try:
 		cf.DisableAll("foobar")
@@ -171,4 +196,8 @@ def main(args):
 
 if __name__ == "__main__":
 	args = parse_arguments()
-	main(args)
+
+	try:
+		main(args)
+	except KeyboardInterrupt as e:
+		sys.exit(0)

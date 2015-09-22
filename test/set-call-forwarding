@@ -16,28 +16,42 @@ def property_changed(property, value):
 		mainloop.quit();
 
 if __name__ == "__main__":
-	if len(sys.argv) < 3:
-		print("Usage: %s <property> <value>" % (sys.argv[0]))
+
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+	bus = dbus.SystemBus()
+
+	if len(sys.argv) == 4:
+		path = sys.argv[1]
+		property = sys.argv[2]
+		value = sys.argv[3]
+	elif len(sys.argv) == 3:
+		manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+							'org.ofono.Manager')
+		modems = manager.GetModems()
+
+		path = modems[0][0]
+		property = sys.argv[1]
+		value = sys.argv[2]
+	else:
+		print("Usage: %s [PATH] <property> <value>" % (sys.argv[0]))
 		print("Properties can be: VoiceUnconditional, VoiceBusy,")
 		print("	VoiceNoReply, VoiceNoReplyTimeout, VoiceNotReachable")
 		print("Value: number to or the timeout")
 		sys.exit(1)
 
-	property = sys.argv[1]
-	value = sys.argv[2]
-
 	canexit = False
 
-	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+	if property not in ["VoiceUnconditional",
+                            "VoiceBusy",
+                            "VoiceNoReply",
+                            "VoiceNoReplyTimeout",
+                            "VoiceNotReachable"]:
+		print("Properties can be: VoiceUnconditional, VoiceBusy,")
+		print("	VoiceNoReply, VoiceNoReplyTimeout, VoiceNotReachable")
+		print("Value: number to or the timeout")
+		sys.exit(1)
 
-	bus = dbus.SystemBus()
-
-	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
-							'org.ofono.Manager')
-
-	modems = manager.GetModems()
-
-	cf = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
+	cf = dbus.Interface(bus.get_object('org.ofono', path),
 				'org.ofono.CallForwarding')
 
 	cf.connect_to_signal("PropertyChanged", property_changed)
