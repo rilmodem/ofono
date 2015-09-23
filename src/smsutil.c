@@ -524,7 +524,8 @@ static gboolean encode_validity_period(const struct sms_validity_period *vp,
 gboolean sms_encode_address_field(const struct sms_address *in, gboolean sc,
 					unsigned char *pdu, int *offset)
 {
-	size_t len = strlen(in->address);
+	const char *addr = (const char *)&in->address;
+	size_t len = strlen(addr);
 	unsigned char addr_len = 0;
 	unsigned char p[10];
 
@@ -546,12 +547,18 @@ gboolean sms_encode_address_field(const struct sms_address *in, gboolean sc,
 		unsigned char *gsm;
 		unsigned char *r;
 
-		if (len > 11)
+		/* TP-OA's 10 octets transport 11 8-bit chars */
+		if (g_utf8_strlen(addr, strlen(addr)) > 11)
 			return FALSE;
 
 		gsm = convert_utf8_to_gsm(in->address, len, NULL, &written, 0);
 		if (gsm == NULL)
 			return FALSE;
+
+		if (written > 11) {
+			g_free(gsm);
+			return FALSE;
+		}
 
 		r = pack_7bit_own_buf(gsm, written, 0, FALSE, &packed, 0, p);
 
@@ -675,7 +682,11 @@ gboolean sms_decode_address_field(const unsigned char *pdu, int len,
 		if (utf8 == NULL)
 			return FALSE;
 
-		if (strlen(utf8) > 20) {
+		/*
+		 * TP-OA's 10 octets transport 11 8-bit chars,
+		 * 22 bytes+terminator in UTF-8.
+		 */
+		if (strlen(utf8) > 22) {
 			g_free(utf8);
 			return FALSE;
 		}

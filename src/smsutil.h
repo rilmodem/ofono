@@ -220,7 +220,11 @@ enum cbs_geo_scope {
 struct sms_address {
 	enum sms_number_type number_type;
 	enum sms_numbering_plan numbering_plan;
-	char address[21]; /* Max 20 in semi-octet, 11 in alnum */
+	/*
+	 * An alphanum TP-OA is 10 7-bit coded octets, which can carry
+	 * 11 8-bit characters. 22 bytes + terminator in UTF-8.
+	 */
+	char address[23];
 };
 
 struct sms_scts {

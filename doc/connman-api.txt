@@ -64,7 +64,7 @@ Methods		dict GetProperties()
 
 			Removes all contexts and re-provisions from the APN
 			database. Contexts must all be deactivated for this
-			method to work.
+			method to work, and the atom must not be powered.
 
 			Possible Errors: [service].Error.InProgress
 					 [service].Error.InvalidArguments

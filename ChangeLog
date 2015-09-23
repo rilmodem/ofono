@@ -1,3 +1,13 @@
+ver 1.17:
+	Fix issue with alphanumeric TP-OA handling.
+	Fix issue with push notification origin port.
+	Fix issue with reading of EF_MWIS records.
+	Fix issue with handling AT+CPINR results.
+	Fix issue with SIM state polling for Sierra modems.
+	Fix issue with HFP handling and AT command prefixes.
+	Fix issue with HFP and extra CCWA event handling.
+	Fix issue with HFP call state and +CHUP errors.
+
 ver 1.16:
 	Fix issue with PIN retry handling.
 	Fix issue with HFP and multiple calls.

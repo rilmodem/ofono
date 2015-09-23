@@ -192,7 +192,7 @@ static void add_wavecom(struct ofono_modem *modem,
 	ofono_modem_register(modem);
 }
 
-static void add_tc65(struct ofono_modem *modem,
+static void add_cinterion(struct ofono_modem *modem,
 			struct udev_device *udev_device)
 {
 	const char *devnode;
@@ -242,6 +242,11 @@ static void add_modem(struct udev_device *udev_device)
 		devpath = udev_device_get_devpath(udev_device);
 		if (devpath == NULL)
 			return;
+
+		if(g_strcmp0(driver, "tc65") == 0)
+			driver = "cinterion";
+		if(g_strcmp0(driver, "ehs6") == 0)
+			driver = "cinterion";
 
 		modem = ofono_modem_create(NULL, driver);
 		if (modem == NULL)
@@ -305,8 +310,8 @@ done:
 		add_isi(modem, udev_device);
 	else if (g_strcmp0(driver, "calypso") == 0)
 		add_calypso(modem, udev_device);
-	else if (g_strcmp0(driver, "tc65") == 0)
-		add_tc65(modem, udev_device);
+	else if (g_strcmp0(driver, "cinterion") == 0)
+		add_cinterion(modem, udev_device);
 	else if (g_strcmp0(driver, "nokiacdma") == 0)
 		add_nokiacdma(modem, udev_device);
 	else if (g_strcmp0(driver, "sim900") == 0)

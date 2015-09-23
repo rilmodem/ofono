@@ -41,6 +41,7 @@ struct ofono_handsfree_card_driver {
 	void (*connect)(struct ofono_handsfree_card *card,
 				ofono_handsfree_card_connect_cb_t cb,
 				void *data);
+	void (*sco_connected_hint)(struct ofono_handsfree_card *card);
 };
 
 struct ofono_handsfree_card *ofono_handsfree_card_create(unsigned int vendor,

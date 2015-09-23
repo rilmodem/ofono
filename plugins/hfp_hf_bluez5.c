@@ -69,6 +69,7 @@ struct hfp {
 	struct hfp_slc_info info;
 	DBusMessage *msg;
 	struct ofono_handsfree_card *card;
+	unsigned int bcc_id;
 };
 
 static const char *none_prefix[] = { NULL };
@@ -372,7 +373,11 @@ static void bcc_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_handsfree_card_connect_cb_t cb = cbd->cb;
+	struct ofono_handsfree_card *card = cbd->user;
+	struct hfp *hfp = ofono_handsfree_card_get_data(card);
 	struct ofono_error error;
+
+	hfp->bcc_id = 0;
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
@@ -390,7 +395,10 @@ static void hfp16_card_connect(struct ofono_handsfree_card *card,
 			info->ag_features & HFP_AG_FEATURE_CODEC_NEGOTIATION) {
 		struct cb_data *cbd = cb_data_new(cb, data);
 
-		g_at_chat_send(info->chat, "AT+BCC", NULL, bcc_cb, cbd, g_free);
+		cbd->user = card;
+		hfp->bcc_id = g_at_chat_send(info->chat, "AT+BCC",
+						none_prefix, bcc_cb,
+						cbd, g_free);
 		return;
 	}
 
@@ -403,11 +411,40 @@ static void hfp16_card_connect(struct ofono_handsfree_card *card,
 	ofono_handsfree_card_connect_sco(card);
 }
 
+static void hfp16_sco_connected_hint(struct ofono_handsfree_card *card)
+{
+	struct hfp *hfp = ofono_handsfree_card_get_data(card);
+	struct hfp_slc_info *info = &hfp->info;
+	struct cb_data *cbd;
+	ofono_handsfree_card_connect_cb_t cb;
+
+	/*
+	 * SCO has just been connected, probably initiated by the AG.
+	 * If we have any outstanding BCC requests, then lets cancel these
+	 * as they're no longer needed
+	 */
+
+	if (hfp->bcc_id == 0)
+		return;
+
+	cbd = g_at_chat_get_userdata(info->chat, hfp->bcc_id);
+	if (cbd == NULL)
+		return;
+
+	cb = cbd->cb;
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+
+	/* cbd will be freed once cancel is processed */
+	g_at_chat_cancel(info->chat, hfp->bcc_id);
+	hfp->bcc_id = 0;
+}
+
 static struct ofono_handsfree_card_driver hfp16_hf_driver = {
-	.name		= HFP16_HF_DRIVER,
-	.probe		= hfp16_card_probe,
-	.remove		= hfp16_card_remove,
-	.connect	= hfp16_card_connect,
+	.name			= HFP16_HF_DRIVER,
+	.probe			= hfp16_card_probe,
+	.remove			= hfp16_card_remove,
+	.connect		= hfp16_card_connect,
+	.sco_connected_hint	= hfp16_sco_connected_hint,
 };
 
 static ofono_bool_t device_path_compare(struct ofono_modem *modem,
@@ -701,8 +738,17 @@ static void modem_register_from_proxy(GDBusProxy *proxy, const char *path)
 		return;
 
 	dbus_message_iter_get_basic(&iter, &paired);
-	if (paired == FALSE)
+
+	if (paired == FALSE) {
+		modem = ofono_modem_find(device_path_compare, (void *) path);
+
+		if (modem != NULL) {
+			ofono_modem_remove(modem);
+			g_dbus_proxy_set_removed_watch(proxy, NULL, NULL);
+			g_dbus_proxy_set_property_watch(proxy, NULL, NULL);
+		}
 		return;
+	}
 
 	if (g_dbus_proxy_get_property(proxy, "UUIDs", &iter) == FALSE)
 		return;
