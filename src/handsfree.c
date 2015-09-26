@@ -72,7 +72,11 @@ struct ofono_handsfree {
 static const char **ag_features_list(unsigned int features,
 					unsigned int chld_features)
 {
-	static const char *list[10];
+	/*
+	 * BRSF response is a 32-bit unsigned int.  Only 32 entries are posible,
+	 * and we do not ever report the presence of bit 8.
+	 */
+	static const char *list[32];
 	unsigned int i = 0;
 
 	if (features & HFP_AG_FEATURE_3WAY)
@@ -602,7 +606,7 @@ static DBusMessage *handsfree_request_phone_number(DBusConnection *conn,
 }
 
 static const GDBusMethodTable handsfree_methods[] = {
-	{ GDBUS_METHOD("GetProperties",
+	{ GDBUS_ASYNC_METHOD("GetProperties",
 			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
 			handsfree_get_properties) },
 	{ GDBUS_ASYNC_METHOD("SetProperty",

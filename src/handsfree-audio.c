@@ -101,6 +101,8 @@ static void send_new_connection(const char *card, int fd, uint8_t codec)
 	DBusMessage *msg;
 	DBusMessageIter iter;
 
+	DBG("%p, fd: %d, codec: %hu", card, fd, codec);
+
 	msg = dbus_message_new_method_call(agent->owner, agent->path,
 				HFP_AUDIO_AGENT_INTERFACE, "NewConnection");
 	if (msg == NULL)
@@ -183,8 +185,14 @@ static gboolean sco_accept(GIOChannel *io, GIOCondition cond,
 		return TRUE;
 	}
 
+	DBG("SCO connection setup between local: %s and remote: %s",
+		local, remote);
+
 	send_new_connection(card->path, nsk, card->selected_codec);
 	close(nsk);
+
+	if (card->driver->sco_connected_hint)
+		card->driver->sco_connected_hint(card);
 
 	return TRUE;
 }
@@ -845,6 +853,8 @@ void ofono_handsfree_audio_ref(void)
 	if (ref_count != 1)
 		return;
 
+	__ofono_handsfree_audio_manager_init();
+
 	if (!g_dbus_register_interface(ofono_dbus_get_connection(),
 					OFONO_MANAGER_PATH,
 					HFP_AUDIO_MANAGER_INTERFACE,
@@ -873,6 +883,8 @@ void ofono_handsfree_audio_unref(void)
 		agent_release(agent);
 		agent_free(agent);
 	}
+
+	__ofono_handsfree_audio_manager_cleanup();
 }
 
 int __ofono_handsfree_audio_manager_init(void)
@@ -882,15 +894,11 @@ int __ofono_handsfree_audio_manager_init(void)
 
 void __ofono_handsfree_audio_manager_cleanup(void)
 {
-	if (ref_count == 0)
+	if (ref_count != 0)
 		return;
 
-	ofono_error("Handsfree Audio manager not cleaned up properly,"
-			"fixing...");
-
-	ref_count = 1;
-	ofono_handsfree_audio_unref();
-
-	if (sco_watch > 0)
+	if (sco_watch > 0) {
 		g_source_remove(sco_watch);
+		sco_watch = 0;
+	}
 }

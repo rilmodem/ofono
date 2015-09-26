@@ -827,7 +827,7 @@ static void at_cpinr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 		for (i = 1; i < len; i++) {
 			if (!strcmp(name, at_sim_name[i].name)) {
-				retries[i] = val;
+				retries[at_sim_name[i].type] = val;
 				break;
 			}
 		}
@@ -1350,6 +1350,7 @@ static void at_pin_send_cb(gboolean ok, GAtResult *result,
 	case OFONO_VENDOR_ALCATEL:
 	case OFONO_VENDOR_HUAWEI:
 	case OFONO_VENDOR_SIMCOM:
+	case OFONO_VENDOR_SIERRA:
 		/*
 		 * On ZTE modems, after pin is entered, SIM state is checked
 		 * by polling CPIN as their modem doesn't provide unsolicited

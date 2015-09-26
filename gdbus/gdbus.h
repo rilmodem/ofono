@@ -216,6 +216,7 @@ struct GDBusSecurityTable {
 	.flags = G_DBUS_SIGNAL_FLAG_EXPERIMENTAL
 
 void g_dbus_set_flags(int flags);
+int g_dbus_get_flags(void);
 
 gboolean g_dbus_register_interface(DBusConnection *connection,
 					const char *path, const char *name,
@@ -355,6 +356,10 @@ gboolean g_dbus_proxy_set_removed_watch(GDBusProxy *proxy,
 
 GDBusClient *g_dbus_client_new(DBusConnection *connection,
 					const char *service, const char *path);
+GDBusClient *g_dbus_client_new_full(DBusConnection *connection,
+							const char *service,
+							const char *path,
+							const char *root_path);
 
 GDBusClient *g_dbus_client_ref(GDBusClient *client);
 void g_dbus_client_unref(GDBusClient *client);

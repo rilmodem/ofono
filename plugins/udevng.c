@@ -118,6 +118,8 @@ static gboolean setup_mbm(struct modem_info *modem)
 		} else if (g_str_has_suffix(info->sysattr,
 						"Network Adapter") == TRUE ||
 				g_str_has_suffix(info->sysattr,
+						"gw") == TRUE ||
+				g_str_has_suffix(info->sysattr,
 						"NetworkAdapter") == TRUE) {
 			network = info->devnode;
 		}
@@ -1078,14 +1080,19 @@ static struct {
 	{ "icera",	"cdc_ether",	"0421", "0633"	},
 	{ "mbm",	"cdc_acm",	"0bdb"		},
 	{ "mbm",	"cdc_ether",	"0bdb"		},
+	{ "mbm",	"cdc_ncm",	"0bdb"		},
 	{ "mbm",	"cdc_acm",	"0fce"		},
 	{ "mbm",	"cdc_ether",	"0fce"		},
+	{ "mbm",	"cdc_ncm",	"0fce"		},
 	{ "mbm",	"cdc_acm",	"413c"		},
 	{ "mbm",	"cdc_ether",	"413c"		},
+	{ "mbm",	"cdc_ncm",	"413c"		},
 	{ "mbm",	"cdc_acm",	"03f0"		},
 	{ "mbm",	"cdc_ether",	"03f0"		},
+	{ "mbm",	"cdc_ncm",	"03f0"		},
 	{ "mbm",	"cdc_acm",	"0930"		},
 	{ "mbm",	"cdc_ether",	"0930"		},
+	{ "mbm",	"cdc_ncm",	"0930"		},
 	{ "hso",	"hso"				},
 	{ "gobi",	"qmi_wwan"			},
 	{ "gobi",	"qcserial"			},

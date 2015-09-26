@@ -333,6 +333,10 @@ static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		}
 	}
 
+	if (!ok && vd->calls)
+		g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
+					clcc_poll_cb, req->vc, NULL);
+
 	req->cb(&error, req->data);
 }
 
@@ -710,6 +714,16 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 				GINT_TO_POINTER(CALL_STATUS_WAITING),
 				at_util_call_compare_by_status))
 		return;
+
+	/* some phones may send extra CCWA after active call is ended
+	 * this would trigger creation of second call in state 'WAITING'
+	 * as our previous WAITING call has been promoted to INCOMING
+	 */
+	if (g_slist_find_custom(vd->calls,
+				GINT_TO_POINTER(CALL_STATUS_INCOMING),
+				at_util_call_compare_by_status))
+		return;
+
 
 	g_at_result_iter_init(&iter, result);
 
@@ -1134,6 +1148,10 @@ static void hfp_clcc_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_voicecall *vc = user_data;
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	unsigned int mpty_ids;
+	GSList *n;
+	struct ofono_call *nc;
+	unsigned int num_active = 0;
+	unsigned int num_held = 0;
 
 	if (!ok)
 		return;
@@ -1142,6 +1160,22 @@ static void hfp_clcc_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_slist_foreach(vd->calls, voicecall_notify, vc);
 	ofono_voicecall_mpty_hint(vc, mpty_ids);
+
+	n = vd->calls;
+
+	while (n) {
+		nc = n->data;
+
+		if (nc->status == CALL_STATUS_ACTIVE)
+			num_active++;
+		else if (nc->status == CALL_STATUS_HELD)
+			num_held++;
+
+		n = n->next;
+	}
+
+	if ((num_active > 1 || num_held > 1) && !vd->clcc_source)
+		vd->clcc_source = g_timeout_add(POLL_CLCC_INTERVAL, poll_clcc, vc);
 }
 
 static void hfp_voicecall_initialized(gboolean ok, GAtResult *result,
@@ -1183,8 +1217,8 @@ static int hfp_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 
 	ofono_voicecall_set_data(vc, vd);
 
-	g_at_chat_send(vd->chat, "AT+CLIP=1", NULL, NULL, NULL, NULL);
-	g_at_chat_send(vd->chat, "AT+CCWA=1", NULL,
+	g_at_chat_send(vd->chat, "AT+CLIP=1", none_prefix, NULL, NULL, NULL);
+	g_at_chat_send(vd->chat, "AT+CCWA=1", none_prefix,
 				hfp_voicecall_initialized, vc, NULL);
 	return 0;
 }

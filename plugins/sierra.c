@@ -48,6 +48,8 @@ static const char *none_prefix[] = { NULL };
 
 struct sierra_data {
 	GAtChat *modem;
+	gboolean have_sim;
+	struct at_util_sim_state_query *sim_state_query;
 };
 
 static void sierra_debug(const char *str, void *user_data)
@@ -79,6 +81,9 @@ static void sierra_remove(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_modem_set_data(modem, NULL);
+
+	/* Cleanup potential SIM state polling */
+	at_util_sim_state_query_free(data->sim_state_query);
 
 	/* Cleanup after hot-unplug */
 	g_at_chat_unref(data->modem);
@@ -119,6 +124,21 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	return chat;
 }
 
+static void sim_state_cb(gboolean present, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct sierra_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	at_util_sim_state_query_free(data->sim_state_query);
+	data->sim_state_query = NULL;
+
+	data->have_sim = present;
+	ofono_modem_set_powered(modem, TRUE);
+
+}
+
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -131,7 +151,9 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 		data->modem = NULL;
 	}
 
-	ofono_modem_set_powered(modem, ok);
+	data->sim_state_query = at_util_sim_state_query_new(data->modem,
+						2, 20, sim_state_cb, modem,
+						NULL);
 }
 
 static int sierra_enable(struct ofono_modem *modem)
@@ -222,7 +244,7 @@ static void sierra_pre_sim(struct ofono_modem *modem)
 	sim = ofono_sim_create(modem, OFONO_VENDOR_SIERRA,
 					"atmodem", data->modem);
 
-	if (sim)
+	if (sim && data->have_sim == TRUE)
 		ofono_sim_inserted_notify(sim, TRUE);
 }
 

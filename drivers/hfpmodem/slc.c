@@ -113,7 +113,8 @@ static void slc_established(struct slc_establish_data *sed)
 {
 	struct hfp_slc_info *info = sed->info;
 
-	g_at_chat_send(info->chat, "AT+CMEE=1", NULL, NULL, NULL, NULL);
+	g_at_chat_send(info->chat, "AT+CMEE=1", none_prefix,
+			NULL, NULL, NULL);
 	sed->connect_cb(sed->userdata);
 }
 
@@ -434,8 +435,8 @@ static void brsf_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			sprintf(str, "AT+BAC=%d", HFP_CODEC_CVSD);
 
 		slc_establish_data_ref(sed);
-		g_at_chat_send(info->chat, str, NULL, bac_cb, sed,
-						slc_establish_data_unref);
+		g_at_chat_send(info->chat, str, none_prefix, bac_cb,
+				sed, slc_establish_data_unref);
 		return;
 	}
 
