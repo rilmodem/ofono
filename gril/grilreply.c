@@ -232,7 +232,8 @@ struct reply_operator *g_ril_reply_parse_operator(GRil *gril,
 
 	g_ril_init_parcel(message, &rilp);
 
-	if ((num_params = parcel_r_int32(&rilp)) != OPERATOR_NUM_PARAMS) {
+	num_params = parcel_r_int32(&rilp);
+	if (num_params != OPERATOR_NUM_PARAMS) {
 		ofono_error("%s: invalid OPERATOR reply: "
 				"number of params is %d; should be 3.",
 				__func__,
@@ -716,11 +717,14 @@ struct reply_sim_status *g_ril_reply_parse_sim_status(GRil *gril,
 		app->app_state = parcel_r_int32(&rilp);
 		app->perso_substate = parcel_r_int32(&rilp);
 
-		/* TODO: we need a way to instruct parcel to skip
+		/*
+		 * TODO: we need a way to instruct parcel to skip
 		 * a string, without allocating memory...
 		 */
-		app->aid_str = parcel_r_string(&rilp); /* application ID (AID) */
-		app->app_str = parcel_r_string(&rilp); /* application label */
+		/* application ID (AID) */
+		app->aid_str = parcel_r_string(&rilp);
+		/* application label */
+		app->app_str = parcel_r_string(&rilp);
 
 		app->pin_replaced = parcel_r_int32(&rilp);
 		app->pin1_state = parcel_r_int32(&rilp);

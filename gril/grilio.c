@@ -269,7 +269,9 @@ static gboolean call_blocking_read(gpointer user_data)
 {
 	GRilIO *io = user_data;
 
-	while (can_write_data(io->channel, G_IO_OUT, io) == TRUE);
+	while (can_write_data(io->channel, G_IO_OUT, io) == TRUE)
+		;
+
 	write_watcher_destroy_notify(io);
 
 	return FALSE;

@@ -150,7 +150,7 @@ static const char *unsol_request_to_string(struct ril_s *ril, int req)
 	if (str == NULL)
 		str = ril_unsol_request_to_string(req);
 
-	return str;	
+	return str;
 }
 
 static void ril_notify_node_destroy(gpointer data, gpointer user_data)
@@ -964,7 +964,7 @@ static void ril_cancel_group(struct ril_s *ril, guint group)
 				sent = TRUE;
 				break;
 			}
- 		}
+		 }
 
 		if (sent)
 			continue;
