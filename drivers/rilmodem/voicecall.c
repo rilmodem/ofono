@@ -117,7 +117,7 @@ static gboolean auto_answer_call(gpointer user_data)
 }
 
 static gboolean is_auto_answer(struct ril_voicecall_data *vd,
-				struct ofono_call* call)
+				struct ofono_call *call)
 {
 	static const char test_mcc_mnc_1[] = "00101";
 	static const char test_mcc_mnc_2[] = "001001";

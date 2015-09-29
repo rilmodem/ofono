@@ -151,7 +151,7 @@ static int ril_send_forward_cmd(int type, int cls,
 		request = RIL_REQUEST_QUERY_CALL_FORWARD_STATUS;
 		response_func = ril_query_call_fwd_cb;
 	} else {
-	        request = RIL_REQUEST_SET_CALL_FORWARD;
+		request = RIL_REQUEST_SET_CALL_FORWARD;
 		response_func = ril_set_forward_cb;
 	}
 
