@@ -45,7 +45,8 @@ const char *__ofono_spn_table_get_spn(const char *numeric)
 
 		DBG("Calling spntable plugin '%s'", driver->name);
 
-		if ((spn = driver->get_spn(numeric)) == NULL)
+		spn = driver->get_spn(numeric);
+		if (spn == NULL)
 			continue;
 
 		return spn;

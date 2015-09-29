@@ -45,7 +45,8 @@ int __ofono_sim_mnclength_get_mnclength(const char *imsi)
 
 		DBG("Calling mnclength plugin '%s'", driver->name);
 
-		if ((mnclen = driver->get_mnclength(imsi)) <= 0)
+		mnclen = driver->get_mnclength(imsi);
+		if (mnclen <= 0)
 			continue;
 
 		return mnclen;
