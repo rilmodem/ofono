@@ -318,7 +318,7 @@ static const guchar reply_data_reg_state_valid_parcel6[] = {
 
 static const reg_state_test data_reg_valid_6 = {
 	.status = NETWORK_REGISTRATION_STATUS_REGISTERED,
- 	.tech = RADIO_TECH_HSDPA,
+	.tech = RADIO_TECH_HSDPA,
 	.msg = {
 		.buf = (gchar *) &reply_data_reg_state_valid_parcel6,
 		.buf_len = sizeof(reply_data_reg_state_valid_parcel6),
