@@ -59,7 +59,8 @@ static int create_rilmodem(const char *ril_type, int slot)
 	ofono_modem_set_integer(modem, "Slot", slot);
 
 	/* This causes driver->probe() to be called... */
-	if ((retval = ofono_modem_register(modem)) != 0) {
+	retval = ofono_modem_register(modem);
+	if (retval != 0) {
 		ofono_error("%s: ofono_modem_register returned: %d",
 				__func__, retval);
 		return retval;
@@ -91,12 +92,13 @@ static int detect_init(void)
 	int num_slots = 1;
 	int i;
 
-	if ((ril_type = getenv("OFONO_RIL_DEVICE")) == NULL)
+	ril_type = getenv("OFONO_RIL_DEVICE");
+	if (ril_type == NULL)
 		ril_type = "ril";
 
 	/* Check for multi-SIM support */
-	if ((multi_sim = getenv("OFONO_RIL_NUM_SIM_SLOTS")) != NULL &&
-			*multi_sim != '\0') {
+	multi_sim = getenv("OFONO_RIL_NUM_SIM_SLOTS");
+	if (multi_sim != NULL && *multi_sim != '\0') {
 		int env_slots;
 		char *endp;
 
