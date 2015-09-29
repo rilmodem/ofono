@@ -64,7 +64,7 @@
  */
 
 struct gprs_attach_data {
-	struct ril_gprs_data* gd;
+	struct ril_gprs_data *gd;
 	gboolean set_attached;
 };
 
