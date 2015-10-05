@@ -35,6 +35,7 @@
 #include "hfp.h"
 #include "gatserver.h"
 #include "gatppp.h"
+#include "handsfree-audio.h"
 
 #define RING_TIMEOUT 3
 
