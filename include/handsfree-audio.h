@@ -30,6 +30,11 @@ extern "C" {
 
 struct ofono_handsfree_card;
 
+enum ofono_handsfree_card_type {
+	OFONO_HANDSFREE_CARD_TYPE_HANDSFREE,
+	OFONO_HANDSFREE_CARD_TYPE_GATEWAY,
+};
+
 typedef void (*ofono_handsfree_card_connect_cb_t)(
 				const struct ofono_error *error, void *data);
 
@@ -45,8 +50,9 @@ struct ofono_handsfree_card_driver {
 };
 
 struct ofono_handsfree_card *ofono_handsfree_card_create(unsigned int vendor,
-							const char *driver,
-							void *data);
+				enum ofono_handsfree_card_type type,
+				const char *driver,
+				void *data);
 int ofono_handsfree_card_register(struct ofono_handsfree_card *card);
 void ofono_handsfree_card_remove(struct ofono_handsfree_card *card);
 ofono_bool_t ofono_handsfree_card_set_codec(struct ofono_handsfree_card *card,
