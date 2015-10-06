@@ -35,7 +35,7 @@ int g_mtk_reply_parse_get_3g_capability(GRil *gril,
 
 int g_mtk_reply_parse_query_modem_type(GRil *gril,
 					const struct ril_msg *message);
-					
+
 #ifdef __cplusplus
 }
 #endif

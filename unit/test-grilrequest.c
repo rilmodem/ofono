@@ -439,7 +439,8 @@ static const guchar req_change_passwd_parcel_valid_1[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-static const struct request_test_change_passwd_data change_passwd_valid_test_1 = {
+static const struct request_test_change_passwd_data
+						change_passwd_valid_test_1 = {
 	.old_passwd = "1234",
 	.new_passwd = "5678",
 	.aid_str = "",
@@ -923,7 +924,8 @@ static void test_deactivate_data_call_invalid(gconstpointer data)
 	 * No parcel_init needed, as these tests all fail during
 	 * param validation
 	 */
-	result = g_ril_request_deactivate_data_call(NULL, request, &rilp, &error);
+	result = g_ril_request_deactivate_data_call(NULL, request,
+								&rilp, &error);
 	g_assert(result == FALSE);
 	g_assert(error.type == OFONO_ERROR_TYPE_FAILURE &&
 			error.error == -EINVAL);
@@ -937,12 +939,14 @@ static void test_deactivate_data_call_valid(gconstpointer data)
 	struct parcel rilp;
 	struct ofono_error error;
 
-	result = g_ril_request_deactivate_data_call(NULL, request, &rilp, &error);
+	result = g_ril_request_deactivate_data_call(NULL, request,
+								&rilp, &error);
 	g_assert(result == TRUE);
 	g_assert(error.type == OFONO_ERROR_TYPE_NO_ERROR &&
 			error.error == 0);
 
-	g_assert(!memcmp(rilp.data, test_data->parcel_data, test_data->parcel_size));
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+						test_data->parcel_size));
 
 	parcel_free(&rilp);
 }
@@ -989,7 +993,8 @@ static void test_request_power_valid(gconstpointer data)
 
 	g_ril_request_power(NULL, *online, &rilp);
 
-	g_assert(!memcmp(rilp.data, test_data->parcel_data, test_data->parcel_size));
+	g_assert(!memcmp(rilp.data, test_data->parcel_data,
+						test_data->parcel_size));
 
 	parcel_free(&rilp);
 }

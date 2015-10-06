@@ -116,8 +116,8 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 
 			if (rd->radio_settings == NULL) {
 				char *rs_driver;
-				struct ril_radio_settings_driver_data rs_data =
-							{ rd->ril, modem };
+				struct ril_radio_settings_driver_data
+						rs_data = { rd->ril, modem };
 
 				if (rd->vendor == OFONO_RIL_VENDOR_QCOM_MSIM)
 					rs_driver = QCOMMSIMMODEM;
@@ -230,10 +230,10 @@ void ril_post_sim(struct ofono_modem *modem)
 	struct ofono_gprs_context *gc;
 	struct ofono_message_waiting *mw;
 	struct ril_gprs_driver_data gprs_data = { rd->ril, modem };
-	struct ril_gprs_context_data inet_ctx =
-			{ rd->ril, modem, OFONO_GPRS_CONTEXT_TYPE_INTERNET };
-	struct ril_gprs_context_data mms_ctx =
-			{ rd->ril, modem, OFONO_GPRS_CONTEXT_TYPE_MMS };
+	struct ril_gprs_context_data
+		inet_ctx = { rd->ril, modem, OFONO_GPRS_CONTEXT_TYPE_INTERNET };
+	struct ril_gprs_context_data
+		mms_ctx = { rd->ril, modem, OFONO_GPRS_CONTEXT_TYPE_MMS };
 
 	/* TODO: this function should setup:
 	 *  - phonebook
@@ -450,9 +450,9 @@ static struct ofono_modem_driver ril_driver = {
  */
 static int ril_init(void)
 {
-	int retval = 0;
+	int retval = ofono_modem_driver_register(&ril_driver);
 
-	if ((retval = ofono_modem_driver_register(&ril_driver)))
+	if (retval != 0)
 		DBG("ofono_modem_driver_register returned: %d", retval);
 
 	return retval;

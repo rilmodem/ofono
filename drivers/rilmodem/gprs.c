@@ -236,8 +236,8 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	if ((reply = g_ril_reply_parse_data_reg_state(gd->ril, message))
-			== NULL)
+	reply = g_ril_reply_parse_data_reg_state(gd->ril, message);
+	if (reply == NULL)
 		goto error;
 
 	/*

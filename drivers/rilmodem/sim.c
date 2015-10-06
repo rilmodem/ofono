@@ -211,9 +211,9 @@ error:
 }
 
 static void ril_sim_read_info(struct ofono_sim *sim, int fileid,
-				const unsigned char *path, unsigned int path_len,
-				ofono_sim_file_info_cb_t cb,
-				void *data)
+				const unsigned char *path,
+				unsigned int path_len,
+				ofono_sim_file_info_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data, sd);
@@ -268,8 +268,8 @@ static void ril_file_io_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	if ((reply = g_ril_reply_parse_sim_io(sd->ril, message))
-			== NULL) {
+	reply = g_ril_reply_parse_sim_io(sd->ril, message);
+	if (reply == NULL) {
 		ofono_error("Can't parse SIM IO response from RILD");
 		goto error;
 	}
@@ -305,8 +305,8 @@ static void ril_file_write_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	if ((reply = g_ril_reply_parse_sim_io(sd->ril, message))
-			== NULL) {
+	reply = g_ril_reply_parse_sim_io(sd->ril, message);
+	if (reply == NULL) {
 		ofono_error("%s: Can't parse SIM IO response", __func__);
 		goto error;
 	}
@@ -340,7 +340,8 @@ error:
 
 static void ril_sim_read_binary(struct ofono_sim *sim, int fileid,
 				int start, int length,
-				const unsigned char *path, unsigned int path_len,
+				const unsigned char *path,
+				unsigned int path_len,
 				ofono_sim_read_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
@@ -385,7 +386,8 @@ error:
 
 static void ril_sim_read_record(struct ofono_sim *sim, int fileid,
 				int record, int length,
-				const unsigned char *path, unsigned int path_len,
+				const unsigned char *path,
+				unsigned int path_len,
 				ofono_sim_read_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
@@ -1175,9 +1177,9 @@ static gboolean ril_sim_register(gpointer user)
 	struct ofono_sim *sim = user;
 	struct sim_data *sd = ofono_sim_get_data(sim);
 
- 	DBG("");
+	DBG("");
 
- 	ofono_sim_register(sim);
+	ofono_sim_register(sim);
 
 	if (sd->ril_state_watch != NULL &&
 			!ofono_sim_add_state_watch(sim, sd->ril_state_watch,
@@ -1224,7 +1226,7 @@ static int ril_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 	 *
 	 * ofono_sim_register() needs to be called after the
 	 * driver has been set in ofono_sim_create(), which
-	 * calls this function.  Most other drivers make some
+	 * calls this function.	 Most other drivers make some
 	 * kind of capabilities query to the modem, and then
 	 * call register in the callback; we use an idle event
 	 * instead.
@@ -1257,7 +1259,7 @@ static struct ofono_sim_driver driver = {
 	.write_file_transparent	= ril_sim_update_binary,
 	.write_file_linear	= ril_sim_update_record,
 	.write_file_cyclic	= ril_sim_update_cyclic,
- 	.read_imsi		= ril_read_imsi,
+	.read_imsi		= ril_read_imsi,
 	.query_passwd_state	= ril_query_passwd_state,
 	.send_passwd		= ril_pin_send,
 	.query_pin_retries	= ril_query_pin_retries,

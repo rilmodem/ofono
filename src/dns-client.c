@@ -30,7 +30,7 @@
 #include "ofono.h"
 #include "dns-client.h"
 
-static GSList *g_drivers = NULL;
+static GSList *g_drivers;
 
 ofono_dns_client_request_t __ofono_dns_client_submit_request(
 						const char *hostname,
@@ -51,8 +51,9 @@ ofono_dns_client_request_t __ofono_dns_client_submit_request(
 
 		DBG("Calling dns client plugin '%s'", driver->name);
 
-		if ((token = driver->submit_request(hostname, device, servers,
-						timeout_ms, cb, data)) == NULL)
+		token = driver->submit_request(hostname, device, servers,
+							timeout_ms, cb, data);
+		if (token == NULL)
 			continue;
 
 		return token;
@@ -84,7 +85,7 @@ void __ofono_dns_client_cancel_request(ofono_dns_client_request_t request)
  */
 const char *__ofono_dns_client_strerror(ofono_dns_client_status_t status)
 {
-	switch(status) {
+	switch (status) {
 	case OFONO_DNS_CLIENT_SUCCESS:
 		return "The query was successful.";
 	case OFONO_DNS_CLIENT_ERROR_NO_DATA:

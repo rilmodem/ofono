@@ -903,7 +903,8 @@ static void append_context_properties(struct pri_context *ctx,
 	ofono_dbus_dict_append(dict, "Active", DBUS_TYPE_BOOLEAN, &value);
 
 	preferred = ctx->preferred;
-	ofono_dbus_dict_append(dict, "Preferred", DBUS_TYPE_BOOLEAN, &preferred);
+	ofono_dbus_dict_append(dict, "Preferred",
+						DBUS_TYPE_BOOLEAN, &preferred);
 
 	ofono_dbus_dict_append(dict, "Type", DBUS_TYPE_STRING, &type);
 
@@ -2018,7 +2019,8 @@ static void write_context_settings(struct ofono_gprs *gprs,
 				context->preferred);
 
 	if (context->type == OFONO_GPRS_CONTEXT_TYPE_MMS ||
-		(context->message_center && strlen(context->message_center) > 0)) {
+			(context->message_center
+				&& strlen(context->message_center) > 0)) {
 
 		g_key_file_set_string(gprs->settings, context->key,
 					"MessageProxy",

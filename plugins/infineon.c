@@ -60,7 +60,8 @@ static int inf_init(void)
 {
 	int retval = 0;
 
-	if ((retval = ofono_modem_driver_register(&infineon_driver)))
+	retval = ofono_modem_driver_register(&infineon_driver);
+	if (retval != 0)
 		DBG("ofono_modem_driver_register returned: %d", retval);
 
 	return retval;

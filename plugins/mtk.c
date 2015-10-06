@@ -121,7 +121,7 @@ struct mtk_data {
 	struct ril_sim_data sim_data;
 	struct ofono_devinfo *devinfo;
 	struct ofono_voicecall *voicecall;
-	struct ofono_call_volume *callvolume;	
+	struct ofono_call_volume *callvolume;
 	struct cb_data *pending_online_cbd;
 	ofono_bool_t pending_online;
 	ofono_bool_t gprs_attach;
@@ -508,22 +508,22 @@ static int select_modem_fw(enum mtk_plmn_type sim_plmn_type,
 	case MTK_PLMN_TYPE_1:
 	case MTK_PLMN_TYPE_3:
 		switch (sim_plmn_type) {
-			case MTK_PLMN_TYPE_1:
-				return MTK_MD_TYPE_LTG;
-			case MTK_PLMN_TYPE_2:
-			case MTK_PLMN_TYPE_3:
-				return MTK_MD_TYPE_LWG;
-			case MTK_PLMN_TYPE_UNKNOWN:
-				return MTK_MD_TYPE_INVALID;
+		case MTK_PLMN_TYPE_1:
+			return MTK_MD_TYPE_LTG;
+		case MTK_PLMN_TYPE_2:
+		case MTK_PLMN_TYPE_3:
+			return MTK_MD_TYPE_LWG;
+		case MTK_PLMN_TYPE_UNKNOWN:
+			return MTK_MD_TYPE_INVALID;
 		};
 	case MTK_PLMN_TYPE_UNKNOWN:
 		switch (sim_plmn_type) {
-			case MTK_PLMN_TYPE_2:
-			case MTK_PLMN_TYPE_3:
-				return MTK_MD_TYPE_LWG;
-			case MTK_PLMN_TYPE_1:
-			case MTK_PLMN_TYPE_UNKNOWN:
-				return MTK_MD_TYPE_INVALID;
+		case MTK_PLMN_TYPE_2:
+		case MTK_PLMN_TYPE_3:
+			return MTK_MD_TYPE_LWG;
+		case MTK_PLMN_TYPE_1:
+		case MTK_PLMN_TYPE_UNKNOWN:
+			return MTK_MD_TYPE_INVALID;
 		};
 	};
 
@@ -888,7 +888,7 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 		 * Now that we can access IMSI, see if a FW change is needed.
 		 */
 
-	 	md->sim_plmn_type = get_plmn_type(ofono_sim_get_imsi(md->sim));
+		md->sim_plmn_type = get_plmn_type(ofono_sim_get_imsi(md->sim));
 
 		check_modem_fw(modem);
 
@@ -1239,8 +1239,8 @@ static int power_on_off(GRil *ril, gboolean on, struct cb_data *cbd)
 		notify = g_free;
 	}
 
-	if ((cancel_id = g_ril_send(ril, req, p_rilp, resp, cbd, notify))
-			== 0) {
+	cancel_id = g_ril_send(ril, req, p_rilp, resp, cbd, notify);
+	if (cancel_id == 0) {
 		ofono_error("%s: failure sending request", __func__);
 		CALLBACK_WITH_FAILURE(cb, cbd->data);
 		g_free(cbd);
@@ -1689,9 +1689,9 @@ static struct ofono_modem_driver mtk_driver = {
 
 static int mtk_init(void)
 {
-	int retval = 0;
+	int retval = ofono_modem_driver_register(&mtk_driver);
 
-	if ((retval = ofono_modem_driver_register(&mtk_driver)))
+	if (retval != 0)
 		DBG("ofono_modem_driver_register returned: %d", retval);
 
 	return retval;

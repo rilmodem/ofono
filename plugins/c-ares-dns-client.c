@@ -83,7 +83,7 @@ struct ares_watch {
  * List of pending asynchronous name resolution requests. We expect the number
  * of pending requests to be small, hence the use of a linked list.
  */
-static GList *pending_requests = NULL;
+static GList *pending_requests;
 
 /*
  * Table of number of requests per device. Key is a pointer to a string, value
@@ -103,7 +103,7 @@ static int req_using_dev_cnt;
  * we defer deletion of the ares_request struct to the idle loop. This is the
  * glib source id associated with the deferred deletion task.
  */
-static guint deferred_deletion_g_source_id = 0;
+static guint deferred_deletion_g_source_id;
 
 static void reset_ares_timeout(struct ares_request *request,
 			       gboolean destroy_old_source);
@@ -136,7 +136,8 @@ static void disable_rp_filter(const char *interface)
 {
 	int *if_cnt;
 
-	if ((if_cnt = g_tree_lookup(req_per_dev_cnt, interface)) == NULL) {
+	if_cnt = g_tree_lookup(req_per_dev_cnt, interface);
+	if (if_cnt == NULL) {
 		if_cnt = g_malloc0(sizeof(*if_cnt));
 		g_tree_insert(req_per_dev_cnt, g_strdup(interface), if_cnt);
 	}
@@ -161,7 +162,8 @@ static void enable_rp_filter(const char *interface)
 	if (--req_using_dev_cnt == 0)
 		rp_filter_set(IFACE_ALL, TRUE);
 
-	if ((if_cnt = g_tree_lookup(req_per_dev_cnt, interface)) == NULL) {
+	if_cnt = g_tree_lookup(req_per_dev_cnt, interface);
+	if (if_cnt == NULL) {
 		ofono_error("%s: %s interface not found!!!",
 							__func__, interface);
 		return;
@@ -247,7 +249,9 @@ static void reset_ares_timeout(struct ares_request *request,
 		timersub(&request->timeout, &elapsed, &max_tv);
 		max = &max_tv;
 	}
-	if ((tv = ares_timeout(request->channel, max, &ret_tv)) == NULL) {
+
+	tv = ares_timeout(request->channel, max, &ret_tv);
+	if (tv == NULL) {
 		ofono_error("%s: ares_timeout failed", __func__);
 		return;
 	}
@@ -500,7 +504,7 @@ static void ares_socket_state_cb(void *data, int s, int read, int write)
  */
 static ofono_dns_client_status_t status_from_ares_status(int ares_status)
 {
-	switch(ares_status) {
+	switch (ares_status) {
 	case ARES_SUCCESS:
 		return OFONO_DNS_CLIENT_SUCCESS;
 	case ARES_ENODATA:
@@ -762,7 +766,7 @@ static gboolean ofono_dns_client_cancel_request(ofono_dns_client_request_t req)
 {
 	struct ares_request *request = req;
 
-	if (request == NULL || g_list_find (pending_requests, request) == NULL)
+	if (request == NULL || g_list_find(pending_requests, request) == NULL)
 		return FALSE;
 
 	DBG("request %p", request);

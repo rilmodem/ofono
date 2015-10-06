@@ -121,9 +121,8 @@ int parcel_w_string(struct parcel *p, const char *str)
 
 	gs16 = g_utf8_to_utf16(str, -1, NULL, &gs16_len, NULL);
 
-	if (parcel_w_int32(p, gs16_len) == -1) {
+	if (parcel_w_int32(p, gs16_len) == -1)
 		return -1;
-	}
 
 	gs16_size = gs16_len * sizeof(char16_t);
 	len = gs16_size + sizeof(char16_t);
@@ -152,7 +151,7 @@ int parcel_w_string(struct parcel *p, const char *str)
 				};
 #endif
 
-				*((uint32_t*) (void *)
+				*((uint32_t *) (void *)
 					(p->data + p->offset - 4)) &=
 							mask[padded - len];
 			}
@@ -168,7 +167,7 @@ int parcel_w_string(struct parcel *p, const char *str)
 	return 0;
 }
 
-char* parcel_r_string(struct parcel *p)
+char *parcel_r_string(struct parcel *p)
 {
 	char *ret;
 	int len16 = parcel_r_int32(p);
@@ -201,7 +200,7 @@ char* parcel_r_string(struct parcel *p)
 	return ret;
 }
 
-int parcel_w_raw(struct parcel *p, const void* data, size_t len)
+int parcel_w_raw(struct parcel *p, const void *data, size_t len)
 {
 	if (data == NULL) {
 		parcel_w_int32(p, -1);
@@ -255,7 +254,7 @@ void *parcel_r_raw(struct parcel *p, int *len)
 
 size_t parcel_data_avail(struct parcel *p)
 {
-	return (p->size - p->offset);
+	return p->size - p->offset;
 }
 
 struct parcel_str_array *parcel_r_str_array(struct parcel *p)

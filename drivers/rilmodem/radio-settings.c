@@ -251,7 +251,7 @@ void ril_delayed_register(const struct ofono_error *error, void *user_data)
 static int ril_radio_settings_probe(struct ofono_radio_settings *rs,
 					unsigned int vendor, void *user)
 {
-	struct ril_radio_settings_driver_data* rs_init_data = user;
+	struct ril_radio_settings_driver_data *rs_init_data = user;
 	struct radio_data *rsd = g_try_new0(struct radio_data, 1);
 
 	if (rsd == NULL) {

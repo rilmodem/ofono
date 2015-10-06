@@ -548,7 +548,8 @@ GSList *ubuntu_apndb_lookup_apn(const char *mcc, const char *mnc,
 	custom_apndb.match_imsi = imsi;
 	custom_apndb.match_gid1 = gid1;
 
-	if ((apndb_path = getenv("OFONO_CUSTOM_APNDB_PATH")) == NULL)
+	apndb_path = getenv("OFONO_CUSTOM_APNDB_PATH");
+	if (apndb_path == NULL)
 		apndb_path = CUSTOM_APNDB_PATH;
 
 	if (ubuntu_apndb_parse(&toplevel_apndb_parser, &custom_apndb,
@@ -578,7 +579,8 @@ GSList *ubuntu_apndb_lookup_apn(const char *mcc, const char *mnc,
 	apndb.match_imsi = imsi;
 	apndb.match_gid1 = gid1;
 
-	if ((apndb_path = getenv("OFONO_SYSTEM_APNDB_PATH")) == NULL)
+	apndb_path = getenv("OFONO_SYSTEM_APNDB_PATH");
+	if (apndb_path == NULL)
 		apndb_path = SYSTEM_APNDB_PATH;
 
 	if (ubuntu_apndb_parse(&toplevel_apndb_parser, &apndb,

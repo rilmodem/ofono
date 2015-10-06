@@ -353,7 +353,7 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 	return TRUE;
 
 error:
-        OFONO_EINVAL(error);
+	OFONO_EINVAL(error);
 	return FALSE;
 }
 
@@ -1070,7 +1070,7 @@ void g_ril_request_oem_hook_raw(GRil *gril, const void *payload, size_t length,
 	if (payload != NULL)
 		hex_dump = encode_hex(payload, length, '\0');
 
-	g_ril_append_print_buf(gril, "(%s)", hex_dump? hex_dump: "(null)");
+	g_ril_append_print_buf(gril, "(%s)", hex_dump ? hex_dump : "(null)");
 	g_free(hex_dump);
 }
 

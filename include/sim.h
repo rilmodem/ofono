@@ -218,7 +218,8 @@ ofono_bool_t ofono_sim_add_spn_watch(struct ofono_sim *sim, unsigned int *id,
 					ofono_sim_spn_cb_t cb, void *data,
 					ofono_destroy_func destroy);
 
-ofono_bool_t ofono_sim_remove_spn_watch(struct ofono_sim *sim, unsigned int *id);
+ofono_bool_t ofono_sim_remove_spn_watch(struct ofono_sim *sim,
+							unsigned int *id);
 
 void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted);
 

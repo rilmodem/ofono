@@ -72,7 +72,7 @@ static int ril_tech_to_access_tech(int ril_tech)
 	 * Section 7.3 ).
 	 */
 
-	switch(ril_tech) {
+	switch (ril_tech) {
 	case RADIO_TECH_UNKNOWN:
 		return -1;
 	case RADIO_TECH_GSM:
@@ -129,8 +129,8 @@ static void ril_creg_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	if ((reply = g_ril_reply_parse_voice_reg_state(nd->ril, message))
-			== NULL)
+	reply = g_ril_reply_parse_voice_reg_state(nd->ril, message);
+	if (reply == NULL)
 		goto error;
 
 	nd->tech = reply->tech;
@@ -154,15 +154,16 @@ static void ril_creg_notify(struct ofono_error *error, int status, int lac,
 {
 	struct ofono_netreg *netreg = user_data;
 
-        if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-                DBG("Error during status notification");
-                return;
-        }
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		DBG("Error during status notification");
+		return;
+	}
 
 	ofono_netreg_status_notify(netreg, status, lac, ci, tech);
 }
 
-static void ril_network_state_change(struct ril_msg *message, gpointer user_data)
+static void ril_network_state_change(struct ril_msg *message,
+							gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
@@ -234,7 +235,8 @@ static void ril_cops_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	if ((reply = g_ril_reply_parse_operator(nd->ril, message)) == NULL)
+	reply = g_ril_reply_parse_operator(nd->ril, message);
+	if (reply == NULL)
 		goto error;
 
 	set_oper_name(reply, &op);
@@ -285,7 +287,8 @@ static void ril_cops_list_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	if ((reply = g_ril_reply_parse_avail_ops(nd->ril, message)) == NULL)
+	reply = g_ril_reply_parse_avail_ops(nd->ril, message);
+	if (reply == NULL)
 		goto error;
 
 	ops = g_try_new0(struct ofono_network_operator, reply->num_ops);
@@ -366,8 +369,8 @@ static void ril_register_auto(struct ofono_netreg *netreg,
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct cb_data *cbd = cb_data_new(cb, data, nd);
 
-	if (g_ril_send(nd->ril, RIL_REQUEST_SET_NETWORK_SELECTION_AUTOMATIC, NULL,
-			ril_register_cb, cbd, g_free) == 0) {
+	if (g_ril_send(nd->ril, RIL_REQUEST_SET_NETWORK_SELECTION_AUTOMATIC,
+			NULL, ril_register_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, data);
 	}
@@ -450,15 +453,19 @@ static void ril_nitz_notify(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	int year, mon, mday, hour, min, sec, dst, tzi;
+	int year, mon, mday, hour, min, sec, dst, tzi, n_match;
 	char tzs, tz[4];
 	gchar *nitz;
 
-	if ((nitz = g_ril_unsol_parse_nitz(nd->ril, message)) == NULL)
+	nitz = g_ril_unsol_parse_nitz(nd->ril, message);
+	if (nitz == NULL)
 		goto error;
 
-	sscanf(nitz, "%u/%u/%u,%u:%u:%u%c%u,%u", &year, &mon, &mday,
-			&hour, &min, &sec, &tzs, &tzi, &dst);
+	n_match = sscanf(nitz, "%u/%u/%u,%u:%u:%u%c%u,%u", &year, &mon,
+				&mday, &hour, &min, &sec, &tzs, &tzi, &dst);
+	if (n_match != 9)
+		goto error;
+
 	sprintf(tz, "%c%d", tzs, tzi);
 
 	nd->time.utcoff = atoi(tz) * 15 * 60;
@@ -477,7 +484,9 @@ static void ril_nitz_notify(struct ril_msg *message, gpointer user_data)
 	return;
 
 error:
-	ofono_error("%s: unable to notify ofono about NITZ", __func__);
+	ofono_error("%s: unable to notify ofono about NITZ (%s)",
+						__func__, nitz ? nitz : "null");
+	g_free(nitz);
 }
 
 static gboolean ril_delayed_register(gpointer user_data)
