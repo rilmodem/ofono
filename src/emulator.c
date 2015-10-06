@@ -35,6 +35,7 @@
 #include "hfp.h"
 #include "gatserver.h"
 #include "gatppp.h"
+#include "handsfree-audio.h"
 
 #define RING_TIMEOUT 3
 
@@ -48,6 +49,7 @@ struct ofono_emulator {
 	GSList *indicators;
 	guint callsetup_source;
 	int pns_id;
+	struct ofono_handsfree_card *card;
 	bool slc : 1;
 	unsigned int events_mode : 2;
 	bool events_ind : 1;
@@ -990,6 +992,9 @@ static void emulator_unregister(struct ofono_atom *atom)
 
 	g_at_server_unref(em->server);
 	em->server = NULL;
+
+	ofono_handsfree_card_remove(em->card);
+	em->card = NULL;
 }
 
 void ofono_emulator_register(struct ofono_emulator *em, int fd)
@@ -1435,6 +1440,8 @@ void __ofono_emulator_slc_condition(struct ofono_emulator *em,
 		ofono_info("SLC reached");
 		em->slc = TRUE;
 
+		ofono_handsfree_card_register(em->card);
+
 	default:
 		break;
 	}
@@ -1459,4 +1466,13 @@ void ofono_emulator_set_hf_indicator_active(struct ofono_emulator *em,
 
 	sprintf(buf, "+BIND: %d,%d", HFP_HF_INDICATOR_ENHANCED_SAFETY, active);
 	g_at_server_send_unsolicited(em->server, buf);
+}
+
+void ofono_emulator_set_handsfree_card(struct ofono_emulator *em,
+					struct ofono_handsfree_card *card)
+{
+	if (em == NULL)
+		return;
+
+	em->card = card;
 }

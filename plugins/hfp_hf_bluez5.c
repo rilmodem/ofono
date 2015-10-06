@@ -589,7 +589,9 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 	if (version >= HFP_VERSION_1_6)
 		driver = HFP16_HF_DRIVER;
 
-	hfp->card = ofono_handsfree_card_create(0, driver, hfp);
+	hfp->card = ofono_handsfree_card_create(0,
+					OFONO_HANDSFREE_CARD_TYPE_HANDSFREE,
+					driver, hfp);
 	ofono_handsfree_card_set_data(hfp->card, hfp);
 
 	ofono_handsfree_card_set_local(hfp->card, local);

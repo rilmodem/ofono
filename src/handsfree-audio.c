@@ -45,6 +45,7 @@
 #define HFP_AUDIO_CARD_INTERFACE	OFONO_SERVICE ".HandsfreeAudioCard"
 
 struct ofono_handsfree_card {
+	enum ofono_handsfree_card_type type;
 	char *remote;
 	char *local;
 	char *path;
@@ -68,6 +69,17 @@ static GSList *drivers = 0;
 static ofono_bool_t has_wideband = FALSE;
 static int defer_setup = 1;
 static ofono_bool_t transparent_sco = FALSE;
+
+static const char *card_type_to_string(enum ofono_handsfree_card_type type)
+{
+	switch (type) {
+	case OFONO_HANDSFREE_CARD_TYPE_HANDSFREE:
+		return "handsfree";
+	case OFONO_HANDSFREE_CARD_TYPE_GATEWAY:
+		return "gateway";
+	}
+	return "";
+}
 
 static uint16_t codec2setting(uint8_t codec)
 {
@@ -255,6 +267,12 @@ static int sco_init(void)
 static void card_append_properties(struct ofono_handsfree_card *card,
 					DBusMessageIter *dict)
 {
+	const char *type;
+
+	type = card_type_to_string(card->type);
+	ofono_dbus_dict_append(dict, "Type",
+				DBUS_TYPE_STRING, &type);
+
 	ofono_dbus_dict_append(dict, "RemoteAddress",
 				DBUS_TYPE_STRING, &card->remote);
 
@@ -395,14 +413,16 @@ static const GDBusSignalTable card_signals[] = {
 };
 
 struct ofono_handsfree_card *ofono_handsfree_card_create(unsigned int vendor,
-							const char *driver,
-							void *data)
+					enum ofono_handsfree_card_type type,
+					const char *driver,
+					void *data)
 {
 	struct ofono_handsfree_card *card;
 	GSList *l;
 
 	card = g_new0(struct ofono_handsfree_card, 1);
 
+	card->type = type;
 	card->selected_codec = HFP_CODEC_CVSD;
 
 	card_list = g_slist_prepend(card_list, card);

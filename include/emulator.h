@@ -50,6 +50,7 @@ extern "C" {
 
 struct ofono_emulator;
 struct ofono_emulator_request;
+struct ofono_handsfree_card;
 
 enum ofono_emulator_type {
 	OFONO_EMULATOR_TYPE_DUN,
@@ -107,6 +108,9 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 void ofono_emulator_set_hf_indicator_active(struct ofono_emulator *em,
 						int indicator,
 						ofono_bool_t active);
+
+void ofono_emulator_set_handsfree_card(struct ofono_emulator *em,
+					struct ofono_handsfree_card *card);
 
 #ifdef __cplusplus
 }

@@ -89,6 +89,10 @@ Properties	string RemoteAddress [readonly]
 
 			Bluetooth address of the local adapter.
 
+		string Type [readonly]
+
+			Type of the card. Valid values are "gateway" or
+			"handsfree".
 
 Handsfree Audio Agent hierarchy [experimental]
 ===============================
