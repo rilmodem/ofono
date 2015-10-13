@@ -247,7 +247,6 @@ static gboolean ril_unregister_all(struct ril_s *ril,
  * see:
  *
  * https://wiki.mozilla.org/B2G/RIL
- *
  */
 static struct ril_request *ril_request_create(struct ril_s *ril,
 						guint gid,
@@ -562,7 +561,8 @@ static struct ril_msg *read_fixed_record(struct ril_s *p,
 	plen = ntohl(*((uint32_t *) (void *) bytes));
 	bytes += 4;
 
-	/* TODO: Verify that 4k is the max message size from rild.
+	/*
+	 * TODO: Verify that 4k is the max message size from rild.
 	 *
 	 * These conditions shouldn't happen.  If it does
 	 * there are three options:
@@ -573,15 +573,14 @@ static struct ril_msg *read_fixed_record(struct ril_s *p,
 	 */
 	g_assert(plen >= 8 && plen <= 4092);
 
-	/* If we don't have the whole fixed record in the ringbuffer
+	/*
+	 * If we don't have the whole fixed record in the ringbuffer
 	 * then return NULL & leave ringbuffer as is.
-	*/
+	 */
 
 	message_len = *len - 4;
 	if (message_len < plen)
 		return NULL;
-
-	/* FIXME: add check for message_len = 0? */
 
 	message = g_try_malloc(sizeof(struct ril_msg));
 	g_assert(message != NULL);
@@ -617,7 +616,8 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 			return;
 		}
 
-		/* this function attempts to read the next full length
+		/*
+		 * This function attempts to read the next full length
 		 * fixed message from the stream.  if not all bytes are
 		 * available, it returns NULL.  otherwise it allocates
 		 * and returns a ril_message with the copied bytes, and
