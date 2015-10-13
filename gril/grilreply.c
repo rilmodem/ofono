@@ -603,12 +603,9 @@ gchar *g_ril_reply_parse_imsi(GRil *gril, const struct ril_msg *message)
 
 	g_ril_init_parcel(message, &rilp);
 
-	/* 15 is the max length of IMSI
-	 * add 4 bytes for string length */
-	/* FIXME: g_assert(message->buf_len <= 19); */
 	imsi = parcel_r_string(&rilp);
 
-	g_ril_append_print_buf(gril, "{%s}", imsi);
+	g_ril_append_print_buf(gril, "{%s}", imsi ? imsi : "NULL");
 	g_ril_print_response(gril, message);
 
 	return imsi;
@@ -644,21 +641,6 @@ struct reply_sim_status *g_ril_reply_parse_sim_status(GRil *gril,
 
 	g_ril_init_parcel(message, &rilp);
 
-	/*
-	 * FIXME: Need to come up with a common scheme for verifying the
-	 * size of RIL message and properly reacting to bad messages.
-	 * This could be a runtime assertion, disconnect, drop/ignore
-	 * the message, ...
-	 *
-	 * 20 is the min length of RIL_CardStatus_v6 as the AppState
-	 * array can be 0-length.
-	 */
-	if (message->buf_len < 20) {
-		ofono_error("Size of SIM_STATUS reply too small: %d bytes",
-			    (int) message->buf_len);
-		return NULL;
-	}
-
 	status = g_new0(struct reply_sim_status, 1);
 
 	status->card_state = parcel_r_int32(&rilp);
@@ -680,11 +662,9 @@ struct reply_sim_status *g_ril_reply_parse_sim_status(GRil *gril,
 	status->ims_index = parcel_r_int32(&rilp);
 	status->num_apps = parcel_r_int32(&rilp);
 
-	/* TODO:
-	 * How do we handle long (>80 chars) ril_append_print_buf strings?
-	 * Using line wrapping ( via '\' ) introduces spaces in the output.
-	 * Do we just make a style-guide exception for PrintBuf operations?
-	 */
+	if (rilp.malformed)
+		goto error;
+
 	g_ril_append_print_buf(gril,
 				"(card_state=%d,universal_pin_state=%d,"
 				"gsm_umts_index=%d,cdma_index=%d,"
@@ -739,12 +719,15 @@ struct reply_sim_status *g_ril_reply_parse_sim_status(GRil *gril,
 					app->app_type,
 					app->app_state,
 					app->perso_substate,
-					app->aid_str,
-					app->app_str,
+					app->aid_str ? app->aid_str : "NULL",
+					app->app_str ? app->app_str : "NULL",
 					app->pin_replaced,
 					app->pin1_state,
 					app->pin2_state);
 	}
+
+	if (rilp.malformed)
+		goto error;
 
 done:
 	g_ril_append_print_buf(gril, "%s}", print_buf);
