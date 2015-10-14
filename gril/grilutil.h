@@ -45,9 +45,6 @@ const char *ril_request_id_to_string(int req);
 const char *ril_unsol_request_to_string(int request);
 const char *ril_pdp_fail_to_string(int status);
 
-void g_ril_util_debug_chat(gboolean in, const char *str, gsize len,
-				GRilDebugFunc debugf, gpointer user_data);
-
 void g_ril_util_debug_dump(gboolean in, const unsigned char *buf, gsize len,
 				GRilDebugFunc debugf, gpointer user_data);
 
