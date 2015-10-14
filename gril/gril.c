@@ -95,8 +95,6 @@ struct ril_s {
 	gpointer user_disconnect_data;		/* user disconnect data */
 	guint read_so_far;			/* Number of bytes processed */
 	gboolean suspended;			/* Are we suspended? */
-	GRilDebugFunc debugf;			/* debugging output function */
-	gpointer debug_data;			/* Data to pass to debug func */
 	gboolean debug;
 	gboolean trace;
 	gint timeout_source;
@@ -756,12 +754,10 @@ static void ril_suspend(struct ril_s *ril)
 static gboolean ril_set_debug(struct ril_s *ril,
 				GRilDebugFunc func, gpointer user_data)
 {
+	if (ril->io == NULL)
+		return FALSE;
 
-	ril->debugf = func;
-	ril->debug_data = user_data;
-
-	if (ril->io)
-		g_ril_io_set_debug(ril->io, func, user_data);
+	g_ril_io_set_debug(ril->io, func, user_data);
 
 	return TRUE;
 }
@@ -826,7 +822,6 @@ static struct ril_s *create_ril(const char *sock_path)
 	ril->next_cmd_id = 1;
 	ril->next_notify_id = 1;
 	ril->next_gid = 0;
-	ril->debugf = NULL;
 	ril->req_bytes_written = 0;
 	ril->trace = FALSE;
 
