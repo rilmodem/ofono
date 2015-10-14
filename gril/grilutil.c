@@ -35,7 +35,6 @@
 #include <ofono/types.h>
 
 #include "grilutil.h"
-#include "parcel.h"
 #include "ril_constants.h"
 
 /* Constants used by CALL_LIST, and SETUP_DATA_CALL RIL requests */
