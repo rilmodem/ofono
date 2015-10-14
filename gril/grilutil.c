@@ -661,29 +661,6 @@ const char *ril_pdp_fail_to_string(int status)
 	}
 }
 
-void g_ril_util_debug_dump(gboolean in, const unsigned char *buf, gsize len,
-				GRilDebugFunc debugf, gpointer user_data)
-{
-	char type = in ? '<' : '>';
-	GString *str;
-	gsize i;
-
-	if (debugf == NULL || !len)
-		return;
-
-	str = g_string_sized_new(1 + (len * 2));
-	if (str == NULL)
-		return;
-
-	g_string_append_c(str, type);
-
-	for (i = 0; i < len; i++)
-		g_string_append_printf(str, " %02x", buf[i]);
-
-	debugf(str->str, user_data);
-	g_string_free(str, TRUE);
-}
-
 void g_ril_util_debug_hexdump(gboolean in, const unsigned char *buf, gsize len,
 				GRilDebugFunc debugf, gpointer user_data)
 {
