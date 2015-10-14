@@ -865,6 +865,8 @@ static struct ril_s *create_ril(const char *sock_path)
 	g_io_channel_set_flags(io, G_IO_FLAG_NONBLOCK, NULL);
 
 	ril->io = g_ril_io_new(io);
+	g_io_channel_unref(io);
+
 	if (ril->io == NULL) {
 		ofono_error("create_ril: can't create ril->io");
 		goto error;
