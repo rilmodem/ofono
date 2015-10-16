@@ -229,6 +229,11 @@ if (test "${enable_provision}" != "no"); then
 fi
 AM_CONDITIONAL(PROVISION, test "${enable_provision}" != "no")
 
+AC_ARG_ENABLE(upower, AC_HELP_STRING([--disable-upower],
+			[disable UPower plugin]),
+					[enable_upower=${enableval}])
+AM_CONDITIONAL(UPOWER, test "${enable_power}" != "no")
+
 AC_ARG_ENABLE(datafiles, AC_HELP_STRING([--disable-datafiles],
 			[do not install configuration and data files]),
 					[enable_datafiles=${enableval}])
