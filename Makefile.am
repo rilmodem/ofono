@@ -541,6 +541,11 @@ builtin_sources += plugins/hfp_ag_bluez5.c plugins/bluez5.h
 
 builtin_modules += dun_gw_bluez5
 builtin_sources += plugins/dun_gw_bluez5.c plugins/bluez5.h
+
+if UPOWER
+builtin_modules += upower
+builtin_sources += plugins/upower.c
+endif
 endif
 endif
 endif
