@@ -54,6 +54,7 @@ static gboolean on_socket_connected(GIOChannel *chan, GIOCondition cond,
 	unsigned int len = sizeof(saddr);
 	int fd;
 	struct ofono_emulator *em;
+	GList *last;
 	struct ofono_modem *modem;
 
 	if (cond != G_IO_IN)
@@ -63,11 +64,16 @@ static gboolean on_socket_connected(GIOChannel *chan, GIOCondition cond,
 	if (fd == -1)
 		return FALSE;
 
-	/* Pick the first powered modem */
-	modem = modems->data;
+	/*
+	 * Pick the last one to avoid creating a new list with one modem just
+	 * for the call to ofono_emulator_create() (in this case we only support
+	 * registering one modem in the emulator)
+	 */
+	last = g_list_last(modems);
+	modem = last->data;
 	DBG("Picked modem %p for emulator", modem);
 
-	em = ofono_emulator_create(modem, GPOINTER_TO_INT(user));
+	em = ofono_emulator_create(last, GPOINTER_TO_INT(user));
 	if (em == NULL)
 		close(fd);
 	else
