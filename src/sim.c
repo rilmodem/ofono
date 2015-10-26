@@ -2894,9 +2894,7 @@ void ofono_sim_driver_unregister(const struct ofono_sim_driver *d)
 
 static void emulator_remove_handler(struct ofono_atom *atom, void *data)
 {
-	struct ofono_emulator *em = __ofono_atom_get_data(atom);
-
-	ofono_emulator_remove_handler(em, data);
+	ofono_emulator_remove_handler(atom, data);
 }
 
 static void sim_unregister(struct ofono_atom *atom)
@@ -3020,11 +3018,9 @@ static void emulator_hfp_watch(struct ofono_atom *atom,
 				enum ofono_atom_watch_condition cond,
 				void *data)
 {
-	struct ofono_emulator *em = __ofono_atom_get_data(atom);
-
 	if (cond == OFONO_ATOM_WATCH_CONDITION_REGISTERED)
-		ofono_emulator_add_handler(em, "+CNUM", emulator_cnum_cb, data,
-						NULL);
+		ofono_emulator_add_handler(atom, "+CNUM",
+						emulator_cnum_cb, data, NULL);
 }
 
 void ofono_sim_register(struct ofono_sim *sim)

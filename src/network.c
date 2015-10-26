@@ -1346,20 +1346,24 @@ static void signal_strength_callback(const struct ofono_error *error,
 
 static void notify_emulator_status(struct ofono_atom *atom, void *data)
 {
-	struct ofono_emulator *em = __ofono_atom_get_data(atom);
-
 	switch (GPOINTER_TO_INT(data)) {
 	case NETWORK_REGISTRATION_STATUS_REGISTERED:
-		ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_SERVICE, 1);
-		ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_ROAMING, 0);
+		ofono_emulator_set_indicator(atom,
+						OFONO_EMULATOR_IND_SERVICE, 1);
+		ofono_emulator_set_indicator(atom,
+						OFONO_EMULATOR_IND_ROAMING, 0);
 		break;
 	case NETWORK_REGISTRATION_STATUS_ROAMING:
-		ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_SERVICE, 1);
-		ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_ROAMING, 1);
+		ofono_emulator_set_indicator(atom,
+						OFONO_EMULATOR_IND_SERVICE, 1);
+		ofono_emulator_set_indicator(atom,
+						OFONO_EMULATOR_IND_ROAMING, 1);
 		break;
 	default:
-		ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_SERVICE, 0);
-		ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_ROAMING, 0);
+		ofono_emulator_set_indicator(atom,
+						OFONO_EMULATOR_IND_SERVICE, 0);
+		ofono_emulator_set_indicator(atom,
+						OFONO_EMULATOR_IND_ROAMING, 0);
 	}
 }
 
@@ -1532,13 +1536,12 @@ static void init_registration_status(const struct ofono_error *error,
 
 static void notify_emulator_strength(struct ofono_atom *atom, void *data)
 {
-	struct ofono_emulator *em = __ofono_atom_get_data(atom);
 	int val = 0;
 
 	if (GPOINTER_TO_INT(data) > 0)
 		val = (GPOINTER_TO_INT(data) - 1) / 20 + 1;
 
-	ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_SIGNAL, val);
+	ofono_emulator_set_indicator(atom, OFONO_EMULATOR_IND_SIGNAL, val);
 }
 
 void ofono_netreg_strength_notify(struct ofono_netreg *netreg, int strength)
@@ -1792,9 +1795,7 @@ void ofono_netreg_driver_unregister(const struct ofono_netreg_driver *d)
 
 static void emulator_remove_handler(struct ofono_atom *atom, void *data)
 {
-	struct ofono_emulator *em = __ofono_atom_get_data(atom);
-
-	ofono_emulator_remove_handler(em, data);
+	ofono_emulator_remove_handler(atom, data);
 }
 
 static void netreg_unregister(struct ofono_atom *atom)
@@ -2071,13 +2072,12 @@ fail:
 static void emulator_hfp_init(struct ofono_atom *atom, void *data)
 {
 	struct ofono_netreg *netreg = data;
-	struct ofono_emulator *em = __ofono_atom_get_data(atom);
 
 	notify_emulator_status(atom, GINT_TO_POINTER(netreg->status));
 	notify_emulator_strength(atom,
 				GINT_TO_POINTER(netreg->signal_strength));
 
-	ofono_emulator_add_handler(em, "+COPS", emulator_cops_cb, data, NULL);
+	ofono_emulator_add_handler(atom, "+COPS", emulator_cops_cb, data, NULL);
 }
 
 static void emulator_hfp_watch(struct ofono_atom *atom,
