@@ -172,7 +172,6 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 	struct sockaddr_rc saddr;
 	socklen_t optlen;
 	struct ofono_emulator *em;
-	struct ofono_modem *modem;
 	char local[BT_ADDR_SIZE], remote[BT_ADDR_SIZE];
 	struct ofono_handsfree_card *card;
 	int err;
@@ -202,17 +201,12 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 		goto invalid;
 	}
 
-	/* Pick the first voicecall capable modem */
 	if (modems == NULL) {
 		close(fd);
 		return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE
 						".Rejected",
 						"No voice call capable modem");
 	}
-
-	modem = modems->data;
-
-	DBG("Picked modem %p for emulator", modem);
 
 	memset(&saddr, 0, sizeof(saddr));
 	optlen = sizeof(saddr);
@@ -240,7 +234,7 @@ static DBusMessage *profile_new_connection(DBusConnection *conn,
 
 	bt_ba2str(&saddr.rc_bdaddr, remote);
 
-	em = ofono_emulator_create(modem, OFONO_EMULATOR_TYPE_HFP);
+	em = ofono_emulator_create(modems, OFONO_EMULATOR_TYPE_HFP);
 	if (em == NULL) {
 		close(fd);
 		return g_dbus_create_error(msg, BLUEZ_ERROR_INTERFACE

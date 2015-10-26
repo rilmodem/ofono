@@ -548,13 +548,12 @@ static void crst_notify(GAtResult *result, gpointer user_data)
 
 static void emulator_battery_cb(struct ofono_atom *atom, void *data)
 {
-	struct ofono_emulator *em = __ofono_atom_get_data(atom);
 	int val = 0;
 
 	if (GPOINTER_TO_INT(data) > 0)
 		val = (GPOINTER_TO_INT(data) - 1) / 20 + 1;
 
-	ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_BATTERY, val);
+	ofono_emulator_set_indicator(atom, OFONO_EMULATOR_IND_BATTERY, val);
 }
 
 static void cbc_notify(GAtResult *result, gpointer user_data)

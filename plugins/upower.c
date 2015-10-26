@@ -50,11 +50,10 @@ static char *battery_device_path;
 
 static void emulator_battery_cb(struct ofono_atom *atom, void *data)
 {
-	struct ofono_emulator *em = __ofono_atom_get_data(atom);
 	int val = GPOINTER_TO_INT(data);
 
 	DBG("calling set_indicator: %d", val);
-	ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_BATTERY, (int) val);
+	ofono_emulator_set_indicator(atom, OFONO_EMULATOR_IND_BATTERY, val);
 }
 
 static void update_battery_level(double percentage_val)
@@ -73,8 +72,8 @@ static void update_battery_level(double percentage_val)
 		goto done;
 	}
 
-	DBG("last_battery_level: %d battery_level: %d", last_battery_level,
-							battery_level);
+	DBG("last_battery_level: %d battery_level: %d (%f)", last_battery_level,
+						battery_level, percentage_val);
 
 	if (last_battery_level == battery_level)
 		goto done;
@@ -102,8 +101,6 @@ static gboolean battery_props_changed(DBusConnection *conn, DBusMessage *msg,
 	double percentage_val;
 	gboolean percentage_found = FALSE;
 	gboolean retval = FALSE;
-
-	DBG("");
 
 	dbus_message_iter_init(msg, &iter);
 
