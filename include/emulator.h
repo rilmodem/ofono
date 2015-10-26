@@ -51,6 +51,7 @@ extern "C" {
 struct ofono_emulator;
 struct ofono_emulator_request;
 struct ofono_handsfree_card;
+struct ofono_atom;
 
 enum ofono_emulator_type {
 	OFONO_EMULATOR_TYPE_DUN,
@@ -68,7 +69,7 @@ typedef void (*ofono_emulator_request_cb_t)(struct ofono_emulator *em,
 					struct ofono_emulator_request *req,
 					void *data);
 
-struct ofono_emulator *ofono_emulator_create(struct ofono_modem *modem,
+struct ofono_emulator *ofono_emulator_create(GList *modems,
 						enum ofono_emulator_type type);
 
 void ofono_emulator_register(struct ofono_emulator *em, int fd);
@@ -84,11 +85,11 @@ void ofono_emulator_send_intermediate(struct ofono_emulator *em,
 void ofono_emulator_send_info(struct ofono_emulator *em, const char *line,
 				ofono_bool_t last);
 
-ofono_bool_t ofono_emulator_add_handler(struct ofono_emulator *em,
+ofono_bool_t ofono_emulator_add_handler(struct ofono_atom *atom,
 					const char *prefix,
 					ofono_emulator_request_cb_t cb,
 					void *data, ofono_destroy_func destroy);
-ofono_bool_t ofono_emulator_remove_handler(struct ofono_emulator *em,
+ofono_bool_t ofono_emulator_remove_handler(struct ofono_atom *atom,
 						const char *prefix);
 
 ofono_bool_t ofono_emulator_request_next_string(
@@ -103,8 +104,8 @@ const char *ofono_emulator_request_get_raw(struct ofono_emulator_request *req);
 enum ofono_emulator_request_type ofono_emulator_request_get_type(
 					struct ofono_emulator_request *req);
 
-void ofono_emulator_set_indicator(struct ofono_emulator *em,
-					const char *name, int value);
+void ofono_emulator_set_indicator(struct ofono_atom *atom,
+						const char *name, int value);
 void ofono_emulator_set_hf_indicator_active(struct ofono_emulator *em,
 						int indicator,
 						ofono_bool_t active);
