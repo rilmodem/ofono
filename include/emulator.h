@@ -112,6 +112,11 @@ void ofono_emulator_set_hf_indicator_active(struct ofono_emulator *em,
 void ofono_emulator_set_handsfree_card(struct ofono_emulator *em,
 					struct ofono_handsfree_card *card);
 
+typedef void (*ofono_emulator_codec_negotiation_cb)(int err, void *data);
+
+int ofono_emulator_start_codec_negotiation(struct ofono_emulator *em,
+		ofono_emulator_codec_negotiation_cb cb, void *data);
+
 #ifdef __cplusplus
 }
 #endif
