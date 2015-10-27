@@ -425,48 +425,36 @@ static gboolean node_check_destroyed(struct ril_notify_node *node,
 
 static void handle_unsol_req(struct ril_s *p, struct ril_msg *message)
 {
-	GHashTableIter iter;
 	struct ril_notify *notify;
-	int req_key;
-	gpointer key, value;
-	GList *list_item;
-	struct ril_notify_node *node;
-	gboolean found = FALSE;
 
 	if (p->notify_list == NULL)
 		return;
 
 	p->in_notify = TRUE;
 
-	g_hash_table_iter_init(&iter, p->notify_list);
+	notify = g_hash_table_lookup(p->notify_list, &message->req);
+	if (notify != NULL) {
+		GSList *list_item;
 
-	while (g_hash_table_iter_next(&iter, &key, &value)) {
-		req_key = *((int *)key);
-		notify = value;
+		for (list_item = notify->nodes; list_item;
+				list_item = g_slist_next(list_item)) {
+			struct ril_notify_node *node = list_item->data;
 
-		if (req_key != message->req)
-			continue;
-
-		list_item = (GList *) notify->nodes;
-
-		while (list_item != NULL) {
-			node = list_item->data;
+			if (node->destroyed)
+				continue;
 
 			node->callback(message, node->user_data);
-			found = TRUE;
-			list_item = (GList *) g_slist_next(list_item);
 		}
-	}
-
-	/* Only log events not being listended for... */
-	if (!found)
+	} else {
+		/* Only log events not being listended for... */
 		DBG("RIL Event slot %d: %s\n",
 			p->slot, unsol_request_to_string(p, message->req));
+	}
 
 	p->in_notify = FALSE;
 
 	/* Now destroy nodes possibly removed by callbacks */
-	if (found)
+	if (notify != NULL)
 		ril_unregister_all(p, FALSE, node_check_destroyed,
 					GUINT_TO_POINTER(TRUE));
 }
