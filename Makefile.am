@@ -807,7 +807,8 @@ unit_tests = unit/test-common unit/test-util unit/test-idmap \
 				unit/test-mnclength \
 				unit/test-mtkrequest \
 				unit/test-mtkreply \
-				unit/test-mtkunsol
+				unit/test-mtkunsol \
+				unit/test-rilmodem-cs
 
 noinst_PROGRAMS = $(unit_tests) \
 			unit/test-sms-root unit/test-mux unit/test-caif
@@ -902,6 +903,14 @@ unit_test_mnclength_SOURCES = unit/test-mnclength.c plugins/mnclength.c \
 				src/log.c src/sim-mnclength.c
 unit_test_mnclength_LDADD = @GLIB_LIBS@ -ldl
 unit_objects += $(unit_test_mnclength_OBJECTS)
+
+unit_test_rilmodem_cs_SOURCES = unit/test-rilmodem-cs.c $(gril_sources) \
+			src/log.c src/common.c src/util.c \
+			drivers/rilmodem/call-settings.c \
+			src/simutil.c gatchat/ringbuffer.c
+unit_test_rilmodem_cs_LDADD = gdbus/libgdbus-internal.la $(builtin_libadd) \
+			@GLIB_LIBS@ @DBUS_LIBS@ -ldl
+unit_objects += $(unit_test_rilmodem_cs_OBJECTS)
 
 TESTS = $(unit_tests)
 
