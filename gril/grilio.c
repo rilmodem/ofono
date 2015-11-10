@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 
@@ -72,7 +71,6 @@ static void read_watcher_destroy_notify(gpointer user_data)
 	io->read_handler = NULL;
 	io->read_data = NULL;
 
-	g_io_channel_unref(io->channel);
 	io->channel = NULL;
 
 	if (io->destroyed)
@@ -207,7 +205,7 @@ static GRilIO *create_io(GIOChannel *channel, GIOFlags flags)
 		io->use_write_watch = FALSE;
 	}
 
-	io->buf = ring_buffer_new(8192);
+	io->buf = ring_buffer_new(GRIL_BUFFER_SIZE);
 
 	if (!io->buf)
 		goto error;

@@ -35,7 +35,6 @@
 #include <ofono/types.h>
 
 #include "grilutil.h"
-#include "parcel.h"
 #include "ril_constants.h"
 
 /* Constants used by CALL_LIST, and SETUP_DATA_CALL RIL requests */
@@ -659,108 +658,6 @@ const char *ril_pdp_fail_to_string(int status)
 		else
 			return "<UNKNOWN>";
 	}
-}
-
-void g_ril_util_debug_chat(gboolean in, const char *str, gsize len,
-				GRilDebugFunc debugf, gpointer user_data)
-{
-	char type = in ? '<' : '>';
-	gsize escaped = 2; /* Enough for '<', ' ' */
-	char *escaped_str;
-	const char *esc = "<ESC>";
-	gsize esc_size = strlen(esc);
-	const char *ctrlz = "<CtrlZ>";
-	gsize ctrlz_size = strlen(ctrlz);
-	gsize i;
-
-	if (debugf == NULL || !len)
-		return;
-
-	for (i = 0; i < len; i++) {
-		char c = str[i];
-
-		if (g_ascii_isprint(c))
-			escaped += 1;
-		else if (c == '\r' || c == '\t' || c == '\n')
-			escaped += 2;
-		else if (c == 26)
-			escaped += ctrlz_size;
-		else if (c == 25)
-			escaped += esc_size;
-		else
-			escaped += 4;
-	}
-
-	escaped_str = g_try_malloc(escaped + 1);
-	if (escaped_str == NULL)
-		return;
-
-	escaped_str[0] = type;
-	escaped_str[1] = ' ';
-	escaped_str[2] = '\0';
-	escaped_str[escaped] = '\0';
-
-	for (escaped = 2, i = 0; i < len; i++) {
-		unsigned char c = str[i];
-
-		switch (c) {
-		case '\r':
-			escaped_str[escaped++] = '\\';
-			escaped_str[escaped++] = 'r';
-			break;
-		case '\t':
-			escaped_str[escaped++] = '\\';
-			escaped_str[escaped++] = 't';
-			break;
-		case '\n':
-			escaped_str[escaped++] = '\\';
-			escaped_str[escaped++] = 'n';
-			break;
-		case 26:
-			strncpy(&escaped_str[escaped], ctrlz, ctrlz_size);
-			escaped += ctrlz_size;
-			break;
-		case 25:
-			strncpy(&escaped_str[escaped], esc, esc_size);
-			escaped += esc_size;
-			break;
-		default:
-			if (g_ascii_isprint(c))
-				escaped_str[escaped++] = c;
-			else {
-				escaped_str[escaped++] = '\\';
-				escaped_str[escaped++] = '0' + ((c >> 6) & 07);
-				escaped_str[escaped++] = '0' + ((c >> 3) & 07);
-				escaped_str[escaped++] = '0' + (c & 07);
-			}
-		}
-	}
-
-	debugf(escaped_str, user_data);
-	g_free(escaped_str);
-}
-
-void g_ril_util_debug_dump(gboolean in, const unsigned char *buf, gsize len,
-				GRilDebugFunc debugf, gpointer user_data)
-{
-	char type = in ? '<' : '>';
-	GString *str;
-	gsize i;
-
-	if (debugf == NULL || !len)
-		return;
-
-	str = g_string_sized_new(1 + (len * 2));
-	if (str == NULL)
-		return;
-
-	g_string_append_c(str, type);
-
-	for (i = 0; i < len; i++)
-		g_string_append_printf(str, " %02x", buf[i]);
-
-	debugf(str->str, user_data);
-	g_string_free(str, TRUE);
 }
 
 void g_ril_util_debug_hexdump(gboolean in, const unsigned char *buf, gsize len,

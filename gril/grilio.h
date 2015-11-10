@@ -29,6 +29,8 @@ extern "C" {
 
 #include "gfunc.h"
 
+#define GRIL_BUFFER_SIZE 8192
+
 struct _GRilIO;
 
 typedef struct _GRilIO GRilIO;

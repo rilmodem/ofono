@@ -94,7 +94,7 @@ static int detect_init(void)
 
 	ril_type = getenv("OFONO_RIL_DEVICE");
 	if (ril_type == NULL)
-		ril_type = "ril";
+		return 0;
 
 	/* Check for multi-SIM support */
 	multi_sim = getenv("OFONO_RIL_NUM_SIM_SLOTS");

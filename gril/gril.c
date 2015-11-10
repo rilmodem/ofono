@@ -29,7 +29,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <sys/socket.h>
@@ -95,8 +94,6 @@ struct ril_s {
 	gpointer user_disconnect_data;		/* user disconnect data */
 	guint read_so_far;			/* Number of bytes processed */
 	gboolean suspended;			/* Are we suspended? */
-	GRilDebugFunc debugf;			/* debugging output function */
-	gpointer debug_data;			/* Data to pass to debug func */
 	gboolean debug;
 	gboolean trace;
 	gint timeout_source;
@@ -360,13 +357,11 @@ static void io_disconnect(gpointer user_data)
 
 static void handle_response(struct ril_s *p, struct ril_msg *message)
 {
-	gsize count = g_queue_get_length(p->command_queue);
+	guint count = g_queue_get_length(p->command_queue);
 	struct ril_request *req;
 	gboolean found = FALSE;
 	guint i, len;
 	gint id;
-
-	g_assert(count > 0);
 
 	for (i = 0; i < count; i++) {
 		req = g_queue_peek_nth(p->command_queue, i);
@@ -550,16 +545,20 @@ static struct ril_msg *read_fixed_record(struct ril_s *p,
 	bytes += 4;
 
 	/*
-	 * TODO: Verify that 4k is the max message size from rild.
+	 * TODO: Verify that 8k is the max message size from rild.
 	 *
-	 * These conditions shouldn't happen.  If it does
+	 * This condition shouldn't happen.  If it does
 	 * there are three options:
 	 *
-	 * 1) ASSERT; ofono will restart via DBus
+	 * 1) Exit; ofono will restart via DBus (this is what we do now)
 	 * 2) Consume the bytes & continue
 	 * 3) force a disconnect
 	 */
-	g_assert(plen >= 8 && plen <= 4092);
+	if (plen > GRIL_BUFFER_SIZE - 4) {
+		ofono_error("ERROR RIL parcel bigger than buffer (%u), exiting",
+				plen);
+		exit(1);
+	}
 
 	/*
 	 * If we don't have the whole fixed record in the ringbuffer
@@ -570,13 +569,11 @@ static struct ril_msg *read_fixed_record(struct ril_s *p,
 	if (message_len < plen)
 		return NULL;
 
-	message = g_try_malloc(sizeof(struct ril_msg));
-	g_assert(message != NULL);
+	message = g_malloc(sizeof(struct ril_msg));
 
 	/* allocate ril_msg->buffer */
 	message->buf_len = plen;
-	message->buf = g_try_malloc(plen);
-	g_assert(message->buf != NULL);
+	message->buf = g_malloc(plen);
 
 	/* Copy bytes into message buffer */
 	memmove(message->buf, (const void *) bytes, plen);
@@ -756,12 +753,10 @@ static void ril_suspend(struct ril_s *ril)
 static gboolean ril_set_debug(struct ril_s *ril,
 				GRilDebugFunc func, gpointer user_data)
 {
+	if (ril->io == NULL)
+		return FALSE;
 
-	ril->debugf = func;
-	ril->debug_data = user_data;
-
-	if (ril->io)
-		g_ril_io_set_debug(ril->io, func, user_data);
+	g_ril_io_set_debug(ril->io, func, user_data);
 
 	return TRUE;
 }
@@ -826,7 +821,6 @@ static struct ril_s *create_ril(const char *sock_path)
 	ril->next_cmd_id = 1;
 	ril->next_notify_id = 1;
 	ril->next_gid = 0;
-	ril->debugf = NULL;
 	ril->req_bytes_written = 0;
 	ril->trace = FALSE;
 
@@ -870,6 +864,8 @@ static struct ril_s *create_ril(const char *sock_path)
 	g_io_channel_set_flags(io, G_IO_FLAG_NONBLOCK, NULL);
 
 	ril->io = g_ril_io_new(io);
+	g_io_channel_unref(io);
+
 	if (ril->io == NULL) {
 		ofono_error("create_ril: can't create ril->io");
 		goto error;
