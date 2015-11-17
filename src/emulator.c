@@ -1683,6 +1683,7 @@ int ofono_emulator_start_codec_negotiation(struct ofono_emulator *em,
 {
 	char buf[64];
 	unsigned char codec;
+	int err;
 
 	if (em == NULL)
 		return -EINVAL;
@@ -1707,7 +1708,11 @@ int ofono_emulator_start_codec_negotiation(struct ofono_emulator *em,
 		 * already have a negotiated codec we can proceed here
 		 * without doing any negotiation again.
 		 */
-		ofono_handsfree_card_connect_sco(em->card);
+		err = ofono_handsfree_card_connect_sco(em->card);
+		if (err < 0) {
+			ofono_error("SCO connection failed");
+			return err;
+		}
 
 		return 0;
 	}
