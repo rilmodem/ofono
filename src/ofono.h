@@ -513,7 +513,7 @@ enum ofono_emulator_slc_condition {
 	OFONO_EMULATOR_SLC_CONDITION_BIND,
 };
 
-void __ofono_emulator_set_indicator_forced(struct ofono_emulator *em,
+void __ofono_emulator_set_indicator_forced(struct ofono_atom *atom,
 						const char *name, int value);
 void __ofono_emulator_slc_condition(struct ofono_emulator *em,
 					enum ofono_emulator_slc_condition cond);

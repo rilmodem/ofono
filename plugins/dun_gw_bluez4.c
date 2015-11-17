@@ -81,6 +81,7 @@ static void dun_gw_connect_cb(GIOChannel *io, GError *err, gpointer user_data)
 	struct ofono_emulator *em = user_data;
 	struct ofono_modem *modem;
 	int fd;
+	GList *last;
 
 	DBG("");
 
@@ -90,11 +91,16 @@ static void dun_gw_connect_cb(GIOChannel *io, GError *err, gpointer user_data)
 		return;
 	}
 
-	/* Pick the first powered modem */
-	modem = modems->data;
+	/*
+	 * Pick the last one to avoid creating a new list with one modem just
+	 * for the call to ofono_emulator_create() (for this plugin we only
+	 * support registering one modem in the emulator)
+	 */
+	last = g_list_last(modems);
+	modem = last->data;
 	DBG("Picked modem %p for emulator", modem);
 
-	em = ofono_emulator_create(modem, OFONO_EMULATOR_TYPE_DUN);
+	em = ofono_emulator_create(last, OFONO_EMULATOR_TYPE_DUN);
 	if (em == NULL) {
 		g_io_channel_shutdown(io, TRUE, NULL);
 		return;

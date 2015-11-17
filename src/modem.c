@@ -1533,15 +1533,13 @@ static void gcap_cb(struct ofono_emulator *em,
 static void dun_watch(struct ofono_atom *atom,
 			enum ofono_atom_watch_condition cond, void *data)
 {
-	struct ofono_emulator *em = __ofono_atom_get_data(atom);
-
 	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED)
 		return;
 
-	ofono_emulator_add_handler(em, "+GMI", gmi_cb, data, NULL);
-	ofono_emulator_add_handler(em, "+GMM", gmm_cb, data, NULL);
-	ofono_emulator_add_handler(em, "+GMR", gmr_cb, data, NULL);
-	ofono_emulator_add_handler(em, "+GCAP", gcap_cb, data, NULL);
+	ofono_emulator_add_handler(atom, "+GMI", gmi_cb, data, NULL);
+	ofono_emulator_add_handler(atom, "+GMM", gmm_cb, data, NULL);
+	ofono_emulator_add_handler(atom, "+GMR", gmr_cb, data, NULL);
+	ofono_emulator_add_handler(atom, "+GCAP", gcap_cb, data, NULL);
 }
 
 int ofono_devinfo_driver_register(const struct ofono_devinfo_driver *d)

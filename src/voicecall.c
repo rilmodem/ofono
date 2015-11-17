@@ -754,36 +754,33 @@ static void emulator_set_indicator_forced(struct ofono_voicecall *vc,
 						const char *name, int value)
 {
 	struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
-	struct ofono_emulator *em;
+	struct ofono_atom *atom;
 
-	em = __ofono_atom_find(OFONO_ATOM_TYPE_EMULATOR_HFP, modem);
-	if (em)
-		__ofono_emulator_set_indicator_forced(em, name, value);
+	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_EMULATOR_HFP);
+	if (atom)
+		__ofono_emulator_set_indicator_forced(atom, name, value);
 }
 
 static void emulator_call_status_cb(struct ofono_atom *atom, void *data)
 {
-	struct ofono_emulator *em = __ofono_atom_get_data(atom);
 	struct emulator_status *s = data;
 
-	ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_CALL, s->status);
+	ofono_emulator_set_indicator(atom, OFONO_EMULATOR_IND_CALL, s->status);
 }
 
 static void emulator_callsetup_status_cb(struct ofono_atom *atom, void *data)
 {
-	struct ofono_emulator *em = __ofono_atom_get_data(atom);
 	struct emulator_status *s = data;
 
-	ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_CALLSETUP,
+	ofono_emulator_set_indicator(atom, OFONO_EMULATOR_IND_CALLSETUP,
 					s->status);
 }
 
 static void emulator_callheld_status_cb(struct ofono_atom *atom, void *data)
 {
-	struct ofono_emulator *em = __ofono_atom_get_data(atom);
 	struct emulator_status *s = data;
 
-	ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_CALLHELD,
+	ofono_emulator_set_indicator(atom, OFONO_EMULATOR_IND_CALLHELD,
 					s->status);
 }
 
@@ -2655,9 +2652,7 @@ void ofono_voicecall_driver_unregister(const struct ofono_voicecall_driver *d)
 
 static void emulator_remove_handler(struct ofono_atom *atom, void *data)
 {
-	struct ofono_emulator *em = __ofono_atom_get_data(atom);
-
-	ofono_emulator_remove_handler(em, data);
+	ofono_emulator_remove_handler(atom, data);
 }
 
 static void emulator_hfp_unregister(struct ofono_atom *atom)
@@ -3554,13 +3549,13 @@ static void emulator_hfp_watch(struct ofono_atom *atom,
 
 	notify_emulator_call_status(vc);
 
-	ofono_emulator_add_handler(em, "A", emulator_ata_cb, vc, NULL);
-	ofono_emulator_add_handler(em, "+CHUP", emulator_chup_cb, vc, NULL);
-	ofono_emulator_add_handler(em, "+CLCC", emulator_clcc_cb, vc, NULL);
-	ofono_emulator_add_handler(em, "+CHLD", emulator_chld_cb, vc, NULL);
-	ofono_emulator_add_handler(em, "+VTS", emulator_vts_cb, vc, NULL);
-	ofono_emulator_add_handler(em, "D", emulator_atd_cb, vc, NULL);
-	ofono_emulator_add_handler(em, "+BLDN", emulator_bldn_cb, vc, NULL);
+	ofono_emulator_add_handler(atom, "A", emulator_ata_cb, vc, NULL);
+	ofono_emulator_add_handler(atom, "+CHUP", emulator_chup_cb, vc, NULL);
+	ofono_emulator_add_handler(atom, "+CLCC", emulator_clcc_cb, vc, NULL);
+	ofono_emulator_add_handler(atom, "+CHLD", emulator_chld_cb, vc, NULL);
+	ofono_emulator_add_handler(atom, "+VTS", emulator_vts_cb, vc, NULL);
+	ofono_emulator_add_handler(atom, "D", emulator_atd_cb, vc, NULL);
+	ofono_emulator_add_handler(atom, "+BLDN", emulator_bldn_cb, vc, NULL);
 }
 
 void ofono_voicecall_register(struct ofono_voicecall *vc)
