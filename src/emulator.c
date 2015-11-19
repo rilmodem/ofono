@@ -37,6 +37,7 @@
 #include "gatserver.h"
 #include "gatppp.h"
 #include "handsfree-audio.h"
+#include "system-settings.h"
 
 #define RING_TIMEOUT 3
 
@@ -1448,14 +1449,35 @@ void ofono_emulator_send_info(struct ofono_emulator *em, const char *line,
 
 static struct ofono_atom *get_preferred_atom(struct ofono_emulator *em)
 {
+	char *path;
+	GSList *l;
+	struct ofono_atom *preferred = em->atoms->data;
+
+	path = __ofono_system_settings_get_string_value(PREFERRED_VOICE_MODEM);
+	if (path == NULL)
+		goto end;
+
+	for (l = em->atoms; l; l = l->next) {
+		struct ofono_atom *atom = l->data;
+
+		if (g_strcmp0(__ofono_atom_get_path(atom), path) == 0) {
+			preferred = atom;
+			break;
+		}
+	}
+
+	g_free(path);
+
+end:
+	return preferred;
+}
+
+static struct ofono_atom *get_active_atom(struct ofono_emulator *em)
+{
 	if (em->active_atom)
 		return em->active_atom;
 
-	/*
-	 * TODO For the moment we just take the first on the list, we need to
-	 * ask the modem and have something configurable from settings.
-	 */
-	return em->atoms->data;
+	return get_preferred_atom(em);
 }
 
 static struct atom_callback *find_atom_callback(GSList *prefix_cbs,
@@ -1494,7 +1516,7 @@ static void handler_proxy(GAtServer *server, GAtServerRequestType type,
 	struct ofono_emulator_request req;
 	struct ofono_atom *atom;
 
-	atom = get_preferred_atom(h->em);
+	atom = get_active_atom(h->em);
 	prefix_cbs = g_hash_table_lookup(h->em->prefixes, h->prefix);
 	atom_cb = find_atom_callback(prefix_cbs, atom);
 	if (atom_cb == NULL) {
@@ -1689,11 +1711,7 @@ static gboolean valid_indication(struct ofono_emulator *em,
 	}
 
 	/* Return FALSE if the modem is not the preferred one */
-	/*
-	 * TODO For the moment we just take the first on the list, we need to
-	 * ask the modem and have some configurable from settings.
-	 */
-	preferred = em->atoms->data;
+	preferred = get_preferred_atom(em);
 	if (preferred == atom)
 		return TRUE;
 	else
