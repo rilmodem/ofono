@@ -2660,16 +2660,25 @@ static void emulator_hfp_unregister(struct ofono_atom *atom)
 	struct ofono_voicecall *vc = __ofono_atom_get_data(atom);
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 
+	struct emulator_status data;
+	data.vc = vc;
+
+	data.status = OFONO_EMULATOR_CALL_INACTIVE;
 	__ofono_modem_foreach_registered_atom(modem,
 						OFONO_ATOM_TYPE_EMULATOR_HFP,
-						emulator_call_status_cb, 0);
+						emulator_call_status_cb, &data);
+
+	data.status = OFONO_EMULATOR_CALLSETUP_INACTIVE;
 	__ofono_modem_foreach_registered_atom(modem,
 						OFONO_ATOM_TYPE_EMULATOR_HFP,
 						emulator_callsetup_status_cb,
-						0);
+						&data);
+
+	data.status = OFONO_EMULATOR_CALLHELD_NONE;
 	__ofono_modem_foreach_registered_atom(modem,
 						OFONO_ATOM_TYPE_EMULATOR_HFP,
-						emulator_callheld_status_cb, 0);
+						emulator_callheld_status_cb,
+						&data);
 
 	__ofono_modem_foreach_registered_atom(modem,
 						OFONO_ATOM_TYPE_EMULATOR_HFP,
