@@ -76,6 +76,24 @@ static void qcom_msim_set_rat_cb(struct ril_msg *message, gpointer user_data)
 	}
 }
 
+static void qcom_msim_do_set_rat_mode(struct ofono_radio_settings *rs, int pref,
+							struct cb_data *cbd)
+{
+	struct radio_data *rd = ofono_radio_settings_get_data(rs);
+	struct parcel rilp;
+	ofono_radio_settings_rat_mode_set_cb_t cb;
+
+	g_ril_request_set_preferred_network_type(rd->ril, pref, &rilp);
+
+	if (g_ril_send(rd->ril, RIL_REQUEST_SET_PREFERRED_NETWORK_TYPE,
+			&rilp, qcom_msim_set_rat_cb, cbd, g_free) == 0) {
+		ofono_error("%s: unable to set rat mode", __func__);
+		cb = cbd->cb;
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+		g_free(cbd);
+	}
+}
+
 static void qcom_msim_set_2g_rat_cb(struct ril_msg *message,
 							gpointer user_data)
 {
@@ -84,7 +102,6 @@ static void qcom_msim_set_2g_rat_cb(struct ril_msg *message,
 	struct qcom_msim_pending_pref_setting *pps = set_2g_rat_data->pps;
 	struct radio_data *rd = ofono_radio_settings_get_data(rs);
 	ofono_radio_settings_rat_mode_set_cb_t cb;
-	struct parcel rilp;
 
 	pps->pending_gsm_pref_remaining -= 1;
 
@@ -104,23 +121,8 @@ static void qcom_msim_set_2g_rat_cb(struct ril_msg *message,
 	}
 
 	if (pps->pending_gsm_pref_remaining == 0) {
-		if (pps->cbd != NULL) {
-			struct radio_data *pps_rd =
-					ofono_radio_settings_get_data(pps->rs);
-			g_ril_request_set_preferred_network_type(pps_rd->ril,
-							pps->pref, &rilp);
-
-			if (g_ril_send(pps_rd->ril,
-					RIL_REQUEST_SET_PREFERRED_NETWORK_TYPE,
-					&rilp, qcom_msim_set_rat_cb, pps->cbd,
-					g_free) == 0) {
-				ofono_error("%s: unable to set rat mode",
-								__func__);
-				cb = pps->cbd->cb;
-				CALLBACK_WITH_FAILURE(cb, pps->cbd->data);
-				g_free(pps->cbd);
-			}
-		}
+		if (pps->cbd != NULL)
+			qcom_msim_do_set_rat_mode(pps->rs, pps->pref, pps->cbd);
 
 		g_free(pps);
 	}
@@ -131,7 +133,6 @@ static void qcom_msim_set_rat_mode(struct ofono_radio_settings *rs,
 			ofono_radio_settings_rat_mode_set_cb_t cb,
 			void *data)
 {
-	struct radio_data *rd = ofono_radio_settings_get_data(rs);
 	struct cb_data *cbd = cb_data_new(cb, data, rs);
 	struct parcel rilp;
 	int pref = PREF_NET_TYPE_GSM_WCDMA;
@@ -196,15 +197,7 @@ static void qcom_msim_set_rat_mode(struct ofono_radio_settings *rs,
 		if (pps->pending_gsm_pref_remaining == 0)
 			g_free(pps);
 	} else {
-		g_ril_request_set_preferred_network_type(rd->ril, pref, &rilp);
-
-		if (g_ril_send(rd->ril, RIL_REQUEST_SET_PREFERRED_NETWORK_TYPE,
-					&rilp, qcom_msim_set_rat_cb, cbd,
-					g_free) == 0) {
-			ofono_error("%s: unable to set rat mode", __func__);
-			g_free(cbd);
-			CALLBACK_WITH_FAILURE(cb, data);
-		}
+		qcom_msim_do_set_rat_mode(rs, pref, cbd);
 	}
 }
 
