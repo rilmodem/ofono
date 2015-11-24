@@ -37,10 +37,13 @@
 
 #define MAX_REQUEST_SIZE 4096
 
-static int server_sk;
-static ConnectFunc connect_func;
-static GIOChannel *server_io;
-static const struct rilmodem_test_data *rtd;
+struct server_data {
+	int server_sk;
+	ConnectFunc connect_func;
+	GIOChannel *server_io;
+	const struct rilmodem_test_data *rtd;
+	void *user_data;
+};
 
 /* Warning: length is stored in network order */
 struct rsp_hdr {
@@ -52,6 +55,7 @@ struct rsp_hdr {
 
 static gboolean read_server(gpointer data)
 {
+	struct server_data *sd = data;
 	GIOStatus status;
 	gsize offset, rbytes, wbytes;
 	gchar *buf, *bufp;
@@ -60,14 +64,13 @@ static gboolean read_server(gpointer data)
 
 	buf = g_malloc0(MAX_REQUEST_SIZE);
 
-	status = g_io_channel_read_chars(server_io, buf, MAX_REQUEST_SIZE,
+	status = g_io_channel_read_chars(sd->server_io, buf, MAX_REQUEST_SIZE,
 								&rbytes, NULL);
 	g_assert(status == G_IO_STATUS_NORMAL);
-
-	g_assert(rbytes == rtd->req_size);
+	g_assert(rbytes == sd->rtd->req_size);
 
 	/* validate len, and request_id */
-	g_assert(!memcmp(buf, rtd->req_data, (sizeof(uint32_t) * 2)));
+	g_assert(!memcmp(buf, sd->rtd->req_data, (sizeof(uint32_t) * 2)));
 
 	/*
 	 * header: size (uint32), reqid (uin32), serial (uint32)
@@ -84,28 +87,28 @@ static gboolean read_server(gpointer data)
 
 	/* validate the rest of the parcel... */
 	offset = (sizeof(uint32_t) * 3);
-	g_assert(!memcmp(bufp, rtd->req_data + offset,
-						rtd->req_size - offset));
+	g_assert(!memcmp(bufp, sd->rtd->req_data + offset,
+						sd->rtd->req_size - offset));
 
 	/* Length does not include the length field. Network order. */
-	rsp.length = htonl(sizeof(rsp) - sizeof(rsp.length) + rtd->rsp_size);
+	rsp.length = htonl(sizeof(rsp) - sizeof(rsp.length) +
+							sd->rtd->rsp_size);
 	rsp.unsolicited = 0;
 	rsp.serial = req_serial;
-	rsp.error = rtd->rsp_error;
+	rsp.error = sd->rtd->rsp_error;
 
 	/* copy header */
 	memcpy(buf, &rsp, sizeof(rsp));
 
-	if (rtd->rsp_size) {
+	if (sd->rtd->rsp_size) {
 		bufp = buf + sizeof(rsp);
 
-		memcpy(bufp, rtd->rsp_data, rtd->rsp_size);
+		memcpy(bufp, sd->rtd->rsp_data, sd->rtd->rsp_size);
 	}
 
-
-	status = g_io_channel_write_chars(server_io,
+	status = g_io_channel_write_chars(sd->server_io,
 					buf,
-					sizeof(rsp) + rtd->rsp_size,
+					sizeof(rsp) + sd->rtd->rsp_size,
 					&wbytes, NULL);
 
 	/* FIXME: assert wbytes is correct */
@@ -113,7 +116,7 @@ static gboolean read_server(gpointer data)
 	g_assert(status == G_IO_STATUS_NORMAL);
 
 	g_free(buf);
-	g_io_channel_unref(server_io);
+	g_io_channel_unref(sd->server_io);
 
 	return FALSE;
 }
@@ -121,6 +124,7 @@ static gboolean read_server(gpointer data)
 static gboolean on_socket_connected(GIOChannel *chan, GIOCondition cond,
 								gpointer data)
 {
+	struct server_data *sd = data;
 	struct sockaddr saddr;
 	unsigned int len = sizeof(saddr);
 	int fd;
@@ -128,48 +132,52 @@ static gboolean on_socket_connected(GIOChannel *chan, GIOCondition cond,
 
 	g_assert(cond == G_IO_IN);
 
-	fd = accept(server_sk, &saddr, &len);
+	fd = accept(sd->server_sk, &saddr, &len);
 	g_assert(fd != -1);
 
-	server_io = g_io_channel_unix_new(fd);
-	g_assert(server_io != NULL);
+	sd->server_io = g_io_channel_unix_new(fd);
+	g_assert(sd->server_io != NULL);
 
-	if (connect_func)
-		connect_func(data);
-
-	status = g_io_channel_set_encoding(server_io, NULL, NULL);
+	status = g_io_channel_set_encoding(sd->server_io, NULL, NULL);
 	g_assert(status == G_IO_STATUS_NORMAL);
 
-	g_io_channel_set_buffered(server_io, FALSE);
-	g_io_channel_set_close_on_unref(server_io, TRUE);
+	g_io_channel_set_buffered(sd->server_io, FALSE);
+	g_io_channel_set_close_on_unref(sd->server_io, TRUE);
 
-	g_idle_add(read_server, data);
+	if (sd->connect_func)
+		sd->connect_func(sd->user_data);
+
+	if (sd->rtd->unsol_test == FALSE)
+		g_idle_add(read_server, sd);
 
 	return FALSE;
 }
 
-void rilmodem_test_server_close(void)
+void rilmodem_test_server_close(struct server_data *sd)
 {
-	g_assert(server_sk);
-	close(server_sk);
-	server_sk = 0;
+	g_assert(sd->server_sk);
+	close(sd->server_sk);
+	g_free(sd);
 }
 
-void rilmodem_test_server_create(ConnectFunc connect,
+struct server_data *rilmodem_test_server_create(ConnectFunc connect,
 				const struct rilmodem_test_data *test_data,
 				void *data)
 {
 	GIOChannel *io;
 	struct sockaddr_un addr;
 	int retval;
+	struct server_data *sd;
 
-	g_assert(server_sk == 0);
 
-	connect_func = connect;
-	rtd = test_data;
+	sd = g_new0(struct server_data, 1);
 
-	server_sk = socket(AF_UNIX, SOCK_STREAM, 0);
-	g_assert(server_sk);
+	sd->connect_func = connect;
+	sd->user_data = data;
+	sd->rtd = test_data;
+
+	sd->server_sk = socket(AF_UNIX, SOCK_STREAM, 0);
+	g_assert(sd->server_sk);
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
@@ -178,19 +186,40 @@ void rilmodem_test_server_create(ConnectFunc connect,
 	/* Unlink any existing socket for this session */
 	unlink(addr.sun_path);
 
-	retval = bind(server_sk, (struct sockaddr *) &addr, sizeof(addr));
+	retval = bind(sd->server_sk, (struct sockaddr *) &addr, sizeof(addr));
 	g_assert(retval >= 0);
 
-	retval = listen(server_sk, 0);
+	retval = listen(sd->server_sk, 0);
 	g_assert(retval >= 0);
 
-	io = g_io_channel_unix_new(server_sk);
+	io = g_io_channel_unix_new(sd->server_sk);
 	g_assert(io != NULL);
 
 	g_io_channel_set_close_on_unref(io, TRUE);
 	g_io_add_watch_full(io,	G_PRIORITY_DEFAULT,
 				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
-				on_socket_connected, data, NULL);
+				on_socket_connected, sd, NULL);
 
 	g_io_channel_unref(io);
+
+	return sd;
+}
+
+void rilmodem_test_server_write(struct server_data *sd,
+						const unsigned char *buf,
+						const size_t buf_len)
+{
+	GIOStatus status;
+	gsize wbytes;
+
+	status = g_io_channel_write_chars(sd->server_io,
+					(const char *) buf,
+					buf_len,
+					&wbytes, NULL);
+
+	g_assert(status == G_IO_STATUS_NORMAL);
+
+	status = g_io_channel_flush(sd->server_io, NULL);
+
+	g_assert(status == G_IO_STATUS_NORMAL);
 }
