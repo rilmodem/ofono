@@ -51,6 +51,7 @@ struct rilmodem_cs_data {
 	struct ofono_modem *modem;
 	gconstpointer test_data;
 	struct ofono_call_settings *cs;
+	struct server_data *serverd;
 };
 
 typedef gboolean (*StartFunc)(gpointer data);
@@ -476,7 +477,8 @@ static void test_cs_func(gconstpointer data)
 
 	rcd->test_data = csd;
 
-	rilmodem_test_server_create(&server_connect_cb, &csd->rtd, rcd);
+	rcd->serverd = rilmodem_test_server_create(&server_connect_cb,
+							&csd->rtd, rcd);
 
 	rcd->ril = g_ril_new("/tmp/unittestril", OFONO_RIL_VENDOR_AOSP);
 	g_assert(rcd->ril != NULL);
@@ -490,7 +492,7 @@ static void test_cs_func(gconstpointer data)
 	g_ril_unref(rcd->ril);
 	g_free(rcd);
 
-	rilmodem_test_server_close();
+	rilmodem_test_server_close(rcd->serverd);
 
 	ril_call_settings_exit();
 }
