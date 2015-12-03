@@ -52,6 +52,8 @@ unit/test-mnclength
 unit/test-mtkreply
 unit/test-mtkrequest
 unit/test-mtkunsol
+unit/test-rilmodem-cs
+unit/test-rilmodem-sms
 unit/test-*.log
 unit/test-*.trs
 
