@@ -357,7 +357,7 @@ static int create_gril(struct ofono_modem *modem)
 
 	ofono_info("Using %s as socket for slot %d.",
 					RILD_CMD_SOCKET[slot_id], slot_id);
-	rd->ril = g_ril_new(RILD_CMD_SOCKET[slot_id], OFONO_RIL_VENDOR_AOSP);
+	rd->ril = g_ril_new(RILD_CMD_SOCKET[slot_id], rd->vendor);
 
 	/* NOTE: Since AT modems open a tty, and then call
 	 * g_at_chat_new(), they're able to return -EIO if
