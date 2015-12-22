@@ -1258,8 +1258,10 @@ int g_ril_reply_parse_set_facility_lock(GRil *gril,
 	g_ril_init_parcel(message, &rilp);
 
 	/* mako reply has no payload for call barring */
-	if (parcel_data_avail(&rilp) == 0)
-		goto end;
+	if (parcel_data_avail(&rilp) == 0) {
+		retries = 0;
+		goto done;
+	}
 
 	numint = parcel_r_int32(&rilp);
 	if (numint != 1) {
@@ -1271,13 +1273,19 @@ int g_ril_reply_parse_set_facility_lock(GRil *gril,
 
 	if (rilp.malformed) {
 		ofono_error("%s: malformed parcel", __func__);
+		retries = -1;
 		goto end;
 	}
 
-end:
+done:
 	g_ril_append_print_buf(gril, "{%d}", retries);
 	g_ril_print_response(gril, message);
 
+	/* -1 indicates unknown; reset to 0 so as to not trigger failure */
+	if (retries == -1)
+		retries = 0;
+
+end:
 	return retries;
 }
 
