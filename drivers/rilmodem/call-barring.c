@@ -105,8 +105,8 @@ static void ril_call_barring_set_cb(struct ril_msg *message, gpointer user_data)
 		goto error;
 	}
 
-	/* Just for printing return value */
-	g_ril_reply_parse_set_facility_lock(bd->ril, message);
+	if (g_ril_reply_parse_set_facility_lock(bd->ril, message) < 0)
+		goto error;
 
 	CALLBACK_WITH_SUCCESS(cb, cbd->data);
 	return;
