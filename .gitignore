@@ -54,6 +54,7 @@ unit/test-mtkrequest
 unit/test-mtkunsol
 unit/test-rilmodem-cs
 unit/test-rilmodem-sms
+unit/test-rilmodem-cb
 unit/test-*.log
 unit/test-*.trs
 
