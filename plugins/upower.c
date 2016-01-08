@@ -40,11 +40,8 @@
 #define UPOWER_DEVICE_INTERFACE       UPOWER_SERVICE ".Device"
 
 static guint modem_watch;
-static guint upower_battery_watch;
 static guint upower_daemon_watch;
 static DBusConnection *connection;
-static GHashTable *modem_hfp_watches;
-static GList *modems;
 static int last_battery_level;
 static char *battery_device_path;
 
@@ -56,9 +53,17 @@ static void emulator_battery_cb(struct ofono_atom *atom, void *data)
 	ofono_emulator_set_indicator(atom, OFONO_EMULATOR_IND_BATTERY, val);
 }
 
+static void update_modem_battery_indicator(struct ofono_modem *modem,
+								void *data)
+{
+	__ofono_modem_foreach_registered_atom(modem,
+				OFONO_ATOM_TYPE_EMULATOR_HFP,
+				emulator_battery_cb,
+				data);
+}
+
 static void update_battery_level(double percentage_val)
 {
-	GList *list;
 	int battery_level;
 
 	if (percentage_val <= 1.00) {
@@ -69,27 +74,19 @@ static void update_battery_level(double percentage_val)
 		ofono_error("%s: Invalid value for battery level: %f",
 								__func__,
 								percentage_val);
-		goto done;
+		return;
 	}
 
 	DBG("last_battery_level: %d battery_level: %d (%f)", last_battery_level,
 						battery_level, percentage_val);
 
 	if (last_battery_level == battery_level)
-		goto done;
+		return;
 
 	last_battery_level = battery_level;
 
-	for (list = modems; list; list = list->next) {
-		struct ofono_modem *modem = list->data;
-
-		__ofono_modem_foreach_registered_atom(modem,
-					OFONO_ATOM_TYPE_EMULATOR_HFP,
-					emulator_battery_cb,
+	__ofono_modem_foreach(update_modem_battery_indicator,
 					GINT_TO_POINTER(battery_level));
-	}
-done:
-	;
 }
 
 static gboolean battery_props_changed(DBusConnection *conn, DBusMessage *msg,
@@ -101,6 +98,8 @@ static gboolean battery_props_changed(DBusConnection *conn, DBusMessage *msg,
 	double percentage_val;
 	gboolean percentage_found = FALSE;
 	gboolean retval = FALSE;
+
+	DBG("");
 
 	dbus_message_iter_init(msg, &iter);
 
@@ -179,117 +178,19 @@ done:
 	return retval;
 }
 
-static void get_property_reply(DBusPendingCall *call, void *user_data)
-{
-	double percentage_val;
-	DBusMessageIter iter, val;
-	DBusMessage *reply;
-
-	DBG("");
-
-	reply = dbus_pending_call_steal_reply(call);
-	if (reply == NULL) {
-		ofono_error("%s: dbus_message_new_method failed", __func__);
-		goto done;
-	}
-
-	if (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_ERROR) {
-		ofono_error("%s: ERROR reply to Get('Percentage')", __func__);
-		goto done;
-	}
-
-	if (dbus_message_iter_init(reply, &iter) == FALSE) {
-		ofono_error("%s: error initializing array iter", __func__);
-		goto done;
-	}
-
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT) {
-		ofono_error("%s: type != VARIANT!", __func__);
-		goto done;
-	}
-
-	dbus_message_iter_recurse(&iter, &val);
-
-	if (dbus_message_iter_get_arg_type(&val) != DBUS_TYPE_DOUBLE) {
-		ofono_error("%s: type != DOUBLE!", __func__);
-		goto done;
-	}
-
-	dbus_message_iter_get_basic(&val, &percentage_val);
-
-	update_battery_level(percentage_val);
-
-done:
-	if (reply)
-		dbus_message_unref(reply);
-
-	dbus_pending_call_unref(call);
-}
-
 static void emulator_hfp_watch(struct ofono_atom *atom,
 				enum ofono_atom_watch_condition cond,
 				void *data)
 {
-	struct ofono_modem *modem = data;
-	DBusMessageIter iter;
-	DBusPendingCall *call;
-	DBusMessage *msg;
-	const char *iface = UPOWER_DEVICE_INTERFACE;
-	const char *property = "Percentage";
+	if (cond == OFONO_ATOM_WATCH_CONDITION_REGISTERED) {
+		DBG("REGISTERED; calling set_indicator: %d", last_battery_level);
 
-	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
-		DBG("UNREGISTERED");
-
-		modems = g_list_remove(modems, modem);
-		if (modems != NULL)
-			return;
-
-		if (upower_battery_watch) {
-			g_dbus_remove_watch(connection, upower_battery_watch);
-			upower_battery_watch = 0;
-		}
-
+		ofono_emulator_set_indicator(atom, OFONO_EMULATOR_IND_BATTERY,
+							last_battery_level);
 		return;
 	}
 
-	DBG("REGISTERED");
-
-	/* TODO: handle removable batteries */
-
-	modems = g_list_append(modems, modem);
-
-	if (modems->next != NULL)
-		return;
-
-	upower_battery_watch = g_dbus_add_signal_watch(connection,
-						UPOWER_SERVICE,
-						battery_device_path,
-						DBUS_INTERFACE_PROPERTIES,
-						"PropertiesChanged",
-						battery_props_changed,
-						NULL, NULL);
-
-	/* Query current battery value */
-	msg = dbus_message_new_method_call(UPOWER_SERVICE, battery_device_path,
-						DBUS_PROPERTIES_INTERFACE,
-						"Get");
-	if (msg == NULL) {
-		ofono_error("%s: dbus_message_new_method failed", __func__);
-		return;
-	}
-
-	dbus_message_iter_init_append(msg, &iter);
-	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &iface);
-	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &property);
-
-	if (!dbus_connection_send_with_reply(connection, msg, &call, -1)) {
-		ofono_error("%s: Sending EnumerateDevices failed", __func__);
-		goto done;
-	}
-
-	dbus_pending_call_set_notify(call, get_property_reply, NULL, NULL);
-done:
-	dbus_message_unref(msg);
+	DBG("UNREGISTERED");
 }
 
 static void modemwatch(struct ofono_modem *modem, gboolean added, void *user)
@@ -299,24 +200,10 @@ static void modemwatch(struct ofono_modem *modem, gboolean added, void *user)
 
 	DBG("modem: %s, added: %d", path, added);
 
-	if (added) {
-		guint watch_id;
-
-		watch_id = __ofono_modem_add_atom_watch(modem,
+	if (added)
+		__ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_EMULATOR_HFP,
-					emulator_hfp_watch, modem, NULL);
-
-		g_hash_table_insert(modem_hfp_watches, g_strdup(path),
-						GINT_TO_POINTER(watch_id));
-
-	} else {
-		guint *watch_id = g_hash_table_lookup(modem_hfp_watches, path);
-
-		if (watch_id != NULL) {
-			__ofono_modem_remove_atom_watch(modem, *watch_id);
-			g_hash_table_remove(modem_hfp_watches, path);
-		}
-	}
+					emulator_hfp_watch, NULL, NULL);
 }
 
 static void call_modemwatch(struct ofono_modem *modem, void *user)
@@ -383,13 +270,23 @@ static void enum_devices_reply(DBusPendingCall *call, void *user_data)
 
 	DBG("parse_devices_reply OK");
 
+	/* TODO: handle removable batteries */
+
 	if (battery_device_path == NULL) {
 		ofono_error("%s: no battery detected", __func__);
 		goto done;
 	}
 
+	/* Always listen to PropertiesChanged for battery */
+	g_dbus_add_signal_watch(connection, UPOWER_SERVICE, battery_device_path,
+						DBUS_INTERFACE_PROPERTIES,
+						"PropertiesChanged",
+						battery_props_changed,
+						NULL, NULL);
+
 	modem_watch = __ofono_modemwatch_add(modemwatch, NULL, NULL);
 	__ofono_modem_foreach(call_modemwatch, NULL);
+
 done:
 	if (reply)
 		dbus_message_unref(reply);
@@ -449,9 +346,6 @@ static int upower_init(void)
 							upower_disconnect,
 							NULL, NULL);
 
-	modem_hfp_watches = g_hash_table_new_full(g_str_hash, g_str_equal,
-				g_free, NULL);
-
 	return 0;
 }
 
@@ -465,8 +359,6 @@ static void upower_exit(void)
 
 	if (battery_device_path)
 		g_free(battery_device_path);
-
-	g_hash_table_destroy(modem_hfp_watches);
 }
 
 OFONO_PLUGIN_DEFINE(upower, "upower battery monitor", VERSION,
