@@ -1420,7 +1420,7 @@ static const struct query_facility_lock_test
  * RIL_REQUEST_SET_FACILITY_LOCK reply with no parameters.
  */
 static const struct set_facility_lock_test reply_set_facility_lock_valid_1 = {
-	.retries = -1,
+	.retries = 0,
 	.msg = {
 		.buf = NULL,
 		.buf_len = 0,
