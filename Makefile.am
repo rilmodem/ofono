@@ -612,6 +612,11 @@ builtin_sources += plugins/push-notification.c
 builtin_modules += smshistory
 builtin_sources += plugins/smshistory.c
 
+if ANDROID_WAKELOCK
+builtin_modules += android_wakelock
+builtin_sources += plugins/android-wakelock.c
+endif
+
 sbin_PROGRAMS = src/ofonod
 
 src_ofonod_SOURCES = $(builtin_sources) src/ofono.ver \
