@@ -244,7 +244,11 @@ int main(int argc, char **argv)
 	g_free(option_plugin);
 	g_free(option_noplugin);
 
+	__ofono_wakelock_init();
+
 	g_main_loop_run(event_loop);
+
+	__ofono_wakelock_cleanup();
 
 	__ofono_plugin_cleanup();
 
