@@ -54,7 +54,7 @@ void wakelock_system_lock(void)
 {
 	guint old_source;
 
-	if (!impl)
+	if (impl == NULL)
 		return;
 
 	DBG("Acquiring system wakelock");
@@ -62,8 +62,9 @@ void wakelock_system_lock(void)
 	old_source = system_wakelock_source;
 
 	system_wakelock_source = g_timeout_add_seconds(SYSTEM_WAKELOCK_DURATION,
-												system_wakelock_put,
-												NULL);
+							system_wakelock_put,
+							NULL);
+
 	if (system_wakelock_source)
 		wakelock_acquire(system_wakelock);
 
@@ -75,7 +76,7 @@ void wakelock_system_lock(void)
 
 int wakelock_create(const char *name, struct wakelock **wakelock)
 {
-	if (!impl) {
+	if (impl == NULL) {
 		*wakelock = NULL;
 		return -EINVAL;
 	}
@@ -85,7 +86,7 @@ int wakelock_create(const char *name, struct wakelock **wakelock)
 
 int wakelock_free(struct wakelock *wakelock)
 {
-	if (!impl)
+	if (impl == NULL)
 		return -EINVAL;
 
 	return table.free(wakelock);
@@ -93,7 +94,7 @@ int wakelock_free(struct wakelock *wakelock)
 
 int wakelock_acquire(struct wakelock *wakelock)
 {
-	if (!impl)
+	if (impl == NULL)
 		return -EINVAL;
 
 	return table.acquire(wakelock);
@@ -101,14 +102,14 @@ int wakelock_acquire(struct wakelock *wakelock)
 
 int wakelock_release(struct wakelock *wakelock)
 {
-	if (!impl)
+	if (impl == NULL)
 		return -EINVAL;
 
 	return table.release(wakelock);
 }
 
 ofono_bool_t wakelock_is_locked(struct wakelock *wakelock) {
-	if (!impl)
+	if (impl == NULL)
 		return -EINVAL;
 
 	return table.is_locked(wakelock);
@@ -126,7 +127,7 @@ int wakelock_plugin_register(const char *name, struct wakelock_table *fns)
 
 int wakelock_plugin_unregister(void)
 {
-	if (!impl)
+	if (impl == NULL)
 		return -ENOENT;
 
 	memset(&table, 0, sizeof(struct wakelock_table));
