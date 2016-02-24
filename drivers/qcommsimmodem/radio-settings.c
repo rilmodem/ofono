@@ -31,10 +31,12 @@
 #include <errno.h>
 
 #include <glib.h>
+#include <ofono.h>
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/radio-settings.h>
+#include <ofono/sim.h>
 
 #include "gril.h"
 #include "grilrequest.h"
@@ -58,7 +60,6 @@ struct qcom_msim_set_2g_rat {
 };
 
 static struct ofono_radio_settings *multisim_rs[QCOMMSIM_NUM_SLOTS_MAX];
-static int multisim_num_slots;
 
 static void qcom_msim_set_rat_cb(struct ril_msg *message, gpointer user_data)
 {
@@ -136,6 +137,7 @@ static void qcom_msim_set_rat_mode(struct ofono_radio_settings *rs,
 	struct cb_data *cbd = cb_data_new(cb, data, rs);
 	struct parcel rilp;
 	int pref = PREF_NET_TYPE_GSM_WCDMA;
+	struct qcom_msim_pending_pref_setting *pps = NULL;
 
 	switch (mode) {
 	case OFONO_RADIO_ACCESS_MODE_ANY:
@@ -152,24 +154,43 @@ static void qcom_msim_set_rat_mode(struct ofono_radio_settings *rs,
 		break;
 	}
 
-	if (pref != PREF_NET_TYPE_GSM_ONLY && multisim_num_slots > 1) {
-		struct qcom_msim_pending_pref_setting *pps =
-			g_try_new0(struct qcom_msim_pending_pref_setting, 1);
+	if (pref != PREF_NET_TYPE_GSM_ONLY) {
 		int i;
-
-		pps->rs = rs;
-		pps->pref = pref;
-		pps->cbd = cbd;
-		pps->pending_gsm_pref_remaining = 0;
-
 		for (i = 0; i < QCOMMSIM_NUM_SLOTS_MAX; i++) {
 			struct radio_data *temp_rd;
 			struct qcom_msim_set_2g_rat *set_2g_rat_data;
+			struct ofono_atom *sim_atom;
+			struct ofono_sim *sim;
 
 			if (multisim_rs[i] == rs || multisim_rs[i] == NULL)
 				continue;
 
 			temp_rd = ofono_radio_settings_get_data(multisim_rs[i]);
+			sim_atom = __ofono_modem_find_atom(temp_rd->modem,
+							OFONO_ATOM_TYPE_SIM);
+			if (sim_atom == NULL) {
+				if (pps != NULL)
+					pps->cbd = NULL;
+				g_free(cbd);
+				CALLBACK_WITH_FAILURE(cb, data);
+				break;
+			}
+
+			sim = __ofono_atom_get_data(sim_atom);
+			if (ofono_sim_get_state(sim) ==
+						OFONO_SIM_STATE_NOT_PRESENT)
+				continue;
+
+			if (pps == NULL) {
+				pps = g_try_new0(
+					struct qcom_msim_pending_pref_setting,
+									1);
+				pps->rs = rs;
+				pps->pref = pref;
+				pps->cbd = cbd;
+				pps->pending_gsm_pref_remaining = 0;
+			}
+
 			set_2g_rat_data =
 				g_try_new0(struct qcom_msim_set_2g_rat, 1);
 			set_2g_rat_data->pps = pps;
@@ -193,12 +214,15 @@ static void qcom_msim_set_rat_mode(struct ofono_radio_settings *rs,
 				pps->pending_gsm_pref_remaining += 1;
 			}
 		}
-
-		if (pps->pending_gsm_pref_remaining == 0)
-			g_free(pps);
-	} else {
-		qcom_msim_do_set_rat_mode(rs, pref, cbd);
 	}
+
+	if (pps && pps->pending_gsm_pref_remaining == 0) {
+		g_free(pps);
+		pps = NULL;
+	}
+
+	if (pps == NULL)
+		qcom_msim_do_set_rat_mode(rs, pref, cbd);
 }
 
 static int qcom_msim_radio_settings_probe(struct ofono_radio_settings *rs,
@@ -222,7 +246,6 @@ static int qcom_msim_radio_settings_probe(struct ofono_radio_settings *rs,
 
 	slot_id = ofono_modem_get_integer(rsd->modem, "Slot");
 	multisim_rs[slot_id] = rs;
-	multisim_num_slots += 1;
 
 	return 0;
 }
@@ -233,7 +256,6 @@ static void qcom_msim_radio_settings_remove(struct ofono_radio_settings *rs)
 	int slot_id = ofono_modem_get_integer(rd->modem, "Slot");
 
 	multisim_rs[slot_id] = NULL;
-	multisim_num_slots -= 1;
 
 	ofono_radio_settings_set_data(rs, NULL);
 
