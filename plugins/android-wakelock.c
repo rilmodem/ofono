@@ -90,7 +90,7 @@ static int wakelock_unlock(const char *name)
 
 static int android_wakelock_acquire(struct wakelock *lock)
 {
-	if (!lock)
+	if (lock == NULL)
 		return -EINVAL;
 
 	if (lock->acquisitions > 0) {
@@ -108,7 +108,7 @@ static int android_wakelock_acquire(struct wakelock *lock)
 
 static int android_wakelock_release(struct wakelock *lock)
 {
-	if (!lock)
+	if (lock == NULL)
 		return -EINVAL;
 
 	DBG("lock %p name %s acquisitions %d",
@@ -137,7 +137,7 @@ static int android_wakelock_release(struct wakelock *lock)
 
 static int android_wakelock_create(const char *name, struct wakelock **lock)
 {
-	if (!lock)
+	if (lock == NULL)
 		return -EINVAL;
 
 	*lock = g_new0(struct wakelock, 1);
@@ -153,7 +153,7 @@ static int android_wakelock_create(const char *name, struct wakelock **lock)
 
 static int android_wakelock_free(struct wakelock *lock)
 {
-	if (!lock)
+	if (lock == NULL)
 		return -EINVAL;
 
 	if (lock->acquisitions) {
@@ -174,7 +174,7 @@ static int android_wakelock_free(struct wakelock *lock)
 
 static ofono_bool_t android_wakelock_is_locked(struct wakelock *lock)
 {
-	if (!lock)
+	if (lock == NULL)
 		return FALSE;
 
 	return lock->acquisitions > 0;
