@@ -67,6 +67,8 @@ struct ofono_debug_desc {
 					__FILE__, __FUNCTION__ , ## arg); \
 } while (0)
 
+#define PRINTABLE_STR(s) ((s) ? (s) : "(null)")
+
 #ifdef __cplusplus
 }
 #endif
