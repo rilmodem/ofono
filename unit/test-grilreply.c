@@ -1686,7 +1686,7 @@ static void test_reply_call_fail_cause_valid(gconstpointer data)
 
 	reason = g_ril_reply_parse_call_fail_cause(NULL, data);
 
-	g_assert(reason >= 0);
+	g_assert(reason == OFONO_DISCONNECT_REASON_REMOTE_HANGUP);
 }
 
 static void test_reply_get_mute_off(gconstpointer data)
