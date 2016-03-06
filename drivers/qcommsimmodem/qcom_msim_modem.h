@@ -23,3 +23,6 @@
 
 extern void qcom_msim_radio_settings_init(void);
 extern void qcom_msim_radio_settings_exit(void);
+
+extern void qcom_msim_gprs_init(void);
+extern void qcom_msim_gprs_exit(void);
