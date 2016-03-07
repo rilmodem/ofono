@@ -166,7 +166,7 @@ int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor)
 
 	rd->vendor = vendor;
 	rd->ofono_online = FALSE;
-	rd->radio_state = RADIO_STATE_OFF;
+	rd->radio_state = RADIO_STATE_UNAVAILABLE;
 
 	lte_cap = getenv("OFONO_RIL_RAT_LTE") ? TRUE : FALSE;
 	ofono_modem_set_boolean(modem, MODEM_PROP_LTE_CAPABLE, lte_cap);
@@ -326,6 +326,19 @@ void ril_set_online(struct ofono_modem *modem, ofono_bool_t online,
 	ril_send_power(rd, online, ril_set_online_cb, cbd);
 }
 
+static void ril_set_powered_off_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct ril_data *rd = ofono_modem_get_data(modem);
+
+	if (message != NULL && message->error == RIL_E_SUCCESS)
+		g_ril_print_response_no_args(rd->ril, message);
+
+	DBG("calling set_powered(TRUE)");
+
+	ofono_modem_set_powered(modem, TRUE);
+}
+
 static void ril_connected(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = (struct ofono_modem *) user_data;
@@ -337,9 +350,9 @@ static void ril_connected(struct ril_msg *message, gpointer user_data)
 	/* TODO: need a disconnect function to restart things! */
 	rd->connected = TRUE;
 
-	DBG("calling set_powered(TRUE)");
+	DBG("calling set_powered(FALSE) on connected");
 
-	ofono_modem_set_powered(modem, TRUE);
+	ril_send_power(rd, FALSE, ril_set_powered_off_cb, modem);
 }
 
 static int create_gril(struct ofono_modem *modem)
