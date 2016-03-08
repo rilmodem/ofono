@@ -200,6 +200,17 @@ AC_SUBST(CARES_CFLAGS)
 AC_SUBST(CARES_LIBS)
 AM_CONDITIONAL(CARES, test "${enable_cares}" != "no")
 
+AC_ARG_ENABLE(accounts-settings, AC_HELP_STRING([--disable-accounts-settings],
+			[disable using accounts service for system settings]),
+					[enable_accounts_settings=${enableval}])
+if (test "${enable_accounts_settings=$}" != "no"); then
+	PKG_CHECK_MODULES(SYSTEMD, libsystemd, dummy=yes,
+					AC_MSG_ERROR(libsystemd is required))
+fi
+AC_SUBST(SYSTEMD_CFLAGS)
+AC_SUBST(SYSTEMD_LIBS)
+AM_CONDITIONAL(ACCOUNTSSETTINGS, test "${enable_accounts_settings=$}" != "no")
+
 AC_ARG_ENABLE(nettime, AC_HELP_STRING([--disable-nettime],
                                 [disable Nettime plugin]),
                                         [enable_nettime=${enableval}])
