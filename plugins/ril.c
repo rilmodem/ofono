@@ -74,7 +74,6 @@
 #define RILD_CONNECT_RETRY_TIME_S 5
 
 char *RILD_CMD_SOCKET[] = {"/dev/socket/rild", "/dev/socket/rild1"};
-char *GRIL_HEX_PREFIX[] = {"Device 0: ", "Device 1: "};
 
 struct ril_data {
 	GRil *ril;
@@ -90,9 +89,9 @@ struct ril_data {
 
 static void ril_debug(const char *str, void *user_data)
 {
-	const char *prefix = user_data;
+	struct ril_data *rd = user_data;
 
-	ofono_info("%s%s", prefix, str);
+	ofono_info("Device %d: %s", g_ril_get_slot(rd->ril), str);
 }
 
 static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
@@ -377,7 +376,7 @@ static int create_gril(struct ofono_modem *modem)
 		g_ril_set_trace(rd->ril, TRUE);
 
 	if (getenv("OFONO_RIL_HEX_TRACE"))
-		g_ril_set_debugf(rd->ril, ril_debug, GRIL_HEX_PREFIX[slot_id]);
+		g_ril_set_debugf(rd->ril, ril_debug, rd);
 
 	g_ril_register(rd->ril, RIL_UNSOL_RIL_CONNECTED,
 			ril_connected, modem);
