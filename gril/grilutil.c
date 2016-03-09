@@ -517,6 +517,8 @@ const char *ril_request_id_to_string(int req)
 		return "RIL_REQUEST_STK_SEND_ENVELOPE_WITH_STATUS";
 	case RIL_REQUEST_SET_INITIAL_ATTACH_APN:
 		return "RIL_REQUEST_SET_INITIAL_ATTACH_APN";
+	case RIL_REQUEST_GET_RADIO_CAPABILITY:
+		return "RIL_REQUEST_GET_RADIO_CAPABILITY";
 	default:
 		return "<INVALID>";
 	}
@@ -651,6 +653,46 @@ const char *ril_pdp_fail_to_string(int status)
 		return "TETHERED_CALL_ACTIVE";
 	case PDP_FAIL_ERROR_UNSPECIFIED:
 		return "ERROR_UNSPECIFIED";
+	default:
+		if (g_snprintf(temp_str, sizeof(temp_str),
+				"<UNKNOWN (%d)>", status))
+			return temp_str;
+		else
+			return "<UNKNOWN>";
+	}
+}
+
+const char *ril_rc_phase_to_string(int status)
+{
+	switch (status) {
+	case RIL_RC_PHASE_CONFIGURED:
+		return "CONFIGURED";
+	case RIL_RC_PHASE_START:
+		return "START";
+	case RIL_RC_PHASE_APPLY:
+		return "APPLY";
+	case RIL_RC_PHASE_UNSOL_RSP:
+		return "UNSOL_RSP";
+	case RIL_RC_PHASE_FINISH:
+		return "FINISH";
+	default:
+		if (g_snprintf(temp_str, sizeof(temp_str),
+				"<UNKNOWN (%d)>", status))
+			return temp_str;
+		else
+			return "<UNKNOWN>";
+	}
+}
+
+const char *ril_rc_status_to_string(int status)
+{
+	switch (status) {
+	case RIL_RC_STATUS_NONE:
+		return "NONE";
+	case RIL_RC_STATUS_SUCCESS:
+		return "SUCCESS";
+	case RIL_RC_STATUS_FAIL:
+		return "FAIL";
 	default:
 		if (g_snprintf(temp_str, sizeof(temp_str),
 				"<UNKNOWN (%d)>", status))
