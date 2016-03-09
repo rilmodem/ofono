@@ -73,8 +73,6 @@
 #define RILD_MAX_CONNECT_RETRIES 5
 #define RILD_CONNECT_RETRY_TIME_S 5
 
-char *RILD_CMD_SOCKET[] = {"/dev/socket/rild", "/dev/socket/rild1"};
-
 struct ril_data {
 	GRil *ril;
 	enum ofono_ril_vendor vendor;
@@ -353,10 +351,10 @@ static int create_gril(struct ofono_modem *modem)
 {
 	struct ril_data *rd = ofono_modem_get_data(modem);
 	int slot_id = ofono_modem_get_integer(modem, "Slot");
+	const gchar *socket = ofono_modem_get_string(modem, "Socket");
 
-	ofono_info("Using %s as socket for slot %d.",
-					RILD_CMD_SOCKET[slot_id], slot_id);
-	rd->ril = g_ril_new(RILD_CMD_SOCKET[slot_id], rd->vendor);
+	ofono_info("Using %s as socket for slot %d.", socket, slot_id);
+	rd->ril = g_ril_new(socket, rd->vendor);
 
 	/* NOTE: Since AT modems open a tty, and then call
 	 * g_at_chat_new(), they're able to return -EIO if
