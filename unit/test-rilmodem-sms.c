@@ -529,7 +529,8 @@ static void test_sms_func(gconstpointer data)
 	rsd->serverd = rilmodem_test_server_create(&server_connect_cb,
 								&sd->rtd, rsd);
 
-	rsd->ril = g_ril_new(RIL_SERVER_SOCK_PATH, OFONO_RIL_VENDOR_AOSP);
+	rsd->ril = g_ril_new(rilmodem_test_get_socket_name(rsd->serverd),
+							OFONO_RIL_VENDOR_AOSP);
 	g_assert(rsd->ril != NULL);
 
 	mainloop = g_main_loop_new(NULL, FALSE);

@@ -478,9 +478,10 @@ static void test_cs_func(gconstpointer data)
 	rcd->test_data = csd;
 
 	rcd->serverd = rilmodem_test_server_create(&server_connect_cb,
-							&csd->rtd, rcd);
+								&csd->rtd, rcd);
 
-	rcd->ril = g_ril_new("/tmp/unittestril", OFONO_RIL_VENDOR_AOSP);
+	rcd->ril = g_ril_new(rilmodem_test_get_socket_name(rcd->serverd),
+							OFONO_RIL_VENDOR_AOSP);
 	g_assert(rcd->ril != NULL);
 
 	mainloop = g_main_loop_new(NULL, FALSE);
