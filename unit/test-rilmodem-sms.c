@@ -480,6 +480,14 @@ void ofono_sms_status_notify(struct ofono_sms *sms, const unsigned char *pdu,
 	ofono_sms_deliver_notify(sms, pdu, len, tpdu_len);
 }
 
+/*
+ * As all our architectures are little-endian except for
+ * PowerPC, and the Binder wire-format differs slightly
+ * depending on endian-ness, the following guards against test
+ * failures when run on PowerPC.
+ */
+#if BYTE_ORDER == LITTLE_ENDIAN
+
 static void server_connect_cb(gpointer data)
 {
 	struct rilmodem_sms_data *rsd = data;
@@ -497,8 +505,6 @@ static void server_connect_cb(gpointer data)
 	else
 		g_assert(sd->start_func(rsd) == FALSE);
 }
-
-#if BYTE_ORDER == LITTLE_ENDIAN
 
 /*
  * This unit test:
