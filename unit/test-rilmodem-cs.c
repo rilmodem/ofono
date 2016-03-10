@@ -436,6 +436,14 @@ void ofono_call_settings_driver_unregister(const struct ofono_call_settings_driv
 {
 }
 
+/*
+ * As all our architectures are little-endian except for
+ * PowerPC, and the Binder wire-format differs slightly
+ * depending on endian-ness, the following guards against test
+ * failures when run on PowerPC.
+ */
+#if BYTE_ORDER == LITTLE_ENDIAN
+
 static void server_connect_cb(gpointer data)
 {
 	struct rilmodem_cs_data *rcd = data;
@@ -448,14 +456,6 @@ static void server_connect_cb(gpointer data)
 	/* add_idle doesn't work, read blocks main loop!!! */
 	g_assert(csd->start_func(rcd) == FALSE);
 }
-
-/*
- * As all our architectures are little-endian except for
- * PowerPC, and the Binder wire-format differs slightly
- * depending on endian-ness, the following guards against test
- * failures when run on PowerPC.
- */
-#if BYTE_ORDER == LITTLE_ENDIAN
 
 /*
  * This unit test:
@@ -478,9 +478,10 @@ static void test_cs_func(gconstpointer data)
 	rcd->test_data = csd;
 
 	rcd->serverd = rilmodem_test_server_create(&server_connect_cb,
-							&csd->rtd, rcd);
+								&csd->rtd, rcd);
 
-	rcd->ril = g_ril_new("/tmp/unittestril", OFONO_RIL_VENDOR_AOSP);
+	rcd->ril = g_ril_new(rilmodem_test_get_socket_name(rcd->serverd),
+							OFONO_RIL_VENDOR_AOSP);
 	g_assert(rcd->ril != NULL);
 
 	mainloop = g_main_loop_new(NULL, FALSE);

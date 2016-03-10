@@ -19,8 +19,6 @@
  *
  */
 
-#define RIL_SERVER_SOCK_PATH    "/tmp/unittestril"
-
 struct server_data;
 
 struct rilmodem_test_data {
@@ -45,3 +43,5 @@ struct server_data *rilmodem_test_server_create(ConnectFunc connect,
 void rilmodem_test_server_write(struct server_data *sd,
 						const unsigned char *buf,
 						const size_t buf_len);
+
+const char *rilmodem_test_get_socket_name(struct server_data *sd);
