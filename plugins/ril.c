@@ -281,7 +281,9 @@ static void ril_set_online_cb(struct ril_msg *message, gpointer user_data)
 	struct ril_data *rd = cbd->user;
 	ofono_modem_online_cb_t cb = cbd->cb;
 
-	if (message->error == RIL_E_SUCCESS) {
+	if (message != NULL && message->error == RIL_E_SUCCESS) {
+		g_ril_print_response_no_args(rd->ril, message);
+
 		DBG("%s: set_online OK: rd->ofono_online: %d", __func__,
 			rd->ofono_online);
 		CALLBACK_WITH_SUCCESS(cb, cbd->data);
@@ -290,31 +292,24 @@ static void ril_set_online_cb(struct ril_msg *message, gpointer user_data)
 				rd->ofono_online);
 		CALLBACK_WITH_FAILURE(cb, cbd->data);
 	}
+
+	g_free(cbd);
 }
 
 static void ril_send_power(struct ril_data *rd, ofono_bool_t online,
 				GRilResponseFunc func,
 				gpointer user_data)
 {
-	struct cb_data *cbd = user_data;
-	ofono_modem_online_cb_t cb;
-	GDestroyNotify notify = NULL;
 	struct parcel rilp;
-
-	if (cbd != NULL) {
-		notify = g_free;
-		cb = cbd->cb;
-	}
 
 	DBG("(online = 1, offline = 0)): %i", online);
 
 	g_ril_request_power(rd->ril, (const gboolean) online, &rilp);
 
 	if (g_ril_send(rd->ril, RIL_REQUEST_RADIO_POWER, &rilp,
-			func, cbd, notify) == 0 && cbd != NULL) {
+			func, user_data, NULL) == 0 && func != NULL) {
 
-		CALLBACK_WITH_FAILURE(cb, cbd->data);
-		g_free(cbd);
+		func(NULL, user_data);
 	}
 }
 
