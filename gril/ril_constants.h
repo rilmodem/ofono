@@ -23,7 +23,8 @@
 
 #ifndef __RIL_CONSTANTS_H
 #define __RIL_CONSTANTS_H 1
-#define RIL_VERSION 7
+
+#define RIL_VERSION_UNSPECIFIED 0
 
 /* Error Codes */
 #define RIL_E_SUCCESS 0

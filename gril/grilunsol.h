@@ -64,6 +64,8 @@ struct unsol_ussd {
 	char *message;
 };
 
+int g_ril_unsol_parse_connected(GRil *gril, const struct ril_msg *message);
+
 void g_ril_unsol_free_data_call_list(struct ril_data_call_list *data_call_list);
 
 
