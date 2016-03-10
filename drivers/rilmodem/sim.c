@@ -733,6 +733,12 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 	struct reply_sim_status *status;
 	guint search_index;
 
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+		return;
+	}
+
 	status = g_ril_reply_parse_sim_status(sd->ril, message);
 	if (status == NULL) {
 		ofono_error("%s: Cannot parse SIM status reply", __func__);
