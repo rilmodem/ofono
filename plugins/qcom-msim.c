@@ -36,6 +36,18 @@
 
 static int qcom_msim_probe(struct ofono_modem *modem)
 {
+	int slot_id = ofono_modem_get_integer(modem, "Slot");
+
+	/* qcom_msim has socket path "rild", "rild1", ... */
+	if (slot_id != 0) {
+		char *socket;
+
+		socket = g_strdup_printf("/dev/socket/rild%d", slot_id);
+		ofono_modem_set_string(modem, "Socket", socket);
+
+		g_free(socket);
+	}
+
 	return ril_create(modem, OFONO_RIL_VENDOR_QCOM_MSIM);
 }
 

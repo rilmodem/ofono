@@ -73,9 +73,6 @@
 #define RILD_MAX_CONNECT_RETRIES 5
 #define RILD_CONNECT_RETRY_TIME_S 5
 
-char *RILD_CMD_SOCKET[] = {"/dev/socket/rild", "/dev/socket/rild1"};
-char *GRIL_HEX_PREFIX[] = {"Device 0: ", "Device 1: "};
-
 struct ril_data {
 	GRil *ril;
 	enum ofono_ril_vendor vendor;
@@ -90,9 +87,9 @@ struct ril_data {
 
 static void ril_debug(const char *str, void *user_data)
 {
-	const char *prefix = user_data;
+	struct ril_data *rd = user_data;
 
-	ofono_info("%s%s", prefix, str);
+	ofono_info("Device %d: %s", g_ril_get_slot(rd->ril), str);
 }
 
 static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
@@ -169,7 +166,7 @@ int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor)
 
 	rd->vendor = vendor;
 	rd->ofono_online = FALSE;
-	rd->radio_state = RADIO_STATE_OFF;
+	rd->radio_state = RADIO_STATE_UNAVAILABLE;
 
 	lte_cap = getenv("OFONO_RIL_RAT_LTE") ? TRUE : FALSE;
 	ofono_modem_set_boolean(modem, MODEM_PROP_LTE_CAPABLE, lte_cap);
@@ -284,7 +281,9 @@ static void ril_set_online_cb(struct ril_msg *message, gpointer user_data)
 	struct ril_data *rd = cbd->user;
 	ofono_modem_online_cb_t cb = cbd->cb;
 
-	if (message->error == RIL_E_SUCCESS) {
+	if (message != NULL && message->error == RIL_E_SUCCESS) {
+		g_ril_print_response_no_args(rd->ril, message);
+
 		DBG("%s: set_online OK: rd->ofono_online: %d", __func__,
 			rd->ofono_online);
 		CALLBACK_WITH_SUCCESS(cb, cbd->data);
@@ -293,31 +292,24 @@ static void ril_set_online_cb(struct ril_msg *message, gpointer user_data)
 				rd->ofono_online);
 		CALLBACK_WITH_FAILURE(cb, cbd->data);
 	}
+
+	g_free(cbd);
 }
 
 static void ril_send_power(struct ril_data *rd, ofono_bool_t online,
 				GRilResponseFunc func,
 				gpointer user_data)
 {
-	struct cb_data *cbd = user_data;
-	ofono_modem_online_cb_t cb;
-	GDestroyNotify notify = NULL;
 	struct parcel rilp;
-
-	if (cbd != NULL) {
-		notify = g_free;
-		cb = cbd->cb;
-	}
 
 	DBG("(online = 1, offline = 0)): %i", online);
 
 	g_ril_request_power(rd->ril, (const gboolean) online, &rilp);
 
 	if (g_ril_send(rd->ril, RIL_REQUEST_RADIO_POWER, &rilp,
-			func, cbd, notify) == 0 && cbd != NULL) {
+			func, user_data, NULL) == 0 && func != NULL) {
 
-		CALLBACK_WITH_FAILURE(cb, cbd->data);
-		g_free(cbd);
+		func(NULL, user_data);
 	}
 }
 
@@ -332,6 +324,19 @@ void ril_set_online(struct ofono_modem *modem, ofono_bool_t online,
 	DBG("setting rd->ofono_online to: %d", online);
 
 	ril_send_power(rd, online, ril_set_online_cb, cbd);
+}
+
+static void ril_set_powered_off_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct ril_data *rd = ofono_modem_get_data(modem);
+
+	if (message != NULL && message->error == RIL_E_SUCCESS)
+		g_ril_print_response_no_args(rd->ril, message);
+
+	DBG("calling set_powered(TRUE)");
+
+	ofono_modem_set_powered(modem, TRUE);
 }
 
 static void ril_connected(struct ril_msg *message, gpointer user_data)
@@ -349,19 +354,19 @@ static void ril_connected(struct ril_msg *message, gpointer user_data)
 	/* TODO: need a disconnect function to restart things! */
 	rd->connected = TRUE;
 
-	DBG("calling set_powered(TRUE)");
+	DBG("calling set_powered(FALSE) on connected");
 
-	ofono_modem_set_powered(modem, TRUE);
+	ril_send_power(rd, FALSE, ril_set_powered_off_cb, modem);
 }
 
 static int create_gril(struct ofono_modem *modem)
 {
 	struct ril_data *rd = ofono_modem_get_data(modem);
 	int slot_id = ofono_modem_get_integer(modem, "Slot");
+	const gchar *socket = ofono_modem_get_string(modem, "Socket");
 
-	ofono_info("Using %s as socket for slot %d.",
-					RILD_CMD_SOCKET[slot_id], slot_id);
-	rd->ril = g_ril_new(RILD_CMD_SOCKET[slot_id], rd->vendor);
+	ofono_info("Using %s as socket for slot %d.", socket, slot_id);
+	rd->ril = g_ril_new(socket, rd->vendor);
 
 	/* NOTE: Since AT modems open a tty, and then call
 	 * g_at_chat_new(), they're able to return -EIO if
@@ -381,7 +386,7 @@ static int create_gril(struct ofono_modem *modem)
 		g_ril_set_trace(rd->ril, TRUE);
 
 	if (getenv("OFONO_RIL_HEX_TRACE"))
-		g_ril_set_debugf(rd->ril, ril_debug, GRIL_HEX_PREFIX[slot_id]);
+		g_ril_set_debugf(rd->ril, ril_debug, rd);
 
 	g_ril_register(rd->ril, RIL_UNSOL_RIL_CONNECTED,
 			ril_connected, modem);
