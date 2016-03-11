@@ -95,6 +95,33 @@ static void ril_debug(const char *str, void *user_data)
 	ofono_info("%s%s", prefix, str);
 }
 
+static void ril_get_radio_capability_cb(struct ril_msg *message,
+						gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct ril_data *rd = ofono_modem_get_data(modem);
+	struct reply_radio_cap *rcap;
+	ofono_bool_t lte_cap;
+
+	if (message->error != RIL_E_SUCCESS) {
+		g_ril_print_response_no_args(rd->ril, message);
+
+		ofono_error("%s: failed to request radio capability", __func__);
+		return;
+	}
+
+	rcap = g_ril_reply_parse_get_radio_capability(rd->ril, message);
+	if (rcap == NULL) {
+		ofono_error("%s: invalid parcel", __func__);
+		return;
+	}
+
+	lte_cap = ((rcap->raf & (0x01 << RADIO_TECH_LTE)) != 0) ? TRUE : FALSE;
+	ofono_modem_set_boolean(modem, MODEM_PROP_LTE_CAPABLE, lte_cap);
+
+	g_ril_reply_free_get_radio_capability(rcap);
+}
+
 static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -130,6 +157,10 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 							&rs_data);
 			}
 
+			/* Query RadioCapability when radio is available */
+			g_ril_send(rd->ril, RIL_REQUEST_GET_RADIO_CAPABILITY,
+					NULL, ril_get_radio_capability_cb,
+					modem, NULL);
 			break;
 
 		case RADIO_STATE_UNAVAILABLE:
