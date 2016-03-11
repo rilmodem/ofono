@@ -104,6 +104,7 @@ struct ril_s {
 	int slot;
 	GRilMsgIdToStrFunc req_to_string;
 	GRilMsgIdToStrFunc unsol_to_string;
+	int version;
 };
 
 struct _GRil {
@@ -1066,6 +1067,7 @@ GRil *g_ril_new(const char *sock_path, enum ofono_ril_vendor vendor)
 	ril->ref_count = 1;
 
 	ril->parent->vendor = vendor;
+	ril->parent->version = RIL_VERSION_UNSPECIFIED;
 
 	return ril;
 }
@@ -1205,6 +1207,24 @@ int g_ril_get_slot(GRil *ril)
 		return 0;
 
 	return ril->parent->slot;
+}
+
+gboolean g_ril_set_version(GRil *ril, int version)
+{
+	if (ril == NULL || ril->parent == NULL ||
+			ril->parent->version != RIL_VERSION_UNSPECIFIED)
+		return FALSE;
+
+	ril->parent->version = version;
+	return TRUE;
+}
+
+int g_ril_get_version(GRil *ril)
+{
+	if (ril == NULL)
+		return RIL_VERSION_UNSPECIFIED;
+
+	return ril->parent->version;
 }
 
 gboolean g_ril_set_debugf(GRil *ril,

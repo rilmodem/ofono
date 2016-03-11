@@ -48,6 +48,30 @@
  */
 #define MIN_NITZ_SIZE 17
 
+int g_ril_unsol_parse_connected(GRil *gril, const struct ril_msg *message)
+{
+	struct parcel rilp;
+	int size;
+	int version;
+
+	DBG("");
+
+	g_ril_init_parcel(message, &rilp);
+
+	size = parcel_r_int32(&rilp);
+	version = parcel_r_int32(&rilp);
+
+	if (rilp.malformed) {
+		ofono_error("%s: malformed parcel", __func__);
+		version = RIL_VERSION_UNSPECIFIED;
+	}
+
+	g_ril_append_print_buf(gril, "{size:%d, [%d, ...]}", size, version);
+	g_ril_print_unsol(gril, message);
+
+	return version;
+}
+
 static gint data_call_compare(gconstpointer a, gconstpointer b)
 {
 	const struct ril_data_call *ca = a;

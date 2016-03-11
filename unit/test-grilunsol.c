@@ -525,6 +525,115 @@ static const struct ril_msg unsol_on_ussd_valid_1 = {
 	.error = 0,
 };
 
+/*
+ * The following hexadecimal data represents a serialized Binder parcel
+ * instance containing a valid RIL_UNSOL_RIL_CONNECTED message with the
+ * following parameters:
+ *
+ * [1, 10]
+ */
+static const guchar unsol_on_ril_connected_valid_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg unsol_on_ril_connected_valid_1 = {
+	.buf = (gchar *) &unsol_on_ril_connected_valid_parcel1,
+	.buf_len = sizeof(unsol_on_ril_connected_valid_parcel1),
+	.unsolicited = TRUE,
+	.req = RIL_UNSOL_RIL_CONNECTED,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data represents a serialized Binder parcel
+ * instance containing a valid RIL_UNSOL_RIL_CONNECTED message with the
+ * following parameters:
+ *
+ * [2, 10, 11]
+ */
+static const guchar unsol_on_ril_connected_valid_parcel2[] = {
+	0x02, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x0b, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg unsol_on_ril_connected_valid_2 = {
+	.buf = (gchar *) &unsol_on_ril_connected_valid_parcel2,
+	.buf_len = sizeof(unsol_on_ril_connected_valid_parcel2),
+	.unsolicited = TRUE,
+	.req = RIL_UNSOL_RIL_CONNECTED,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data represents a serialized Binder parcel
+ * instance containing a valid RIL_UNSOL_RIL_CONNECTED message with the
+ * following parameters:
+ *
+ * [1, 10, 11]
+ */
+static const guchar unsol_on_ril_connected_valid_parcel3[] = {
+	0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x0b, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg unsol_on_ril_connected_valid_3 = {
+	.buf = (gchar *) &unsol_on_ril_connected_valid_parcel3,
+	.buf_len = sizeof(unsol_on_ril_connected_valid_parcel3),
+	.unsolicited = TRUE,
+	.req = RIL_UNSOL_RIL_CONNECTED,
+	.serial_no = 0,
+	.error = 0,
+};
+
+static const struct ril_msg unsol_on_ril_connected_invalid_1 = {
+	.buf = "",
+	.buf_len = 0,
+	.unsolicited = TRUE,
+	.req = RIL_UNSOL_RIL_CONNECTED,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data represents a serialized Binder parcel
+ * instance containing an invalid RIL_UNSOL_RIL_CONNECTED message with the
+ * following parameters:
+ *
+ * [0]
+ */
+static const guchar unsol_on_ril_connected_invalid_parcel2[] = {
+	0x00, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg unsol_on_ril_connected_invalid_2 = {
+	.buf = (gchar *) &unsol_on_ril_connected_invalid_parcel2,
+	.buf_len = sizeof(unsol_on_ril_connected_invalid_parcel2),
+	.unsolicited = TRUE,
+	.req = RIL_UNSOL_RIL_CONNECTED,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data represents a serialized Binder parcel
+ * instance containing an invalid RIL_UNSOL_RIL_CONNECTED message with the
+ * following parameters:
+ *
+ * [1]
+ */
+static const guchar unsol_on_ril_connected_invalid_parcel3[] = {
+	0x01, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg unsol_on_ril_connected_invalid_3 = {
+	.buf = (gchar *) &unsol_on_ril_connected_invalid_parcel3,
+	.buf_len = sizeof(unsol_on_ril_connected_invalid_parcel3),
+	.unsolicited = TRUE,
+	.req = RIL_UNSOL_RIL_CONNECTED,
+	.serial_no = 0,
+	.error = 0,
+};
+
 static void test_reply_data_call_invalid(gconstpointer data)
 {
 	struct ril_data_call_list *call_list;
@@ -598,6 +707,24 @@ static void test_unsol_on_ussd_valid(gconstpointer data)
 
 	g_assert(unsol != NULL);
 	g_ril_unsol_free_ussd(unsol);
+}
+
+static void test_unsol_on_ril_connected_valid(gconstpointer data)
+{
+	int version;
+
+	version = g_ril_unsol_parse_connected(NULL, (struct ril_msg *) data);
+
+	g_assert(version == 10);
+}
+
+static void test_unsol_on_ril_connected_invalid(gconstpointer data)
+{
+	int version;
+
+	version = g_ril_unsol_parse_connected(NULL, (struct ril_msg *) data);
+
+	g_assert(version == RIL_VERSION_UNSPECIFIED);
 }
 #endif
 
@@ -692,6 +819,36 @@ int main(int argc, char **argv)
 				"valid ON_USSD Test 1",
 				&unsol_on_ussd_valid_1,
 				test_unsol_on_ussd_valid);
+
+	g_test_add_data_func("/testgrilunsol/ril-connected: "
+				"valid RIL_CONNECTED Test 1",
+				&unsol_on_ril_connected_valid_1,
+				test_unsol_on_ril_connected_valid);
+
+	g_test_add_data_func("/testgrilunsol/ril-connected: "
+				"valid RIL_CONNECTED Test 2",
+				&unsol_on_ril_connected_valid_2,
+				test_unsol_on_ril_connected_valid);
+
+	g_test_add_data_func("/testgrilunsol/ril-connected: "
+				"valid RIL_CONNECTED Test 3",
+				&unsol_on_ril_connected_valid_3,
+				test_unsol_on_ril_connected_valid);
+
+	g_test_add_data_func("/testgrilunsol/ril-connected: "
+				"invalid RIL_CONNECTED Test 1",
+				&unsol_on_ril_connected_invalid_1,
+				test_unsol_on_ril_connected_invalid);
+
+	g_test_add_data_func("/testgrilunsol/ril-connected: "
+				"invalid RIL_CONNECTED Test 2",
+				&unsol_on_ril_connected_invalid_2,
+				test_unsol_on_ril_connected_invalid);
+
+	g_test_add_data_func("/testgrilunsol/ril-connected: "
+				"invalid RIL_CONNECTED Test 3",
+				&unsol_on_ril_connected_invalid_3,
+				test_unsol_on_ril_connected_invalid);
 
 #endif
 	return g_test_run();

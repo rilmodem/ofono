@@ -338,9 +338,13 @@ static void ril_connected(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = (struct ofono_modem *) user_data;
 	struct ril_data *rd = ofono_modem_get_data(modem);
+	int version;
 
-	ofono_info("[%d,UNSOL]< %s", g_ril_get_slot(rd->ril),
-		g_ril_unsol_request_to_string(rd->ril, message->req));
+	version = g_ril_unsol_parse_connected(rd->ril, message);
+	g_ril_set_version(rd->ril, version);
+
+	ofono_info("[%d,UNSOL]< %s, version %d", g_ril_get_slot(rd->ril),
+		g_ril_unsol_request_to_string(rd->ril, message->req), version);
 
 	/* TODO: need a disconnect function to restart things! */
 	rd->connected = TRUE;
