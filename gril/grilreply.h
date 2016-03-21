@@ -178,6 +178,9 @@ struct reply_oem_hook *g_ril_reply_oem_hook_raw(GRil *gril,
 struct parcel_str_array *g_ril_reply_oem_hook_strings(GRil *gril,
 						const struct ril_msg *message);
 
+struct parcel_str_array *g_ril_reply_parse_device_identity(GRil *gril,
+						const struct ril_msg *message);
+
 #ifdef __cplusplus
 }
 #endif
