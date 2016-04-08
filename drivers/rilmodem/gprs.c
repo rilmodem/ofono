@@ -336,12 +336,9 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 		}
 	}
 
-	if (gd->tech != reply->reg_state.tech) {
-		gd->tech = reply->reg_state.tech;
-
-		ofono_gprs_bearer_notify(gprs,
+	gd->tech = reply->reg_state.tech;
+	ofono_gprs_bearer_notify(gprs,
 				ril_tech_to_bearer_tech(reply->reg_state.tech));
-	}
 
 	if (cb)
 		CALLBACK_WITH_SUCCESS(cb, reply->reg_state.status, cbd->data);

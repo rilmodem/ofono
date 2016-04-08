@@ -1703,6 +1703,12 @@ static void gprs_attached_update(struct ofono_gprs *gprs)
 		release_active_contexts(gprs);
 		gprs->bearer = -1;
 	} else if (have_active_contexts(gprs) == TRUE) {
+		/*
+		 * Some times the context activates after a detach event and
+		 * right before an attach. We close it to avoid unexpected open
+		 * contexts.
+		 */
+		release_active_contexts(gprs);
 		gprs->flags |= GPRS_FLAG_ATTACHED_UPDATE;
 		return;
 	}
