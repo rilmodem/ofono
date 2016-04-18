@@ -635,7 +635,7 @@ static int gpio_probe_links(void)
 	char const *gpiodir = "/sys/class/gpio";
 	char const *cmtdir = "/dev/cmt";
 	DIR *gpio;
-	struct dirent *d, entry[1];
+	struct dirent *d;
 
 	if (file_exists(cmtdir)) {
 		DBG("Using %s", cmtdir);
@@ -657,15 +657,10 @@ static int gpio_probe_links(void)
 		return -(errno = ENODEV);
 	}
 
-	while (readdir_r(gpio, entry, &d) == 0) {
+	while ((d = readdir(gpio)) != NULL) {
 		char nn[PATH_MAX], name[PATH_MAX], from[PATH_MAX], to[PATH_MAX];
 		FILE *nf;
 		size_t len;
-
-		if (d == NULL) {
-			(void) closedir(gpio);
-			return 0;
-		}
 
 		snprintf(nn, sizeof nn, "%s/%s/name", gpiodir, d->d_name);
 
