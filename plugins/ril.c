@@ -231,6 +231,7 @@ void ril_post_sim(struct ofono_modem *modem)
 		inet_ctx = { rd->ril, modem, OFONO_GPRS_CONTEXT_TYPE_INTERNET };
 	struct ril_gprs_context_data
 		mms_ctx = { rd->ril, modem, OFONO_GPRS_CONTEXT_TYPE_MMS };
+	char *gprs_driver;
 
 	/* TODO: this function should setup:
 	 *  - phonebook
@@ -239,7 +240,13 @@ void ril_post_sim(struct ofono_modem *modem)
 	 */
 	ofono_sms_create(modem, rd->vendor, RILMODEM, rd->ril);
 
-	gprs = ofono_gprs_create(modem, rd->vendor, RILMODEM, &gprs_data);
+	if (rd->vendor == OFONO_RIL_VENDOR_QCOM_MSIM)
+		gprs_driver = QCOMMSIMMODEM;
+	else
+		gprs_driver = RILMODEM;
+
+	gprs = ofono_gprs_create(modem, rd->vendor, gprs_driver, &gprs_data);
+
 	gc = ofono_gprs_context_create(modem, rd->vendor, RILMODEM, &inet_ctx);
 
 	if (gc) {
