@@ -114,7 +114,7 @@ static void ril_query_revision(struct ofono_devinfo *info,
 	}
 }
 
-static void query_serial_cb(struct ril_msg *message, gpointer user_data)
+static void query_imei_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_devinfo_query_cb_t cb = cbd->cb;
@@ -137,20 +137,47 @@ static void query_serial_cb(struct ril_msg *message, gpointer user_data)
 	g_free(imei);
 }
 
+static void query_device_identity_cb(struct ril_msg *message,
+					gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_devinfo_query_cb_t cb = cbd->cb;
+	gpointer data = cbd->data;
+	GRil *ril = cbd->user;
+	struct parcel_str_array *reply = NULL;
+
+	if (message->error == RIL_E_SUCCESS)
+		reply = g_ril_reply_parse_device_identity(ril, message);
+
+	if (reply == NULL) {
+		CALLBACK_WITH_FAILURE(cb, NULL, data);
+		return;
+	}
+
+	/* TODO: use `reply->str[3]` for CDMA phones */
+	CALLBACK_WITH_SUCCESS(cb, reply->str[0], data);
+
+	parcel_free_str_array(reply);
+}
+
 static void ril_query_serial(struct ofono_devinfo *info,
 				ofono_devinfo_query_cb_t cb,
 				void *data)
 {
 	GRil *ril = ofono_devinfo_get_data(info);
 	struct cb_data *cbd = cb_data_new(cb, data, ril);
+	gint req;
+	GRilResponseFunc resp;
 
-	/*
-	 * TODO: make it support both RIL_REQUEST_GET_IMEI (deprecated) and
-	 * RIL_REQUEST_DEVICE_IDENTITY depending on the rild version used
-	 */
+	if (g_ril_get_version(ril) >= 3) {
+		req = RIL_REQUEST_DEVICE_IDENTITY;
+		resp = query_device_identity_cb;
+	} else {
+		req = RIL_REQUEST_GET_IMEI;
+		resp = query_imei_cb;
+	}
 
-	if (g_ril_send(ril, RIL_REQUEST_GET_IMEI, NULL,
-			query_serial_cb, cbd, g_free) == 0) {
+	if (g_ril_send(ril, req, NULL, resp, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, NULL, data);
 	}

@@ -1563,6 +1563,116 @@ static const struct oem_hook_strings_test reply_oem_hook_strings_valid_1 = {
 	.str = strings_valid_parcel1
 };
 
+/*
+ * The following structure contains test data for a valid
+ * RIL_REQUEST_DEVICE_IDENTITY reply with parameter {[NULL, NULL, NULL, NULL]}
+ */
+static const guchar reply_device_identity_valid_parcel1[] = {
+	0x04, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+};
+
+static const char *strings_device_identity_valid_parcel1[] = {
+	NULL, NULL, NULL, NULL
+};
+
+static const struct oem_hook_strings_test reply_device_identity_valid_1 = {
+	.msg = {
+		.buf = (gchar *) reply_device_identity_valid_parcel1,
+		.buf_len = sizeof(reply_device_identity_valid_parcel1),
+		.unsolicited = FALSE,
+		.req = RIL_REQUEST_DEVICE_IDENTITY,
+		.serial_no = 0,
+		.error = RIL_E_SUCCESS,
+	},
+	.num_str = G_N_ELEMENTS(strings_device_identity_valid_parcel1),
+	.str = strings_device_identity_valid_parcel1
+};
+
+/*
+ * The following structure contains test data for a valid
+ * RIL_REQUEST_DEVICE_IDENTITY reply with parameter {["a", "b", "c", "d"]}
+ */
+static const guchar reply_device_identity_valid_parcel2[] = {
+	0x04, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x61, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x62, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+	0x63, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00
+};
+
+static const char *strings_device_identity_valid_parcel2[] = {
+	"a", "b", "c", "d"
+};
+
+static const struct oem_hook_strings_test reply_device_identity_valid_2 = {
+	.msg = {
+		.buf = (gchar *) reply_device_identity_valid_parcel2,
+		.buf_len = sizeof(reply_device_identity_valid_parcel2),
+		.unsolicited = FALSE,
+		.req = RIL_REQUEST_DEVICE_IDENTITY,
+		.serial_no = 0,
+		.error = RIL_E_SUCCESS,
+	},
+	.num_str = G_N_ELEMENTS(strings_device_identity_valid_parcel2),
+	.str = strings_device_identity_valid_parcel2
+};
+
+/* RIL_REQUEST_DEVICE_IDENTITY no payload */
+static const struct ril_msg reply_device_identity_invalid_1 = {
+	.buf = NULL,
+	.buf_len = 0,
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_DEVICE_IDENTITY,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/* RIL_REQUEST_DEVICE_IDENTITY empty array */
+static const guchar reply_device_identity_invalid_parcel2[] = {
+	0x00, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_device_identity_invalid_2 = {
+	.buf = (gchar *) reply_device_identity_invalid_parcel2,
+	.buf_len = sizeof(reply_device_identity_invalid_parcel2),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_DEVICE_IDENTITY,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/* RIL_REQUEST_DEVICE_IDENTITY insufficient elements */
+static const guchar reply_device_identity_invalid_parcel3[] = {
+	0x03, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x61, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x62, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+	0x63, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_device_identity_invalid_3 = {
+	.buf = (gchar *) reply_device_identity_invalid_parcel3,
+	.buf_len = sizeof(reply_device_identity_invalid_parcel3),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_DEVICE_IDENTITY,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/* RIL_REQUEST_DEVICE_IDENTITY redundant element */
+static const guchar reply_device_identity_invalid_parcel4[] = {
+	0x05, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x61, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x62, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+	0x63, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x65, 0x00, 0x00
+};
+
+static const struct ril_msg reply_device_identity_invalid_4 = {
+	.buf = (gchar *) reply_device_identity_invalid_parcel4,
+	.buf_len = sizeof(reply_device_identity_invalid_parcel4),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_DEVICE_IDENTITY,
+	.serial_no = 0,
+	.error = 0,
+};
+
 static void test_reply_voice_reg_state_valid(gconstpointer data)
 {
 	const reg_state_test *test = data;
@@ -1824,6 +1934,34 @@ static void test_reply_oem_hook_strings_valid(gconstpointer data)
 		g_assert(strcmp(reply->str[i], test->str[i]) == 0);
 
 	parcel_free_str_array(reply);
+}
+
+static void test_reply_valid_device_identity_valid(gconstpointer data)
+{
+	int i;
+	const struct oem_hook_strings_test *test = data;
+	struct parcel_str_array *reply =
+		g_ril_reply_parse_device_identity(NULL, &test->msg);
+
+	g_assert(reply != NULL);
+	g_assert(reply->num_str == test->num_str);
+
+	for (i = 0; i < reply->num_str; ++i) {
+		if (test->str[i] != NULL)
+			g_assert(strcmp(reply->str[i], test->str[i]) == 0);
+		else
+			g_assert(reply->str[i] == NULL);
+	}
+
+	parcel_free_str_array(reply);
+}
+
+static void test_reply_valid_device_identity_invalid(gconstpointer data)
+{
+	struct parcel_str_array *reply =
+		g_ril_reply_parse_device_identity(NULL, data);
+
+	g_assert(reply == NULL);
 }
 
 #endif
@@ -2134,6 +2272,36 @@ int main(int argc, char **argv)
 				"valid OEM_HOOK_STRINGS Test 1",
 				&reply_oem_hook_strings_valid_1,
 				test_reply_oem_hook_strings_valid);
+
+	g_test_add_data_func("/testgrilreply/device-identity: "
+				"valid DEVICE_IDENTITY Test 1",
+				&reply_device_identity_valid_1,
+				test_reply_valid_device_identity_valid);
+
+	g_test_add_data_func("/testgrilreply/device-identity: "
+				"valid DEVICE_IDENTITY Test 2",
+				&reply_device_identity_valid_2,
+				test_reply_valid_device_identity_valid);
+
+	g_test_add_data_func("/testgrilreply/device-identity: "
+				"invalid DEVICE_IDENTITY Test 1",
+				&reply_device_identity_invalid_1,
+				test_reply_valid_device_identity_invalid);
+
+	g_test_add_data_func("/testgrilreply/device-identity: "
+				"invalid DEVICE_IDENTITY Test 2",
+				&reply_device_identity_invalid_2,
+				test_reply_valid_device_identity_invalid);
+
+	g_test_add_data_func("/testgrilreply/device-identity: "
+				"invalid DEVICE_IDENTITY Test 3",
+				&reply_device_identity_invalid_3,
+				test_reply_valid_device_identity_invalid);
+
+	g_test_add_data_func("/testgrilreply/device-identity: "
+				"invalid DEVICE_IDENTITY Test 4",
+				&reply_device_identity_invalid_4,
+				test_reply_valid_device_identity_invalid);
 
 #endif
 

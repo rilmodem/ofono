@@ -1456,3 +1456,46 @@ struct parcel_str_array *g_ril_reply_oem_hook_strings(GRil *gril,
 out:
 	return str_arr;
 }
+
+struct parcel_str_array *g_ril_reply_parse_device_identity(GRil *gril,
+						const struct ril_msg *message)
+{
+	static const char * const names[] = {"imei", "imeisv", "esn", "meid"};
+	struct parcel rilp;
+	struct parcel_str_array *str_arr;
+	size_t i;
+
+	g_ril_init_parcel(message, &rilp);
+
+	str_arr = parcel_r_str_array(&rilp);
+	if (str_arr == NULL) {
+		ofono_error("%s: no strings", __func__);
+		goto out;
+	}
+
+	if ((unsigned)str_arr->num_str != G_N_ELEMENTS(names)) {
+		ofono_error("%s: malformed reply", __func__);
+
+		parcel_free_str_array(str_arr);
+		str_arr = NULL;
+		goto out;
+	}
+
+	g_ril_append_print_buf(gril, "{");
+
+	for (i = 0; i < G_N_ELEMENTS(names); i++) {
+		char *value = str_arr->str[i] ? str_arr->str[i] : NULL;
+
+		if (i + 1 == G_N_ELEMENTS(names))
+			g_ril_append_print_buf(gril, "%s%s: %s}", print_buf,
+						names[i], value);
+		else
+			g_ril_append_print_buf(gril, "%s%s: %s, ", print_buf,
+						names[i], value);
+	}
+
+	g_ril_print_response(gril, message);
+
+out:
+	return str_arr;
+}
