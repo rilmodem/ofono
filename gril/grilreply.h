@@ -97,6 +97,15 @@ struct reply_oem_hook {
 	void *data;
 };
 
+struct reply_radio_cap {
+	int version;
+	int session;
+	int phase;
+	int raf;
+	char *uuid;
+	int status;
+};
+
 void g_ril_reply_free_avail_ops(struct reply_avail_ops *reply);
 
 struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
@@ -177,6 +186,11 @@ struct reply_oem_hook *g_ril_reply_oem_hook_raw(GRil *gril,
 
 struct parcel_str_array *g_ril_reply_oem_hook_strings(GRil *gril,
 						const struct ril_msg *message);
+
+struct reply_radio_cap *g_ril_reply_parse_get_radio_capability(GRil *gril,
+						const struct ril_msg *message);
+
+void g_ril_reply_free_get_radio_capability(struct reply_radio_cap *reply);
 
 #ifdef __cplusplus
 }

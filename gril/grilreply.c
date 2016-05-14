@@ -1456,3 +1456,82 @@ struct parcel_str_array *g_ril_reply_oem_hook_strings(GRil *gril,
 out:
 	return str_arr;
 }
+
+struct reply_radio_cap *g_ril_reply_parse_get_radio_capability(GRil *gril,
+						const struct ril_msg *message)
+{
+	struct parcel rilp;
+	struct reply_radio_cap *reply;
+	int tech, raf;
+
+	reply = g_try_malloc0(sizeof(*reply));
+	if (reply == NULL) {
+		ofono_error("%s: out of memory", __func__);
+		goto out;
+	}
+
+	g_ril_init_parcel(message, &rilp);
+
+	reply->version = parcel_r_int32(&rilp);
+	if (reply->version != RIL_RADIO_CAPABILITY_VERSION) {
+		ofono_error("%s: unsupported version %d", __func__,
+				reply->version);
+		goto error;
+	}
+
+	reply->session = parcel_r_int32(&rilp);
+	reply->phase = parcel_r_int32(&rilp);
+	reply->raf = parcel_r_int32(&rilp);
+	reply->uuid = parcel_r_string(&rilp);
+	reply->status = parcel_r_int32(&rilp);
+
+	if (rilp.malformed) {
+		ofono_error("%s: malformed parcel", __func__);
+		goto error;
+	}
+
+	g_ril_append_print_buf(gril, "{%d,%d,%s,",
+				reply->version,
+				reply->session,
+				ril_rc_phase_to_string(reply->phase));
+
+	for (tech = 0, raf = reply->raf; raf; tech++, raf >>= 1) {
+		if ((raf & 0x01) == 0)
+			continue;
+
+		g_ril_append_print_buf(gril, "%s%s|",
+					print_buf,
+					ril_radio_tech_to_string(tech));
+	}
+
+	if (tech != 0) {
+		/* One or more tech bits set */
+		print_buf[strlen(print_buf) - 1] = ',';
+	} else
+		g_ril_append_print_buf(gril, "%s(empty),", print_buf);
+
+	g_ril_append_print_buf(gril, "%s%s,%s}",
+				print_buf,
+				reply->uuid,
+				ril_rc_status_to_string(reply->status));
+	g_ril_print_response(gril, message);
+
+	goto out;
+
+error:
+	g_ril_reply_free_get_radio_capability(reply);
+	reply = NULL;
+out:
+	return reply;
+}
+
+void g_ril_reply_free_get_radio_capability(struct reply_radio_cap *reply)
+{
+	if (reply == NULL)
+		return;
+
+	if (reply->uuid)
+		g_free(reply->uuid);
+
+	g_free(reply);
+}

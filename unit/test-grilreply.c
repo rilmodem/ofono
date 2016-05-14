@@ -1563,6 +1563,89 @@ static const struct oem_hook_strings_test reply_oem_hook_strings_valid_1 = {
 	.str = strings_valid_parcel1
 };
 
+/*
+ * The following hexadecimal data contains the event data of a valid
+ * RIL_REQUEST_GET_RADIO_CAPABILITY reply with the following parameters:
+ *
+ * {1,0,CONFIGURED,UMTS|EVDO_0|HSDPA,,NONE}
+ */
+static const guchar reply_get_radio_capability_valid_parcel1[] = {
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x88, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_get_radio_capability_valid_1 = {
+	.buf = (gchar *) reply_get_radio_capability_valid_parcel1,
+	.buf_len = sizeof(reply_get_radio_capability_valid_parcel1),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_GET_RADIO_CAPABILITY,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data contains the event data of an invalid
+ * RIL_REQUEST_GET_RADIO_CAPABILITY reply with the following parameters:
+ *
+ * {<invalid version>,0,CONFIGURED,UMTS|EVDO_0|HSDPA,,NONE}
+ */
+static const guchar reply_get_radio_capability_invalid_parcel1[] = {
+	0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x88, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_get_radio_capability_invalid_1 = {
+	.buf = (gchar *) reply_get_radio_capability_invalid_parcel1,
+	.buf_len = sizeof(reply_get_radio_capability_invalid_parcel1),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_GET_RADIO_CAPABILITY,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data contains the event data of an invalid
+ * RIL_REQUEST_GET_RADIO_CAPABILITY reply with the following parameters:
+ *
+ * {1,0,CONFIGURED,UMTS|EVDO_0|HSDPA,,<malformed>}
+ */
+static const guchar reply_get_radio_capability_invalid_parcel2[] = {
+	0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x88, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_get_radio_capability_invalid_2 = {
+	.buf = (gchar *) reply_get_radio_capability_invalid_parcel2,
+	.buf_len = sizeof(reply_get_radio_capability_invalid_parcel2),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_GET_RADIO_CAPABILITY,
+	.serial_no = 0,
+	.error = 0,
+};
+
+/*
+ * The following hexadecimal data contains the event data of an invalid
+ * RIL_REQUEST_GET_RADIO_CAPABILITY reply with the following parameters:
+ *
+ * {1,0,CONFIGURED,UMTS|EVDO_0|HSDPA,<malformed>,NONE}
+ */
+static const guchar reply_get_radio_capability_invalid_parcel3[] = {
+	0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x88, 0x02, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00
+};
+
+static const struct ril_msg reply_get_radio_capability_invalid_3 = {
+	.buf = (gchar *) reply_get_radio_capability_invalid_parcel3,
+	.buf_len = sizeof(reply_get_radio_capability_invalid_parcel3),
+	.unsolicited = FALSE,
+	.req = RIL_REQUEST_GET_RADIO_CAPABILITY,
+	.serial_no = 0,
+	.error = 0,
+};
+
 static void test_reply_voice_reg_state_valid(gconstpointer data)
 {
 	const reg_state_test *test = data;
@@ -1824,6 +1907,37 @@ static void test_reply_oem_hook_strings_valid(gconstpointer data)
 		g_assert(strcmp(reply->str[i], test->str[i]) == 0);
 
 	parcel_free_str_array(reply);
+}
+
+static void test_reply_get_radio_capability_valid(gconstpointer data)
+{
+	struct reply_radio_cap *reply;
+	int raf;
+
+	raf = (0x01 << RADIO_TECH_UMTS) | \
+		(0x01 << RADIO_TECH_EVDO_0) | \
+		(0x01 << RADIO_TECH_HSDPA);
+
+	reply = g_ril_reply_parse_get_radio_capability(NULL, data);
+
+	g_assert(reply != NULL);
+	g_assert(reply->version == RIL_RADIO_CAPABILITY_VERSION);
+	g_assert(reply->session == 0);
+	g_assert(reply->phase == RIL_RC_PHASE_CONFIGURED);
+	g_assert(reply->raf == raf);
+	g_assert(strcmp(reply->uuid, "") == 0);
+	g_assert(reply->status == RIL_RC_STATUS_NONE);
+
+	g_ril_reply_free_get_radio_capability(reply);
+}
+
+static void test_reply_get_radio_capability_invalid(gconstpointer data)
+{
+	struct reply_radio_cap *reply;
+
+	reply = g_ril_reply_parse_get_radio_capability(NULL, data);
+
+	g_assert(reply == NULL);
 }
 
 #endif
@@ -2134,6 +2248,26 @@ int main(int argc, char **argv)
 				"valid OEM_HOOK_STRINGS Test 1",
 				&reply_oem_hook_strings_valid_1,
 				test_reply_oem_hook_strings_valid);
+
+	g_test_add_data_func("/testgrilreply/radio-capability: "
+				"valid RADIO_CAPABILITY Test 1",
+				&reply_get_radio_capability_valid_1,
+				test_reply_get_radio_capability_valid);
+
+	g_test_add_data_func("/testgrilreply/radio-capability: "
+				"invalid RADIO_CAPABILITY Test 1",
+				&reply_get_radio_capability_invalid_1,
+				test_reply_get_radio_capability_invalid);
+
+	g_test_add_data_func("/testgrilreply/radio-capability: "
+				"invalid RADIO_CAPABILITY Test 2",
+				&reply_get_radio_capability_invalid_2,
+				test_reply_get_radio_capability_invalid);
+
+	g_test_add_data_func("/testgrilreply/radio-capability: "
+				"invalid RADIO_CAPABILITY Test 3",
+				&reply_get_radio_capability_invalid_3,
+				test_reply_get_radio_capability_invalid);
 
 #endif
 
