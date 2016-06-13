@@ -268,6 +268,10 @@ const char *ril_radio_tech_to_string(int radio_tech)
 		return "HSPAP";
 	case RADIO_TECH_GSM:
 		return "GSM";
+	case RADIO_TECH_TD_SCDMA:
+		return "TD_SCDMA";
+	case RADIO_TECH_IWLAN:
+		return "IWLAN";
 	case MTK_RADIO_TECH_HSDPAP:
 		return "MTK_HSDPAP";
 	case MTK_RADIO_TECH_HSDPAP_UPA:
@@ -727,6 +731,40 @@ const char *ril_pdp_fail_to_string(int status)
 			return temp_str;
 		else
 			return "<UNKNOWN>";
+	}
+}
+
+const char *ril_rc_phase_to_string(int phase)
+{
+	switch (phase) {
+	case RIL_RC_PHASE:
+		return "RIL_RC_PHASE";
+	case RIL_RC_PHASE_CONFIGURED:
+		return "RIL_RC_PHASE_CONFIGURED";
+	case RIL_RC_PHASE_START:
+		return "RIL_RC_PHASE_START";
+	case RIL_RC_PHASE_APPLY:
+		return "RIL_RC_PHASE_APPLY";
+	case RIL_RC_PHASE_UNSOL_RSP:
+		return "RIL_RC_PHASE_UNSOL_RSP";
+	case RIL_RC_PHASE_FINISH:
+		return "RIL_RC_PHASE_FINISH";
+	default:
+		return "<UNKNOWN RC PHASE>";
+	}
+}
+
+const char *ril_rc_status_to_string(int status)
+{
+	switch (status) {
+	case RIL_RC_STATUS_NONE:
+		return "RC_STATUS_NONE";
+	case RIL_RC_STATUS_SUCCESS:
+		return "RC_STATUS_SUCCESS";
+	case RIL_RC_STATUS_FAIL:
+		return "RC_STATUS_FAIL";
+	default:
+		return "<UNKNOWN RC STATUS>";
 	}
 }
 

@@ -1456,3 +1456,99 @@ struct parcel_str_array *g_ril_reply_oem_hook_strings(GRil *gril,
 out:
 	return str_arr;
 }
+
+struct reply_radio_capability *g_ril_reply_parse_get_radio_capability(
+				GRil *gril, const struct ril_msg *message)
+{
+	struct reply_radio_capability *reply;
+	struct parcel rilp;
+	char *modem_uuid;
+
+	reply = g_new0(struct reply_radio_capability, 1);
+	g_ril_init_parcel(message, &rilp);
+
+	reply->version = parcel_r_int32(&rilp);
+	reply->session = parcel_r_int32(&rilp);
+	reply->phase = parcel_r_int32(&rilp);
+	reply->rat = parcel_r_int32(&rilp);
+	modem_uuid = parcel_r_string(&rilp);
+	if (modem_uuid != NULL)
+		strcpy(reply->modem_uuid, modem_uuid);
+
+	reply->status = parcel_r_int32(&rilp);
+
+	if (rilp.malformed) {
+		ofono_error("%s: malformed parcel", __func__);
+		g_free(reply);
+		reply = NULL;
+		goto end;
+	}
+
+	g_ril_append_print_buf(gril, "{%d,%d,%s,[",
+				reply->version, reply->session,
+				ril_rc_phase_to_string(reply->phase));
+
+	if (reply->rat & RIL_RAF_UNKNOWN)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_UNKNOWN));
+	if (reply->rat & RIL_RAF_GPRS)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_GPRS));
+	if (reply->rat & RIL_RAF_EDGE)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_EDGE));
+	if (reply->rat & RIL_RAF_UMTS)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_UMTS));
+	if (reply->rat & RIL_RAF_IS95A)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_IS95A));
+	if (reply->rat & RIL_RAF_IS95B)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_IS95B));
+	if (reply->rat & RIL_RAF_1xRTT)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_1xRTT));
+	if (reply->rat & RIL_RAF_EVDO_0)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_EVDO_0));
+	if (reply->rat & RIL_RAF_EVDO_A)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_EVDO_A));
+	if (reply->rat & RIL_RAF_HSDPA)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_HSDPA));
+	if (reply->rat & RIL_RAF_HSUPA)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_HSUPA));
+	if (reply->rat & RIL_RAF_HSPA)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_HSPA));
+	if (reply->rat & RIL_RAF_EVDO_B)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_EVDO_B));
+	if (reply->rat & RIL_RAF_EHRPD)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_EHRPD));
+	if (reply->rat & RIL_RAF_LTE)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_LTE));
+	if (reply->rat & RIL_RAF_HSPAP)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_HSPAP));
+	if (reply->rat & RIL_RAF_GSM)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_GSM));
+	if (reply->rat & RIL_RAF_TD_SCDMA)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_TD_SCDMA));
+
+	g_ril_append_print_buf(gril, "%s],%s,%s}", print_buf,
+				reply->modem_uuid,
+				ril_rc_status_to_string(reply->status));
+
+	g_ril_print_response(gril, message);
+
+end:
+	return reply;
+}

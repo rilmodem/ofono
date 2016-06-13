@@ -97,6 +97,15 @@ struct reply_oem_hook {
 	void *data;
 };
 
+struct reply_radio_capability {
+	int version;
+	int session;
+	int phase;
+	int rat;
+	char modem_uuid[RIL_MAX_UUID_LENGTH];
+	int status;
+};
+
 void g_ril_reply_free_avail_ops(struct reply_avail_ops *reply);
 
 struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
@@ -177,6 +186,9 @@ struct reply_oem_hook *g_ril_reply_oem_hook_raw(GRil *gril,
 
 struct parcel_str_array *g_ril_reply_oem_hook_strings(GRil *gril,
 						const struct ril_msg *message);
+
+struct reply_radio_capability *g_ril_reply_parse_get_radio_capability(
+				GRil *gril, const struct ril_msg *message);
 
 #ifdef __cplusplus
 }
