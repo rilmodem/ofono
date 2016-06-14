@@ -81,6 +81,7 @@ static int ril_tech_to_access_tech(int ril_tech)
 	case RADIO_TECH_EDGE:
 		return ACCESS_TECHNOLOGY_GSM_EGPRS;
 	case RADIO_TECH_UMTS:
+	case RADIO_TECH_TD_SCDMA:
 		return ACCESS_TECHNOLOGY_UTRAN;
 	case RADIO_TECH_HSDPA:
 		return ACCESS_TECHNOLOGY_UTRAN_HSDPA;

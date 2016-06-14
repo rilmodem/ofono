@@ -78,6 +78,7 @@ static int ril_tech_to_bearer_tech(int ril_tech)
 	case RADIO_TECH_EDGE:
 		return PACKET_BEARER_EGPRS;
 	case RADIO_TECH_UMTS:
+	case RADIO_TECH_TD_SCDMA:
 		return PACKET_BEARER_UMTS;
 	case RADIO_TECH_HSDPA:
 		return PACKET_BEARER_HSDPA;
