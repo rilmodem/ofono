@@ -40,6 +40,7 @@
 
 #include "common.h"
 #include "gril.h"
+#include "rilutil.h"
 #include "rilmodem.h"
 
 #include "grilreply.h"

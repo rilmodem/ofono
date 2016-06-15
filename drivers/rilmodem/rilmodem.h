@@ -20,8 +20,6 @@
  *
  */
 
-#include "rilutil.h"
-
 #define RILMODEM "rilmodem"
 
 /* Shared constants */

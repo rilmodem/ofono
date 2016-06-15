@@ -33,6 +33,7 @@
 #include "call-barring.h"
 #include "rilmodem.h"
 #include "ril_constants.h"
+#include "rilutil.h"
 
 struct barring_data {
 	GRil *ril;

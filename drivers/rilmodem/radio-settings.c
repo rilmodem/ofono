@@ -39,6 +39,7 @@
 
 #include "gril.h"
 
+#include "rilutil.h"
 #include "rilmodem.h"
 
 #include "grilrequest.h"

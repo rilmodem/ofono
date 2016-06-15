@@ -45,6 +45,7 @@
 #include "grilunsol.h"
 
 #include "common.h"
+#include "rilutil.h"
 #include "rilmodem.h"
 #include "voicecall.h"
 

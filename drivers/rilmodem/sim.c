@@ -46,6 +46,7 @@
 #include "grilutil.h"
 #include "parcel.h"
 #include "ril_constants.h"
+#include "rilutil.h"
 #include "rilmodem.h"
 
 #include "grilreply.h"

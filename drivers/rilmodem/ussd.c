@@ -43,6 +43,7 @@
 #include "grilrequest.h"
 #include "grilunsol.h"
 
+#include "rilutil.h"
 #include "rilmodem.h"
 
 #include "ril_constants.h"
