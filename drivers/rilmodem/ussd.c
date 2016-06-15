@@ -171,6 +171,7 @@ static void ril_ussd_notify(struct ril_msg *message, gpointer user_data)
 	struct ofono_ussd *ussd = user_data;
 	struct ussd_data *ud = ofono_ussd_get_data(ussd);
 	struct unsol_ussd *unsol;
+	enum ofono_ril_vendor vendor;
 
 	unsol = g_ril_unsol_parse_ussd(ud->ril, message);
 	if (unsol == NULL) {
@@ -179,8 +180,10 @@ static void ril_ussd_notify(struct ril_msg *message, gpointer user_data)
 	}
 
 	/* To fix bug in MTK: USSD-Notify arrive with type 2 instead of 0 */
-	if (g_ril_vendor(ud->ril) == OFONO_RIL_VENDOR_MTK &&
-			unsol->message != NULL && unsol->type == 2)
+	vendor = g_ril_vendor(ud->ril);
+	if ((vendor == OFONO_RIL_VENDOR_MTK ||
+				vendor == OFONO_RIL_VENDOR_MTK2)
+			&& unsol->message != NULL && unsol->type == 2)
 		unsol->type = 0;
 
 	/*
