@@ -19,7 +19,12 @@
  *
  */
 
-int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor);
+typedef const char *(*ril_get_driver_type_func)(enum ofono_atom_type atom);
+
+int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor,
+		GRilMsgIdToStrFunc request_id_to_string,
+		GRilMsgIdToStrFunc unsol_request_to_string,
+		ril_get_driver_type_func get_driver_type);
 void ril_remove(struct ofono_modem *modem);
 int ril_enable(struct ofono_modem *modem);
 int ril_disable(struct ofono_modem *modem);

@@ -62,6 +62,7 @@
 #include <grilrequest.h>
 #include <grilunsol.h>
 
+#include "drivers/rilmodem/rilutil.h"
 #include "drivers/rilmodem/rilmodem.h"
 #include "drivers/rilmodem/vendor.h"
 

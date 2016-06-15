@@ -32,11 +32,12 @@
 #include "ofono.h"
 
 #include "drivers/rilmodem/vendor.h"
+#include "gril.h"
 #include "ril.h"
 
 static int inf_probe(struct ofono_modem *modem)
 {
-	return ril_create(modem, OFONO_RIL_VENDOR_INFINEON);
+	return ril_create(modem, OFONO_RIL_VENDOR_INFINEON, NULL, NULL, NULL);
 }
 
 static struct ofono_modem_driver infineon_driver = {

@@ -64,6 +64,7 @@
 
 #include "ril.h"
 #include "drivers/rilmodem/rilmodem.h"
+#include "drivers/rilmodem/rilutil.h"
 #include "drivers/rilmodem/vendor.h"
 #include "drivers/qcommsimmodem/qcom_msim_modem.h"
 
@@ -83,6 +84,9 @@ struct ril_data {
 	struct ofono_sim *sim;
 	struct ofono_radio_settings *radio_settings;
 	int rild_connect_retries;
+	GRilMsgIdToStrFunc request_id_to_string;
+	GRilMsgIdToStrFunc unsol_request_to_string;
+	ril_get_driver_type_func get_driver_type;
 };
 
 static void ril_debug(const char *str, void *user_data)
@@ -92,6 +96,15 @@ static void ril_debug(const char *str, void *user_data)
 	ofono_info("Device %d: %s", g_ril_get_slot(rd->ril), str);
 }
 
+static const char *get_driver_type(struct ril_data *rd,
+					enum ofono_atom_type atom)
+{
+	if (rd->get_driver_type != NULL)
+		return rd->get_driver_type(atom);
+
+	return RILMODEM;
+}
+
 static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -99,61 +112,60 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 	int radio_state = g_ril_unsol_parse_radio_state_changed(rd->ril,
 								message);
 
-	if (radio_state != rd->radio_state) {
+	if (radio_state == rd->radio_state)
+		return;
 
-		ofono_info("%s: state: %s rd->ofono_online: %d",
-				__func__,
-				ril_radio_state_to_string(radio_state),
-				rd->ofono_online);
+	ofono_info("%s: state: %s rd->ofono_online: %d",
+			__func__,
+			ril_radio_state_to_string(radio_state),
+			rd->ofono_online);
 
-		rd->radio_state = radio_state;
+	rd->radio_state = radio_state;
 
-		switch (radio_state) {
-		case RADIO_STATE_ON:
+	switch (radio_state) {
+	case RADIO_STATE_ON:
 
-			if (rd->radio_settings == NULL) {
-				char *rs_driver;
-				struct ril_radio_settings_driver_data
-						rs_data = { rd->ril, modem };
+		if (rd->radio_settings == NULL) {
+			struct ril_radio_settings_driver_data
+					rs_data = { rd->ril, modem };
 
-				if (rd->vendor == OFONO_RIL_VENDOR_QCOM_MSIM)
-					rs_driver = QCOMMSIMMODEM;
-				else
-					rs_driver = RILMODEM;
-
-				rd->radio_settings =
-					ofono_radio_settings_create(modem,
-							rd->vendor, rs_driver,
-							&rs_data);
-			}
-
-			break;
-
-		case RADIO_STATE_UNAVAILABLE:
-		case RADIO_STATE_OFF:
-
-			/*
-			 * Unexpected radio state change, as we are supposed to
-			 * be online. UNAVAILABLE has been seen occassionally
-			 * when powering off the phone. We wait 5 secs to avoid
-			 * too fast re-spawns, then exit with error to make
-			 * upstart re-start ofono.
-			 */
-			if (rd->ofono_online) {
-				ofono_error("%s: radio self-powered off!",
-						__func__);
-				sleep(5);
-				exit(1);
-			}
-			break;
-		default:
-			/* Malformed parcel; no radio state == broken rild */
-			g_assert(FALSE);
+			rd->radio_settings =
+				ofono_radio_settings_create(modem,
+					rd->vendor,
+					get_driver_type(rd,
+						OFONO_ATOM_TYPE_RADIO_SETTINGS),
+					&rs_data);
 		}
+
+		break;
+
+	case RADIO_STATE_UNAVAILABLE:
+	case RADIO_STATE_OFF:
+
+		/*
+		 * Unexpected radio state change, as we are supposed to
+		 * be online. UNAVAILABLE has been seen occassionally
+		 * when powering off the phone. We wait 5 secs to avoid
+		 * too fast re-spawns, then exit with error to make
+		 * upstart re-start ofono.
+		 */
+		if (rd->ofono_online) {
+			ofono_error("%s: radio self-powered off!",
+					__func__);
+			sleep(5);
+			exit(1);
+		}
+		break;
+	default:
+		/* Malformed parcel; no radio state == broken rild */
+		g_assert(FALSE);
 	}
 }
 
-int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor)
+int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor,
+		GRilMsgIdToStrFunc request_id_to_string,
+		GRilMsgIdToStrFunc unsol_request_to_string,
+		ril_get_driver_type_func get_driver_type)
 {
 	ofono_bool_t lte_cap;
 	struct ril_data *rd = g_try_new0(struct ril_data, 1);
@@ -167,6 +179,9 @@ int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor)
 	rd->vendor = vendor;
 	rd->ofono_online = FALSE;
 	rd->radio_state = RADIO_STATE_UNAVAILABLE;
+	rd->request_id_to_string = request_id_to_string;
+	rd->unsol_request_to_string = unsol_request_to_string;
+	rd->get_driver_type = get_driver_type;
 
 	lte_cap = getenv("OFONO_RIL_RAT_LTE") ? TRUE : FALSE;
 	ofono_modem_set_boolean(modem, MODEM_PROP_LTE_CAPABLE, lte_cap);
@@ -183,7 +198,7 @@ error:
 
 static int ril_probe(struct ofono_modem *modem)
 {
-	return ril_create(modem, OFONO_RIL_VENDOR_AOSP);
+	return ril_create(modem, OFONO_RIL_VENDOR_AOSP, NULL, NULL, NULL);
 }
 
 void ril_remove(struct ofono_modem *modem)
@@ -208,15 +223,22 @@ void ril_pre_sim(struct ofono_modem *modem)
 
 	DBG("");
 
-	ofono_devinfo_create(modem, rd->vendor, RILMODEM, rd->ril);
-	ofono_voicecall_create(modem, rd->vendor, RILMODEM, &vc_data);
-	ofono_call_volume_create(modem, rd->vendor, RILMODEM, rd->ril);
+	ofono_devinfo_create(modem, rd->vendor,
+				get_driver_type(rd, OFONO_ATOM_TYPE_DEVINFO),
+				rd->ril);
+	ofono_voicecall_create(modem, rd->vendor,
+				get_driver_type(rd, OFONO_ATOM_TYPE_VOICECALL),
+				&vc_data);
+	ofono_call_volume_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPES_CALL_VOLUME),
+			rd->ril);
 
 	sim_data.gril = rd->ril;
 	sim_data.modem = modem;
 	sim_data.ril_state_watch = NULL;
 
-	rd->sim = ofono_sim_create(modem, rd->vendor, RILMODEM, &sim_data);
+	rd->sim = ofono_sim_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_SIM), &sim_data);
 	g_assert(rd->sim != NULL);
 }
 
@@ -231,23 +253,15 @@ void ril_post_sim(struct ofono_modem *modem)
 		inet_ctx = { rd->ril, modem, OFONO_GPRS_CONTEXT_TYPE_INTERNET };
 	struct ril_gprs_context_data
 		mms_ctx = { rd->ril, modem, OFONO_GPRS_CONTEXT_TYPE_MMS };
-	char *gprs_driver;
 
-	/* TODO: this function should setup:
-	 *  - phonebook
-	 *  - stk ( SIM toolkit )
-	 *  - radio_settings
-	 */
-	ofono_sms_create(modem, rd->vendor, RILMODEM, rd->ril);
-
-	if (rd->vendor == OFONO_RIL_VENDOR_QCOM_MSIM)
-		gprs_driver = QCOMMSIMMODEM;
-	else
-		gprs_driver = RILMODEM;
-
-	gprs = ofono_gprs_create(modem, rd->vendor, gprs_driver, &gprs_data);
-
-	gc = ofono_gprs_context_create(modem, rd->vendor, RILMODEM, &inet_ctx);
+	ofono_sms_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_SMS), rd->ril);
+	gprs = ofono_gprs_create(modem, rd->vendor,
+				get_driver_type(rd, OFONO_ATOM_TYPE_GPRS),
+				&gprs_data);
+	gc = ofono_gprs_context_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_GPRS_CONTEXT),
+			&inet_ctx);
 
 	if (gc) {
 		ofono_gprs_context_set_type(gc,
@@ -255,7 +269,9 @@ void ril_post_sim(struct ofono_modem *modem)
 		ofono_gprs_add_context(gprs, gc);
 	}
 
-	gc = ofono_gprs_context_create(modem, rd->vendor, RILMODEM, &mms_ctx);
+	gc = ofono_gprs_context_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_GPRS_CONTEXT),
+			&mms_ctx);
 
 	if (gc) {
 		ofono_gprs_context_set_type(gc,
@@ -267,19 +283,27 @@ void ril_post_sim(struct ofono_modem *modem)
 	if (mw)
 		ofono_message_waiting_register(mw);
 
-	ofono_call_forwarding_create(modem, rd->vendor, RILMODEM, rd->ril);
-
-	ofono_phonebook_create(modem, rd->vendor, RILMODEM, modem);
+	ofono_call_forwarding_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_CALL_FORWARDING),
+			rd->ril);
+	ofono_phonebook_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_PHONEBOOK), modem);
 }
 
 void ril_post_online(struct ofono_modem *modem)
 {
 	struct ril_data *rd = ofono_modem_get_data(modem);
 
-	ofono_netreg_create(modem, rd->vendor, RILMODEM, rd->ril);
-	ofono_ussd_create(modem, rd->vendor, RILMODEM, rd->ril);
-	ofono_call_settings_create(modem, rd->vendor, RILMODEM, rd->ril);
-	ofono_call_barring_create(modem, rd->vendor, RILMODEM, rd->ril);
+	ofono_netreg_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_NETREG), rd->ril);
+	ofono_ussd_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_USSD), rd->ril);
+	ofono_call_settings_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_CALL_SETTINGS),
+			rd->ril);
+	ofono_call_barring_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_CALL_BARRING),
+			rd->ril);
 }
 
 static void ril_set_online_cb(struct ril_msg *message, gpointer user_data)
@@ -388,6 +412,10 @@ static int create_gril(struct ofono_modem *modem)
 		return -EIO;
 	}
 	g_ril_set_slot(rd->ril, slot_id);
+
+	g_ril_set_vendor_print_msg_id_funcs(rd->ril,
+						rd->request_id_to_string,
+						rd->unsol_request_to_string);
 
 	if (getenv("OFONO_RIL_TRACE"))
 		g_ril_set_trace(rd->ril, TRUE);
