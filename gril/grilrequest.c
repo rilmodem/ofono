@@ -112,6 +112,7 @@ static gboolean set_path(GRil *ril, guint app_type,
 	unsigned char *comm_path = db_path;
 	char *hex_path = NULL;
 	int len = 0;
+	enum ofono_ril_vendor vendor = g_ril_vendor(ril);
 
 	if (path_len > 0 && path_len < 7) {
 		memcpy(db_path, path, path_len);
@@ -133,7 +134,8 @@ static gboolean set_path(GRil *ril, guint app_type,
 	 * ETSI TS 102 221, section 8.4.2 (we are accessing the card in mode
 	 * "select by path from MF", see 3gpp 27.007, +CRSM).
 	 */
-	if (g_ril_vendor(ril) == OFONO_RIL_VENDOR_MTK && len >= (int) ROOTMF_SZ
+	if ((vendor == OFONO_RIL_VENDOR_MTK || vendor == OFONO_RIL_VENDOR_MTK2)
+			&& len >= (int) ROOTMF_SZ
 			&& memcmp(db_path, ROOTMF, ROOTMF_SZ) == 0) {
 		comm_path = db_path + ROOTMF_SZ;
 		len -= ROOTMF_SZ;
@@ -242,10 +244,11 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 	gchar *auth_str;
 	gchar *profile_str;
 	int num_param = SETUP_DATA_CALL_PARAMS;
+	enum ofono_ril_vendor vendor = g_ril_vendor(gril);
 
 	DBG("");
 
-	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+	if (vendor == OFONO_RIL_VENDOR_MTK || vendor == OFONO_RIL_VENDOR_MTK2)
 		num_param = SETUP_DATA_CALL_PARAMS + 1;
 
 	/*
@@ -281,7 +284,7 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 		profile_str = DATA_PROFILE_CBS_STR;
 		break;
 	case RIL_DATA_PROFILE_MTK_MMS:
-		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
+		if (vendor == OFONO_RIL_VENDOR_MTK) {
 			profile_str = DATA_PROFILE_MTK_MMS_STR;
 			break;
 		}
@@ -335,7 +338,7 @@ gboolean g_ril_request_setup_data_call(GRil *gril,
 				auth_str,
 				protocol_str);
 
-	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
+	if (vendor == OFONO_RIL_VENDOR_MTK || vendor == OFONO_RIL_VENDOR_MTK2) {
 		/* MTK request_cid parameter */
 		char cid_str[MAX_CID_DIGITS + 1];
 
@@ -361,6 +364,8 @@ gboolean g_ril_request_sim_read_info(GRil *gril,
 					const struct req_sim_read_info *req,
 					struct parcel *rilp)
 {
+	enum ofono_ril_vendor vendor = g_ril_vendor(gril);
+
 	parcel_init(rilp);
 
 	parcel_w_int32(rilp, CMD_GET_RESPONSE);
@@ -396,7 +401,7 @@ gboolean g_ril_request_sim_read_info(GRil *gril,
 	 * It looks like this field selects one or another SIM application, but
 	 * we use only one at a time so using zero here seems safe.
 	 */
-	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+	if (vendor == OFONO_RIL_VENDOR_MTK || vendor == OFONO_RIL_VENDOR_MTK2)
 		parcel_w_int32(rilp, 0);
 
 	return TRUE;
@@ -409,6 +414,8 @@ gboolean g_ril_request_sim_read_binary(GRil *gril,
 					const struct req_sim_read_binary *req,
 					struct parcel *rilp)
 {
+	enum ofono_ril_vendor vendor = g_ril_vendor(gril);
+
 	g_ril_append_print_buf(gril,
 				"(cmd=0x%.2X,efid=0x%.4X,",
 				CMD_READ_BINARY,
@@ -430,7 +437,7 @@ gboolean g_ril_request_sim_read_binary(GRil *gril,
 	parcel_w_string(rilp, req->aid_str);
 
 	/* sessionId, specific to latest MTK modems (harmless for older ones) */
-	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+	if (vendor == OFONO_RIL_VENDOR_MTK || vendor == OFONO_RIL_VENDOR_MTK2)
 		parcel_w_int32(rilp, 0);
 
 	return TRUE;
@@ -443,6 +450,8 @@ gboolean g_ril_request_sim_read_record(GRil *gril,
 					const struct req_sim_read_record *req,
 					struct parcel *rilp)
 {
+	enum ofono_ril_vendor vendor = g_ril_vendor(gril);
+
 	parcel_init(rilp);
 	parcel_w_int32(rilp, CMD_READ_RECORD);
 	parcel_w_int32(rilp, req->fileid);
@@ -464,7 +473,7 @@ gboolean g_ril_request_sim_read_record(GRil *gril,
 	parcel_w_string(rilp, req->aid_str); /* AID (Application ID) */
 
 	/* sessionId, specific to latest MTK modems (harmless for older ones) */
-	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+	if (vendor == OFONO_RIL_VENDOR_MTK || vendor == OFONO_RIL_VENDOR_MTK2)
 		parcel_w_int32(rilp, 0);
 
 	return TRUE;
@@ -477,6 +486,7 @@ gboolean g_ril_request_sim_write_binary(GRil *gril,
 					const struct req_sim_write_binary *req,
 					struct parcel *rilp)
 {
+	enum ofono_ril_vendor vendor = g_ril_vendor(gril);
 	char *hex_data;
 	int p1, p2;
 
@@ -503,7 +513,7 @@ gboolean g_ril_request_sim_write_binary(GRil *gril,
 	parcel_w_string(rilp, req->aid_str);	/* AID (Application ID) */
 
 	/* sessionId, specific to latest MTK modems (harmless for older ones) */
-	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+	if (vendor == OFONO_RIL_VENDOR_MTK || vendor == OFONO_RIL_VENDOR_MTK2)
 		parcel_w_int32(rilp, 0);
 
 	g_ril_append_print_buf(gril,
@@ -543,6 +553,7 @@ gboolean g_ril_request_sim_write_record(GRil *gril,
 					const struct req_sim_write_record *req,
 					struct parcel *rilp)
 {
+	enum ofono_ril_vendor vendor = g_ril_vendor(gril);
 	char *hex_data;
 	int p2;
 
@@ -568,7 +579,7 @@ gboolean g_ril_request_sim_write_record(GRil *gril,
 	parcel_w_string(rilp, req->aid_str);	/* AID (Application ID) */
 
 	/* sessionId, specific to latest MTK modems (harmless for older ones) */
-	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+	if (vendor == OFONO_RIL_VENDOR_MTK || vendor == OFONO_RIL_VENDOR_MTK2)
 		parcel_w_int32(rilp, 0);
 
 	g_ril_append_print_buf(gril,
@@ -1103,6 +1114,7 @@ void g_ril_request_set_initial_attach_apn(GRil *gril, const char *apn,
 						const char *mccmnc,
 						struct parcel *rilp)
 {
+	enum ofono_ril_vendor vendor = g_ril_vendor(gril);
 	const char *proto_str;
 	const int auth_type = RIL_AUTH_ANY;
 
@@ -1121,7 +1133,7 @@ void g_ril_request_set_initial_attach_apn(GRil *gril, const char *apn,
 				ril_authtype_to_string(auth_type),
 				user, passwd);
 
-	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
+	if (vendor == OFONO_RIL_VENDOR_MTK || vendor == OFONO_RIL_VENDOR_MTK2) {
 		parcel_w_string(rilp, mccmnc);
 		g_ril_append_print_buf(gril, "%s,%s)", print_buf, mccmnc);
 	} else {

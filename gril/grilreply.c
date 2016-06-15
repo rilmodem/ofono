@@ -84,8 +84,9 @@ struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
 	unsigned int num_ops, num_strings;
 	unsigned int i;
 	int strings_per_opt;
+	enum ofono_ril_vendor vendor = g_ril_vendor(gril);
 
-	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+	if (vendor == OFONO_RIL_VENDOR_MTK)
 		strings_per_opt = 5;
 	else
 		strings_per_opt = 4;
@@ -142,7 +143,7 @@ struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
 		 * MTK: additional string with technology: 2G/3G are the only
 		 * valid values currently.
 		 */
-		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
+		if (vendor == OFONO_RIL_VENDOR_MTK) {
 			char *tech = parcel_r_string(&rilp);
 			if (strcmp(tech, "3G") == 0)
 				operator->tech = RADIO_TECH_UMTS;
@@ -336,7 +337,8 @@ static void set_reg_state(GRil *gril, struct reply_reg_state *reply,
 		g_ril_append_print_buf(gril, "%s%s", print_buf,
 					ril_radio_tech_to_string(val));
 
-		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
+		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK ||
+				g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK2) {
 			switch (val) {
 			case MTK_RADIO_TECH_HSDPAP:
 			case MTK_RADIO_TECH_HSDPAP_UPA:
@@ -452,7 +454,8 @@ static void set_data_reg_state(GRil *gril, struct reply_data_reg_state *reply,
 		 * MTK modem does not return max_cids, string for this index
 		 * actually contains the maximum data bearer capability.
 		 */
-		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK ||
+				g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK2)
 			reply->max_cids = MTK_MODEM_MAX_CIDS;
 		else
 			reply->max_cids = val;
@@ -1182,7 +1185,8 @@ int g_ril_reply_parse_get_preferred_network_type(GRil *gril,
 	net_type = parcel_net_type;
 
 	/* Try to translate special MTK settings */
-	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
+	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK ||
+			g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK2) {
 		switch (net_type) {
 		/* 4G preferred */
 		case MTK_PREF_NET_TYPE_LTE_GSM_WCDMA:
@@ -1325,6 +1329,7 @@ int *g_ril_reply_parse_retries(GRil *gril, const struct ril_msg *message,
 		g_ril_append_print_buf(gril, "{%d}", retries[passwd_type]);
 		break;
 	case OFONO_RIL_VENDOR_MTK:
+	case OFONO_RIL_VENDOR_MTK2:
 		/*
 		 * Some versions of MTK modem return just the retries for the
 		 * password just entered while others return the retries for all
