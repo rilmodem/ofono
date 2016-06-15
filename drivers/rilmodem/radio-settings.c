@@ -230,13 +230,60 @@ static ofono_bool_t query_available_rats_cb(gpointer user_data)
 	return FALSE;
 }
 
+static void get_radio_caps_cb(struct ril_msg *message, gpointer user_data)
+{
+	unsigned int available_rats = 0;
+	struct cb_data *cbd = user_data;
+	ofono_radio_settings_available_rats_query_cb_t cb = cbd->cb;
+	struct ofono_radio_settings *rs = cbd->user;
+	struct radio_data *rd = ofono_radio_settings_get_data(rs);
+	struct reply_radio_capability *caps;
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: error %s", __func__,
+				ril_error_to_string(message->error));
+		CALLBACK_WITH_FAILURE(cb, 0, cbd->data);
+		return;
+	}
+
+	caps = g_ril_reply_parse_get_radio_capability(rd->ril, message);
+	if (caps == NULL) {
+		ofono_error("%s: parse error", __func__);
+		CALLBACK_WITH_FAILURE(cb, 0, cbd->data);
+		return;
+	}
+
+	if (caps->rat & RIL_RAF_GSM)
+		available_rats |= OFONO_RADIO_ACCESS_MODE_GSM;
+
+	if (caps->rat & (RIL_RAF_UMTS | RIL_RAF_TD_SCDMA))
+		available_rats |= OFONO_RADIO_ACCESS_MODE_UMTS;
+
+	if (caps->rat & RIL_RAF_LTE)
+		available_rats |= OFONO_RADIO_ACCESS_MODE_LTE;
+
+	g_free(caps);
+
+	CALLBACK_WITH_SUCCESS(cb, available_rats, cbd->data);
+}
+
 void ril_query_available_rats(struct ofono_radio_settings *rs,
 			ofono_radio_settings_available_rats_query_cb_t cb,
 			void *data)
 {
+	struct radio_data *rd = ofono_radio_settings_get_data(rs);
 	struct cb_data *cbd = cb_data_new(cb, data, rs);
 
-	g_idle_add(query_available_rats_cb, cbd);
+	if (g_ril_get_version(rd->ril) < 11) {
+		g_idle_add(query_available_rats_cb, cbd);
+		return;
+	}
+
+	if (g_ril_send(rd->ril, RIL_REQUEST_GET_RADIO_CAPABILITY, NULL,
+					get_radio_caps_cb, cbd, g_free) <= 0) {
+		g_free(cbd);
+		CALLBACK_WITH_FAILURE(cb, 0, data);
+	}
 }
 
 void ril_delayed_register(const struct ofono_error *error, void *user_data)
