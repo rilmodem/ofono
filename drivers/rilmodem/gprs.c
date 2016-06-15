@@ -163,6 +163,32 @@ static void ril_gprs_state_change(struct ril_msg *message, gpointer user_data)
 		ril_gprs_registration_status(gprs, NULL, NULL);
 }
 
+struct gprs_attach_data {
+	struct ril_gprs_data *gd;
+	gboolean set_attached;
+};
+
+static void gprs_allow_data_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_gprs_cb_t cb = cbd->cb;
+	struct gprs_attach_data *attach_data = cbd->user;
+	struct ril_gprs_data *gd = attach_data->gd;
+
+	if (message->error == RIL_E_SUCCESS) {
+		g_ril_print_response_no_args(gd->ril, message);
+
+		gd->ofono_attached = attach_data->set_attached;
+		CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	} else {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+	}
+
+	g_free(attach_data);
+}
+
 gboolean ril_gprs_set_attached_cb(gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -177,32 +203,65 @@ gboolean ril_gprs_set_attached_cb(gpointer user_data)
 	return FALSE;
 }
 
-static void ril_gprs_set_attached(struct ofono_gprs *gprs, int attached,
-					ofono_gprs_cb_t cb, void *data)
+void ril_gprs_set_attached(struct ofono_gprs *gprs, int attached,
+						ofono_gprs_cb_t cb, void *data)
 {
 	struct cb_data *cbd = cb_data_new(cb, data, NULL);
 	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
+	struct gprs_attach_data *attach_data;
+	struct parcel rilp;
 
 	DBG("attached: %d", attached);
 
 	/*
-	 * As RIL offers no actual control over the GPRS 'attached'
-	 * state, we save the desired state, and use it to override
-	 * the actual modem's state in the 'attached_status' function.
-	 * This is similar to the way the core ofono gprs code handles
-	 * data roaming ( see src/gprs.c gprs_netreg_update().
-	 *
-	 * The core gprs code calls driver->set_attached() when a netreg
-	 * notificaiton is received and any configured roaming conditions
-	 * are met.
+	 * TODO This could be < 10, but causes a loop in turbo where we are
+	 * trying all the time to attach to data in case we have two SIMs in
+	 * the device (happens for the slot that does not own data). This
+	 * would be solved when we implement properly dual SIM support for
+	 * turbo: currently SIM2 never attaches when ther are two SIMs in
+	 * the system, event when SIM1 is PIN-locked so it is not registered.
 	 */
-	gd->ofono_attached = attached;
+	if (g_ril_get_version(gd->ril) < 11) {
+		/*
+		 * Older RILs offer no actual control over the GPRS 'attached'
+		 * state, we save the desired state, and use it to override
+		 * the actual modem's state in the 'attached_status' function.
+		 * This is similar to the way the core ofono gprs code handles
+		 * data roaming ( see src/gprs.c gprs_netreg_update() ).
+		 *
+		 * The core gprs code calls driver->set_attached() when a netreg
+		 * notificaiton is received and any configured roaming
+		 * conditions are met.
+		 */
+		gd->ofono_attached = attached;
 
-	/*
-	 * Call from idle loop, so core can set driver_attached before
-	 * the callback is invoked.
-	 */
-	g_idle_add(ril_gprs_set_attached_cb, cbd);
+		/*
+		 * Call from idle loop, so core can set driver_attached before
+		 * the callback is invoked.
+		 */
+		g_idle_add(ril_gprs_set_attached_cb, cbd);
+		return;
+	}
+
+	attach_data = g_new0(struct gprs_attach_data, 1);
+	attach_data->gd = gd;
+	attach_data->set_attached = attached;
+
+	cbd = cb_data_new(cb, data, attach_data);
+
+	/* ALLOW_DATA payload: int[] with attach value */
+	parcel_init(&rilp);
+	parcel_w_int32(&rilp, 1);
+	parcel_w_int32(&rilp, attached);
+
+	g_ril_append_print_buf(gd->ril, "(%d)", attached);
+
+	if (g_ril_send(gd->ril, RIL_REQUEST_ALLOW_DATA, &rilp,
+					gprs_allow_data_cb, cbd, g_free) == 0) {
+		ofono_error("%s: send failed", __func__);
+		g_free(cbd);
+		CALLBACK_WITH_FAILURE(cb, data);
+	}
 }
 
 static gboolean ril_get_status_retry(gpointer user_data)
