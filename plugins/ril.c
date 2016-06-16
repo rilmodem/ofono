@@ -78,7 +78,7 @@ struct ril_data {
 	GRil *ril;
 	enum ofono_ril_vendor vendor;
 	int sim_status_retries;
-	ofono_bool_t connected;
+	ofono_bool_t init_state;
 	ofono_bool_t ofono_online;
 	int radio_state;
 	struct ofono_sim *sim;
@@ -105,6 +105,37 @@ static const char *get_driver_type(struct ril_data *rd,
 	return RILMODEM;
 }
 
+static void ril_send_power(struct ril_data *rd, ofono_bool_t online,
+				GRilResponseFunc func, gpointer user_data)
+{
+	struct parcel rilp;
+
+	DBG("(online = 1, offline = 0)): %d", online);
+
+	g_ril_request_power(rd->ril, (const gboolean) online, &rilp);
+
+	if (g_ril_send(rd->ril, RIL_REQUEST_RADIO_POWER, &rilp,
+			func, user_data, NULL) == 0 && func != NULL) {
+		ofono_error("%s: could not set radio to %d", __func__, online);
+		func(NULL, user_data);
+	}
+}
+
+static void ril_set_powered_off_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct ril_data *rd = ofono_modem_get_data(modem);
+
+	if (message == NULL)
+		return;
+
+	if (message->error == RIL_E_SUCCESS)
+		g_ril_print_response_no_args(rd->ril, message);
+	else
+		ofono_error("%s: RIL error %s", __func__,
+					ril_error_to_string(message->error));
+}
+
 static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -112,15 +143,36 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 	int radio_state = g_ril_unsol_parse_radio_state_changed(rd->ril,
 								message);
 
-	if (radio_state == rd->radio_state)
-		return;
-
-	ofono_info("%s: state: %s rd->ofono_online: %d",
-			__func__,
-			ril_radio_state_to_string(radio_state),
-			rd->ofono_online);
+	ofono_info("%s: state: %s, init: %d, rd->ofono_online: %d",
+			__func__, ril_radio_state_to_string(radio_state),
+			rd->init_state, rd->ofono_online);
 
 	rd->radio_state = radio_state;
+
+	/*
+	 * Before showing the modem as powered we make sure the radio is off so
+	 * we start in a sane state (as in AOSP). Note that we must always
+	 * receive an event with the current radio state on initialization
+	 * and also that power state has changed effectively when the event with
+	 * the new radio state has been received (we cannot rely on the reply to
+	 * RIL_REQUEST_RADIO_POWER). Finally, note that powering off on start is
+	 * a must for turbo devices (otherwise radio state never moves from
+	 * unavailable).
+	 */
+	if (rd->init_state) {
+		if (radio_state != RADIO_STATE_OFF) {
+			DBG("powering off radio on init");
+
+			ril_send_power(rd, FALSE, ril_set_powered_off_cb, modem);
+		} else {
+			DBG("calling set_powered(TRUE)");
+			rd->init_state = FALSE;
+
+			/* Note that hw is powered, but offline */
+			ofono_modem_set_powered(modem, TRUE);
+		}
+		return;
+	}
 
 	switch (radio_state) {
 	case RADIO_STATE_ON:
@@ -138,10 +190,8 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 		}
 
 		break;
-
 	case RADIO_STATE_UNAVAILABLE:
 	case RADIO_STATE_OFF:
-
 		/*
 		 * Unexpected radio state change, as we are supposed to
 		 * be online. UNAVAILABLE has been seen occassionally
@@ -182,6 +232,7 @@ int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor,
 	rd->request_id_to_string = request_id_to_string;
 	rd->unsol_request_to_string = unsol_request_to_string;
 	rd->get_driver_type = get_driver_type;
+	rd->init_state = TRUE;
 
 	lte_cap = getenv("OFONO_RIL_RAT_LTE") ? TRUE : FALSE;
 	ofono_modem_set_boolean(modem, MODEM_PROP_LTE_CAPABLE, lte_cap);
@@ -327,23 +378,6 @@ static void ril_set_online_cb(struct ril_msg *message, gpointer user_data)
 	g_free(cbd);
 }
 
-static void ril_send_power(struct ril_data *rd, ofono_bool_t online,
-				GRilResponseFunc func,
-				gpointer user_data)
-{
-	struct parcel rilp;
-
-	DBG("(online = 1, offline = 0)): %i", online);
-
-	g_ril_request_power(rd->ril, (const gboolean) online, &rilp);
-
-	if (g_ril_send(rd->ril, RIL_REQUEST_RADIO_POWER, &rilp,
-			func, user_data, NULL) == 0 && func != NULL) {
-
-		func(NULL, user_data);
-	}
-}
-
 void ril_set_online(struct ofono_modem *modem, ofono_bool_t online,
 			ofono_modem_online_cb_t callback, void *data)
 {
@@ -357,19 +391,6 @@ void ril_set_online(struct ofono_modem *modem, ofono_bool_t online,
 	ril_send_power(rd, online, ril_set_online_cb, cbd);
 }
 
-static void ril_set_powered_off_cb(struct ril_msg *message, gpointer user_data)
-{
-	struct ofono_modem *modem = user_data;
-	struct ril_data *rd = ofono_modem_get_data(modem);
-
-	if (message != NULL && message->error == RIL_E_SUCCESS)
-		g_ril_print_response_no_args(rd->ril, message);
-
-	DBG("calling set_powered(TRUE)");
-
-	ofono_modem_set_powered(modem, TRUE);
-}
-
 static void ril_connected(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = (struct ofono_modem *) user_data;
@@ -381,13 +402,6 @@ static void ril_connected(struct ril_msg *message, gpointer user_data)
 
 	ofono_info("[%d,UNSOL]< %s, version %d", g_ril_get_slot(rd->ril),
 		g_ril_unsol_request_to_string(rd->ril, message->req), version);
-
-	/* TODO: need a disconnect function to restart things! */
-	rd->connected = TRUE;
-
-	DBG("calling set_powered(FALSE) on connected");
-
-	ril_send_power(rd, FALSE, ril_set_powered_off_cb, modem);
 }
 
 static int create_gril(struct ofono_modem *modem)
