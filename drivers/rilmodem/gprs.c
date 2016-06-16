@@ -264,18 +264,6 @@ void ril_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 	}
 }
 
-static gboolean ril_get_status_retry(gpointer user_data)
-{
-	struct ofono_gprs *gprs = user_data;
-	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
-
-	gd->status_retry_cb_id = 0;
-
-	ril_gprs_registration_status(gprs, NULL, NULL);
-
-	return FALSE;
-}
-
 static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -289,16 +277,31 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 
 	old_status = gd->rild_status;
 
-	if (message->error != RIL_E_SUCCESS) {
+	if (message->error == RIL_E_SUCCESS) {
+		reply = g_ril_reply_parse_data_reg_state(gd->ril, message);
+		if (reply == NULL) {
+			if (cb)
+				CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
+			return;
+		}
+	} else {
+		/*
+		 * If we get a RIL error (say, radio not available) it is better
+		 * to return unknown values than to call cb with failure status.
+		 * If we do the last, ConnectionManager would not be created if
+		 * this is the first time we retrieve data status, or we can
+		 * even create infinite loops as the status in gprs atom would
+		 * not be refreshed. When we finally register we will get events
+		 * so we will try to retrieve data state again.
+		 */
 		ofono_error("%s: DATA_REGISTRATION_STATE reply failure: %s",
 				__func__,
 				ril_error_to_string(message->error));
-		goto error;
-	}
 
-	reply = g_ril_reply_parse_data_reg_state(gd->ril, message);
-	if (reply == NULL)
-		goto error;
+		reply = g_malloc0(sizeof(*reply));
+		reply->reg_state.status = NETWORK_REGISTRATION_STATUS_UNKNOWN;
+		reply->reg_state.tech = RADIO_TECH_UNKNOWN;
+	}
 
 	/*
 	 * There are three cases that can result in this callback
@@ -404,21 +407,6 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 		CALLBACK_WITH_SUCCESS(cb, reply->reg_state.status, cbd->data);
 
 	g_free(reply);
-
-	return;
-error:
-
-	/*
-	 * For some modems DATA_REGISTRATION_STATE will return an error until we
-	 * are registered in the voice network.
-	 */
-	if (old_status == -1 && message->error == RIL_E_GENERIC_FAILURE)
-		gd->status_retry_cb_id =
-			g_timeout_add(GET_STATUS_TIMER_MS,
-					ril_get_status_retry, gprs);
-
-	if (cb)
-		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 }
 
 void ril_gprs_registration_status(struct ofono_gprs *gprs,
