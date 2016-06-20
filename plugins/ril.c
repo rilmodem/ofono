@@ -68,6 +68,9 @@
 #include "drivers/rilmodem/vendor.h"
 #include "drivers/qcommsimmodem/qcom_msim_modem.h"
 
+#define MULTISIM_SLOT_0 0
+#define MULTISIM_SLOT_1 1
+
 #define MAX_SIM_STATUS_RETRIES 15
 
 /* this gives 30s for rild to initialize */
@@ -88,6 +91,26 @@ struct ril_data {
 	GRilMsgIdToStrFunc unsol_request_to_string;
 	ril_get_driver_type_func get_driver_type;
 };
+
+/*
+ * Some times we need to access slot B from slot A in dual-SIM modems, so we
+ * need these global variables.
+ */
+static struct ril_data *ril_data_0;
+static struct ril_data *ril_data_1;
+
+/* Get complementary GRil */
+GRil *ril_get_gril_c(struct ofono_modem *modem)
+{
+	struct ril_data *rd = ofono_modem_get_data(modem);
+
+	if (rd == ril_data_0 && ril_data_1 != NULL)
+		return ril_data_1->ril;
+	else if (rd == ril_data_1 && ril_data_0 != NULL)
+		return ril_data_0->ril;
+
+	return NULL;
+}
 
 static void ril_debug(const char *str, void *user_data)
 {
@@ -411,20 +434,25 @@ static int create_gril(struct ofono_modem *modem)
 	ofono_info("Using %s as socket for slot %d.", socket, slot_id);
 	rd->ril = g_ril_new(socket, rd->vendor);
 
-	/* NOTE: Since AT modems open a tty, and then call
+	/*
+	 * NOTE: Since AT modems open a tty, and then call
 	 * g_at_chat_new(), they're able to return -EIO if
 	 * the first fails, and -ENOMEM if the second fails.
 	 * in our case, we already return -EIO if the ril_new
 	 * fails.  If this is important, we can create a ril_socket
 	 * abstraction... ( probaby not a bad idea ).
 	 */
-
 	if (rd->ril == NULL) {
 		ofono_error("g_ril_new() failed to create modem!");
 		return -EIO;
 	}
-	g_ril_set_slot(rd->ril, slot_id);
 
+	if (slot_id == MULTISIM_SLOT_0)
+		ril_data_0 = rd;
+	else
+		ril_data_1 = rd;
+
+	g_ril_set_slot(rd->ril, slot_id);
 	g_ril_set_vendor_print_msg_id_funcs(rd->ril,
 						rd->request_id_to_string,
 						rd->unsol_request_to_string);

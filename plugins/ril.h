@@ -33,3 +33,5 @@ void ril_post_sim(struct ofono_modem *modem);
 void ril_post_online(struct ofono_modem *modem);
 void ril_set_online(struct ofono_modem *modem, ofono_bool_t online,
 			ofono_modem_online_cb_t callback, void *data);
+
+GRil *ril_get_gril_c(struct ofono_modem *modem);
