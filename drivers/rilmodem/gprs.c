@@ -262,15 +262,7 @@ void ril_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 
 	DBG("attached: %d", attached);
 
-	/*
-	 * TODO This could be < 10, but causes a loop in turbo where we are
-	 * trying all the time to attach to data in case we have two SIMs in
-	 * the device (happens for the slot that does not own data). This
-	 * would be solved when we implement properly dual SIM support for
-	 * turbo: currently SIM2 never attaches when ther are two SIMs in
-	 * the system, event when SIM1 is PIN-locked so it is not registered.
-	 */
-	if (g_ril_get_version(gd->ril) < 11) {
+	if (g_ril_get_version(gd->ril) < 10) {
 		/*
 		 * Older RILs offer no actual control over the GPRS 'attached'
 		 * state, we save the desired state, and use it to override
