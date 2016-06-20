@@ -38,6 +38,7 @@
 #include <ofono/modem.h>
 #include <ofono/gprs.h>
 #include <ofono/types.h>
+#include <ofono.h>
 
 #include "gril.h"
 #include "grilutil.h"
@@ -49,8 +50,12 @@
 #include "grilunsol.h"
 #include "gprs.h"
 
+#include "plugins/ril.h"
+
 /* Time between get data status retries */
 #define GET_STATUS_TIMER_MS 5000
+
+static void send_allow_data(struct cb_data *cbd, GRil *ril, int attached);
 
 /*
  * This module is the ofono_gprs_driver implementation for rilmodem.
@@ -129,7 +134,12 @@ void ril_gprs_set_ia_apn(struct ofono_gprs *gprs, const char *apn,
 	struct cb_data *cbd;
 	struct parcel rilp;
 
-	if (!ofono_modem_get_boolean(gd->modem, MODEM_PROP_LTE_CAPABLE)) {
+	/*
+	 * FIXME for the moment we use ril version to avoid the need to set
+	 * the env var OFONO_RIL_RAT_LTE in latest modems.
+	 */
+	if (!ofono_modem_get_boolean(gd->modem, MODEM_PROP_LTE_CAPABLE) &&
+			g_ril_get_version(gd->ril) < 11) {
 		CALLBACK_WITH_SUCCESS(cb, data);
 		return;
 	}
@@ -165,8 +175,16 @@ static void ril_gprs_state_change(struct ril_msg *message, gpointer user_data)
 
 struct gprs_attach_data {
 	struct ril_gprs_data *gd;
+	GRil *ril;
 	gboolean set_attached;
+	gboolean detaching_other_slot;
 };
+
+static void free_attach_cbd(struct cb_data *cbd)
+{
+	g_free(cbd->user);
+	g_free(cbd);
+}
 
 static void gprs_allow_data_cb(struct ril_msg *message, gpointer user_data)
 {
@@ -175,18 +193,49 @@ static void gprs_allow_data_cb(struct ril_msg *message, gpointer user_data)
 	struct gprs_attach_data *attach_data = cbd->user;
 	struct ril_gprs_data *gd = attach_data->gd;
 
-	if (message->error == RIL_E_SUCCESS) {
-		g_ril_print_response_no_args(gd->ril, message);
-
-		gd->ofono_attached = attach_data->set_attached;
-		CALLBACK_WITH_SUCCESS(cb, cbd->data);
-	} else {
+	if (message->error != RIL_E_SUCCESS) {
 		ofono_error("%s: RIL error %s", __func__,
 				ril_error_to_string(message->error));
 		CALLBACK_WITH_FAILURE(cb, cbd->data);
+		free_attach_cbd(cbd);
+		return;
 	}
 
-	g_free(attach_data);
+	g_ril_print_response_no_args(attach_data->ril, message);
+
+	if (attach_data->detaching_other_slot) {
+		attach_data->ril = gd->ril;
+		attach_data->detaching_other_slot = FALSE;
+
+		send_allow_data(cbd, gd->ril, attach_data->set_attached);
+		return;
+	}
+
+	gd->ofono_attached = attach_data->set_attached;
+
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+
+	free_attach_cbd(cbd);
+}
+
+static void send_allow_data(struct cb_data *cbd, GRil *ril, int attached)
+{
+	ofono_gprs_cb_t cb = cbd->cb;
+	struct parcel rilp;
+
+	/* ALLOW_DATA payload: int[] with attach value */
+	parcel_init(&rilp);
+	parcel_w_int32(&rilp, 1);
+	parcel_w_int32(&rilp, attached);
+
+	g_ril_append_print_buf(ril, "(%d)", attached);
+
+	if (g_ril_send(ril, RIL_REQUEST_ALLOW_DATA, &rilp,
+					gprs_allow_data_cb, cbd, NULL) == 0) {
+		ofono_error("%s: send failed", __func__);
+		free_attach_cbd(cbd);
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+	}
 }
 
 gboolean ril_gprs_set_attached_cb(gpointer user_data)
@@ -209,7 +258,7 @@ void ril_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 	struct cb_data *cbd = cb_data_new(cb, data, NULL);
 	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
 	struct gprs_attach_data *attach_data;
-	struct parcel rilp;
+	int attach_aux = attached;
 
 	DBG("attached: %d", attached);
 
@@ -245,23 +294,21 @@ void ril_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 
 	attach_data = g_new0(struct gprs_attach_data, 1);
 	attach_data->gd = gd;
+	attach_data->ril = gd->ril;
 	attach_data->set_attached = attached;
+	attach_data->detaching_other_slot = FALSE;
+
+	/* If we want to attach we have to detach the other slot */
+	if (attached && ril_get_gril_c(gd->modem)) {
+		attach_data->ril = ril_get_gril_c(gd->modem);
+		attach_data->detaching_other_slot = TRUE;
+
+		attach_aux = !attached;
+	}
 
 	cbd = cb_data_new(cb, data, attach_data);
 
-	/* ALLOW_DATA payload: int[] with attach value */
-	parcel_init(&rilp);
-	parcel_w_int32(&rilp, 1);
-	parcel_w_int32(&rilp, attached);
-
-	g_ril_append_print_buf(gd->ril, "(%d)", attached);
-
-	if (g_ril_send(gd->ril, RIL_REQUEST_ALLOW_DATA, &rilp,
-					gprs_allow_data_cb, cbd, g_free) == 0) {
-		ofono_error("%s: send failed", __func__);
-		g_free(cbd);
-		CALLBACK_WITH_FAILURE(cb, data);
-	}
+	send_allow_data(cbd, attach_data->ril, attach_aux);
 }
 
 static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
