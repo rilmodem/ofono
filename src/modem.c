@@ -2281,8 +2281,5 @@ out:
 
 ofono_bool_t ofono_modem_is_standby(struct ofono_modem *modem)
 {
-	if (modem->driver->is_standby == NULL)
-		return FALSE;
-
-	return modem->driver->is_standby(modem);
+	return ofono_modem_get_boolean(modem, "IsStandby");
 }
