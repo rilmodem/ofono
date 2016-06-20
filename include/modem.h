@@ -72,9 +72,6 @@ struct ofono_modem_driver {
 
 	/* Populate the atoms available online */
 	void (*post_online)(struct ofono_modem *modem);
-
-	/* Is it a multi-SIM standby modem? */
-	ofono_bool_t (*is_standby)(struct ofono_modem *modem);
 };
 
 void ofono_modem_add_interface(struct ofono_modem *modem,
