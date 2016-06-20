@@ -39,7 +39,8 @@
 
 static GSList *modem_list;
 
-static int create_rilmodem(const char *ril_type, int slot)
+static int create_rilmodem(const char *ril_type,
+					int slot, ofono_bool_t is_standby)
 {
 	struct ofono_modem *modem;
 	char dev_name[64];
@@ -58,6 +59,7 @@ static int create_rilmodem(const char *ril_type, int slot)
 	modem_list = g_slist_prepend(modem_list, modem);
 
 	ofono_modem_set_integer(modem, "Slot", slot);
+	ofono_modem_set_boolean(modem, "IsStandby", is_standby);
 
 	/* AOSP has socket path "rild", "rild2"..., while others may differ */
 	if (slot != 0)
@@ -121,7 +123,7 @@ static int detect_init(void)
 			ril_type, num_slots);
 
 	for (i = 0; i < num_slots; ++i)
-		create_rilmodem(ril_type, i);
+		create_rilmodem(ril_type, i, num_slots > 1);
 
 	return 0;
 }
