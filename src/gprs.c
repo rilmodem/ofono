@@ -1984,9 +1984,10 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 					gprs->settings);
 		}
 
+		notify_powered_change(gprs);
+
 		gprs_netreg_update(gprs);
 
-		notify_powered_change(gprs);
 	} else {
 		return __ofono_error_invalid_args(msg);
 	}
