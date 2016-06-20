@@ -53,6 +53,8 @@ const char *mtk2_request_id_to_string(int req)
 		return "MTK2_RIL_REQUEST_RESUME_REGISTRATION";
 	case MTK2_RIL_REQUEST_QUERY_MODEM_TYPE:
 		return "MTK2_RIL_REQUEST_QUERY_MODEM_TYPE";
+	case MTK2_RIL_REQUEST_SET_DATA_ON_TO_MD:
+		return "MTK2_RIL_REQUEST_SET_DATA_ON_TO_MD";
 	default:
 		return NULL;
 	}
