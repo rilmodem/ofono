@@ -1135,10 +1135,19 @@ void g_ril_request_set_initial_attach_apn(GRil *gril, const char *apn,
 
 	if (vendor == OFONO_RIL_VENDOR_MTK || vendor == OFONO_RIL_VENDOR_MTK2) {
 		parcel_w_string(rilp, mccmnc);
-		g_ril_append_print_buf(gril, "%s,%s)", print_buf, mccmnc);
-	} else {
-		g_ril_append_print_buf(gril, "%s)", print_buf);
+		g_ril_append_print_buf(gril, "%s,%s", print_buf, mccmnc);
+		if (vendor == OFONO_RIL_VENDOR_MTK2) {
+			int can_handle_ims = 0;
+
+			parcel_w_int32(rilp, can_handle_ims);
+			/* dualApnPlmnList */
+			parcel_w_string(rilp, NULL);
+			g_ril_append_print_buf(gril, "%s,%d,(null)", print_buf,
+								can_handle_ims);
+		}
 	}
+
+	g_ril_append_print_buf(gril, "%s)", print_buf);
 }
 
 void g_ril_request_set_uicc_subscription(GRil *gril, int slot_id,
