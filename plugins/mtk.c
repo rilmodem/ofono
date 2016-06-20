@@ -1670,11 +1670,6 @@ static int mtk_disable(struct ofono_modem *modem)
 	return 0;
 }
 
-static ofono_bool_t mtk_is_standby(struct ofono_modem *modem)
-{
-	return TRUE;
-}
-
 static struct ofono_modem_driver mtk_driver = {
 	.name = "mtk",
 	.probe = mtk_probe,
@@ -1685,7 +1680,6 @@ static struct ofono_modem_driver mtk_driver = {
 	.post_sim = mtk_post_sim,
 	.post_online = mtk_post_online,
 	.set_online = mtk_set_online,
-	.is_standby = mtk_is_standby,
 };
 
 static int mtk_init(void)
