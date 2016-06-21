@@ -100,7 +100,7 @@ static struct ril_data *ril_data_0;
 static struct ril_data *ril_data_1;
 
 /* Get complementary GRil */
-GRil *ril_get_gril_c(struct ofono_modem *modem)
+GRil *ril_get_gril_complement(struct ofono_modem *modem)
 {
 	struct ril_data *rd = ofono_modem_get_data(modem);
 
@@ -191,40 +191,31 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 			DBG("calling set_powered(TRUE)");
 			rd->init_state = FALSE;
 
-			/* Note that hw is powered, but offline */
+			/* Note that modem hw is powered, but radio is off */
 			ofono_modem_set_powered(modem, TRUE);
 		}
 		return;
 	}
 
-	switch (radio_state) {
-	case RADIO_STATE_ON:
-		if (rd->set_online_cbd != NULL) {
-			ofono_modem_online_cb_t cb = rd->set_online_cbd->cb;
+	/*
+	 * We process pending callbacks. NOTE: in some cases we can receive
+	 * unexpected radio events. For instance, in midori we receive an OFF
+	 * event and immediately after that an ON event when we enter the SIM
+	 * PIN. These are firmware bugs that should be treated in a per-case
+	 * basis. In the mentioned case we can just ignore the events.
+	 */
+	if (rd->set_online_cbd != NULL && (
+			(rd->ofono_online && radio_state == RADIO_STATE_ON) ||
+			(!rd->ofono_online && radio_state == RADIO_STATE_OFF))
+			) {
+		ofono_modem_online_cb_t cb = rd->set_online_cbd->cb;
 
-			DBG("%s: set_online OK: rd->ofono_online: %d",
+		DBG("%s: set_online OK: rd->ofono_online: %d",
 						__func__, rd->ofono_online);
-			CALLBACK_WITH_SUCCESS(cb, rd->set_online_cbd->data);
+		CALLBACK_WITH_SUCCESS(cb, rd->set_online_cbd->data);
 
-			g_free(rd->set_online_cbd);
-			rd->set_online_cbd = NULL;
-		}
-
-		break;
-	case RADIO_STATE_UNAVAILABLE:
-	case RADIO_STATE_OFF:
-		/*
-		 * Unexpected radio state change, as we are supposed to
-		 * be online. UNAVAILABLE has been seen occassionally
-		 * when powering off the phone. In midori there are glitches
-		 * when entering SIM PIN (ON->OFF->ON). We simply ignore
-		 * the event.
-		 */
-		if (rd->ofono_online)
-			ofono_info("%s: radio self-powered off!",
-					__func__);
-
-		break;
+		g_free(rd->set_online_cbd);
+		rd->set_online_cbd = NULL;
 	}
 }
 
@@ -233,7 +224,6 @@ int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor,
 		GRilMsgIdToStrFunc unsol_request_to_string,
 		ril_get_driver_type_func get_driver_type)
 {
-	ofono_bool_t lte_cap;
 	struct ril_data *rd = g_try_new0(struct ril_data, 1);
 	if (rd == NULL) {
 		errno = ENOMEM;
@@ -249,9 +239,6 @@ int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor,
 	rd->unsol_request_to_string = unsol_request_to_string;
 	rd->get_driver_type = get_driver_type;
 	rd->init_state = TRUE;
-
-	lte_cap = getenv("OFONO_RIL_RAT_LTE") ? TRUE : FALSE;
-	ofono_modem_set_boolean(modem, MODEM_PROP_LTE_CAPABLE, lte_cap);
 
 	ofono_modem_set_data(modem, rd);
 
@@ -324,7 +311,7 @@ void ril_post_sim(struct ofono_modem *modem)
 			get_driver_type(rd, OFONO_ATOM_TYPE_PHONEBOOK), modem);
 }
 
-void ril_post_online(struct ofono_modem *modem)
+static void create_post_online_atoms(struct ofono_modem *modem)
 {
 	struct ril_data *rd = ofono_modem_get_data(modem);
 	struct ofono_gprs *gprs;
@@ -374,6 +361,47 @@ void ril_post_online(struct ofono_modem *modem)
 					OFONO_GPRS_CONTEXT_TYPE_MMS);
 		ofono_gprs_add_context(gprs, gc);
 	}
+}
+
+static void get_radio_caps_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct ril_data *rd = ofono_modem_get_data(modem);
+	struct reply_radio_capability *caps;
+
+	if (message->error == RIL_E_SUCCESS) {
+		caps = g_ril_reply_parse_get_radio_capability(rd->ril, message);
+		if (caps != NULL && (caps->rat & RIL_RAF_LTE)) {
+			ofono_modem_set_boolean(modem,
+						MODEM_PROP_LTE_CAPABLE, TRUE);
+			g_free(caps);
+		}
+	} else {
+		ofono_error("%s: RIL error %s", __func__,
+					ril_error_to_string(message->error));
+	}
+
+	create_post_online_atoms(modem);
+}
+
+void ril_post_online(struct ofono_modem *modem)
+{
+	struct ril_data *rd = ofono_modem_get_data(modem);
+	ofono_bool_t lte_cap;
+
+	/* Radio ON -> we can ask for capabilities */
+	if (g_ril_get_version(rd->ril) >= 11) {
+		if (g_ril_send(rd->ril, RIL_REQUEST_GET_RADIO_CAPABILITY, NULL,
+					get_radio_caps_cb, modem, NULL))
+			return;
+
+		ofono_error("%s: error sending GET_RADIO_CAPABILITY", __func__);
+	}
+
+	lte_cap = getenv("OFONO_RIL_RAT_LTE") ? TRUE : FALSE;
+	ofono_modem_set_boolean(modem, MODEM_PROP_LTE_CAPABLE, lte_cap);
+
+	create_post_online_atoms(modem);
 }
 
 static void ril_set_online_cb(struct ril_msg *message, gpointer user_data)
@@ -438,6 +466,16 @@ static void ril_connected(struct ril_msg *message, gpointer user_data)
 	struct ril_data *rd = ofono_modem_get_data(modem);
 	int version;
 
+	/*
+	 * We will use RIL version to check for presence of some features. The
+	 * version is updated in AOSP after major changes. For instance:
+	 *
+	 * Version  9 -> AOSP 4.4
+	 * Version 10 -> AOSP 5.0.0
+	 * Version 11 -> AOSP 6.0.0
+	 *
+	 * Note that all Ubuntu phones are based on BSP >= 4.4.
+	 */
 	version = g_ril_unsol_parse_connected(rd->ril, message);
 	g_ril_set_version(rd->ril, version);
 
