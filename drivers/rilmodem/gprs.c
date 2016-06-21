@@ -134,12 +134,7 @@ void ril_gprs_set_ia_apn(struct ofono_gprs *gprs, const char *apn,
 	struct cb_data *cbd;
 	struct parcel rilp;
 
-	/*
-	 * FIXME for the moment we use ril version to avoid the need to set
-	 * the env var OFONO_RIL_RAT_LTE in latest modems.
-	 */
-	if (!ofono_modem_get_boolean(gd->modem, MODEM_PROP_LTE_CAPABLE) &&
-			g_ril_get_version(gd->ril) < 11) {
+	if (!ofono_modem_get_boolean(gd->modem, MODEM_PROP_LTE_CAPABLE)) {
 		CALLBACK_WITH_SUCCESS(cb, data);
 		return;
 	}
@@ -291,8 +286,8 @@ void ril_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 	attach_data->detaching_other_slot = FALSE;
 
 	/* If we want to attach we have to detach the other slot */
-	if (attached && ril_get_gril_c(gd->modem)) {
-		attach_data->ril = ril_get_gril_c(gd->modem);
+	if (attached && ril_get_gril_complement(gd->modem)) {
+		attach_data->ril = ril_get_gril_complement(gd->modem);
 		attach_data->detaching_other_slot = TRUE;
 
 		attach_aux = !attached;
