@@ -85,11 +85,11 @@ struct ril_data {
 	ofono_bool_t ofono_online;
 	int radio_state;
 	struct ofono_sim *sim;
-	struct ofono_radio_settings *radio_settings;
 	int rild_connect_retries;
 	GRilMsgIdToStrFunc request_id_to_string;
 	GRilMsgIdToStrFunc unsol_request_to_string;
 	ril_get_driver_type_func get_driver_type;
+	struct cb_data *set_online_cbd;
 };
 
 /*
@@ -199,17 +199,15 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 
 	switch (radio_state) {
 	case RADIO_STATE_ON:
+		if (rd->set_online_cbd != NULL) {
+			ofono_modem_online_cb_t cb = rd->set_online_cbd->cb;
 
-		if (rd->radio_settings == NULL) {
-			struct ril_radio_settings_driver_data
-					rs_data = { rd->ril, modem };
+			DBG("%s: set_online OK: rd->ofono_online: %d",
+						__func__, rd->ofono_online);
+			CALLBACK_WITH_SUCCESS(cb, rd->set_online_cbd->data);
 
-			rd->radio_settings =
-				ofono_radio_settings_create(modem,
-					rd->vendor,
-					get_driver_type(rd,
-						OFONO_ATOM_TYPE_RADIO_SETTINGS),
-					&rs_data);
+			g_free(rd->set_online_cbd);
+			rd->set_online_cbd = NULL;
 		}
 
 		break;
@@ -227,9 +225,6 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 					__func__);
 
 		break;
-	default:
-		/* Malformed parcel; no radio state == broken rild */
-		g_assert(FALSE);
 	}
 }
 
@@ -311,23 +306,52 @@ void ril_pre_sim(struct ofono_modem *modem)
 
 	rd->sim = ofono_sim_create(modem, rd->vendor,
 			get_driver_type(rd, OFONO_ATOM_TYPE_SIM), &sim_data);
-	g_assert(rd->sim != NULL);
 }
 
 void ril_post_sim(struct ofono_modem *modem)
 {
 	struct ril_data *rd = ofono_modem_get_data(modem);
+	struct ofono_message_waiting *mw;
+
+	ofono_sms_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_SMS), rd->ril);
+
+	mw = ofono_message_waiting_create(modem);
+	if (mw)
+		ofono_message_waiting_register(mw);
+
+	ofono_phonebook_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_PHONEBOOK), modem);
+}
+
+void ril_post_online(struct ofono_modem *modem)
+{
+	struct ril_data *rd = ofono_modem_get_data(modem);
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
-	struct ofono_message_waiting *mw;
+	struct ril_radio_settings_driver_data rs_data = { rd->ril, modem };
 	struct ril_gprs_driver_data gprs_data = { rd->ril, modem };
 	struct ril_gprs_context_data
 		inet_ctx = { rd->ril, modem, OFONO_GPRS_CONTEXT_TYPE_INTERNET };
 	struct ril_gprs_context_data
 		mms_ctx = { rd->ril, modem, OFONO_GPRS_CONTEXT_TYPE_MMS };
 
-	ofono_sms_create(modem, rd->vendor,
-			get_driver_type(rd, OFONO_ATOM_TYPE_SMS), rd->ril);
+	ofono_radio_settings_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_RADIO_SETTINGS),
+			&rs_data);
+	ofono_netreg_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_NETREG), rd->ril);
+	ofono_ussd_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_USSD), rd->ril);
+	ofono_call_settings_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_CALL_SETTINGS),
+			rd->ril);
+	ofono_call_barring_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_CALL_BARRING),
+			rd->ril);
+	ofono_call_forwarding_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_CALL_FORWARDING),
+			rd->ril);
 	gprs = ofono_gprs_create(modem, rd->vendor,
 				get_driver_type(rd, OFONO_ATOM_TYPE_GPRS),
 				&gprs_data);
@@ -350,53 +374,43 @@ void ril_post_sim(struct ofono_modem *modem)
 					OFONO_GPRS_CONTEXT_TYPE_MMS);
 		ofono_gprs_add_context(gprs, gc);
 	}
-
-	mw = ofono_message_waiting_create(modem);
-	if (mw)
-		ofono_message_waiting_register(mw);
-
-	ofono_call_forwarding_create(modem, rd->vendor,
-			get_driver_type(rd, OFONO_ATOM_TYPE_CALL_FORWARDING),
-			rd->ril);
-	ofono_phonebook_create(modem, rd->vendor,
-			get_driver_type(rd, OFONO_ATOM_TYPE_PHONEBOOK), modem);
-}
-
-void ril_post_online(struct ofono_modem *modem)
-{
-	struct ril_data *rd = ofono_modem_get_data(modem);
-
-	ofono_netreg_create(modem, rd->vendor,
-			get_driver_type(rd, OFONO_ATOM_TYPE_NETREG), rd->ril);
-	ofono_ussd_create(modem, rd->vendor,
-			get_driver_type(rd, OFONO_ATOM_TYPE_USSD), rd->ril);
-	ofono_call_settings_create(modem, rd->vendor,
-			get_driver_type(rd, OFONO_ATOM_TYPE_CALL_SETTINGS),
-			rd->ril);
-	ofono_call_barring_create(modem, rd->vendor,
-			get_driver_type(rd, OFONO_ATOM_TYPE_CALL_BARRING),
-			rd->ril);
 }
 
 static void ril_set_online_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct ril_data *rd = user_data;
+
+	if (message != NULL && message->error == RIL_E_SUCCESS) {
+		g_ril_print_response_no_args(rd->ril, message);
+
+		/*
+		 * Wait for radio state change event now, as that is the real
+		 * moment when radio state changes.
+		 */
+	} else {
+		ofono_modem_online_cb_t cb = rd->set_online_cbd->cb;
+
+		ofono_error("%s: set_online: %d failed", __func__,
+				rd->ofono_online);
+		CALLBACK_WITH_FAILURE(cb, rd->set_online_cbd->data);
+
+		g_free(rd->set_online_cbd);
+		rd->set_online_cbd = NULL;
+	}
+}
+
+static gboolean set_online_done_cb(gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	struct ril_data *rd = cbd->user;
 	ofono_modem_online_cb_t cb = cbd->cb;
 
-	if (message != NULL && message->error == RIL_E_SUCCESS) {
-		g_ril_print_response_no_args(rd->ril, message);
-
-		DBG("%s: set_online OK: rd->ofono_online: %d", __func__,
-			rd->ofono_online);
-		CALLBACK_WITH_SUCCESS(cb, cbd->data);
-	} else {
-		ofono_error("%s: set_online: %d failed", __func__,
-				rd->ofono_online);
-		CALLBACK_WITH_FAILURE(cb, cbd->data);
-	}
-
+	DBG("%s: set_online OK: rd->ofono_online: %d",
+						__func__, rd->ofono_online);
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
 	g_free(cbd);
+
+	return FALSE;
 }
 
 void ril_set_online(struct ofono_modem *modem, ofono_bool_t online,
@@ -409,7 +423,13 @@ void ril_set_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	DBG("setting rd->ofono_online to: %d", online);
 
-	ril_send_power(rd, online, ril_set_online_cb, cbd);
+	if ((online && rd->radio_state == RADIO_STATE_ON) ||
+			(!online && rd->radio_state == RADIO_STATE_OFF)) {
+		g_idle_add(set_online_done_cb, cbd);
+	} else {
+		rd->set_online_cbd = cbd;
+		ril_send_power(rd, online, ril_set_online_cb, rd);
+	}
 }
 
 static void ril_connected(struct ril_msg *message, gpointer user_data)
