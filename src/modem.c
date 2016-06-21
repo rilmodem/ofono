@@ -2278,8 +2278,3 @@ void __ofono_modem_dec_emergency_mode(struct ofono_modem *modem)
 out:
 	modem->emergency--;
 }
-
-ofono_bool_t ofono_modem_is_standby(struct ofono_modem *modem)
-{
-	return ofono_modem_get_boolean(modem, "IsStandby");
-}
