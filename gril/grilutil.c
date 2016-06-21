@@ -737,8 +737,6 @@ const char *ril_pdp_fail_to_string(int status)
 const char *ril_rc_phase_to_string(int phase)
 {
 	switch (phase) {
-	case RIL_RC_PHASE:
-		return "RIL_RC_PHASE";
 	case RIL_RC_PHASE_CONFIGURED:
 		return "RIL_RC_PHASE_CONFIGURED";
 	case RIL_RC_PHASE_START:

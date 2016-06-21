@@ -466,12 +466,11 @@
 #define RIL_REG_STATE_EMERGENCY_UNKNOWN 14
 
 /* Radio capability phases */
-#define RIL_RC_PHASE 0
-#define RIL_RC_PHASE_CONFIGURED 1
-#define RIL_RC_PHASE_START 2
-#define RIL_RC_PHASE_APPLY 3
-#define RIL_RC_PHASE_UNSOL_RSP 4
-#define RIL_RC_PHASE_FINISH 5
+#define RIL_RC_PHASE_CONFIGURED 0
+#define RIL_RC_PHASE_START 1
+#define RIL_RC_PHASE_APPLY 2
+#define RIL_RC_PHASE_UNSOL_RSP 3
+#define RIL_RC_PHASE_FINISH 4
 
 /* Radio access family, as flag */
 #define RIL_RAF_UNKNOWN (1 <<  RADIO_TECH_UNKNOWN)
