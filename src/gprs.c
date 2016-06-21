@@ -1824,11 +1824,17 @@ static void notify_connection_powered(struct ofono_modem *modem, void *data)
 	struct ofono_modem *modem_notif = data;
 	DBusConnection *conn;
 	const char *path = ofono_modem_get_path(modem);
+	const char *standby_group, *modem_group;
 
 	if (strcmp(path, ofono_modem_get_path(modem_notif)) == 0)
 		return;
 
-	if (!ofono_modem_is_standby(modem))
+	standby_group = ofono_modem_get_string(modem_notif, "StandbyGroup");
+	if (standby_group == NULL)
+		return;
+
+	modem_group = ofono_modem_get_string(modem, "StandbyGroup");
+	if (g_strcmp0(standby_group, modem_group) != 0)
 		return;
 
 	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_GPRS);
