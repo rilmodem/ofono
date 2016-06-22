@@ -51,5 +51,5 @@ static void mtk2modem_exit(void)
 	mtk2_gprs_exit();
 }
 
-OFONO_PLUGIN_DEFINE(mtk2modem, "MTK v2 modem driver", VERSION,
+OFONO_PLUGIN_DEFINE(mtk2modem, "MTK2 modem driver", VERSION,
 		OFONO_PLUGIN_PRIORITY_DEFAULT, mtk2modem_init, mtk2modem_exit)
