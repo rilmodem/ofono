@@ -24,17 +24,12 @@
 #endif
 
 #define _GNU_SOURCE
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <errno.h>
 
 #include <glib.h>
 
-#include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/gprs.h>
-#include <ofono/types.h>
 
 #include "common.h"
 
