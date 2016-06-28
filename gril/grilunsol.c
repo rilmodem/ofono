@@ -61,12 +61,22 @@ int g_ril_unsol_parse_connected(GRil *gril, const struct ril_msg *message)
 	size = parcel_r_int32(&rilp);
 	version = parcel_r_int32(&rilp);
 
+	/*
+	 * For something that looks like a bug we get an extra int in mtk2
+	 * modems. RIL version is the second integer in this case. This
+	 * happens when we get duplicated connected events, which should
+	 * not happen either. In these cases the first event has the right
+	 * size, but not those appearing after.
+	 */
+	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK2 && size > 1)
+		version = parcel_r_int32(&rilp);
+
 	if (rilp.malformed) {
 		ofono_error("%s: malformed parcel", __func__);
 		version = RIL_VERSION_UNSPECIFIED;
 	}
 
-	g_ril_append_print_buf(gril, "{size:%d, [%d, ...]}", size, version);
+	g_ril_append_print_buf(gril, "{size: %d, [%d]}", size, version);
 	g_ril_print_unsol(gril, message);
 
 	return version;

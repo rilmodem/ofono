@@ -41,6 +41,7 @@
 #include "common.h"
 
 #include "rilmodem.h"
+#include "rilutil.h"
 #include "parcel.h"
 #include "grilrequest.h"
 #include "grilreply.h"

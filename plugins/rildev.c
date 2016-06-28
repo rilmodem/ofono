@@ -55,9 +55,13 @@ static int create_rilmodem(const char *ril_type, int slot)
 		return -ENODEV;
 	}
 
-	modem_list = g_slist_prepend(modem_list, modem);
-
 	ofono_modem_set_integer(modem, "Slot", slot);
+
+	/*
+	 * We assume all slots of this type belong to a single physical modem
+	 * that works in standby mode.
+	 */
+	ofono_modem_set_string(modem, "StandbyGroup", ril_type);
 
 	/* AOSP has socket path "rild", "rild2"..., while others may differ */
 	if (slot != 0)
@@ -73,8 +77,11 @@ static int create_rilmodem(const char *ril_type, int slot)
 	if (retval != 0) {
 		ofono_error("%s: ofono_modem_register returned: %d",
 				__func__, retval);
+		ofono_modem_remove(modem);
 		return retval;
 	}
+
+	modem_list = g_slist_prepend(modem_list, modem);
 
 	/*
 	 * kickstart the modem:

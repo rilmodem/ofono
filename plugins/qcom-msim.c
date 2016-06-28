@@ -31,8 +31,22 @@
 
 #include "ofono.h"
 
+#include "drivers/rilmodem/rilmodem.h"
 #include "drivers/rilmodem/vendor.h"
+#include "drivers/qcommsimmodem/qcom_msim_modem.h"
+#include "gril.h"
 #include "ril.h"
+
+static const char *qcom_msim_get_driver_type(enum ofono_atom_type atom)
+{
+	switch (atom) {
+	case OFONO_ATOM_TYPE_GPRS:
+	case OFONO_ATOM_TYPE_RADIO_SETTINGS:
+		return QCOMMSIMMODEM;
+	default:
+		return RILMODEM;
+	}
+}
 
 static int qcom_msim_probe(struct ofono_modem *modem)
 {
@@ -48,7 +62,8 @@ static int qcom_msim_probe(struct ofono_modem *modem)
 		g_free(socket);
 	}
 
-	return ril_create(modem, OFONO_RIL_VENDOR_QCOM_MSIM);
+	return ril_create(modem, OFONO_RIL_VENDOR_QCOM_MSIM, NULL, NULL,
+						qcom_msim_get_driver_type);
 }
 
 static struct ofono_modem_driver qcom_msim_driver = {

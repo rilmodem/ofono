@@ -1,8 +1,8 @@
 /*
  *
- *  oFono - Open Source Telephony - RIL-based devices: infineon modems
+ *  oFono - Open Source Telephony - RIL-based devices
  *
- *  Copyright (C) 2014  Canonical Ltd.
+ *  Copyright (C) 2016 Canonical Ltd.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -31,18 +31,35 @@
 
 #include "ofono.h"
 
+#include "drivers/rilmodem/rilmodem.h"
 #include "drivers/rilmodem/vendor.h"
+#include "drivers/mtk2modem/mtk2modem.h"
+#include "drivers/mtk2modem/mtk2util.h"
 #include "gril.h"
 #include "ril.h"
 
-static int inf_probe(struct ofono_modem *modem)
+static const char *mtk2_get_driver_type(enum ofono_atom_type atom)
 {
-	return ril_create(modem, OFONO_RIL_VENDOR_INFINEON, NULL, NULL, NULL);
+	switch (atom) {
+	case OFONO_ATOM_TYPE_VOICECALL:
+	case OFONO_ATOM_TYPE_GPRS:
+		return MTK2MODEM;
+	default:
+		return RILMODEM;
+	}
 }
 
-static struct ofono_modem_driver infineon_driver = {
-	.name = "infineon",
-	.probe = inf_probe,
+static int mtk2_probe(struct ofono_modem *modem)
+{
+	return ril_create(modem, OFONO_RIL_VENDOR_MTK2,
+				mtk2_request_id_to_string,
+				mtk2_unsol_request_to_string,
+				mtk2_get_driver_type);
+}
+
+static struct ofono_modem_driver mtk2_driver = {
+	.name = "mtk2",
+	.probe = mtk2_probe,
 	.remove = ril_remove,
 	.enable = ril_enable,
 	.disable = ril_disable,
@@ -53,26 +70,24 @@ static struct ofono_modem_driver infineon_driver = {
 };
 
 /*
- * This plugin is a device plugin for infineon modems that use RIL interface.
- * The plugin 'rildev' is used to determine which RIL plugin should be loaded
- * based upon an environment variable.
+ * This plugin is a device plugin for MTK modems. It can handle newer modems
+ * than those that use the old mtk.c plugin, therefore the name mtk2.
  */
-static int inf_init(void)
+static int mtk2_init(void)
 {
-	int retval = 0;
+	int retval = ofono_modem_driver_register(&mtk2_driver);
 
-	retval = ofono_modem_driver_register(&infineon_driver);
-	if (retval != 0)
+	if (retval)
 		DBG("ofono_modem_driver_register returned: %d", retval);
 
 	return retval;
 }
 
-static void inf_exit(void)
+static void mtk2_exit(void)
 {
 	DBG("");
-	ofono_modem_driver_unregister(&infineon_driver);
+	ofono_modem_driver_unregister(&mtk2_driver);
 }
 
-OFONO_PLUGIN_DEFINE(infineon, "Infineon modem driver", VERSION,
-			OFONO_PLUGIN_PRIORITY_DEFAULT, inf_init, inf_exit)
+OFONO_PLUGIN_DEFINE(mtk2, "MTK v2 modem plugin",
+	VERSION, OFONO_PLUGIN_PRIORITY_DEFAULT, mtk2_init, mtk2_exit)

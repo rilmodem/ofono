@@ -44,6 +44,7 @@
 #include "grilreply.h"
 
 #include "rilmodem.h"
+#include "rilutil.h"
 #include "ril_constants.h"
 #include "common.h"
 

@@ -44,6 +44,8 @@ const char *ril_radio_tech_to_string(int radio_tech);
 const char *ril_request_id_to_string(int req);
 const char *ril_unsol_request_to_string(int request);
 const char *ril_pdp_fail_to_string(int status);
+const char *ril_rc_phase_to_string(int phase);
+const char *ril_rc_status_to_string(int status);
 
 void g_ril_util_debug_hexdump(gboolean in, const unsigned char *buf, gsize len,
 				GRilDebugFunc debugf, gpointer user_data);

@@ -1,8 +1,8 @@
 /*
  *
- *  oFono - Open Source Telephony
+ *  oFono - Open Source Telephony - RIL Modem Support
  *
- *  Copyright (C) 2014  Canonical Ltd. All rights reserved.
+ *  Copyright (C) 2016  Canonical, Ltd. All rights reserved.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -19,15 +19,37 @@
  *
  */
 
-#ifndef RILMODEM_VENDOR_H
-#define RILMODEM_VENDOR_H
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
-enum ofono_ril_vendor {
-	OFONO_RIL_VENDOR_AOSP = 0,
-	OFONO_RIL_VENDOR_MTK,
-	OFONO_RIL_VENDOR_INFINEON,
-	OFONO_RIL_VENDOR_QCOM_MSIM,
-	OFONO_RIL_VENDOR_MTK2
-};
+#include <glib.h>
+#include <gril.h>
 
-#endif /* RILMODEM_VENDOR_H */
+#define OFONO_API_SUBJECT_TO_CHANGE
+#include <ofono/plugin.h>
+#include <ofono/log.h>
+#include <ofono/types.h>
+
+#include "mtk2modem.h"
+
+static int mtk2modem_init(void)
+{
+	DBG("");
+
+	mtk2_voicecall_init();
+	mtk2_gprs_init();
+
+	return 0;
+}
+
+static void mtk2modem_exit(void)
+{
+	DBG("");
+
+	mtk2_voicecall_exit();
+	mtk2_gprs_exit();
+}
+
+OFONO_PLUGIN_DEFINE(mtk2modem, "MTK2 modem driver", VERSION,
+		OFONO_PLUGIN_PRIORITY_DEFAULT, mtk2modem_init, mtk2modem_exit)

@@ -46,6 +46,7 @@
 #include "grilutil.h"
 #include "parcel.h"
 #include "ril_constants.h"
+#include "rilutil.h"
 #include "rilmodem.h"
 
 #include "grilreply.h"
@@ -943,7 +944,8 @@ static void ril_query_pin_retries(struct ofono_sim *sim,
 			g_free(cbd);
 			CALLBACK_WITH_FAILURE(cb, NULL, data);
 		}
-	} else if (sd->vendor == OFONO_RIL_VENDOR_MTK) {
+	} else if (sd->vendor == OFONO_RIL_VENDOR_MTK ||
+			sd->vendor == OFONO_RIL_VENDOR_MTK2) {
 		struct cb_data *cbd = cb_data_new(cb, data, sd);
 		struct parcel rilp;
 		const char *at_epinc[] = { "AT+EPINC", "+EPINC:" };

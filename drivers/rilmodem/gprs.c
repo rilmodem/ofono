@@ -38,6 +38,7 @@
 #include <ofono/modem.h>
 #include <ofono/gprs.h>
 #include <ofono/types.h>
+#include <ofono.h>
 
 #include "gril.h"
 #include "grilutil.h"
@@ -49,8 +50,12 @@
 #include "grilunsol.h"
 #include "gprs.h"
 
+#include "plugins/ril.h"
+
 /* Time between get data status retries */
 #define GET_STATUS_TIMER_MS 5000
+
+static void send_allow_data(struct cb_data *cbd, GRil *ril, int attached);
 
 /*
  * This module is the ofono_gprs_driver implementation for rilmodem.
@@ -78,6 +83,7 @@ static int ril_tech_to_bearer_tech(int ril_tech)
 	case RADIO_TECH_EDGE:
 		return PACKET_BEARER_EGPRS;
 	case RADIO_TECH_UMTS:
+	case RADIO_TECH_TD_SCDMA:
 		return PACKET_BEARER_UMTS;
 	case RADIO_TECH_HSDPA:
 		return PACKET_BEARER_HSDPA;
@@ -162,6 +168,71 @@ static void ril_gprs_state_change(struct ril_msg *message, gpointer user_data)
 		ril_gprs_registration_status(gprs, NULL, NULL);
 }
 
+struct gprs_attach_data {
+	struct ril_gprs_data *gd;
+	GRil *ril;
+	gboolean set_attached;
+	gboolean detaching_other_slot;
+};
+
+static void free_attach_cbd(struct cb_data *cbd)
+{
+	g_free(cbd->user);
+	g_free(cbd);
+}
+
+static void gprs_allow_data_cb(struct ril_msg *message, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_gprs_cb_t cb = cbd->cb;
+	struct gprs_attach_data *attach_data = cbd->user;
+	struct ril_gprs_data *gd = attach_data->gd;
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+		free_attach_cbd(cbd);
+		return;
+	}
+
+	g_ril_print_response_no_args(attach_data->ril, message);
+
+	if (attach_data->detaching_other_slot) {
+		attach_data->ril = gd->ril;
+		attach_data->detaching_other_slot = FALSE;
+
+		send_allow_data(cbd, gd->ril, attach_data->set_attached);
+		return;
+	}
+
+	gd->ofono_attached = attach_data->set_attached;
+
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+
+	free_attach_cbd(cbd);
+}
+
+static void send_allow_data(struct cb_data *cbd, GRil *ril, int attached)
+{
+	ofono_gprs_cb_t cb = cbd->cb;
+	struct parcel rilp;
+
+	/* ALLOW_DATA payload: int[] with attach value */
+	parcel_init(&rilp);
+	parcel_w_int32(&rilp, 1);
+	parcel_w_int32(&rilp, attached);
+
+	g_ril_append_print_buf(ril, "(%d)", attached);
+
+	if (g_ril_send(ril, RIL_REQUEST_ALLOW_DATA, &rilp,
+					gprs_allow_data_cb, cbd, NULL) == 0) {
+		ofono_error("%s: send failed", __func__);
+		free_attach_cbd(cbd);
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+	}
+}
+
 gboolean ril_gprs_set_attached_cb(gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -176,44 +247,55 @@ gboolean ril_gprs_set_attached_cb(gpointer user_data)
 	return FALSE;
 }
 
-static void ril_gprs_set_attached(struct ofono_gprs *gprs, int attached,
-					ofono_gprs_cb_t cb, void *data)
+void ril_gprs_set_attached(struct ofono_gprs *gprs, int attached,
+						ofono_gprs_cb_t cb, void *data)
 {
 	struct cb_data *cbd = cb_data_new(cb, data, NULL);
 	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
+	struct gprs_attach_data *attach_data;
+	int attach_aux = attached;
 
 	DBG("attached: %d", attached);
 
-	/*
-	 * As RIL offers no actual control over the GPRS 'attached'
-	 * state, we save the desired state, and use it to override
-	 * the actual modem's state in the 'attached_status' function.
-	 * This is similar to the way the core ofono gprs code handles
-	 * data roaming ( see src/gprs.c gprs_netreg_update().
-	 *
-	 * The core gprs code calls driver->set_attached() when a netreg
-	 * notificaiton is received and any configured roaming conditions
-	 * are met.
-	 */
-	gd->ofono_attached = attached;
+	if (g_ril_get_version(gd->ril) < 10) {
+		/*
+		 * Older RILs offer no actual control over the GPRS 'attached'
+		 * state, we save the desired state, and use it to override
+		 * the actual modem's state in the 'attached_status' function.
+		 * This is similar to the way the core ofono gprs code handles
+		 * data roaming ( see src/gprs.c gprs_netreg_update() ).
+		 *
+		 * The core gprs code calls driver->set_attached() when a netreg
+		 * notificaiton is received and any configured roaming
+		 * conditions are met.
+		 */
+		gd->ofono_attached = attached;
 
-	/*
-	 * Call from idle loop, so core can set driver_attached before
-	 * the callback is invoked.
-	 */
-	g_idle_add(ril_gprs_set_attached_cb, cbd);
-}
+		/*
+		 * Call from idle loop, so core can set driver_attached before
+		 * the callback is invoked.
+		 */
+		g_idle_add(ril_gprs_set_attached_cb, cbd);
+		return;
+	}
 
-static gboolean ril_get_status_retry(gpointer user_data)
-{
-	struct ofono_gprs *gprs = user_data;
-	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
+	attach_data = g_new0(struct gprs_attach_data, 1);
+	attach_data->gd = gd;
+	attach_data->ril = gd->ril;
+	attach_data->set_attached = attached;
+	attach_data->detaching_other_slot = FALSE;
 
-	gd->status_retry_cb_id = 0;
+	/* If we want to attach we have to detach the other slot */
+	if (attached && ril_get_gril_complement(gd->modem)) {
+		attach_data->ril = ril_get_gril_complement(gd->modem);
+		attach_data->detaching_other_slot = TRUE;
 
-	ril_gprs_registration_status(gprs, NULL, NULL);
+		attach_aux = !attached;
+	}
 
-	return FALSE;
+	cbd = cb_data_new(cb, data, attach_data);
+
+	send_allow_data(cbd, attach_data->ril, attach_aux);
 }
 
 static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
@@ -229,16 +311,31 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 
 	old_status = gd->rild_status;
 
-	if (message->error != RIL_E_SUCCESS) {
+	if (message->error == RIL_E_SUCCESS) {
+		reply = g_ril_reply_parse_data_reg_state(gd->ril, message);
+		if (reply == NULL) {
+			if (cb)
+				CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
+			return;
+		}
+	} else {
+		/*
+		 * If we get a RIL error (say, radio not available) it is better
+		 * to return unknown values than to call cb with failure status.
+		 * If we do the last, ConnectionManager would not be created if
+		 * this is the first time we retrieve data status, or we can
+		 * even create infinite loops as the status in gprs atom would
+		 * not be refreshed. When we finally register we will get events
+		 * so we will try to retrieve data state again.
+		 */
 		ofono_error("%s: DATA_REGISTRATION_STATE reply failure: %s",
 				__func__,
 				ril_error_to_string(message->error));
-		goto error;
-	}
 
-	reply = g_ril_reply_parse_data_reg_state(gd->ril, message);
-	if (reply == NULL)
-		goto error;
+		reply = g_malloc0(sizeof(*reply));
+		reply->reg_state.status = NETWORK_REGISTRATION_STATUS_UNKNOWN;
+		reply->reg_state.tech = RADIO_TECH_UNKNOWN;
+	}
 
 	/*
 	 * There are three cases that can result in this callback
@@ -344,21 +441,6 @@ static void ril_data_reg_cb(struct ril_msg *message, gpointer user_data)
 		CALLBACK_WITH_SUCCESS(cb, reply->reg_state.status, cbd->data);
 
 	g_free(reply);
-
-	return;
-error:
-
-	/*
-	 * For some modems DATA_REGISTRATION_STATE will return an error until we
-	 * are registered in the voice network.
-	 */
-	if (old_status == -1 && message->error == RIL_E_GENERIC_FAILURE)
-		gd->status_retry_cb_id =
-			g_timeout_add(GET_STATUS_TIMER_MS,
-					ril_get_status_retry, gprs);
-
-	if (cb)
-		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 }
 
 void ril_gprs_registration_status(struct ofono_gprs *gprs,

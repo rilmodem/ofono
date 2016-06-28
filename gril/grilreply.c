@@ -84,8 +84,9 @@ struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
 	unsigned int num_ops, num_strings;
 	unsigned int i;
 	int strings_per_opt;
+	enum ofono_ril_vendor vendor = g_ril_vendor(gril);
 
-	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+	if (vendor == OFONO_RIL_VENDOR_MTK)
 		strings_per_opt = 5;
 	else
 		strings_per_opt = 4;
@@ -142,7 +143,7 @@ struct reply_avail_ops *g_ril_reply_parse_avail_ops(GRil *gril,
 		 * MTK: additional string with technology: 2G/3G are the only
 		 * valid values currently.
 		 */
-		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
+		if (vendor == OFONO_RIL_VENDOR_MTK) {
 			char *tech = parcel_r_string(&rilp);
 			if (strcmp(tech, "3G") == 0)
 				operator->tech = RADIO_TECH_UMTS;
@@ -336,7 +337,8 @@ static void set_reg_state(GRil *gril, struct reply_reg_state *reply,
 		g_ril_append_print_buf(gril, "%s%s", print_buf,
 					ril_radio_tech_to_string(val));
 
-		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
+		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK ||
+				g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK2) {
 			switch (val) {
 			case MTK_RADIO_TECH_HSDPAP:
 			case MTK_RADIO_TECH_HSDPAP_UPA:
@@ -452,7 +454,8 @@ static void set_data_reg_state(GRil *gril, struct reply_data_reg_state *reply,
 		 * MTK modem does not return max_cids, string for this index
 		 * actually contains the maximum data bearer capability.
 		 */
-		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK)
+		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK ||
+				g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK2)
 			reply->max_cids = MTK_MODEM_MAX_CIDS;
 		else
 			reply->max_cids = val;
@@ -1182,7 +1185,8 @@ int g_ril_reply_parse_get_preferred_network_type(GRil *gril,
 	net_type = parcel_net_type;
 
 	/* Try to translate special MTK settings */
-	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK) {
+	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK ||
+			g_ril_vendor(gril) == OFONO_RIL_VENDOR_MTK2) {
 		switch (net_type) {
 		/* 4G preferred */
 		case MTK_PREF_NET_TYPE_LTE_GSM_WCDMA:
@@ -1325,6 +1329,7 @@ int *g_ril_reply_parse_retries(GRil *gril, const struct ril_msg *message,
 		g_ril_append_print_buf(gril, "{%d}", retries[passwd_type]);
 		break;
 	case OFONO_RIL_VENDOR_MTK:
+	case OFONO_RIL_VENDOR_MTK2:
 		/*
 		 * Some versions of MTK modem return just the retries for the
 		 * password just entered while others return the retries for all
@@ -1455,4 +1460,100 @@ struct parcel_str_array *g_ril_reply_oem_hook_strings(GRil *gril,
 
 out:
 	return str_arr;
+}
+
+struct reply_radio_capability *g_ril_reply_parse_get_radio_capability(
+				GRil *gril, const struct ril_msg *message)
+{
+	struct reply_radio_capability *reply;
+	struct parcel rilp;
+	char *modem_uuid;
+
+	reply = g_new0(struct reply_radio_capability, 1);
+	g_ril_init_parcel(message, &rilp);
+
+	reply->version = parcel_r_int32(&rilp);
+	reply->session = parcel_r_int32(&rilp);
+	reply->phase = parcel_r_int32(&rilp);
+	reply->rat = parcel_r_int32(&rilp);
+	modem_uuid = parcel_r_string(&rilp);
+	if (modem_uuid != NULL)
+		strcpy(reply->modem_uuid, modem_uuid);
+
+	reply->status = parcel_r_int32(&rilp);
+
+	if (rilp.malformed) {
+		ofono_error("%s: malformed parcel", __func__);
+		g_free(reply);
+		reply = NULL;
+		goto end;
+	}
+
+	g_ril_append_print_buf(gril, "{%d,%d,%s,[",
+				reply->version, reply->session,
+				ril_rc_phase_to_string(reply->phase));
+
+	if (reply->rat & RIL_RAF_UNKNOWN)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_UNKNOWN));
+	if (reply->rat & RIL_RAF_GPRS)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_GPRS));
+	if (reply->rat & RIL_RAF_EDGE)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_EDGE));
+	if (reply->rat & RIL_RAF_UMTS)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_UMTS));
+	if (reply->rat & RIL_RAF_IS95A)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_IS95A));
+	if (reply->rat & RIL_RAF_IS95B)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_IS95B));
+	if (reply->rat & RIL_RAF_1xRTT)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_1xRTT));
+	if (reply->rat & RIL_RAF_EVDO_0)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_EVDO_0));
+	if (reply->rat & RIL_RAF_EVDO_A)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_EVDO_A));
+	if (reply->rat & RIL_RAF_HSDPA)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_HSDPA));
+	if (reply->rat & RIL_RAF_HSUPA)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_HSUPA));
+	if (reply->rat & RIL_RAF_HSPA)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_HSPA));
+	if (reply->rat & RIL_RAF_EVDO_B)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_EVDO_B));
+	if (reply->rat & RIL_RAF_EHRPD)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_EHRPD));
+	if (reply->rat & RIL_RAF_LTE)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_LTE));
+	if (reply->rat & RIL_RAF_HSPAP)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_HSPAP));
+	if (reply->rat & RIL_RAF_GSM)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_GSM));
+	if (reply->rat & RIL_RAF_TD_SCDMA)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_TD_SCDMA));
+
+	g_ril_append_print_buf(gril, "%s],%s,%s}", print_buf,
+				reply->modem_uuid,
+				ril_rc_status_to_string(reply->status));
+
+	g_ril_print_response(gril, message);
+
+end:
+	return reply;
 }

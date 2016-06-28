@@ -1,8 +1,8 @@
 /*
  *
- *  oFono - Open Source Telephony
+ *  MTK2 driver for ofono/rilmodem
  *
- *  Copyright (C) 2014  Canonical Ltd. All rights reserved.
+ *  Copyright (C) 2016  Canonical Ltd.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -19,15 +19,21 @@
  *
  */
 
-#ifndef RILMODEM_VENDOR_H
-#define RILMODEM_VENDOR_H
+#ifndef MTK2UTIL_H
+#define MTK2UTIL_H
 
-enum ofono_ril_vendor {
-	OFONO_RIL_VENDOR_AOSP = 0,
-	OFONO_RIL_VENDOR_MTK,
-	OFONO_RIL_VENDOR_INFINEON,
-	OFONO_RIL_VENDOR_QCOM_MSIM,
-	OFONO_RIL_VENDOR_MTK2
-};
+#include <ofono/types.h>
+#include <gril.h>
 
-#endif /* RILMODEM_VENDOR_H */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+const char *mtk2_request_id_to_string(int req);
+const char *mtk2_unsol_request_to_string(int req);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* MTK2UTIL_H */

@@ -38,6 +38,8 @@ void ril_gprs_remove(struct ofono_gprs *gprs);
 void ril_gprs_start(struct ril_gprs_driver_data *driver_data,
 			struct ofono_gprs *gprs, struct ril_gprs_data *gd);
 gboolean ril_gprs_set_attached_cb(gpointer user_data);
+void ril_gprs_set_attached(struct ofono_gprs *gprs, int attached,
+						ofono_gprs_cb_t cb, void *data);
 void ril_gprs_registration_status(struct ofono_gprs *gprs,
 					ofono_gprs_status_cb_t cb, void *data);
 void ril_gprs_set_ia_apn(struct ofono_gprs *gprs, const char *apn,

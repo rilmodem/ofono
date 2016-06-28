@@ -1,8 +1,8 @@
 /*
  *
- *  oFono - Open Source Telephony
+ *  oFono - Open Source Telephony - RIL Modem Support
  *
- *  Copyright (C) 2014  Canonical Ltd. All rights reserved.
+ *  Copyright (C) 2016  Canonical Ltd.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -19,15 +19,10 @@
  *
  */
 
-#ifndef RILMODEM_VENDOR_H
-#define RILMODEM_VENDOR_H
+#define MTK2MODEM "mtk2modem"
 
-enum ofono_ril_vendor {
-	OFONO_RIL_VENDOR_AOSP = 0,
-	OFONO_RIL_VENDOR_MTK,
-	OFONO_RIL_VENDOR_INFINEON,
-	OFONO_RIL_VENDOR_QCOM_MSIM,
-	OFONO_RIL_VENDOR_MTK2
-};
+extern void mtk2_voicecall_init(void);
+extern void mtk2_voicecall_exit(void);
 
-#endif /* RILMODEM_VENDOR_H */
+extern void mtk2_gprs_init(void);
+extern void mtk2_gprs_exit(void);
