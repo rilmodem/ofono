@@ -197,13 +197,7 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 		return;
 	}
 
-	/*
-	 * We process pending callbacks. NOTE: in some cases we can receive
-	 * unexpected radio events. For instance, in midori we receive an OFF
-	 * event and immediately after that an ON event when we enter the SIM
-	 * PIN. These are firmware bugs that should be treated in a per-case
-	 * basis. In the mentioned case we can just ignore the events.
-	 */
+	/* We process pending callbacks */
 	if (rd->set_online_cbd != NULL && (
 			(rd->ofono_online && radio_state == RADIO_STATE_ON) ||
 			(!rd->ofono_online && radio_state == RADIO_STATE_OFF))
@@ -216,6 +210,24 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 
 		g_free(rd->set_online_cbd);
 		rd->set_online_cbd = NULL;
+	}
+
+	if ((radio_state == RADIO_STATE_UNAVAILABLE ||
+				radio_state == RADIO_STATE_OFF)
+			&& rd->ofono_online
+			&& rd->vendor != OFONO_RIL_VENDOR_MTK2) {
+		/*
+		 * Unexpected radio state change, as we are supposed to
+		 * be online. UNAVAILABLE has been seen occassionally
+		 * when powering off the phone. We wait 5 secs to avoid
+		 * too fast re-spawns, then exit with error to make
+		 * upstart re-start ofono. In midori we receive an OFF
+		 * event and immediately after that an ON event when we
+		 * enter the SIM PIN, so do nothing for that device.
+		 */
+		ofono_error("%s: radio self-powered off!", __func__);
+		sleep(5);
+		exit(1);
 	}
 }
 
