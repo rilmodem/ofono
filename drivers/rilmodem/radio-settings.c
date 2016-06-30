@@ -290,10 +290,14 @@ void ril_delayed_register(const struct ofono_error *error, void *user_data)
 {
 	struct ofono_radio_settings *rs = user_data;
 
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		ofono_radio_settings_register(rs);
-	else
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
 		ofono_error("%s: cannot set default fast dormancy", __func__);
+
+	/*
+	 * We register in all cases, setting FD some times fails until radio is
+	 * available (this happens on turbo and maybe in other devices).
+	 */
+	ofono_radio_settings_register(rs);
 }
 
 static int ril_radio_settings_probe(struct ofono_radio_settings *rs,
