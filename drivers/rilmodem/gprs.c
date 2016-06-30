@@ -188,21 +188,25 @@ static void gprs_allow_data_cb(struct ril_msg *message, gpointer user_data)
 	struct gprs_attach_data *attach_data = cbd->user;
 	struct ril_gprs_data *gd = attach_data->gd;
 
-	if (message->error != RIL_E_SUCCESS) {
-		ofono_error("%s: RIL error %s", __func__,
-				ril_error_to_string(message->error));
-		CALLBACK_WITH_FAILURE(cb, cbd->data);
-		free_attach_cbd(cbd);
-		return;
-	}
-
 	g_ril_print_response_no_args(attach_data->ril, message);
 
+	/*
+	 * We do not care if detaching the other slot fails. This happens in
+	 * turbo when the other slot is empty, for instance.
+	 */
 	if (attach_data->detaching_other_slot) {
 		attach_data->ril = gd->ril;
 		attach_data->detaching_other_slot = FALSE;
 
 		send_allow_data(cbd, gd->ril, attach_data->set_attached);
+		return;
+	}
+
+	if (message->error != RIL_E_SUCCESS) {
+		ofono_error("%s: RIL error %s", __func__,
+				ril_error_to_string(message->error));
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+		free_attach_cbd(cbd);
 		return;
 	}
 
