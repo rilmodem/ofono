@@ -286,6 +286,7 @@ void ril_pre_sim(struct ofono_modem *modem)
 	struct ril_data *rd = ofono_modem_get_data(modem);
 	struct ril_voicecall_driver_data vc_data = { rd->ril, modem };
 	struct ril_sim_data sim_data;
+	struct ril_radio_settings_driver_data rs_data = { rd->ril, modem };
 
 	DBG("");
 
@@ -305,6 +306,16 @@ void ril_pre_sim(struct ofono_modem *modem)
 
 	rd->sim = ofono_sim_create(modem, rd->vendor,
 			get_driver_type(rd, OFONO_ATOM_TYPE_SIM), &sim_data);
+
+	/*
+	 * We need to create radio settings here so FastDormancy property is
+	 * available even when there is no SIM (no SIM -> post_sim and
+	 * post_online are not called) so we can make the modem enter low power
+	 * state in that case.
+	 */
+	ofono_radio_settings_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_RADIO_SETTINGS),
+			&rs_data);
 }
 
 void ril_post_sim(struct ofono_modem *modem)
@@ -328,16 +339,12 @@ static void create_post_online_atoms(struct ofono_modem *modem)
 	struct ril_data *rd = ofono_modem_get_data(modem);
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
-	struct ril_radio_settings_driver_data rs_data = { rd->ril, modem };
 	struct ril_gprs_driver_data gprs_data = { rd->ril, modem };
 	struct ril_gprs_context_data
 		inet_ctx = { rd->ril, modem, OFONO_GPRS_CONTEXT_TYPE_INTERNET };
 	struct ril_gprs_context_data
 		mms_ctx = { rd->ril, modem, OFONO_GPRS_CONTEXT_TYPE_MMS };
 
-	ofono_radio_settings_create(modem, rd->vendor,
-			get_driver_type(rd, OFONO_ATOM_TYPE_RADIO_SETTINGS),
-			&rs_data);
 	ofono_netreg_create(modem, rd->vendor,
 			get_driver_type(rd, OFONO_ATOM_TYPE_NETREG), rd->ril);
 	ofono_ussd_create(modem, rd->vendor,
