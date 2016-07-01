@@ -118,7 +118,7 @@ struct emulator_status {
 
 static const char *default_en_list[] = { "911", "112", NULL };
 static const char *default_en_list_no_sim[] = { "119", "118", "999", "110",
-						"08", "000", NULL };
+					"08", "000", "120", "122", NULL };
 
 static void send_ciev_after_swap_callback(const struct ofono_error *error,
 								void *data);
@@ -2504,10 +2504,6 @@ static void set_new_ecc(struct ofono_voicecall *vc)
 	vc->en_list = g_hash_table_new_full(g_str_hash, g_str_equal,
 							g_free, NULL);
 
-	/* Emergency numbers from modem/network */
-	if (vc->nw_en_list)
-		add_to_en_list(vc, vc->nw_en_list);
-
 	/* Emergency numbers read from SIM */
 	if (vc->flags & VOICECALL_FLAG_SIM_ECC_READY) {
 		GSList *l;
@@ -2515,8 +2511,15 @@ static void set_new_ecc(struct ofono_voicecall *vc)
 		for (l = vc->sim_en_list; l; l = l->next)
 			g_hash_table_insert(vc->en_list, g_strdup(l->data),
 							NULL);
-	} else
+	}
+
+	/* add the default emergency number, if there no number from SIM */
+	if (g_hash_table_size(vc->en_list) == 0)
 		add_to_en_list(vc, (char **) default_en_list_no_sim);
+
+	/* Emergency numbers from modem/network */
+	if (vc->nw_en_list)
+		add_to_en_list(vc, vc->nw_en_list);
 
 	/* Default emergency numbers */
 	add_to_en_list(vc, (char **) default_en_list);
