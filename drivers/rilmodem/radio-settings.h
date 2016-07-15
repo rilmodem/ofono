@@ -19,11 +19,30 @@
  *
  */
 
+struct switch_data;
+
 struct radio_data {
+	struct ofono_radio_settings_driver *virt_tbl;
 	GRil *ril;
 	struct ofono_modem *modem;
+	struct ofono_radio_settings *radio_settings;
 	gboolean fast_dormancy;
 	gboolean pending_fd;
+	int rat_mode;
+	int pending_mode;
+	unsigned available_rats;
+	int ril_rats;
+	char modem_uuid[RIL_MAX_UUID_LENGTH];
+	struct switch_data *switch_d;
+	unsigned gprs_atom_watch;
+};
+
+struct switch_data {
+	struct radio_data *rd_1;
+	struct radio_data *rd_2;
+	enum ofono_radio_access_mode mode_to_switch;
+	int pending_msgs;
+	struct cb_data *cbd;
 };
 
 void ril_delayed_register(const struct ofono_error *error, void *user_data);
