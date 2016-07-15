@@ -225,6 +225,8 @@ static void qcom_msim_set_rat_mode(struct ofono_radio_settings *rs,
 		qcom_msim_do_set_rat_mode(rs, pref, cbd);
 }
 
+static struct ofono_radio_settings_driver driver;
+
 static int qcom_msim_radio_settings_probe(struct ofono_radio_settings *rs,
 					unsigned int vendor, void *user)
 {
@@ -237,6 +239,7 @@ static int qcom_msim_radio_settings_probe(struct ofono_radio_settings *rs,
 		return -ENOMEM;
 	}
 
+	rsd->virt_tbl = &driver;
 	rsd->ril = g_ril_clone(rs_init_data->gril);
 	rsd->modem = rs_init_data->modem;
 
