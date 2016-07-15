@@ -42,7 +42,3 @@ void ril_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 						ofono_gprs_cb_t cb, void *data);
 void ril_gprs_registration_status(struct ofono_gprs *gprs,
 					ofono_gprs_status_cb_t cb, void *data);
-void ril_gprs_set_ia_apn(struct ofono_gprs *gprs, const char *apn,
-				enum ofono_gprs_proto proto, const char *user,
-				const char *passwd, const char *mccmnc,
-				ofono_gprs_cb_t cb, void *data);
