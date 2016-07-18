@@ -106,53 +106,6 @@ static int ril_tech_to_bearer_tech(int ril_tech)
 	}
 }
 
-static void set_ia_apn_cb(struct ril_msg *message, gpointer user_data)
-{
-	struct cb_data *cbd = user_data;
-	ofono_gprs_cb_t cb = cbd->cb;
-	struct ofono_gprs *gprs = cbd->user;
-	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
-
-	if (message->error != RIL_E_SUCCESS) {
-		ofono_error("%s: reply failure: %s", __func__,
-				ril_error_to_string(message->error));
-		CALLBACK_WITH_FAILURE(cb, cbd->data);
-		return;
-	}
-
-	g_ril_print_response_no_args(gd->ril, message);
-
-	CALLBACK_WITH_SUCCESS(cb, cbd->data);
-}
-
-void ril_gprs_set_ia_apn(struct ofono_gprs *gprs, const char *apn,
-				enum ofono_gprs_proto proto, const char *user,
-				const char *passwd, const char *mccmnc,
-				ofono_gprs_cb_t cb, void *data)
-{
-	struct ril_gprs_data *gd = ofono_gprs_get_data(gprs);
-	struct cb_data *cbd;
-	struct parcel rilp;
-
-	if (!ofono_modem_get_boolean(gd->modem, MODEM_PROP_LTE_CAPABLE)) {
-		CALLBACK_WITH_SUCCESS(cb, data);
-		return;
-	}
-
-	cbd = cb_data_new(cb, data, gprs);
-
-	g_ril_request_set_initial_attach_apn(gd->ril, apn, proto, user, passwd,
-						mccmnc, &rilp);
-
-	if (g_ril_send(gd->ril, RIL_REQUEST_SET_INITIAL_ATTACH_APN,
-			&rilp, set_ia_apn_cb, cbd, g_free) == 0) {
-		ofono_error("%s: failure sending request", __func__);
-
-		g_free(cbd);
-		CALLBACK_WITH_FAILURE(cb, data);
-	}
-}
-
 static void ril_gprs_state_change(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_gprs *gprs = user_data;
@@ -604,7 +557,6 @@ static struct ofono_gprs_driver driver = {
 	.remove			= ril_gprs_remove,
 	.set_attached		= ril_gprs_set_attached,
 	.attached_status	= ril_gprs_registration_status,
-	.set_ia_apn		= ril_gprs_set_ia_apn,
 };
 
 void ril_gprs_init(void)

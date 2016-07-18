@@ -3444,32 +3444,20 @@ static struct pri_context *gprs_context_for_ia(struct ofono_gprs *gprs)
 	return gprs->contexts->data;
 }
 
-static void set_ia_apn_cb(const struct ofono_error *error, void *data)
-{
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
-		ofono_error("Could not set IA APN");
-}
-
-static void set_ia_apn(struct ofono_gprs *gprs)
+const struct ofono_gprs_primary_context *ofono_gprs_get_ia_apn(
+					struct ofono_gprs *gprs, char *mccmnc)
 {
 	struct pri_context *ctx = gprs_context_for_ia(gprs);
-	struct ofono_gprs_primary_context *ofono_ctx;
-	char mccmnc[OFONO_MAX_MCC_LENGTH + OFONO_MAX_MNC_LENGTH + 1];
 	const char *mcc = ofono_sim_get_mcc(gprs->sim);
 	const char *mnc = ofono_sim_get_mnc(gprs->sim);
 
 	if (ctx == NULL)
-		return;
-
-	ofono_ctx = &ctx->context;
+		return NULL;
 
 	strcpy(mccmnc, mcc);
 	strcpy(mccmnc + strlen(mcc), mnc);
 
-	gprs->driver->set_ia_apn(gprs, ofono_ctx->apn, ofono_ctx->proto,
-					ofono_ctx->username,
-					ofono_ctx->password, mccmnc,
-					set_ia_apn_cb, gprs);
+	return &ctx->context;
 }
 
 static void ofono_gprs_finish_register(struct ofono_gprs *gprs)
@@ -3480,9 +3468,6 @@ static void ofono_gprs_finish_register(struct ofono_gprs *gprs)
 
 	if (gprs->contexts == NULL) /* Automatic provisioning failed */
 		add_context(gprs, NULL, OFONO_GPRS_CONTEXT_TYPE_INTERNET);
-
-	if (gprs->driver->set_ia_apn)
-		set_ia_apn(gprs);
 
 	if (!g_dbus_register_interface(conn, path,
 					OFONO_CONNECTION_MANAGER_INTERFACE,

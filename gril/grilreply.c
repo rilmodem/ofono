@@ -1477,8 +1477,11 @@ struct reply_radio_capability *g_ril_reply_parse_get_radio_capability(
 	reply->phase = parcel_r_int32(&rilp);
 	reply->rat = parcel_r_int32(&rilp);
 	modem_uuid = parcel_r_string(&rilp);
-	if (modem_uuid != NULL)
-		strcpy(reply->modem_uuid, modem_uuid);
+	if (modem_uuid != NULL) {
+		strncpy(reply->modem_uuid, modem_uuid,
+						sizeof(reply->modem_uuid) - 1);
+		g_free(modem_uuid);
+	}
 
 	reply->status = parcel_r_int32(&rilp);
 
@@ -1552,7 +1555,10 @@ struct reply_radio_capability *g_ril_reply_parse_get_radio_capability(
 				reply->modem_uuid,
 				ril_rc_status_to_string(reply->status));
 
-	g_ril_print_response(gril, message);
+	if (message->unsolicited)
+		g_ril_print_unsol(gril, message);
+	else
+		g_ril_print_response(gril, message);
 
 end:
 	return reply;

@@ -105,6 +105,8 @@ static void mtk_set_fast_dormancy(struct ofono_radio_settings *rs,
 	}
 }
 
+static struct ofono_radio_settings_driver driver;
+
 static int mtk_radio_settings_probe(struct ofono_radio_settings *rs,
 					unsigned int vendor, void *user)
 {
@@ -116,6 +118,7 @@ static int mtk_radio_settings_probe(struct ofono_radio_settings *rs,
 		return -ENOMEM;
 	}
 
+	rsd->virt_tbl = &driver;
 	rsd->ril = g_ril_clone(rs_init_data->gril);
 	rsd->modem = rs_init_data->modem;
 
@@ -158,6 +161,8 @@ static void mtk_query_available_rats_cb(struct ril_msg *message,
 		if (ofono_modem_get_boolean(rd->modem, MODEM_PROP_LTE_CAPABLE))
 			available_rats |= OFONO_RADIO_ACCESS_MODE_LTE;
 	}
+
+	rd->available_rats = available_rats;
 
 	CALLBACK_WITH_SUCCESS(cb, available_rats, cbd->data);
 }

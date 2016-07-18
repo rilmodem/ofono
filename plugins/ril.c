@@ -128,6 +128,33 @@ static const char *get_driver_type(struct ril_data *rd,
 	return RILMODEM;
 }
 
+/*
+ * oFono moves to "Online" state only when told to online the modem AND there is
+ * a SIM a card. However, we want to have RadioSettings even when there is no
+ * SIM, but we also want it *only* when we are online. Normally, ofono atoms are
+ * created/destroyed when the ofono state changes, but for this atom the ofono
+ * states do not fit, as we do never move from Offline state if there is no SIM.
+ * Therefore, we handle this atom on modem onlining/offlining.
+ */
+static void manage_radio_settings_atom(struct ofono_modem *modem)
+{
+	struct ril_data *rd = ofono_modem_get_data(modem);
+	struct ofono_radio_settings *rs;
+
+	rs = __ofono_atom_find(OFONO_ATOM_TYPE_RADIO_SETTINGS, modem);
+
+	if (rd->ofono_online && rs == NULL) {
+		struct ril_radio_settings_driver_data rs_data =
+							{ rd->ril, modem };
+
+		ofono_radio_settings_create(modem, rd->vendor,
+			get_driver_type(rd, OFONO_ATOM_TYPE_RADIO_SETTINGS),
+			&rs_data);
+	} else if(!rd->ofono_online && rs != NULL) {
+		ofono_radio_settings_remove(rs);
+	}
+}
+
 static void ril_send_power(struct ril_data *rd, ofono_bool_t online,
 				GRilResponseFunc func, gpointer user_data)
 {
@@ -206,6 +233,8 @@ static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 
 		DBG("%s: set_online OK: rd->ofono_online: %d",
 						__func__, rd->ofono_online);
+		manage_radio_settings_atom(modem);
+
 		CALLBACK_WITH_SUCCESS(cb, rd->set_online_cbd->data);
 
 		g_free(rd->set_online_cbd);
@@ -286,7 +315,6 @@ void ril_pre_sim(struct ofono_modem *modem)
 	struct ril_data *rd = ofono_modem_get_data(modem);
 	struct ril_voicecall_driver_data vc_data = { rd->ril, modem };
 	struct ril_sim_data sim_data;
-	struct ril_radio_settings_driver_data rs_data = { rd->ril, modem };
 
 	DBG("");
 
@@ -306,16 +334,6 @@ void ril_pre_sim(struct ofono_modem *modem)
 
 	rd->sim = ofono_sim_create(modem, rd->vendor,
 			get_driver_type(rd, OFONO_ATOM_TYPE_SIM), &sim_data);
-
-	/*
-	 * We need to create radio settings here so FastDormancy property is
-	 * available even when there is no SIM (no SIM -> post_sim and
-	 * post_online are not called) so we can make the modem enter low power
-	 * state in that case.
-	 */
-	ofono_radio_settings_create(modem, rd->vendor,
-			get_driver_type(rd, OFONO_ATOM_TYPE_RADIO_SETTINGS),
-			&rs_data);
 }
 
 void ril_post_sim(struct ofono_modem *modem)
@@ -334,7 +352,7 @@ void ril_post_sim(struct ofono_modem *modem)
 			get_driver_type(rd, OFONO_ATOM_TYPE_PHONEBOOK), modem);
 }
 
-static void create_post_online_atoms(struct ofono_modem *modem)
+void ril_post_online(struct ofono_modem *modem)
 {
 	struct ril_data *rd = ofono_modem_get_data(modem);
 	struct ofono_gprs *gprs;
@@ -382,47 +400,6 @@ static void create_post_online_atoms(struct ofono_modem *modem)
 	}
 }
 
-static void get_radio_caps_cb(struct ril_msg *message, gpointer user_data)
-{
-	struct ofono_modem *modem = user_data;
-	struct ril_data *rd = ofono_modem_get_data(modem);
-	struct reply_radio_capability *caps;
-
-	if (message->error == RIL_E_SUCCESS) {
-		caps = g_ril_reply_parse_get_radio_capability(rd->ril, message);
-		if (caps != NULL && (caps->rat & RIL_RAF_LTE)) {
-			ofono_modem_set_boolean(modem,
-						MODEM_PROP_LTE_CAPABLE, TRUE);
-			g_free(caps);
-		}
-	} else {
-		ofono_error("%s: RIL error %s", __func__,
-					ril_error_to_string(message->error));
-	}
-
-	create_post_online_atoms(modem);
-}
-
-void ril_post_online(struct ofono_modem *modem)
-{
-	struct ril_data *rd = ofono_modem_get_data(modem);
-	ofono_bool_t lte_cap;
-
-	/* Radio ON -> we can ask for capabilities */
-	if (g_ril_get_version(rd->ril) >= 11) {
-		if (g_ril_send(rd->ril, RIL_REQUEST_GET_RADIO_CAPABILITY, NULL,
-					get_radio_caps_cb, modem, NULL))
-			return;
-
-		ofono_error("%s: error sending GET_RADIO_CAPABILITY", __func__);
-	}
-
-	lte_cap = getenv("OFONO_RIL_RAT_LTE") ? TRUE : FALSE;
-	ofono_modem_set_boolean(modem, MODEM_PROP_LTE_CAPABLE, lte_cap);
-
-	create_post_online_atoms(modem);
-}
-
 static void ril_set_online_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct ril_data *rd = user_data;
@@ -449,11 +426,14 @@ static void ril_set_online_cb(struct ril_msg *message, gpointer user_data)
 static gboolean set_online_done_cb(gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	struct ril_data *rd = cbd->user;
+	struct ofono_modem *modem = cbd->user;
+	struct ril_data *rd = ofono_modem_get_data(modem);
 	ofono_modem_online_cb_t cb = cbd->cb;
 
 	DBG("%s: set_online OK: rd->ofono_online: %d",
 						__func__, rd->ofono_online);
+	manage_radio_settings_atom(modem);
+
 	CALLBACK_WITH_SUCCESS(cb, cbd->data);
 	g_free(cbd);
 
@@ -464,7 +444,7 @@ void ril_set_online(struct ofono_modem *modem, ofono_bool_t online,
 			ofono_modem_online_cb_t callback, void *data)
 {
 	struct ril_data *rd = ofono_modem_get_data(modem);
-	struct cb_data *cbd = cb_data_new(callback, data, rd);
+	struct cb_data *cbd = cb_data_new(callback, data, modem);
 
 	rd->ofono_online = online;
 

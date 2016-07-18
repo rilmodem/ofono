@@ -104,7 +104,6 @@ static struct ofono_gprs_driver driver = {
 	.remove			= ril_gprs_remove,
 	.set_attached		= qcom_msim_gprs_set_attached,
 	.attached_status	= ril_gprs_registration_status,
-	.set_ia_apn		= ril_gprs_set_ia_apn,
 };
 
 void qcom_msim_gprs_init(void)
