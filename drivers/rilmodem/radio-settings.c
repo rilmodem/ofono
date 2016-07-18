@@ -288,18 +288,21 @@ static void radio_caps_event(struct ril_msg *message, gpointer user_data)
 {
 	struct radio_data *rd = user_data;
 	struct switch_data *sd = rd->switch_d;
-	struct radio_data *rd1 = sd->rd_1;
-	struct radio_data *rd2 = sd->rd_2;
+	struct radio_data *rd1;
+	struct radio_data *rd2;
 	struct reply_radio_capability *caps;
+
+	if (sd == NULL)
+		return;
+
+	rd1 = sd->rd_1;
+	rd2 = sd->rd_2;
 
 	caps = g_ril_reply_parse_get_radio_capability(rd->ril, message);
 	if (caps == NULL) {
 		ofono_error("%s: parse error", __func__);
 		return;
 	}
-
-	if (sd == NULL)
-		return;
 
 	/*
 	 * Update rats. They come also in the replies to SET_RADIO_CAPABILITY,
@@ -718,9 +721,6 @@ static void radio_settings_register(const struct ofono_error *error,
 	g_ril_register(rd->ril, RIL_UNSOL_RADIO_CAPABILITY,
 							radio_caps_event, rd);
 
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
-		ofono_error("%s: cannot set default fast dormancy", __func__);
-
 	rd->gprs_atom_watch =
 		__ofono_modem_add_atom_watch(rd->modem, OFONO_ATOM_TYPE_GPRS,
 						gprs_watch_cb, rs, NULL);
@@ -758,6 +758,9 @@ void ril_delayed_register(const struct ofono_error *error, void *user_data)
 {
 	struct ofono_radio_settings *rs = user_data;
 	struct radio_data *rd = ofono_radio_settings_get_data(rs);
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		ofono_error("%s: cannot set default fast dormancy", __func__);
 
 	rd->radio_settings = rs;
 
