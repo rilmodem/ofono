@@ -248,14 +248,6 @@ struct reply_operator *g_ril_reply_parse_operator(GRil *gril,
 	reply->salpha = parcel_r_string(&rilp);
 	reply->numeric = parcel_r_string(&rilp);
 
-	if (reply->lalpha == NULL && reply->salpha == NULL) {
-		ofono_error("%s: invalid OPERATOR reply: "
-				" no names returned.",
-				__func__);
-
-		goto error;
-	}
-
 	if (reply->numeric == NULL) {
 		ofono_error("%s: invalid OPERATOR reply: "
 				" no numeric returned.",
@@ -265,7 +257,8 @@ struct reply_operator *g_ril_reply_parse_operator(GRil *gril,
 
 	g_ril_append_print_buf(gril,
 				"(lalpha=%s, salpha=%s, numeric=%s)",
-				reply->lalpha, reply->salpha, reply->numeric);
+				PRINTABLE_STR(reply->lalpha),
+				PRINTABLE_STR(reply->salpha), reply->numeric);
 
 	g_ril_print_response(gril, message);
 
