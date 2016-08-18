@@ -201,25 +201,25 @@ static void ril_registration_status(struct ofono_netreg *netreg,
 static void set_oper_name(const struct reply_operator *reply,
 				struct ofono_network_operator *op)
 {
-	const char *spn = NULL;
+	if (reply->lalpha != NULL &&
+			g_strcmp0(reply->numeric, reply->lalpha) != 0) {
+		strncpy(op->name, reply->lalpha,
+						OFONO_MAX_OPERATOR_NAME_LENGTH);
+	} else if (reply->salpha != NULL &&
+			g_strcmp0(reply->numeric, reply->salpha) != 0) {
+		strncpy(op->name, reply->salpha,
+						OFONO_MAX_OPERATOR_NAME_LENGTH);
+	} else {
+		const char *spn = NULL;
 
-	/* Use SPN list if we do not have name */
-	if (strcmp(reply->numeric, reply->lalpha) == 0) {
 		spn = __ofono_spn_table_get_spn(reply->numeric);
 		if (spn != NULL) {
 			DBG("using spn override %s", spn);
 			strncpy(op->name, spn, OFONO_MAX_OPERATOR_NAME_LENGTH);
+		} else {
+			strncpy(op->name, reply->numeric,
+						OFONO_MAX_OPERATOR_NAME_LENGTH);
 		}
-	}
-
-	if (spn == NULL) {
-		/* Try to use long by default */
-		if (reply->lalpha)
-			strncpy(op->name, reply->lalpha,
-				OFONO_MAX_OPERATOR_NAME_LENGTH);
-		else if (reply->salpha)
-			strncpy(op->name, reply->salpha,
-				OFONO_MAX_OPERATOR_NAME_LENGTH);
 	}
 }
 
