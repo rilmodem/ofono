@@ -1715,7 +1715,7 @@ static void isi_release_specific(struct ofono_voicecall *ovc, int id,
 
 		if ((status->mode_info & CALL_MODE_ORIGINATOR))
 			cause = CALL_CAUSE_BUSY_USER_REQUEST;
-			break;
+		break;
 	}
 
 	isi_call_release_req(ovc, id, CALL_CAUSE_TYPE_CLIENT, cause, cb, data);
