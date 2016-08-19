@@ -42,10 +42,6 @@
 #include "ril_constants.h"
 #include "rilmodem-test-server.h"
 
-static GMainLoop *mainloop;
-
-static const struct ofono_call_barring_driver *cbdriver;
-
 struct rilmodem_cb_data {
 	GRil *ril;
 	struct ofono_modem *modem;
@@ -70,6 +66,68 @@ struct cb_data {
 
 	int status;
 };
+
+static const struct ofono_call_barring_driver *cbdriver;
+
+/* Declarations && Re-implementations of core functions. */
+void ril_call_barring_exit(void);
+void ril_call_barring_init(void);
+
+struct ofono_call_barring {
+	void *driver_data;
+	const struct cb_data *cbd;
+};
+
+struct ofono_call_barring *ofono_call_barring_create(struct ofono_modem *modem,
+							unsigned int vendor,
+							const char *driver,
+							void *data)
+{
+	struct rilmodem_cb_data *rsd = data;
+	struct ofono_call_barring *cb = g_new0(struct ofono_call_barring, 1);
+	int retval;
+
+	retval = cbdriver->probe(cb, OFONO_RIL_VENDOR_AOSP, rsd->ril);
+	g_assert(retval == 0);
+
+	return cb;
+}
+
+int ofono_call_barring_driver_register(const struct ofono_call_barring_driver *d)
+{
+	if (cbdriver == NULL)
+		cbdriver = d;
+
+	return 0;
+}
+
+void ofono_call_barring_set_data(struct ofono_call_barring *cb, void *data)
+{
+	cb->driver_data = data;
+}
+
+void *ofono_call_barring_get_data(struct ofono_call_barring *cb)
+{
+	return cb->driver_data;
+}
+
+void ofono_call_barring_register(struct ofono_call_barring *cb)
+{
+}
+
+void ofono_call_barring_driver_unregister(const struct ofono_call_barring_driver *d)
+{
+}
+
+/*
+ * As all our architectures are little-endian except for
+ * PowerPC, and the Binder wire-format differs slightly
+ * depending on endian-ness, the following guards against test
+ * failures when run on PowerPC.
+ */
+#if BYTE_ORDER == LITTLE_ENDIAN
+
+static GMainLoop *mainloop;
 
 static void query_callback(const struct ofono_error *error, int status,
 								gpointer data)
@@ -434,64 +492,6 @@ static const struct cb_data testdata_set_passwd_invalid_1 = {
 	.error_type = OFONO_ERROR_TYPE_FAILURE,
 };
 
-/* Declarations && Re-implementations of core functions. */
-void ril_call_barring_exit(void);
-void ril_call_barring_init(void);
-
-struct ofono_call_barring {
-	void *driver_data;
-	const struct cb_data *cbd;
-};
-
-struct ofono_call_barring *ofono_call_barring_create(struct ofono_modem *modem,
-							unsigned int vendor,
-							const char *driver,
-							void *data)
-{
-	struct rilmodem_cb_data *rsd = data;
-	struct ofono_call_barring *cb = g_new0(struct ofono_call_barring, 1);
-	int retval;
-
-	retval = cbdriver->probe(cb, OFONO_RIL_VENDOR_AOSP, rsd->ril);
-	g_assert(retval == 0);
-
-	return cb;
-}
-
-int ofono_call_barring_driver_register(const struct ofono_call_barring_driver *d)
-{
-	if (cbdriver == NULL)
-		cbdriver = d;
-
-	return 0;
-}
-
-void ofono_call_barring_set_data(struct ofono_call_barring *cb, void *data)
-{
-	cb->driver_data = data;
-}
-
-void *ofono_call_barring_get_data(struct ofono_call_barring *cb)
-{
-	return cb->driver_data;
-}
-
-void ofono_call_barring_register(struct ofono_call_barring *cb)
-{
-}
-
-void ofono_call_barring_driver_unregister(const struct ofono_call_barring_driver *d)
-{
-}
-
-/*
- * As all our architectures are little-endian except for
- * PowerPC, and the Binder wire-format differs slightly
- * depending on endian-ness, the following guards against test
- * failures when run on PowerPC.
- */
-#if BYTE_ORDER == LITTLE_ENDIAN
-
 static void server_connect_cb(gpointer data)
 {
 	struct rilmodem_cb_data *rsd = data;
@@ -577,7 +577,7 @@ int main(int argc, char **argv)
 					&testdata_query_invalid_3,
 					test_call_barring_func);
 	g_test_add_data_func("/testrilmodemcallbarring/query/invalid/4",
-					&testdata_query_invalid_3,
+					&testdata_query_invalid_4,
 					test_call_barring_func);
 	g_test_add_data_func("/testrilmodemcallbarring/set/valid/1",
 					&testdata_set_valid_1,

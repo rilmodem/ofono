@@ -42,10 +42,6 @@
 #include "ril_constants.h"
 #include "rilmodem-test-server.h"
 
-static GMainLoop *mainloop;
-
-static const struct ofono_call_settings_driver *csdriver;
-
 struct rilmodem_cs_data {
 	GRil *ril;
 	struct ofono_modem *modem;
@@ -66,6 +62,67 @@ struct cs_data {
 	gint cb_int1;
 	gint cb_int2;
 };
+
+static const struct ofono_call_settings_driver *csdriver;
+
+/* Declarations && Re-implementations of core functions. */
+void ril_call_settings_exit(void);
+void ril_call_settings_init(void);
+
+struct ofono_call_settings {
+	void *driver_data;
+};
+
+struct ofono_call_settings *ofono_call_settings_create(struct ofono_modem *modem,
+							unsigned int vendor,
+							const char *driver,
+							void *data)
+{
+	struct rilmodem_cs_data *rcd = data;
+	struct ofono_call_settings *cs = g_new0(struct ofono_call_settings, 1);
+	int retval;
+
+	retval = csdriver->probe(cs, OFONO_RIL_VENDOR_AOSP, rcd->ril);
+	g_assert(retval == 0);
+
+	return cs;
+}
+
+int ofono_call_settings_driver_register(const struct ofono_call_settings_driver *d)
+{
+	if (csdriver == NULL)
+		csdriver = d;
+
+	return 0;
+}
+
+void ofono_call_settings_set_data(struct ofono_call_settings *cs, void *data)
+{
+	cs->driver_data = data;
+}
+
+void *ofono_call_settings_get_data(struct ofono_call_settings *cs)
+{
+	return cs->driver_data;
+}
+
+void ofono_call_settings_register(struct ofono_call_settings *cs)
+{
+}
+
+void ofono_call_settings_driver_unregister(const struct ofono_call_settings_driver *d)
+{
+}
+
+/*
+ * As all our architectures are little-endian except for
+ * PowerPC, and the Binder wire-format differs slightly
+ * depending on endian-ness, the following guards against test
+ * failures when run on PowerPC.
+ */
+#if BYTE_ORDER == LITTLE_ENDIAN
+
+static GMainLoop *mainloop;
 
 static void status_query_callback(const struct ofono_error *error, int status,
 								 gpointer data)
@@ -386,63 +443,6 @@ static const struct cs_data testdata_clir_set_invalid_1 = {
 	},
 	.error_type = OFONO_ERROR_TYPE_FAILURE,
 };
-
-/* Declarations && Re-implementations of core functions. */
-void ril_call_settings_exit(void);
-void ril_call_settings_init(void);
-
-struct ofono_call_settings {
-	void *driver_data;
-};
-
-struct ofono_call_settings *ofono_call_settings_create(struct ofono_modem *modem,
-							unsigned int vendor,
-							const char *driver,
-							void *data)
-{
-	struct rilmodem_cs_data *rcd = data;
-	struct ofono_call_settings *cs = g_new0(struct ofono_call_settings, 1);
-	int retval;
-
-	retval = csdriver->probe(cs, OFONO_RIL_VENDOR_AOSP, rcd->ril);
-	g_assert(retval == 0);
-
-	return cs;
-}
-
-int ofono_call_settings_driver_register(const struct ofono_call_settings_driver *d)
-{
-	if (csdriver == NULL)
-		csdriver = d;
-
-	return 0;
-}
-
-void ofono_call_settings_set_data(struct ofono_call_settings *cs, void *data)
-{
-	cs->driver_data = data;
-}
-
-void *ofono_call_settings_get_data(struct ofono_call_settings *cs)
-{
-	return cs->driver_data;
-}
-
-void ofono_call_settings_register(struct ofono_call_settings *cs)
-{
-}
-
-void ofono_call_settings_driver_unregister(const struct ofono_call_settings_driver *d)
-{
-}
-
-/*
- * As all our architectures are little-endian except for
- * PowerPC, and the Binder wire-format differs slightly
- * depending on endian-ness, the following guards against test
- * failures when run on PowerPC.
- */
-#if BYTE_ORDER == LITTLE_ENDIAN
 
 static void server_connect_cb(gpointer data)
 {

@@ -16867,13 +16867,7 @@ static const struct terminal_response_test get_input_response_data_181 = {
 	},
 };
 
-static const unsigned char get_input_response_191b[] = {
-	0x81, 0x03, 0x01, 0x23, 0x01, 0x82, 0x02, 0x82,
-	0x81, 0x83, 0x01, 0x00, 0x8d, 0x00,
-};
-
 static const struct terminal_response_test get_input_response_data_191 = {
-	/* Either get_input_response_191a or get_input_response_191b is ok */
 	.pdu = get_input_response_191a,
 	.pdu_len = sizeof(get_input_response_191a),
 	.response = {
@@ -17349,11 +17343,6 @@ static const unsigned char poll_interval_response_111a[] = {
 	0x81, 0x83, 0x01, 0x00, 0x84, 0x02, 0x00, 0x01,
 };
 
-static const unsigned char poll_interval_response_111b[] = {
-	0x81, 0x03, 0x01, 0x03, 0x00, 0x82, 0x02, 0x82,
-	0x81, 0x83, 0x01, 0x00, 0x84, 0x02, 0x01, 0x3c,
-};
-
 static const struct terminal_response_test poll_interval_response_data_111a = {
 	/* Either poll_interval_response_111a or b is ok */
 	.pdu = poll_interval_response_111a,
@@ -17472,26 +17461,6 @@ static const struct terminal_response_test refresh_response_data_131a = {
 		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
 		.result = {
 			.type = STK_RESULT_TYPE_SUCCESS,
-		},
-	},
-};
-
-static const unsigned char refresh_response_131b[] = {
-	0x81, 0x03, 0x01, 0x01, 0x02, 0x82, 0x02, 0x82,
-	0x81, 0x83, 0x01, 0x03,
-};
-
-static const struct terminal_response_test refresh_response_data_131b = {
-	.pdu = refresh_response_131b,
-	.pdu_len = sizeof(refresh_response_131b),
-	.response = {
-		.number = 1,
-		.type = STK_COMMAND_TYPE_REFRESH,
-		.qualifier = 0x02, /* USIM Initialization & File Change */
-		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
-		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
-		.result = {
-			.type = STK_RESULT_TYPE_REFRESH_WITH_EFS,
 		},
 	},
 };
@@ -18336,9 +18305,6 @@ static const unsigned char provide_local_info_response_131[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9d, 0x0d,
 	0x8c, 0x63, 0x58, 0xe2, 0x39, 0x8f, 0x63, 0xf9,
 	0x06, 0x45, 0x91, 0xa4, 0x90,
-};
-
-static const short bcch_channels_131[] = {
 };
 
 static const struct terminal_response_test
