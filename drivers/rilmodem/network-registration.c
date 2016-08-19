@@ -201,6 +201,12 @@ static void ril_registration_status(struct ofono_netreg *netreg,
 static void set_oper_name(const struct reply_operator *reply,
 				struct ofono_network_operator *op)
 {
+	/*
+	 * When there is no name provided by the network, modems either set it
+	 * as NULL or copy over the MCC/MNC code. If we detect this we try to
+	 * get a name from the spn DB. If this does not work either we set the
+	 * MCC/MNC as name. This can be further overriden by data in SIM files.
+	 */
 	if (reply->lalpha != NULL &&
 			g_strcmp0(reply->numeric, reply->lalpha) != 0) {
 		strncpy(op->name, reply->lalpha,
