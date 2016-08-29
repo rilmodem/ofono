@@ -27,15 +27,6 @@
 #include <sim.h>
 #include <gprs-context.h>
 
-/* TODO: create a table lookup*/
-#define PREFIX_30_NETMASK "255.255.255.252"
-#define PREFIX_29_NETMASK "255.255.255.248"
-#define PREFIX_28_NETMASK "255.255.255.240"
-#define PREFIX_27_NETMASK "255.255.255.224"
-#define PREFIX_26_NETMASK "255.255.255.192"
-#define PREFIX_25_NETMASK "255.255.255.128"
-#define PREFIX_24_NETMASK "255.255.255.0"
-
 #define MODEM_PROP_LTE_CAPABLE "lte-capable"
 
 enum ril_util_sms_store {
@@ -101,7 +92,7 @@ gint ril_util_call_compare_by_status(gconstpointer a, gconstpointer b);
 gint ril_util_call_compare_by_phone_number(gconstpointer a, gconstpointer b);
 gint ril_util_call_compare_by_id(gconstpointer a, gconstpointer b);
 gint ril_util_call_compare(gconstpointer a, gconstpointer b);
-gchar *ril_util_get_netmask(const char *address);
+char *ril_util_get_ipv4_netmask(const char *prefix_length);
 
 struct ril_util_sim_state_query *ril_util_sim_state_query_new(GRil *ril,
 						guint interval, guint num_times,

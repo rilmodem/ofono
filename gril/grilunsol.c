@@ -102,9 +102,10 @@ static void free_data_call(gpointer data, gpointer user_data)
 
 	if (call) {
 		g_free(call->ifname);
-		g_free(call->ip_addr);
-		g_free(call->dns_addrs);
-		g_free(call->gateways);
+		g_strfreev(call->ip_addrs);
+		g_strfreev(call->prefix_lengths);
+		g_strfreev(call->dns_addrs);
+		g_strfreev(call->gateways);
 		g_free(call);
 	}
 }
@@ -123,7 +124,7 @@ static gboolean handle_settings(struct ril_data_call *call, char *type,
 				char *raw_dns, char *raw_gws)
 {
 	gboolean result = FALSE;
-	int protocol;
+	int protocol, num_addrs, i;
 	char **dns_addrs = NULL, **gateways = NULL;
 	char **ip_addrs = NULL, **split_ip_addr = NULL;
 
@@ -156,46 +157,46 @@ static gboolean handle_settings(struct ril_data_call *call, char *type,
 		goto done;
 	}
 
-	/* TODO:
-	 * RILD can return multiple addresses; oFono only supports
-	 * setting a single IPv4 address.  At this time, we only
-	 * use the first address.  It's possible that a RIL may
-	 * just specify the end-points of the point-to-point
-	 * connection, in which case this code will need to
-	 * changed to handle such a device.
-	 *
-	 * For now split into a maximum of three, and only use
-	 * the first address for the remaining operations.
-	 */
 	if (raw_ip_addrs)
-		ip_addrs = g_strsplit(raw_ip_addrs, " ", 3);
+		ip_addrs = g_strsplit(raw_ip_addrs, " ", -1);
 
-	if (ip_addrs == NULL || g_strv_length(ip_addrs) == 0) {
+	num_addrs = g_strv_length(ip_addrs);
+
+	if (ip_addrs == NULL || num_addrs == 0) {
 		ofono_error("%s: no IP address: %s", __func__, raw_ip_addrs);
 		goto done;
 	}
 
-	DBG("num ip addrs is: %d", g_strv_length(ip_addrs));
+	DBG("num ip addrs is: %d", num_addrs);
 
-	if (g_strv_length(ip_addrs) > 1)
+	if (num_addrs > 1)
 		ofono_warn("%s: more than one IP addr returned: %s", __func__,
 				raw_ip_addrs);
-	/*
-	 * Note - the address may optionally include a prefix size
-	 * ( Eg. "/30" ).  As this confuses NetworkManager, we
-	 * explicitly strip any prefix after calculating the netmask.
-	 */
-	split_ip_addr = g_strsplit(ip_addrs[0], "/", 2);
 
-	if (split_ip_addr == NULL || g_strv_length(split_ip_addr) == 0) {
-		ofono_error("%s: invalid IP address field returned: %s",
-				__func__, ip_addrs[0]);
-		goto done;
+	/* Build arrays of addresses and prefix lengths */
+
+	call->ip_addrs = g_new0(char *, num_addrs + 1); 
+	call->prefix_lengths = g_new0(char *, num_addrs + 1);
+
+	for (i = 0; i < num_addrs; ++i) {
+		int n_parts;
+
+		split_ip_addr = g_strsplit(ip_addrs[i], "/", 2);
+		n_parts = g_strv_length(split_ip_addr);
+
+		if (split_ip_addr == NULL || n_parts == 0) {
+			ofono_error("%s: invalid IP address field returned: %s",
+					__func__, ip_addrs[i]);
+			goto done;
+		}
+
+		call->ip_addrs[i] = g_strdup(split_ip_addr[0]);
+		call->prefix_lengths[i] =
+				g_strdup(n_parts > 1 ? split_ip_addr[1] : "");
 	}
 
 	call->protocol = protocol;
 	call->ifname = g_strdup(ifname);
-	call->ip_addr = g_strdup(split_ip_addr[0]);
 	call->dns_addrs = g_strdupv(dns_addrs);
 	call->gateways = g_strdupv(gateways);
 
@@ -214,6 +215,14 @@ done:
 	if (split_ip_addr)
 		g_strfreev(split_ip_addr);
 
+	if (result == FALSE && call->ip_addrs != NULL) {
+		for (i = 0; call->ip_addrs[i] != NULL; ++i) {
+			g_free(call->ip_addrs[i]);
+			g_free(call->prefix_lengths[i]);
+		}
+		g_free(call->ip_addrs);
+		g_free(call->prefix_lengths);
+	}
 
 	return result;
 }

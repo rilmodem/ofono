@@ -51,6 +51,8 @@
 #define NUM_DEACTIVATION_RETRIES 4
 #define TIME_BETWEEN_DEACT_RETRIES_S 2
 
+#define DEF_IPV6_PREF_LENGTH 128
+
 enum state {
 	STATE_IDLE,
 	STATE_ENABLING,
@@ -144,6 +146,105 @@ static void ril_gprs_context_call_list_changed(struct ril_msg *message,
 	g_ril_unsol_free_data_call_list(call_list);
 }
 
+static gboolean is_ipv4(const char *ip)
+{
+	return strchr(ip, '.') == NULL ? FALSE : TRUE;
+}
+
+static gboolean is_ipv6(const char *ip)
+{
+	return strchr(ip, '.') == NULL ? TRUE : FALSE;
+}
+
+typedef gboolean (*is_of_type_t)(const char *str);
+
+static char **get_strs_subset(char **strs, is_of_type_t is_of_type)
+{
+	char **out;
+	char **str;
+	int n_str = 0, i;
+
+	if (strs == NULL)
+		return NULL;
+
+	for (str = strs; *str != NULL; ++str)
+		if (is_of_type(*str))
+			++n_str;
+
+	if (n_str == 0)
+		return NULL;
+
+	out = g_try_new0(char *, n_str + 1);
+	if (out == NULL)
+		return NULL;
+
+	for (str = strs, i = 0; i < n_str; ++str) {
+		if (!is_of_type(*str))
+			continue;
+
+		out[i++] = g_strdup(*str);
+	}
+
+	return out;
+}
+
+static void set_ipv4_settings(struct ofono_gprs_context *gc,
+					struct ril_data_call *call, int addr_i)
+{
+	char **gw;
+	char **dnses;
+
+	ofono_gprs_context_set_ipv4_address(gc, call->ip_addrs[addr_i], TRUE);
+	ofono_gprs_context_set_ipv4_netmask(gc,
+		ril_util_get_ipv4_netmask(call->prefix_lengths[addr_i]));
+
+	for (gw = call->gateways; *gw != NULL; ++gw) {
+		if (!is_ipv4(*gw))
+			continue;
+
+		ofono_gprs_context_set_ipv4_gateway(gc, *gw);
+		break;
+	}
+
+	dnses = get_strs_subset(call->dns_addrs, is_ipv4);
+	ofono_gprs_context_set_ipv4_dns_servers(gc, (const char **) dnses);
+	g_strfreev(dnses);
+}
+
+static void set_ipv6_settings(struct ofono_gprs_context *gc,
+					struct ril_data_call *call, int addr_i)
+{
+	char *endp;
+	char **gw;
+	int prefix;
+	char **dnses;
+
+	ofono_gprs_context_set_ipv6_address(gc, call->ip_addrs[addr_i]);
+
+	if (*call->prefix_lengths[addr_i] == '\0') {
+		prefix = DEF_IPV6_PREF_LENGTH;
+	} else {
+		prefix = strtol(call->prefix_lengths[addr_i], &endp, 10);
+		if (*endp != '\0' || prefix < 0 ||
+					prefix > DEF_IPV6_PREF_LENGTH)
+			prefix = DEF_IPV6_PREF_LENGTH;
+	}
+
+	ofono_gprs_context_set_ipv6_prefix_length(gc, prefix);
+
+	for (gw = call->gateways; *gw != NULL; ++gw) {
+		if (!is_ipv6(*gw))
+			continue;
+
+		ofono_gprs_context_set_ipv6_gateway(gc, *gw);
+		break;
+	}
+
+	dnses = get_strs_subset(call->dns_addrs, is_ipv6);
+	ofono_gprs_context_set_ipv6_dns_servers(gc, (const char **) dnses);
+	g_strfreev(dnses);
+}
+
 static void ril_setup_data_call_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -152,6 +253,8 @@ static void ril_setup_data_call_cb(struct ril_msg *message, gpointer user_data)
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct ril_data_call *call = NULL;
 	struct ril_data_call_list *call_list = NULL;
+	int i;
+	gboolean found_v4 = FALSE, found_v6 = FALSE;
 
 	DBG("*gc: %p", gc);
 
@@ -206,14 +309,17 @@ static void ril_setup_data_call_cb(struct ril_msg *message, gpointer user_data)
 	gcd->state = STATE_ACTIVE;
 
 	ofono_gprs_context_set_interface(gc, call->ifname);
-	ofono_gprs_context_set_ipv4_netmask(gc,
-					ril_util_get_netmask(call->ip_addr));
 
-	ofono_gprs_context_set_ipv4_address(gc, call->ip_addr, TRUE);
-	ofono_gprs_context_set_ipv4_gateway(gc, call->gateways[0]);
+	for (i = 0; call->ip_addrs[i] != NULL && !(found_v4 && found_v6); ++i) {
 
-	ofono_gprs_context_set_ipv4_dns_servers(gc,
-					(const char **) call->dns_addrs);
+		if (is_ipv4(call->ip_addrs[i])) {
+			set_ipv4_settings(gc, call, i);
+			found_v4 = TRUE;
+		} else {
+			set_ipv6_settings(gc, call, i);
+			found_v6 = TRUE;
+		}
+	}
 
 	g_ril_unsol_free_data_call_list(call_list);
 
