@@ -143,6 +143,9 @@ builtin_sources += plugins/qcom-msim.c
 builtin_modules += androidspntable
 builtin_sources += plugins/android-spn-table.c
 
+builtin_modules += android_wakelock
+builtin_sources += plugins/android-wakelock.c
+
 builtin_modules += mtkmodem
 builtin_sources += drivers/mtkmodem/mtkmodem.h \
 			drivers/mtkmodem/mtkmodem.c \
@@ -625,11 +628,6 @@ builtin_sources += plugins/push-notification.c
 
 builtin_modules += smshistory
 builtin_sources += plugins/smshistory.c
-
-if ANDROID_WAKELOCK
-builtin_modules += android_wakelock
-builtin_sources += plugins/android-wakelock.c
-endif
 
 if ACCOUNTSSETTINGS
 builtin_modules += accounts_settings
