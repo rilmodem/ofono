@@ -630,6 +630,7 @@ struct reply_sim_status *g_ril_reply_parse_sim_status(GRil *gril,
 	struct parcel rilp;
 	unsigned int i;
 	struct reply_sim_status *status;
+	enum ofono_ril_vendor vendor = g_ril_vendor(gril);
 
 	g_ril_append_print_buf(gril, "[%d,%04d]< %s",
 			g_ril_get_slot(gril), message->serial_no,
@@ -705,6 +706,19 @@ struct reply_sim_status *g_ril_reply_parse_sim_status(GRil *gril,
 		app->pin_replaced = parcel_r_int32(&rilp);
 		app->pin1_state = parcel_r_int32(&rilp);
 		app->pin2_state = parcel_r_int32(&rilp);
+
+		if (vendor == OFONO_RIL_VENDOR_QCOM_MSIM) {
+			/* QCOM's sim status reply contains 4 more elements in
+			 * the struct: remaining_count_{pin,puk}1 and
+			 * remaining_count_{pin,puk}2. We have to read that
+			 * from the parcel.
+			 * TODO: make use of this information.
+			 */
+			parcel_r_int32(&rilp);
+			parcel_r_int32(&rilp);
+			parcel_r_int32(&rilp);
+			parcel_r_int32(&rilp);
+		}
 
 		g_ril_append_print_buf(gril,
 					"%s[app_type=%d,app_state=%d,"
