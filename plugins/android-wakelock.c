@@ -41,8 +41,8 @@
 #include "log.h"
 #include "wakelock.h"
 
-#define ANDROID_WAKELOCK_LOCK_PATH		"/sys/power/wake_lock"
-#define ANDROID_WAKELOCK_UNLOCK_PATH	"/sys/power/wake_unlock"
+#define ANDROID_WAKELOCK_LOCK_PATH "/sys/power/wake_lock"
+#define ANDROID_WAKELOCK_UNLOCK_PATH "/sys/power/wake_unlock"
 
 struct wakelock {
 	char *name;
@@ -115,13 +115,15 @@ static int android_wakelock_release(struct wakelock *lock)
 		lock, lock->name, lock->acquisitions);
 
 	if (!lock->acquisitions) {
-		ofono_warn("Attempted to release already released lock %s", lock->name);
+		ofono_warn("Attempted to release already released lock %s",
+								lock->name);
 		return -EINVAL;
 	}
 
 	if (lock->acquisitions > 1) {
 		lock->acquisitions--;
-		DBG("lock %s released acquisitions %d", lock->name, lock->acquisitions);
+		DBG("lock %s released acquisitions %d",
+						lock->name, lock->acquisitions);
 		return 0;
 	}
 
@@ -209,4 +211,5 @@ static void android_wakelock_exit(void)
 }
 
 OFONO_PLUGIN_DEFINE(android_wakelock, "Android Wakelock driver", VERSION,
-			OFONO_PLUGIN_PRIORITY_DEFAULT, android_wakelock_init, android_wakelock_exit)
+				OFONO_PLUGIN_PRIORITY_DEFAULT,
+				android_wakelock_init, android_wakelock_exit)
