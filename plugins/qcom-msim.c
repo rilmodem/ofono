@@ -25,6 +25,8 @@
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 
+#include <stddef.h>
+
 #include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
@@ -34,6 +36,7 @@
 #include "drivers/rilmodem/rilmodem.h"
 #include "drivers/rilmodem/vendor.h"
 #include "drivers/qcommsimmodem/qcom_msim_modem.h"
+#include "drivers/qcommsimmodem/qcom_msim_constants.h"
 #include "gril.h"
 #include "ril.h"
 
@@ -48,9 +51,23 @@ static const char *qcom_msim_get_driver_type(enum ofono_atom_type atom)
 	}
 }
 
+static const char *qcom_msim_request_id_to_string(int req)
+{
+	switch (req) {
+	case QCOM_MSIM_RIL_REQUEST_SET_UICC_SUBSCRIPTION:
+		return "QCOM_MSIM_RIL_REQUEST_SET_UICC_SUBSCRIPTION";
+	case QCOM_MSIM_RIL_REQUEST_SET_DATA_SUBSCRIPTION:
+		return "QCOM_MSIM_RIL_REQUEST_SET_DATA_SUBSCRIPTION";
+	default:
+		return NULL;
+	}
+}
+
 static int qcom_msim_probe(struct ofono_modem *modem)
 {
-	return ril_create(modem, OFONO_RIL_VENDOR_QCOM_MSIM, NULL, NULL,
+	return ril_create(modem, OFONO_RIL_VENDOR_QCOM_MSIM,
+						qcom_msim_request_id_to_string,
+						NULL,
 						qcom_msim_get_driver_type);
 }
 
