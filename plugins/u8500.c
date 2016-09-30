@@ -590,8 +590,17 @@ static void u8500_query_serial(struct ofono_devinfo *info,
 {
 	char imei[16]; /* IMEI 15 digits + 1 null*/
 	char numbers[] = "1234567890";
-	FILE *fp = fopen("/etc/imei", "r");
+	FILE *fp;
+	char *imei_file;
+	/* SNAP_COMMON gives us a writable path for daemons in snappy systems */
+	const char *snap_common = getenv("SNAP_COMMON");
+
 	DBG("");
+
+	imei_file = g_strdup_printf("%s/etc/imei",
+						snap_common ? snap_common : "");
+	fp = fopen(imei_file, "r");
+	g_free(imei_file);
 
 	if (fp == NULL) {
 		DBG("failed to open /etc/imei file");

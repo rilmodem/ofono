@@ -1107,12 +1107,20 @@ static void parse_config(void)
 	char **modems;
 	int i;
 	const char *filename;
+	char *snap_filename = NULL;
+	const char *conf_override = getenv("OFONO_PHONESIM_CONFIG");
+	/* SNAP_COMMON gives us a writable path for daemons in snappy systems */
+	const char *snap_common = getenv("SNAP_COMMON");
 
-	char *conf_override = getenv("OFONO_PHONESIM_CONFIG");
-	if (conf_override)
+	if (conf_override) {
 		filename = conf_override;
-	else
+	} else if (snap_common) {
+		snap_filename = g_strdup_printf("%s/etc/phonesim.conf",
+								snap_common);
+		filename = snap_filename;
+	} else {
 		filename = CONFIGDIR "/phonesim.conf";
+	}
 
 	DBG("filename %s", filename);
 
@@ -1143,6 +1151,9 @@ static void parse_config(void)
 	g_strfreev(modems);
 
 done:
+	if (snap_filename)
+		g_free(snap_filename);
+
 	g_key_file_free(keyfile);
 }
 
