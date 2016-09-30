@@ -43,3 +43,4 @@ GKeyFile *storage_open(const char *imsi, const char *store);
 void storage_sync(const char *imsi, const char *store, GKeyFile *keyfile);
 void storage_close(const char *imsi, const char *store, GKeyFile *keyfile,
 			gboolean save);
+const char* storage_dir(void);
