@@ -168,9 +168,9 @@ GKeyFile *storage_open(const char *imsi, const char *store)
 		return NULL;
 
 	if (imsi)
-		path = g_strdup_printf(STORAGEDIR "/%s/%s", imsi, store);
+		path = g_strdup_printf("%s/%s/%s", storage_dir(), imsi, store);
 	else
-		path = g_strdup_printf(STORAGEDIR "/%s", store);
+		path = g_strdup_printf("%s/%s", storage_dir(), store);
 
 	keyfile = g_key_file_new();
 
@@ -189,9 +189,9 @@ void storage_sync(const char *imsi, const char *store, GKeyFile *keyfile)
 	gsize length = 0;
 
 	if (imsi)
-		path = g_strdup_printf(STORAGEDIR "/%s/%s", imsi, store);
+		path = g_strdup_printf("%s/%s/%s", storage_dir(), imsi, store);
 	else
-		path = g_strdup_printf(STORAGEDIR "/%s", store);
+		path = g_strdup_printf("%s/%s", storage_dir(), store);
 
 	if (path == NULL)
 		return;
@@ -216,4 +216,16 @@ void storage_close(const char *imsi, const char *store, GKeyFile *keyfile,
 		storage_sync(imsi, store, keyfile);
 
 	g_key_file_free(keyfile);
+}
+
+/* Returns a writable path for the daemon */
+const char* storage_dir(void)
+{
+	static char *storagedir = NULL;
+
+	/* SNAP_COMMON gives us a writable path for daemons in snappy systems */
+	if (!storagedir)
+		storagedir = getenv("SNAP_COMMON");
+
+	return storagedir ? storagedir : STORAGEDIR;
 }
