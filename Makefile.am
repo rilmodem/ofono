@@ -836,7 +836,8 @@ unit_tests = unit/test-common unit/test-util unit/test-idmap \
 				unit/test-mtkunsol \
 				unit/test-rilmodem-cs \
 				unit/test-rilmodem-sms \
-				unit/test-rilmodem-cb
+				unit/test-rilmodem-cb \
+				unit/test-rilmodem-cf
 
 noinst_PROGRAMS = $(unit_tests) \
 			unit/test-sms-root unit/test-mux unit/test-caif
@@ -958,6 +959,13 @@ unit_test_rilmodem_cb_SOURCES = $(test_rilmodem_sources) \
 unit_test_rilmodem_cb_LDADD = gdbus/libgdbus-internal.la $(builtin_libadd) \
 					@GLIB_LIBS@ @DBUS_LIBS@ -ldl
 unit_objects += $(unit_test_rilmodem_cb_OBJECTS)
+
+unit_test_rilmodem_cf_SOURCES = $(test_rilmodem_sources) \
+					unit/test-rilmodem-cf.c \
+					drivers/rilmodem/call-forwarding.c
+unit_test_rilmodem_cf_LDADD = gdbus/libgdbus-internal.la $(builtin_libadd) \
+					@GLIB_LIBS@ @DBUS_LIBS@ -ldl
+unit_objects += $(unit_test_rilmodem_cf_OBJECTS)
 
 TESTS = $(unit_tests)
 
