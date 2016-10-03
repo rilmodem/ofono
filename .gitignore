@@ -55,6 +55,7 @@ unit/test-mtkunsol
 unit/test-rilmodem-cs
 unit/test-rilmodem-sms
 unit/test-rilmodem-cb
+unit/test-rilmodem-cf
 unit/test-*.log
 unit/test-*.trs
 
@@ -70,3 +71,8 @@ tools/stktest
 gatchat/gsmdial
 gatchat/test-server
 gatchat/test-qcdm
+
+GPATH
+GRTAGS
+GSYMS
+GTAGS
