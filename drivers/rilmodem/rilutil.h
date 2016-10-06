@@ -94,21 +94,8 @@ struct ril_radio_settings_driver_data {
 	struct ofono_modem *modem;
 };
 
-typedef void (*ril_util_sim_inserted_cb_t)(gboolean present, void *userdata);
-
 void decode_ril_error(struct ofono_error *error, const char *final);
-gint ril_util_call_compare_by_status(gconstpointer a, gconstpointer b);
-gint ril_util_call_compare_by_phone_number(gconstpointer a, gconstpointer b);
-gint ril_util_call_compare_by_id(gconstpointer a, gconstpointer b);
-gint ril_util_call_compare(gconstpointer a, gconstpointer b);
 gchar *ril_util_get_netmask(const char *address);
-
-struct ril_util_sim_state_query *ril_util_sim_state_query_new(GRil *ril,
-						guint interval, guint num_times,
-						ril_util_sim_inserted_cb_t cb,
-						void *userdata,
-						GDestroyNotify destroy);
-void ril_util_sim_state_query_free(struct ril_util_sim_state_query *req);
 
 struct cb_data {
 	void *cb;
@@ -127,23 +114,6 @@ static inline struct cb_data *cb_data_new(void *cb, void *data, void *user)
 
 	return ret;
 }
-
-static inline int ril_util_convert_signal_strength(int strength)
-{
-	int result;
-
-	if (strength == 99)
-		result = -1;
-	else
-		result = (strength * 100) / 31;
-
-	return result;
-}
-
-#define DECLARE_FAILURE(e)			\
-	struct ofono_error e;			\
-	e.type = OFONO_ERROR_TYPE_FAILURE;	\
-	e.error = 0				\
 
 #define CALLBACK_WITH_FAILURE(cb, args...)		\
 	do {						\
