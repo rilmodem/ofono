@@ -57,6 +57,7 @@ unit/test-rilmodem-sms
 unit/test-rilmodem-cb
 unit/test-rilmodem-cf
 unit/test-rilmodem-cv
+unit/test-rilmodem-devinfo
 unit/test-*.log
 unit/test-*.trs
 
