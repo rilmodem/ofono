@@ -85,7 +85,7 @@ static void ril_query_call_fwd_cb(struct ril_msg *message, gpointer user_data)
 	struct forw_data *fd = ofono_call_forwarding_get_data(cbd->user);
 	ofono_call_forwarding_query_cb_t cb = cbd->cb;
 	struct ofono_call_forwarding_condition *list;
-	unsigned int list_size;
+	unsigned int list_size = -1;
 
 	if (message->error != RIL_E_SUCCESS) {
 		ofono_error("%s: rild error: %s", __func__,
