@@ -973,6 +973,7 @@ unit_objects += $(unit_test_rilmodem_cf_OBJECTS)
 
 unit_test_rilmodem_cv_SOURCES = $(test_rilmodem_sources) \
 					unit/test-rilmodem-cv.c \
+					unit/rilmodem-test-engine.c \
 					drivers/rilmodem/call-volume.c
 unit_test_rilmodem_cv_LDADD = gdbus/libgdbus-internal.la $(builtin_libadd) \
 					@GLIB_LIBS@ @DBUS_LIBS@ -ldl
