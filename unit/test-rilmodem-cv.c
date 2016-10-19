@@ -40,33 +40,9 @@
 
 #include "common.h"
 #include "ril_constants.h"
-#include "rilmodem-test-server.h"
+#include "rilmodem-test-engine.h"
 
-/* Only mute action supported by rilmodem for the moment */
-enum cv_driver_call {
-	CV_CALL_MUTE,
-};
-
-struct cv_data {
-	struct rilmodem_test_data rtd;
-	enum cv_driver_call call_type;
-
-	/* Input parameters */
-	int muted;
-
-	/* Output parameters */
-	enum ofono_error_type error_type;
-};
-
-struct rilmodem_cv_data {
-	GRil *ril;
-	struct ofono_modem *modem;
-	const struct cv_data *test_data;
-	struct ofono_call_volume *cv;
-	struct server_data *serverd;
-};
-
-static const struct ofono_call_volume_driver *cvdriver;
+static const struct ofono_call_volume_driver *cvriver;
 
 /* Declarations && Re-implementations of core functions. */
 void ril_call_volume_exit(void);
@@ -74,16 +50,15 @@ void ril_call_volume_init(void);
 
 struct ofono_call_volume {
 	void *driver_data;
-	const struct rilmodem_cv_data *rcd;
+	GRil *ril;
+	struct engine_data *engined;
 };
-
-static GMainLoop *mainloop;
 
 int ofono_call_volume_driver_register(
 				const struct ofono_call_volume_driver *d)
 {
-	if (cvdriver == NULL)
-		cvdriver = d;
+	if (cvriver == NULL)
+		cvriver = d;
 
 	return 0;
 }
@@ -91,32 +66,23 @@ int ofono_call_volume_driver_register(
 void ofono_call_volume_driver_unregister(
 				const struct ofono_call_volume_driver *d)
 {
-	cvdriver = NULL;
-}
-
-struct ofono_call_volume *ofono_call_volume_create(
-						struct ofono_modem *modem,
-						unsigned int vendor,
-						const char *driver, void *data)
-{
-	struct rilmodem_cv_data *rcd = data;
-	struct ofono_call_volume *cv = g_malloc0(sizeof(*cv));
-	int retval;
-
-	cv->rcd = rcd;
-
-	retval = cvdriver->probe(cv, OFONO_RIL_VENDOR_AOSP, rcd->ril);
-	g_assert(retval == 0);
-
-	return cv;
+	cvriver = NULL;
 }
 
 void ofono_call_volume_register(struct ofono_call_volume *cv)
 {
+	const struct rilmodem_test_step *step;
+
+	step = rilmodem_test_engine_get_current_step(cv->engined);
+
+	g_assert(step->type == TST_EVENT_CALL);
+	g_assert(step->call_func == (void (*)(void))
+						ofono_call_volume_register);
+
+	rilmodem_test_engine_next_step(cv->engined);
 }
 
-void ofono_call_volume_set_data(struct ofono_call_volume *cv,
-					void *data)
+void ofono_call_volume_set_data(struct ofono_call_volume *cv, void *data)
 {
 	cv->driver_data = data;
 }
@@ -128,9 +94,19 @@ void *ofono_call_volume_get_data(struct ofono_call_volume *cv)
 
 void ofono_call_volume_set_muted(struct ofono_call_volume *cv, int muted)
 {
-	g_assert(cv->rcd->test_data->muted == muted);
+	const struct rilmodem_test_step *step;
 
-	g_main_loop_quit(mainloop);
+	step = rilmodem_test_engine_get_current_step(cv->engined);
+
+	g_assert(step->type == TST_EVENT_CALL);
+	g_assert(step->call_func == (void (*)(void))
+						ofono_call_volume_set_muted);
+
+	if (step->check_func != NULL)
+		((void (*)(struct ofono_call_volume *, int)) step->check_func)(
+								cv, muted);
+
+	rilmodem_test_engine_next_step(cv->engined);
 }
 
 /*
@@ -141,98 +117,289 @@ void ofono_call_volume_set_muted(struct ofono_call_volume *cv, int muted)
  */
 #if BYTE_ORDER == LITTLE_ENDIAN
 
-/* Test SET_MUTE to false */
-static const guchar req_cv_mute_parcel_valid_1[] = {
-	0x00, 0x00, 0x00, 0x10, 0x35, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+/* REQUEST_GET_MUTE, seq 1 */
+static const char parcel_req_get_mute_1_2[] = {
+	0x00, 0x00, 0x00, 0x08, 0x36, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+};
+
+/* REQUEST_GET_MUTE rsp, seq 1, not muted */
+static const char parcel_rsp_get_mute_1_3[] = {
+	0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static void check_call_volume_set_muted_1_4(struct ofono_call_volume *cv,
+								int muted)
+{
+	g_assert(muted == 0);
+}
+
+static void set_mute_cb_1_8(const struct ofono_error *error, void *data)
+{
+	struct ofono_call_volume *cv = data;
+
+	g_assert(error->type == OFONO_ERROR_TYPE_NO_ERROR);
+
+	rilmodem_test_engine_next_step(cv->engined);
+}
+
+static void call_set_mute_1_5(gpointer data)
+{
+	struct ofono_call_volume *cv = data;
+
+	cvriver->mute(cv, 0, set_mute_cb_1_8, cv);
+
+	rilmodem_test_engine_next_step(cv->engined);
+}
+
+/* REQUEST_SET_MUTE, seq 2, false */
+static const char parcel_req_set_mute_1_6[] = {
+	0x00, 0x00, 0x00, 0x10, 0x35, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
 	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-static const struct cv_data testdata_cv_mute_valid_1 = {
-	.rtd = {
-		.req_data = req_cv_mute_parcel_valid_1,
-		.req_size = sizeof(req_cv_mute_parcel_valid_1),
-		.rsp_data = NULL,
-		.rsp_size = 0,
-		.rsp_error = RIL_E_SUCCESS,
-	},
-	.call_type = CV_CALL_MUTE,
-	.muted = 0,
-	.error_type = OFONO_ERROR_TYPE_NO_ERROR,
+/* REQUEST_SET_MUTE rsp, seq 2, success */
+static const char parcel_rsp_set_mute_1_7[] = {
+	0x00, 0x00, 0x00, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00
 };
 
-/* Test SET_MUTE to true */
-static const guchar req_cv_mute_parcel_valid_2[] = {
-	0x00, 0x00, 0x00, 0x10, 0x35, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+/*
+ * --- TEST 1 ---
+ * Step 1: Driver calls ofono_cv_register
+ * Step 2: Driver sends REQUEST_GET_MUTE
+ * Step 3: Harness answers, state is not muted
+ * Step 4: Driver calls ofono_call_volume_set_muted(false)
+ * Step 5: Harness call drv->mute(false)
+ * Step 6: Driver sends REQUEST_SET_MUTE
+ * Step 7: Harness answers, success
+ * Step 8: Driver calls the callback specified in step 2
+ */
+static const struct rilmodem_test_step steps_test_1[] = {
+	{
+		.type = TST_EVENT_CALL,
+		.call_func = (void (*)(void)) ofono_call_volume_register,
+		.check_func = NULL
+	},
+	{
+		.type = TST_EVENT_RECEIVE,
+		.parcel_data = parcel_req_get_mute_1_2,
+		.parcel_size = sizeof(parcel_req_get_mute_1_2)
+	},
+	{
+		.type = TST_ACTION_SEND,
+		.parcel_data = parcel_rsp_get_mute_1_3,
+		.parcel_size = sizeof(parcel_rsp_get_mute_1_3)
+	},
+	{
+		.type = TST_EVENT_CALL,
+		.call_func = (void (*)(void)) ofono_call_volume_set_muted,
+		.check_func = (void (*)(void)) check_call_volume_set_muted_1_4
+	},
+	{
+		.type = TST_ACTION_CALL,
+		.call_action = call_set_mute_1_5,
+	},
+	{
+		.type = TST_EVENT_RECEIVE,
+		.parcel_data = parcel_req_set_mute_1_6,
+		.parcel_size = sizeof(parcel_req_set_mute_1_6)
+	},
+	{
+		.type = TST_ACTION_SEND,
+		.parcel_data = parcel_rsp_set_mute_1_7,
+		.parcel_size = sizeof(parcel_rsp_set_mute_1_7)
+	},
+	{
+		.type = TST_EVENT_CALL,
+		.call_func = (void (*)(void)) set_mute_cb_1_8,
+		.check_func = (void (*)(void)) NULL
+	},
+};
+
+static const struct rilmodem_test_data test_1 = {
+	.steps = steps_test_1,
+	.num_steps = G_N_ELEMENTS(steps_test_1)
+};
+
+static void set_mute_cb_2_8(const struct ofono_error *error, void *data)
+{
+	struct ofono_call_volume *cv = data;
+
+	g_assert(error->type == OFONO_ERROR_TYPE_NO_ERROR);
+
+	rilmodem_test_engine_next_step(cv->engined);
+}
+
+static void call_set_mute_2_5(gpointer data)
+{
+	struct ofono_call_volume *cv = data;
+
+	cvriver->mute(cv, 1, set_mute_cb_2_8, cv);
+
+	rilmodem_test_engine_next_step(cv->engined);
+}
+
+/* REQUEST_SET_MUTE, seq 2, true */
+static const char parcel_req_set_mute_2_6[] = {
+	0x00, 0x00, 0x00, 0x10, 0x35, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
 	0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
 };
 
-static const struct cv_data testdata_cv_mute_valid_2 = {
-	.rtd = {
-		.req_data = req_cv_mute_parcel_valid_2,
-		.req_size = sizeof(req_cv_mute_parcel_valid_2),
-		.rsp_data = NULL,
-		.rsp_size = 0,
-		.rsp_error = RIL_E_SUCCESS,
+/* REQUEST_SET_MUTE rsp, seq 2, success */
+static const char parcel_rsp_set_mute_2_7[] = {
+	0x00, 0x00, 0x00, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00
+};
+
+/*
+ * --- TEST 2 ---
+ * Steps 1-4: Same as test 1
+ * Step 5: Harness call drv->mute(true)
+ * Step 6: Driver sends REQUEST_SET_MUTE
+ * Step 7: Harness answers, success
+ * Step 8: Driver calls the callback specified in step 2
+ */
+static const struct rilmodem_test_step steps_test_2[] = {
+	{
+		.type = TST_EVENT_CALL,
+		.call_func = (void (*)(void)) ofono_call_volume_register,
+		.check_func = NULL
 	},
-	.call_type = CV_CALL_MUTE,
-	.muted = 1,
-	.error_type = OFONO_ERROR_TYPE_NO_ERROR,
-};
-
-/* Test SET_MUTE to false, fail */
-static const guchar req_cv_mute_parcel_invalid_1[] = {
-	0x00, 0x00, 0x00, 0x10, 0x35, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-static const struct cv_data testdata_cv_mute_invalid_1 = {
-	.rtd = {
-		.req_data = req_cv_mute_parcel_invalid_1,
-		.req_size = sizeof(req_cv_mute_parcel_invalid_1),
-		.rsp_data = NULL,
-		.rsp_size = 0,
-		.rsp_error = RIL_E_GENERIC_FAILURE,
+	{
+		.type = TST_EVENT_RECEIVE,
+		.parcel_data = parcel_req_get_mute_1_2,
+		.parcel_size = sizeof(parcel_req_get_mute_1_2)
 	},
-	.call_type = CV_CALL_MUTE,
-	.muted = 0,
-	.error_type = OFONO_ERROR_TYPE_FAILURE,
+	{
+		.type = TST_ACTION_SEND,
+		.parcel_data = parcel_rsp_get_mute_1_3,
+		.parcel_size = sizeof(parcel_rsp_get_mute_1_3)
+	},
+	{
+		.type = TST_EVENT_CALL,
+		.call_func = (void (*)(void)) ofono_call_volume_set_muted,
+		.check_func = (void (*)(void)) check_call_volume_set_muted_1_4
+	},
+	{
+		.type = TST_ACTION_CALL,
+		.call_action = call_set_mute_2_5,
+	},
+	{
+		.type = TST_EVENT_RECEIVE,
+		.parcel_data = parcel_req_set_mute_2_6,
+		.parcel_size = sizeof(parcel_req_set_mute_2_6)
+	},
+	{
+		.type = TST_ACTION_SEND,
+		.parcel_data = parcel_rsp_set_mute_2_7,
+		.parcel_size = sizeof(parcel_rsp_set_mute_2_7)
+	},
+	{
+		.type = TST_EVENT_CALL,
+		.call_func = (void (*)(void)) set_mute_cb_2_8,
+		.check_func = (void (*)(void)) NULL
+	},
 };
 
-static void cv_mute_callback(const struct ofono_error *error, void *data)
+static const struct rilmodem_test_data test_2 = {
+	.steps = steps_test_2,
+	.num_steps = G_N_ELEMENTS(steps_test_2)
+};
+
+static void set_mute_cb_3_8(const struct ofono_error *error, void *data)
 {
-	struct rilmodem_cv_data *rcd = data;
-	const struct cv_data *cvd = rcd->test_data;
+	struct ofono_call_volume *cv = data;
 
-	g_assert(error->type == cvd->error_type);
+	g_assert(error->type == OFONO_ERROR_TYPE_FAILURE);
 
-	g_main_loop_quit(mainloop);
+	rilmodem_test_engine_next_step(cv->engined);
 }
+
+static void call_set_mute_3_5(gpointer data)
+{
+	struct ofono_call_volume *cv = data;
+
+	cvriver->mute(cv, 1, set_mute_cb_3_8, cv);
+
+	rilmodem_test_engine_next_step(cv->engined);
+}
+
+/* REQUEST_SET_MUTE, seq 2, true */
+static const char parcel_req_set_mute_3_6[] = {
+	0x00, 0x00, 0x00, 0x10, 0x35, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
+};
+
+/* REQUEST_SET_MUTE rsp, seq 2, RIL_E_GENERIC_FAILURE */
+static const char parcel_rsp_set_mute_3_7[] = {
+	0x00, 0x00, 0x00, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+	0x02, 0x00, 0x00, 0x00
+};
+
+/*
+ * --- TEST 3 ---
+ * Steps 1-4: Same as test 1
+ * Step 5: Harness call drv->mute(true)
+ * Step 6: Driver sends REQUEST_SET_MUTE
+ * Step 7: Harness answers, failure
+ * Step 8: Driver calls the callback specified in step 2
+ */
+static const struct rilmodem_test_step steps_test_3[] = {
+	{
+		.type = TST_EVENT_CALL,
+		.call_func = (void (*)(void)) ofono_call_volume_register,
+		.check_func = NULL
+	},
+	{
+		.type = TST_EVENT_RECEIVE,
+		.parcel_data = parcel_req_get_mute_1_2,
+		.parcel_size = sizeof(parcel_req_get_mute_1_2)
+	},
+	{
+		.type = TST_ACTION_SEND,
+		.parcel_data = parcel_rsp_get_mute_1_3,
+		.parcel_size = sizeof(parcel_rsp_get_mute_1_3)
+	},
+	{
+		.type = TST_EVENT_CALL,
+		.call_func = (void (*)(void)) ofono_call_volume_set_muted,
+		.check_func = (void (*)(void)) check_call_volume_set_muted_1_4
+	},
+	{
+		.type = TST_ACTION_CALL,
+		.call_action = call_set_mute_3_5,
+	},
+	{
+		.type = TST_EVENT_RECEIVE,
+		.parcel_data = parcel_req_set_mute_3_6,
+		.parcel_size = sizeof(parcel_req_set_mute_3_6)
+	},
+	{
+		.type = TST_ACTION_SEND,
+		.parcel_data = parcel_rsp_set_mute_3_7,
+		.parcel_size = sizeof(parcel_rsp_set_mute_3_7)
+	},
+	{
+		.type = TST_EVENT_CALL,
+		.call_func = (void (*)(void)) set_mute_cb_3_8,
+		.check_func = (void (*)(void)) NULL
+	},
+};
+
+static const struct rilmodem_test_data test_3 = {
+	.steps = steps_test_3,
+	.num_steps = G_N_ELEMENTS(steps_test_3)
+};
 
 static void server_connect_cb(gpointer data)
 {
-	struct rilmodem_cv_data *rcd = data;
+	struct ofono_call_volume *cv = data;
+	int retval;
 
-	/* This causes local impl of _create() to call driver's probe func. */
-	/*
-	 * TODO The call to probe() calls g_idle_add to send a GET_MUTE request.
-	 * The way the calls are structured implies that we send the SET_MUTE
-	 * made by the posterior call to mute() before this GET_MUTE. This in
-	 * fact lets us test mute() and other driver calls, but impedes us to
-	 * properly test the probe() call. This kind of issue is common to all
-	 * test-rilmodem tests. To solve this we need to generalize the tests so
-	 * general dialogues can be established with the atom driver under test.
-	 * The test should define steps that could be either actions to perform
-	 * or events to wait for.
-	 */
-	rcd->cv = ofono_call_volume_create(NULL, OFONO_RIL_VENDOR_AOSP,
-							"rilmodem", rcd);
-
-	switch (rcd->test_data->call_type) {
-	case CV_CALL_MUTE:
-		cvdriver->mute(rcd->cv, rcd->test_data->muted,
-							cv_mute_callback, rcd);
-		break;
-	};
+	/* This starts the test. First for this atom is a call to _register. */
+	retval = cvriver->probe(cv, OFONO_RIL_VENDOR_AOSP, cv->ril);
+	g_assert(retval == 0);
 }
 
 /*
@@ -244,35 +411,33 @@ static void server_connect_cb(gpointer data)
  *      server socket
  *  - starts a mainloop
  */
-static void test_cv_func(gconstpointer data)
+static void test_function(gconstpointer data)
 {
-	const struct cv_data *cvd = data;
-	struct rilmodem_cv_data *rcd;
+	const struct rilmodem_test_data *test_data = data;
+	struct ofono_call_volume *cv;
 
 	ril_call_volume_init();
 
-	rcd = g_malloc0(sizeof(*rcd));
+	cv = g_malloc0(sizeof(*cv));
 
-	rcd->test_data = cvd;
+	cv->engined = rilmodem_test_engine_create(&server_connect_cb,
+							test_data, cv);
 
-	rcd->serverd = rilmodem_test_server_create(&server_connect_cb,
-								&cvd->rtd, rcd);
-
-	rcd->ril = g_ril_new(rilmodem_test_get_socket_name(rcd->serverd),
+	cv->ril = g_ril_new(rilmodem_test_engine_get_socket_name(cv->engined),
 							OFONO_RIL_VENDOR_AOSP);
-	g_assert(rcd->ril != NULL);
+	g_assert(cv->ril != NULL);
 
-	mainloop = g_main_loop_new(NULL, FALSE);
+	/* So the driver is allowed to send ALLOW_DATA */
+	g_ril_set_version(cv->ril, 10);
 
-	g_main_loop_run(mainloop);
-	g_main_loop_unref(mainloop);
+	/* Perform test */
+	rilmodem_test_engine_start(cv->engined);
 
-	cvdriver->remove(rcd->cv);
-	g_free(rcd->cv);
-	g_ril_unref(rcd->ril);
-	g_free(rcd);
+	cvriver->remove(cv);
+	g_ril_unref(cv->ril);
+	g_free(cv);
 
-	rilmodem_test_server_close(rcd->serverd);
+	rilmodem_test_engine_remove(cv->engined);
 
 	ril_call_volume_exit();
 }
@@ -290,15 +455,9 @@ int main(int argc, char **argv)
  * failures when run on PowerPC.
  */
 #if BYTE_ORDER == LITTLE_ENDIAN
-	g_test_add_data_func("/testrilmodemcv/cv_mute/valid/1",
-					&testdata_cv_mute_valid_1,
-					test_cv_func);
-	g_test_add_data_func("/testrilmodemcv/cv_mute/valid/2",
-					&testdata_cv_mute_valid_2,
-					test_cv_func);
-	g_test_add_data_func("/testrilmodemcv/cv_mute/invalid/1",
-					&testdata_cv_mute_invalid_1,
-					test_cv_func);
+	g_test_add_data_func("/test-rilmodem-cv/1", &test_1, test_function);
+	g_test_add_data_func("/test-rilmodem-cv/2", &test_2, test_function);
+	g_test_add_data_func("/test-rilmodem-cv/3", &test_3, test_function);
 #endif
 	return g_test_run();
 }
