@@ -143,8 +143,6 @@ void rilmodem_test_engine_remove(struct engine_data *ed)
 {
 	if (ed->connection_watch)
 		g_source_remove(ed->connection_watch);
-	if (ed->server_io != NULL)
-		g_io_channel_unref(ed->server_io);
 
 	g_assert(ed->server_sk);
 	close(ed->server_sk);
