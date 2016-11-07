@@ -837,7 +837,10 @@ unit_tests = unit/test-common unit/test-util unit/test-idmap \
 				unit/test-rilmodem-cs \
 				unit/test-rilmodem-sms \
 				unit/test-rilmodem-cb \
-				unit/test-rilmodem-cf
+				unit/test-rilmodem-cf \
+				unit/test-rilmodem-cv \
+				unit/test-rilmodem-devinfo \
+				unit/test-rilmodem-gprs
 
 noinst_PROGRAMS = $(unit_tests) \
 			unit/test-sms-root unit/test-mux unit/test-caif
@@ -937,7 +940,8 @@ test_rilmodem_sources = $(gril_sources) src/log.c src/common.c src/util.c \
 				gatchat/ringbuffer.h gatchat/ringbuffer.c \
 				unit/rilmodem-test-server.h \
 				unit/rilmodem-test-server.c \
-				src/simutil.c
+				src/simutil.c \
+				drivers/rilmodem/rilutil.c
 
 unit_test_rilmodem_cs_SOURCES = $(test_rilmodem_sources) \
 					unit/test-rilmodem-cs.c \
@@ -966,6 +970,29 @@ unit_test_rilmodem_cf_SOURCES = $(test_rilmodem_sources) \
 unit_test_rilmodem_cf_LDADD = gdbus/libgdbus-internal.la $(builtin_libadd) \
 					@GLIB_LIBS@ @DBUS_LIBS@ -ldl
 unit_objects += $(unit_test_rilmodem_cf_OBJECTS)
+
+unit_test_rilmodem_cv_SOURCES = $(test_rilmodem_sources) \
+					unit/test-rilmodem-cv.c \
+					unit/rilmodem-test-engine.c \
+					drivers/rilmodem/call-volume.c
+unit_test_rilmodem_cv_LDADD = gdbus/libgdbus-internal.la $(builtin_libadd) \
+					@GLIB_LIBS@ @DBUS_LIBS@ -ldl
+unit_objects += $(unit_test_rilmodem_cv_OBJECTS)
+
+unit_test_rilmodem_devinfo_SOURCES = $(test_rilmodem_sources) \
+					unit/test-rilmodem-devinfo.c \
+					drivers/rilmodem/devinfo.c
+unit_test_rilmodem_devinfo_LDADD = gdbus/libgdbus-internal.la $(builtin_libadd) \
+					@GLIB_LIBS@ @DBUS_LIBS@ -ldl
+unit_objects += $(unit_test_rilmodem_devinfo_OBJECTS)
+
+unit_test_rilmodem_gprs_SOURCES = $(test_rilmodem_sources) \
+					unit/test-rilmodem-gprs.c \
+					unit/rilmodem-test-engine.c \
+					drivers/rilmodem/gprs.c
+unit_test_rilmodem_gprs_LDADD = gdbus/libgdbus-internal.la $(builtin_libadd) \
+					@GLIB_LIBS@ @DBUS_LIBS@ -ldl
+unit_objects += $(unit_test_rilmodem_gprs_OBJECTS)
 
 TESTS = $(unit_tests)
 

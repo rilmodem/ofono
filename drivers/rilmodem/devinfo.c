@@ -131,7 +131,7 @@ static void query_serial_cb(struct ril_msg *message, gpointer user_data)
 		return;
 	}
 
-	imei = g_ril_reply_parse_baseband_version(ril, message);
+	imei = g_ril_reply_parse_get_imei(ril, message);
 
 	cb(&error, imei, cbd->data);
 
