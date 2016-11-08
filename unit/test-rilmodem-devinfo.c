@@ -74,7 +74,6 @@ void ril_devinfo_init(void);
 
 struct ofono_devinfo {
 	void *driver_data;
-	const struct rilmodem_devinfo_data *rdid;
 };
 
 static GMainLoop *mainloop;
@@ -99,8 +98,6 @@ struct ofono_devinfo *ofono_devinfo_create(struct ofono_modem *modem,
 	struct rilmodem_devinfo_data *rdid = data;
 	struct ofono_devinfo *devinfo = g_malloc0(sizeof(*devinfo));
 	int retval;
-
-	devinfo->rdid = rdid;
 
 	retval = devinfo_drv->probe(devinfo, OFONO_RIL_VENDOR_AOSP, rdid->ril);
 	g_assert(retval == 0);
