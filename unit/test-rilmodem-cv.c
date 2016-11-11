@@ -42,7 +42,7 @@
 #include "ril_constants.h"
 #include "rilmodem-test-engine.h"
 
-static const struct ofono_call_volume_driver *cvriver;
+static const struct ofono_call_volume_driver *cvdriver;
 
 /* Declarations && Re-implementations of core functions. */
 void ril_call_volume_exit(void);
@@ -57,8 +57,8 @@ struct ofono_call_volume {
 int ofono_call_volume_driver_register(
 				const struct ofono_call_volume_driver *d)
 {
-	if (cvriver == NULL)
-		cvriver = d;
+	if (cvdriver == NULL)
+		cvdriver = d;
 
 	return 0;
 }
@@ -66,7 +66,7 @@ int ofono_call_volume_driver_register(
 void ofono_call_volume_driver_unregister(
 				const struct ofono_call_volume_driver *d)
 {
-	cvriver = NULL;
+	cvdriver = NULL;
 }
 
 void ofono_call_volume_register(struct ofono_call_volume *cv)
@@ -147,7 +147,7 @@ static void call_set_mute_1_5(gpointer data)
 {
 	struct ofono_call_volume *cv = data;
 
-	cvriver->mute(cv, 0, set_mute_cb_1_8, cv);
+	cvdriver->mute(cv, 0, set_mute_cb_1_8, cv);
 
 	rilmodem_test_engine_next_step(cv->engined);
 }
@@ -235,7 +235,7 @@ static void call_set_mute_2_5(gpointer data)
 {
 	struct ofono_call_volume *cv = data;
 
-	cvriver->mute(cv, 1, set_mute_cb_2_8, cv);
+	cvdriver->mute(cv, 1, set_mute_cb_2_8, cv);
 
 	rilmodem_test_engine_next_step(cv->engined);
 }
@@ -320,7 +320,7 @@ static void call_set_mute_3_5(gpointer data)
 {
 	struct ofono_call_volume *cv = data;
 
-	cvriver->mute(cv, 1, set_mute_cb_3_8, cv);
+	cvdriver->mute(cv, 1, set_mute_cb_3_8, cv);
 
 	rilmodem_test_engine_next_step(cv->engined);
 }
@@ -398,7 +398,7 @@ static void server_connect_cb(gpointer data)
 	int retval;
 
 	/* This starts the test. First for this atom is a call to _register. */
-	retval = cvriver->probe(cv, OFONO_RIL_VENDOR_AOSP, cv->ril);
+	retval = cvdriver->probe(cv, OFONO_RIL_VENDOR_AOSP, cv->ril);
 	g_assert(retval == 0);
 }
 
@@ -433,7 +433,7 @@ static void test_function(gconstpointer data)
 	/* Perform test */
 	rilmodem_test_engine_start(cv->engined);
 
-	cvriver->remove(cv);
+	cvdriver->remove(cv);
 	g_ril_unref(cv->ril);
 	g_free(cv);
 
