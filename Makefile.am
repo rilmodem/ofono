@@ -840,7 +840,8 @@ unit_tests = unit/test-common unit/test-util unit/test-idmap \
 				unit/test-rilmodem-cf \
 				unit/test-rilmodem-cv \
 				unit/test-rilmodem-devinfo \
-				unit/test-rilmodem-gprs
+				unit/test-rilmodem-gprs \
+				unit/test-rilmodem-gprs-context
 
 noinst_PROGRAMS = $(unit_tests) \
 			unit/test-sms-root unit/test-mux unit/test-caif
@@ -993,6 +994,14 @@ unit_test_rilmodem_gprs_SOURCES = $(test_rilmodem_sources) \
 unit_test_rilmodem_gprs_LDADD = gdbus/libgdbus-internal.la $(builtin_libadd) \
 					@GLIB_LIBS@ @DBUS_LIBS@ -ldl
 unit_objects += $(unit_test_rilmodem_gprs_OBJECTS)
+
+unit_test_rilmodem_gprs_context_SOURCES = $(test_rilmodem_sources) \
+					unit/test-rilmodem-gprs-context.c \
+					unit/rilmodem-test-engine.c \
+					drivers/rilmodem/gprs-context.c
+unit_test_rilmodem_gprs_context_LDADD = gdbus/libgdbus-internal.la $(builtin_libadd) \
+					@GLIB_LIBS@ @DBUS_LIBS@ -ldl
+unit_objects += $(unit_test_rilmodem_gprs_context_OBJECTS)
 
 TESTS = $(unit_tests)
 
