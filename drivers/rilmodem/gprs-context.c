@@ -511,7 +511,7 @@ static void ril_gprs_context_detach_shutdown(struct ofono_gprs_context *gc,
 {
 	DBG("*gc: %p cid: %d", gc, id);
 
-	ril_gprs_context_deactivate_primary(gc, 0, NULL, NULL);
+	ril_gprs_context_deactivate_primary(gc, id, NULL, NULL);
 }
 
 static int ril_gprs_context_probe(struct ofono_gprs_context *gc,
