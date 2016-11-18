@@ -69,19 +69,6 @@ void ofono_call_volume_driver_unregister(
 	cvdriver = NULL;
 }
 
-void ofono_call_volume_register(struct ofono_call_volume *cv)
-{
-	const struct rilmodem_test_step *step;
-
-	step = rilmodem_test_engine_get_current_step(cv->engined);
-
-	g_assert(step->type == TST_EVENT_CALL);
-	g_assert(step->call_func == (void (*)(void))
-						ofono_call_volume_register);
-
-	rilmodem_test_engine_next_step(cv->engined);
-}
-
 void ofono_call_volume_set_data(struct ofono_call_volume *cv, void *data)
 {
 	cv->driver_data = data;
@@ -92,22 +79,11 @@ void *ofono_call_volume_get_data(struct ofono_call_volume *cv)
 	return cv->driver_data;
 }
 
-void ofono_call_volume_set_muted(struct ofono_call_volume *cv, int muted)
-{
-	const struct rilmodem_test_step *step;
-
-	step = rilmodem_test_engine_get_current_step(cv->engined);
-
-	g_assert(step->type == TST_EVENT_CALL);
-	g_assert(step->call_func == (void (*)(void))
-						ofono_call_volume_set_muted);
-
-	if (step->check_func != NULL)
-		((void (*)(struct ofono_call_volume *, int)) step->check_func)(
-								cv, muted);
-
-	rilmodem_test_engine_next_step(cv->engined);
-}
+OFONO_EVENT_CALL_ARG_1(ofono_call_volume_register, struct ofono_call_volume *)
+OFONO_EVENT_CALL_ARG_2(ofono_call_volume_set_muted,
+						struct ofono_call_volume *, int)
+OFONO_EVENT_CALL_CB_ARG_2(ofono_call_volume_cb, const struct ofono_error *,
+						struct ofono_call_volume *)
 
 /*
  * As all our architectures are little-endian except for
@@ -134,20 +110,11 @@ static void check_call_volume_set_muted_1_4(struct ofono_call_volume *cv,
 	g_assert(muted == 0);
 }
 
-static void set_mute_cb_1_8(const struct ofono_error *error, void *data)
-{
-	struct ofono_call_volume *cv = data;
-
-	g_assert(error->type == OFONO_ERROR_TYPE_NO_ERROR);
-
-	rilmodem_test_engine_next_step(cv->engined);
-}
-
 static void call_set_mute_1_5(gpointer data)
 {
 	struct ofono_call_volume *cv = data;
 
-	cvdriver->mute(cv, 0, set_mute_cb_1_8, cv);
+	cvdriver->mute(cv, 0, ofono_call_volume_cb, cv);
 
 	rilmodem_test_engine_next_step(cv->engined);
 }
@@ -163,6 +130,12 @@ static const char parcel_rsp_set_mute_1_7[] = {
 	0x00, 0x00, 0x00, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00
 };
+
+static void check_mute_1_8(const struct ofono_error *error,
+						struct ofono_call_volume *cv)
+{
+	g_assert(error->type == OFONO_ERROR_TYPE_NO_ERROR);
+}
 
 /*
  * --- TEST 1 ---
@@ -212,8 +185,8 @@ static const struct rilmodem_test_step steps_test_1[] = {
 	},
 	{
 		.type = TST_EVENT_CALL,
-		.call_func = (void (*)(void)) set_mute_cb_1_8,
-		.check_func = (void (*)(void)) NULL
+		.call_func = (void (*)(void)) ofono_call_volume_cb,
+		.check_func = (void (*)(void)) check_mute_1_8
 	},
 };
 
@@ -222,20 +195,11 @@ static const struct rilmodem_test_data test_1 = {
 	.num_steps = G_N_ELEMENTS(steps_test_1)
 };
 
-static void set_mute_cb_2_8(const struct ofono_error *error, void *data)
-{
-	struct ofono_call_volume *cv = data;
-
-	g_assert(error->type == OFONO_ERROR_TYPE_NO_ERROR);
-
-	rilmodem_test_engine_next_step(cv->engined);
-}
-
 static void call_set_mute_2_5(gpointer data)
 {
 	struct ofono_call_volume *cv = data;
 
-	cvdriver->mute(cv, 1, set_mute_cb_2_8, cv);
+	cvdriver->mute(cv, 1, ofono_call_volume_cb, cv);
 
 	rilmodem_test_engine_next_step(cv->engined);
 }
@@ -251,6 +215,12 @@ static const char parcel_rsp_set_mute_2_7[] = {
 	0x00, 0x00, 0x00, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00
 };
+
+static void check_mute_2_8(const struct ofono_error *error,
+						struct ofono_call_volume *cv)
+{
+	g_assert(error->type == OFONO_ERROR_TYPE_NO_ERROR);
+}
 
 /*
  * --- TEST 2 ---
@@ -297,8 +267,8 @@ static const struct rilmodem_test_step steps_test_2[] = {
 	},
 	{
 		.type = TST_EVENT_CALL,
-		.call_func = (void (*)(void)) set_mute_cb_2_8,
-		.check_func = (void (*)(void)) NULL
+		.call_func = (void (*)(void)) ofono_call_volume_cb,
+		.check_func = (void (*)(void)) check_mute_2_8
 	},
 };
 
@@ -307,22 +277,19 @@ static const struct rilmodem_test_data test_2 = {
 	.num_steps = G_N_ELEMENTS(steps_test_2)
 };
 
-static void set_mute_cb_3_8(const struct ofono_error *error, void *data)
-{
-	struct ofono_call_volume *cv = data;
-
-	g_assert(error->type == OFONO_ERROR_TYPE_FAILURE);
-
-	rilmodem_test_engine_next_step(cv->engined);
-}
-
 static void call_set_mute_3_5(gpointer data)
 {
 	struct ofono_call_volume *cv = data;
 
-	cvdriver->mute(cv, 1, set_mute_cb_3_8, cv);
+	cvdriver->mute(cv, 1, ofono_call_volume_cb, cv);
 
 	rilmodem_test_engine_next_step(cv->engined);
+}
+
+static void check_mute_cb_3_8(const struct ofono_error *error,
+						struct ofono_call_volume *cv)
+{
+	g_assert(error->type == OFONO_ERROR_TYPE_FAILURE);
 }
 
 /* REQUEST_SET_MUTE, seq 2, true */
@@ -382,8 +349,8 @@ static const struct rilmodem_test_step steps_test_3[] = {
 	},
 	{
 		.type = TST_EVENT_CALL,
-		.call_func = (void (*)(void)) set_mute_cb_3_8,
-		.check_func = (void (*)(void)) NULL
+		.call_func = (void (*)(void)) ofono_call_volume_cb,
+		.check_func = (void (*)(void)) check_mute_cb_3_8
 	},
 };
 

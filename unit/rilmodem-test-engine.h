@@ -19,6 +19,98 @@
  *
  */
 
+/*
+ * OFONO_EVENT_CALL_* macros are used to implement ofono atom functions that
+ * get called by the rilmodem driver. The macros make sure that the call was
+ * performed at the right step and call a check function that is specific to
+ * each step and that can be used to check if the function arguments are as
+ * expected.
+ */
+
+#define OFONO_EVENT_CALL_ARG_1(func, type1)				\
+void func(type1 v1)							\
+{									\
+	const struct rilmodem_test_step *step;				\
+									\
+	step = rilmodem_test_engine_get_current_step(v1->engined); 	\
+									\
+	g_assert(step->type == TST_EVENT_CALL);				\
+	g_assert(step->call_func == (void (*)(void)) (func));		\
+									\
+	if (step->check_func != NULL)					\
+		((void (*)(type1)) step->check_func)(v1);		\
+									\
+	rilmodem_test_engine_next_step(v1->engined);			\
+}
+
+#define OFONO_EVENT_CALL_ARG_2(func, type1, type2)			\
+void func(type1 v1, type2 v2)						\
+{									\
+	const struct rilmodem_test_step *step;				\
+									\
+	step = rilmodem_test_engine_get_current_step(v1->engined); 	\
+									\
+	g_assert(step->type == TST_EVENT_CALL);				\
+	g_assert(step->call_func == (void (*)(void)) (func));		\
+									\
+	if (step->check_func != NULL)					\
+		((void (*)(type1, type2)) step->check_func)(v1, v2);	\
+									\
+	rilmodem_test_engine_next_step(v1->engined);			\
+}
+
+#define OFONO_EVENT_CALL_ARG_3(func, type1, type2, type3)		\
+void func(type1 v1, type2 v2, type3 v3)					\
+{									\
+	const struct rilmodem_test_step *step;				\
+									\
+	step = rilmodem_test_engine_get_current_step(v1->engined); 	\
+									\
+	g_assert(step->type == TST_EVENT_CALL);				\
+	g_assert(step->call_func == (void (*)(void)) (func));		\
+									\
+	if (step->check_func != NULL)					\
+		((void (*)(type1, type2, type3))			\
+					step->check_func)(v1, v2, v3);	\
+									\
+	rilmodem_test_engine_next_step(v1->engined);			\
+}
+
+#define OFONO_EVENT_CALL_CB_ARG_2(func, type1, type2)			\
+static void func(type1 v1, void *data)					\
+{									\
+	type2 v2 = data;						\
+	const struct rilmodem_test_step *step;				\
+									\
+	step = rilmodem_test_engine_get_current_step(v2->engined); 	\
+									\
+	g_assert(step->type == TST_EVENT_CALL);				\
+	g_assert(step->call_func == (void (*)(void)) (func));		\
+									\
+	if (step->check_func != NULL)					\
+		((void (*)(type1, type2)) step->check_func)(v1, v2);	\
+									\
+	rilmodem_test_engine_next_step(v2->engined);			\
+}
+
+#define OFONO_EVENT_CALL_CB_ARG_3(func, type1, type2, type3)		\
+static void func(type1 v1, type2 v2, void *data)			\
+{									\
+	type3 v3 = data;						\
+	const struct rilmodem_test_step *step;				\
+									\
+	step = rilmodem_test_engine_get_current_step(v3->engined); 	\
+									\
+	g_assert(step->type == TST_EVENT_CALL);				\
+	g_assert(step->call_func == (void (*)(void)) (func));		\
+									\
+	if (step->check_func != NULL)					\
+		((void (*)(type1, type2, type3))			\
+					step->check_func)(v1, v2, v3);	\
+									\
+	rilmodem_test_engine_next_step(v3->engined);			\
+}
+
 struct engine_data;
 
 enum test_step_type {
