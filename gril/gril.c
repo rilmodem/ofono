@@ -462,6 +462,11 @@ static void dispatch(struct ril_s *p, struct ril_msg *message)
 	gchar *datap;
 	gsize data_len;
 
+	if (message->buf_len == 0) {
+		ofono_error("RIL error: package with size 0");
+		goto error;
+	}
+
 	/* This could be done with a struct/union... */
 	unsolicited_field = (int32_t *) (void *) bufp;
 	if (*unsolicited_field)

@@ -68,18 +68,6 @@ void ofono_gprs_driver_unregister(const struct ofono_gprs_driver *d)
 	gprs_drv = NULL;
 }
 
-void ofono_gprs_register(struct ofono_gprs *gprs)
-{
-	const struct rilmodem_test_step *step;
-
-	step = rilmodem_test_engine_get_current_step(gprs->engined);
-
-	g_assert(step->type == TST_EVENT_CALL);
-	g_assert(step->call_func == (void (*)(void)) ofono_gprs_register);
-
-	rilmodem_test_engine_next_step(gprs->engined);
-}
-
 void ofono_gprs_set_data(struct ofono_gprs *gprs, void *data)
 {
 	gprs->driver_data = data;
@@ -90,73 +78,22 @@ void *ofono_gprs_get_data(struct ofono_gprs *gprs)
 	return gprs->driver_data;
 }
 
-void ofono_gprs_status_notify(struct ofono_gprs *gprs, int status)
-{
-	const struct rilmodem_test_step *step;
-
-	step = rilmodem_test_engine_get_current_step(gprs->engined);
-
-	g_assert(step->type == TST_EVENT_CALL);
-	g_assert(step->call_func == (void (*)(void)) ofono_gprs_status_notify);
-
-	if (step->check_func != NULL)
-		((void (*)(struct ofono_gprs *, int)) step->check_func)(
-								gprs, status);
-
-	rilmodem_test_engine_next_step(gprs->engined);
-}
-
-void ofono_gprs_detached_notify(struct ofono_gprs *gprs)
-{
-	const struct rilmodem_test_step *step;
-
-	step = rilmodem_test_engine_get_current_step(gprs->engined);
-
-	g_assert(step->type == TST_EVENT_CALL);
-	g_assert(step->call_func ==
-				(void (*)(void)) ofono_gprs_detached_notify);
-
-	rilmodem_test_engine_next_step(gprs->engined);
-}
-
-void ofono_gprs_bearer_notify(struct ofono_gprs *gprs, int bearer)
-{
-	const struct rilmodem_test_step *step;
-
-	step = rilmodem_test_engine_get_current_step(gprs->engined);
-
-	g_assert(step->type == TST_EVENT_CALL);
-	g_assert(step->call_func == (void (*)(void)) ofono_gprs_bearer_notify);
-
-	if (step->check_func != NULL)
-		((void (*)(struct ofono_gprs *, int)) step->check_func)(
-								gprs, bearer);
-
-	rilmodem_test_engine_next_step(gprs->engined);
-}
-
-void ofono_gprs_set_cid_range(struct ofono_gprs *gprs,
-				unsigned int min, unsigned int max)
-{
-	const struct rilmodem_test_step *step;
-
-	step = rilmodem_test_engine_get_current_step(gprs->engined);
-
-	g_assert(step->type == TST_EVENT_CALL);
-	g_assert(step->call_func == (void (*)(void)) ofono_gprs_set_cid_range);
-
-	if (step->check_func != NULL)
-		((void (*)(struct ofono_gprs *, unsigned int, unsigned int))
-					step->check_func)(gprs, min, max);
-
-	rilmodem_test_engine_next_step(gprs->engined);
-}
-
 GRil *ril_get_gril_complement(struct ofono_modem *modem);
 GRil *ril_get_gril_complement(struct ofono_modem *modem)
 {
 	return NULL;
 }
+
+OFONO_EVENT_CALL_ARG_1(ofono_gprs_register, struct ofono_gprs *)
+OFONO_EVENT_CALL_ARG_1(ofono_gprs_detached_notify, struct ofono_gprs *)
+OFONO_EVENT_CALL_ARG_2(ofono_gprs_status_notify, struct ofono_gprs *, int)
+OFONO_EVENT_CALL_ARG_2(ofono_gprs_bearer_notify, struct ofono_gprs *, int)
+OFONO_EVENT_CALL_ARG_3(ofono_gprs_set_cid_range, struct ofono_gprs *,
+						unsigned int, unsigned int)
+OFONO_EVENT_CALL_CB_ARG_2(ofono_gprs_cb, const struct ofono_error *,
+							struct ofono_gprs *)
+OFONO_EVENT_CALL_CB_ARG_3(ofono_gprs_status_cb, const struct ofono_error *,
+						int, struct ofono_gprs *)
 
 /*
  * As all our architectures are little-endian except for
@@ -223,20 +160,11 @@ static void set_cid_range_check_2_6(struct ofono_gprs *gprs,
 	g_assert(max == 2);
 }
 
-static void gprs_cb_2_10(const struct ofono_error *error, void *data)
-{
-	struct ofono_gprs *gprs = data;
-
-	g_assert(error->type == OFONO_ERROR_TYPE_NO_ERROR);
-
-	rilmodem_test_engine_next_step(gprs->engined);
-}
-
 static void call_set_attached_2_7(gpointer data)
 {
 	struct ofono_gprs *gprs = data;
 
-	gprs_drv->set_attached(gprs, 0, gprs_cb_2_10, gprs);
+	gprs_drv->set_attached(gprs, 0, ofono_gprs_cb, gprs);
 
 	rilmodem_test_engine_next_step(gprs->engined);
 }
@@ -252,6 +180,12 @@ static const char parcel_rsp_allow_data_2_9[] = {
 	0x00, 0x00, 0x00, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00
 };
+
+static void check_set_attached_2_10(const struct ofono_error *error,
+						struct ofono_gprs *gprs)
+{
+	g_assert(error->type == OFONO_ERROR_TYPE_NO_ERROR);
+}
 
 /*
  * --- TEST 2 ---
@@ -313,8 +247,8 @@ static const struct rilmodem_test_step steps_test_2[] = {
 	},
 	{
 		.type = TST_EVENT_CALL,
-		.call_func = (void (*)(void)) gprs_cb_2_10,
-		.check_func = NULL
+		.call_func = (void (*)(void)) ofono_gprs_cb,
+		.check_func = (void (*)(void)) check_set_attached_2_10
 	},
 };
 
@@ -323,20 +257,11 @@ struct rilmodem_test_data test_2 = {
 	.num_steps = G_N_ELEMENTS(steps_test_2)
 };
 
-static void gprs_cb_3_10(const struct ofono_error *error, void *data)
-{
-	struct ofono_gprs *gprs = data;
-
-	g_assert(error->type == OFONO_ERROR_TYPE_NO_ERROR);
-
-	rilmodem_test_engine_next_step(gprs->engined);
-}
-
 static void call_set_attached_3_7(gpointer data)
 {
 	struct ofono_gprs *gprs = data;
 
-	gprs_drv->set_attached(gprs, 1, gprs_cb_3_10, gprs);
+	gprs_drv->set_attached(gprs, 1, ofono_gprs_cb, gprs);
 
 	rilmodem_test_engine_next_step(gprs->engined);
 }
@@ -352,6 +277,12 @@ static const char parcel_rsp_allow_data_3_9[] = {
 	0x00, 0x00, 0x00, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00
 };
+
+static void check_set_attached_3_10(const struct ofono_error *error,
+						struct ofono_gprs *gprs)
+{
+	g_assert(error->type == OFONO_ERROR_TYPE_NO_ERROR);
+}
 
 /*
  * --- TEST 3 ---
@@ -408,8 +339,8 @@ static const struct rilmodem_test_step steps_test_3[] = {
 	},
 	{
 		.type = TST_EVENT_CALL,
-		.call_func = (void (*)(void)) gprs_cb_3_10,
-		.check_func = NULL
+		.call_func = (void (*)(void)) ofono_gprs_cb,
+		.check_func = (void (*)(void)) check_set_attached_3_10
 	},
 };
 
@@ -418,6 +349,14 @@ struct rilmodem_test_data test_3 = {
 	.num_steps = G_N_ELEMENTS(steps_test_3)
 };
 
+static void call_registration_status_4_7(gpointer data)
+{
+	struct ofono_gprs *gprs = data;
+
+	gprs_drv->attached_status(gprs, ofono_gprs_status_cb, gprs);
+
+	rilmodem_test_engine_next_step(gprs->engined);
+}
 
 /* REQUEST_DATA_REGISTRATION_STATE, seq 3 */
 static const char parcel_req_registration_state_4_8[] = {
@@ -436,39 +375,20 @@ static const char parcel_rsp_registration_state_4_9[] = {
 	0x34, 0x00, 0x00, 0x00
 };
 
-static void reg_state_cb_4_11(const struct ofono_error *error,
-							int status, void *data)
+static void gprs_bearer_check_4_10(struct ofono_gprs *gprs, int bearer)
 {
-	struct ofono_gprs *gprs = data;
-	const struct rilmodem_test_step *step;
+	g_assert(bearer == PACKET_BEARER_GPRS);
+}
 
-	step = rilmodem_test_engine_get_current_step(gprs->engined);
-
-	g_assert(step->type == TST_EVENT_CALL);
-	g_assert(step->call_func == (void (*)(void)) reg_state_cb_4_11);
-
+static void check_attached_status_4_11(const struct ofono_error *error,
+					int status, struct ofono_gprs *gprs)
+{
 	g_assert(error->type == OFONO_ERROR_TYPE_NO_ERROR);
 	/*
 	 * Driver returns unregistered even though network state is attached
 	 * because we did not set attach to true in this test case.
 	 */
 	g_assert(status == NETWORK_REGISTRATION_STATUS_NOT_REGISTERED);
-
-	rilmodem_test_engine_next_step(gprs->engined);
-}
-
-static void call_registration_status_4_7(gpointer data)
-{
-	struct ofono_gprs *gprs = data;
-
-	gprs_drv->attached_status(gprs, reg_state_cb_4_11, gprs);
-
-	rilmodem_test_engine_next_step(gprs->engined);
-}
-
-static void gprs_bearer_check_4_10(struct ofono_gprs *gprs, int bearer)
-{
-	g_assert(bearer == PACKET_BEARER_GPRS);
 }
 
 /*
@@ -532,8 +452,8 @@ static const struct rilmodem_test_step steps_test_4[] = {
 	},
 	{
 		.type = TST_EVENT_CALL,
-		.call_func = (void (*)(void)) reg_state_cb_4_11,
-		.check_func = NULL
+		.call_func = (void (*)(void)) ofono_gprs_status_cb,
+		.check_func = (void (*)(void)) check_attached_status_4_11
 	},
 };
 
@@ -564,7 +484,7 @@ static const char parcel_rsp_registration_state_5_13[] = {
 	0x34, 0x00, 0x00, 0x00
 };
 
-static void gprs_status_check_5_15(struct ofono_gprs *gprs, int status)
+static void gprs_status_check_5_14(struct ofono_gprs *gprs, int status)
 {
 	g_assert(status == NETWORK_REGISTRATION_STATUS_REGISTERED);
 }
@@ -631,8 +551,8 @@ static const struct rilmodem_test_step steps_test_5[] = {
 	},
 	{
 		.type = TST_EVENT_CALL,
-		.call_func = (void (*)(void)) gprs_cb_3_10,
-		.check_func = NULL
+		.call_func = (void (*)(void)) ofono_gprs_cb,
+		.check_func = (void (*)(void)) check_set_attached_3_10
 	},
 	{
 		.type = TST_ACTION_SEND,
@@ -652,7 +572,7 @@ static const struct rilmodem_test_step steps_test_5[] = {
 	{
 		.type = TST_EVENT_CALL,
 		.call_func = (void (*)(void)) ofono_gprs_status_notify,
-		.check_func = (void (*)(void)) gprs_status_check_5_15
+		.check_func = (void (*)(void)) gprs_status_check_5_14
 	},
 	{
 		.type = TST_EVENT_CALL,
