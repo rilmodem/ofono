@@ -676,13 +676,27 @@ static void sim_send_set_uicc_subscription(struct ofono_sim *sim, int slot_id,
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct parcel rilp;
+	gint request_number;
 
 	DBG("");
 
+	if (g_ril_get_version(sd->ril) < 10) {
+		if (sd->vendor != OFONO_RIL_VENDOR_QCOM_MSIM) {
+			ofono_warn("%s: SIM application index becomes -1 on 4.4"
+					" device that is not a Qualcomm device."
+					, __func__);
+			return;
+		}
+
+		request_number = QCOM_MSIM_RIL_REQUEST_SET_UICC_SUBSCRIPTION;
+	} else {
+		request_number = RIL_REQUEST_SET_UICC_SUBSCRIPTION;
+	}
+
 	g_ril_request_set_uicc_subscription(sd->ril, slot_id, app_index,
 						sub_id, sub_status, &rilp);
-	g_ril_send(sd->ril, QCOM_MSIM_RIL_REQUEST_SET_UICC_SUBSCRIPTION, &rilp,
-		   sim_send_set_uicc_subscription_cb, sim, NULL);
+	g_ril_send(sd->ril, request_number, &rilp,
+				sim_send_set_uicc_subscription_cb, sim, NULL);
 }
 
 static int sim_select_uicc_subscription(struct ofono_sim *sim,
@@ -762,14 +776,16 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 		 * to set the correct app_index
 		 */
 		search_index = status->gsm_umts_index;
-		if (search_index > status->num_apps &&
-				sd->vendor == OFONO_RIL_VENDOR_QCOM_MSIM) {
+		if (search_index > status->num_apps) {
 			/*
-			 * On QCOM's multi SIM device, all index will be -1
-			 * (but will wrap up to UINT_MAX because index is uint)
-			 * until we send RIL_REQUEST_SET_UICC_SUBSCRIPTION.
-			 * So, we need to figure out which app to use
-			 * and send that request out.
+			 * On some devices, the initial value for GSM SIM
+			 * application index is -1. This can mean that the app
+			 * is not selected or simply not present (the latest is
+			 * the meaning that is really specified in ril.h). We
+			 * search for GSM app in the array, or use other
+			 * application if not present. To finally select the SIM
+			 * application we send a
+			 * RIL_REQUEST_SET_UICC_SUBSCRIPTION request.
 			 */
 			search_index = sim_select_uicc_subscription(sim,
 									status);
