@@ -209,7 +209,12 @@ static void clcc_poll_cb(struct ril_msg *message, gpointer user_data)
 			if (nc->type) {
 				ofono_voicecall_notify(vc, nc);
 
-				if (vd->cb) {
+				if (nc->status != CALL_STATUS_INCOMING
+						&& vd->cb) {
+					/*
+					 * This is the call we've just dialed.
+					 * Call the dialing callback here.
+					 */
 					struct ofono_error error;
 					ofono_voicecall_cb_t cb = vd->cb;
 					decode_ril_error(&error, "OK");
