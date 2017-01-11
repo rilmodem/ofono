@@ -42,12 +42,12 @@
 #include "storage.h"
 
 #define SIM_CACHE_MODE 0600
-#define SIM_CACHE_BASEPATH STORAGEDIR "/%s-%i"
+#define SIM_CACHE_BASEPATH "%s/%s-%i"
 #define SIM_CACHE_VERSION SIM_CACHE_BASEPATH "/version"
 #define SIM_CACHE_PATH SIM_CACHE_BASEPATH "/%04x"
 #define SIM_CACHE_HEADER_SIZE 39
 #define SIM_FILE_INFO_SIZE 7
-#define SIM_IMAGE_CACHE_BASEPATH STORAGEDIR "/%s-%i/images"
+#define SIM_IMAGE_CACHE_BASEPATH "%s/%s-%i/images"
 #define SIM_IMAGE_CACHE_PATH SIM_IMAGE_CACHE_BASEPATH "/%d.xpm"
 
 #define SIM_FS_VERSION 2
@@ -653,7 +653,8 @@ static void sim_fs_op_cache_fileinfo(struct sim_fs *fs,
 	fileinfo[5] = record_length & 0xff;
 	fileinfo[6] = file_status;
 
-	path = g_strdup_printf(SIM_CACHE_PATH, imsi, phase, op->id);
+	path = g_strdup_printf(SIM_CACHE_PATH,
+					storage_dir(), imsi, phase, op->id);
 	fs->fd = TFR(open(path, O_WRONLY | O_CREAT | O_TRUNC, SIM_CACHE_MODE));
 	g_free(path);
 
@@ -750,7 +751,8 @@ static gboolean sim_fs_op_check_cached(struct sim_fs *fs)
 	if (imsi == NULL || phase == OFONO_SIM_PHASE_UNKNOWN)
 		return FALSE;
 
-	path = g_strdup_printf(SIM_CACHE_PATH, imsi, phase, op->id);
+	path = g_strdup_printf(SIM_CACHE_PATH,
+					storage_dir(), imsi, phase, op->id);
 
 	if (path == NULL)
 		return FALSE;
@@ -1117,8 +1119,8 @@ void sim_fs_cache_image(struct sim_fs *fs, const char *image, int id)
 		return;
 
 	write_file((const unsigned char *) image, strlen(image),
-			SIM_CACHE_MODE, SIM_IMAGE_CACHE_PATH, imsi,
-			phase, id);
+			SIM_CACHE_MODE, SIM_IMAGE_CACHE_PATH,
+			storage_dir(), imsi, phase, id);
 }
 
 char *sim_fs_get_cached_image(struct sim_fs *fs, int id)
@@ -1143,7 +1145,8 @@ char *sim_fs_get_cached_image(struct sim_fs *fs, int id)
 	if (phase == OFONO_SIM_PHASE_UNKNOWN)
 		return NULL;
 
-	path = g_strdup_printf(SIM_IMAGE_CACHE_PATH, imsi, phase, id);
+	path = g_strdup_printf(SIM_IMAGE_CACHE_PATH,
+						storage_dir(), imsi, phase, id);
 
 	TFR(stat(path, &st_buf));
 	fd = TFR(open(path, O_RDONLY));
@@ -1183,7 +1186,7 @@ static void remove_cachefile(const char *imsi, enum ofono_sim_phase phase,
 	if (sscanf(file->d_name, "%4x", &id) != 1)
 		return;
 
-	path = g_strdup_printf(SIM_CACHE_PATH, imsi, phase, id);
+	path = g_strdup_printf(SIM_CACHE_PATH, storage_dir(), imsi, phase, id);
 	remove(path);
 	g_free(path);
 }
@@ -1200,7 +1203,8 @@ static void remove_imagefile(const char *imsi, enum ofono_sim_phase phase,
 	if (sscanf(file->d_name, "%d", &id) != 1)
 		return;
 
-	path = g_strdup_printf(SIM_IMAGE_CACHE_PATH, imsi, phase, id);
+	path = g_strdup_printf(SIM_IMAGE_CACHE_PATH,
+						storage_dir(), imsi, phase, id);
 	remove(path);
 	g_free(path);
 }
@@ -1214,21 +1218,24 @@ void sim_fs_check_version(struct sim_fs *fs)
 	if (imsi == NULL || phase == OFONO_SIM_PHASE_UNKNOWN)
 		return;
 
-	if (read_file(&version, 1, SIM_CACHE_VERSION, imsi, phase) == 1)
+	if (read_file(&version, 1, SIM_CACHE_VERSION,
+					storage_dir(), imsi, phase) == 1)
 		if (version == SIM_FS_VERSION)
 			return;
 
 	sim_fs_cache_flush(fs);
 
 	version = SIM_FS_VERSION;
-	write_file(&version, 1, SIM_CACHE_MODE, SIM_CACHE_VERSION, imsi, phase);
+	write_file(&version, 1, SIM_CACHE_MODE, SIM_CACHE_VERSION,
+						storage_dir(), imsi, phase);
 }
 
 void sim_fs_cache_flush(struct sim_fs *fs)
 {
 	const char *imsi = ofono_sim_get_imsi(fs->sim);
 	enum ofono_sim_phase phase = ofono_sim_get_phase(fs->sim);
-	char *path = g_strdup_printf(SIM_CACHE_BASEPATH, imsi, phase);
+	char *path = g_strdup_printf(SIM_CACHE_BASEPATH,
+						storage_dir(), imsi, phase);
 	struct dirent **entries;
 	int len = scandir(path, &entries, NULL, alphasort);
 
@@ -1251,7 +1258,8 @@ void sim_fs_cache_flush_file(struct sim_fs *fs, int id)
 {
 	const char *imsi = ofono_sim_get_imsi(fs->sim);
 	enum ofono_sim_phase phase = ofono_sim_get_phase(fs->sim);
-	char *path = g_strdup_printf(SIM_CACHE_PATH, imsi, phase, id);
+	char *path = g_strdup_printf(SIM_CACHE_PATH,
+						storage_dir(), imsi, phase, id);
 
 	remove(path);
 	g_free(path);
@@ -1261,7 +1269,8 @@ void sim_fs_image_cache_flush(struct sim_fs *fs)
 {
 	const char *imsi = ofono_sim_get_imsi(fs->sim);
 	enum ofono_sim_phase phase = ofono_sim_get_phase(fs->sim);
-	char *path = g_strdup_printf(SIM_IMAGE_CACHE_BASEPATH, imsi, phase);
+	char *path = g_strdup_printf(SIM_IMAGE_CACHE_BASEPATH,
+						storage_dir(), imsi, phase);
 	struct dirent **entries;
 	int len = scandir(path, &entries, NULL, alphasort);
 
@@ -1283,7 +1292,8 @@ void sim_fs_image_cache_flush_file(struct sim_fs *fs, int id)
 {
 	const char *imsi = ofono_sim_get_imsi(fs->sim);
 	enum ofono_sim_phase phase = ofono_sim_get_phase(fs->sim);
-	char *path = g_strdup_printf(SIM_IMAGE_CACHE_PATH, imsi, phase, id);
+	char *path = g_strdup_printf(SIM_IMAGE_CACHE_PATH,
+						storage_dir(), imsi, phase, id);
 
 	remove(path);
 	g_free(path);

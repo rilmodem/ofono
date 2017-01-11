@@ -30,6 +30,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include <glib.h>
 
@@ -37,10 +38,8 @@
 #include <ofono/modem.h>
 #include <ofono/gprs-provision.h>
 
-#ifndef MBPI_DATABASE
-#define MBPI_DATABASE  "/usr/share/mobile-broadband-provider-info/" \
-							"serviceproviders.xml"
-#endif
+#define MBPI_FILE     "serviceproviders.xml"
+#define MBPI_DATABASE "/usr/share/mobile-broadband-provider-info/" MBPI_FILE
 
 #include "mbpi.h"
 
@@ -110,7 +109,7 @@ static void mbpi_g_set_error(GMarkupParseContext *context, GError **error,
 
 	va_end(ap);
 
-	g_prefix_error(error, "%s:%d ", MBPI_DATABASE, line_number);
+	g_prefix_error(error, "%s:%d ", MBPI_FILE, line_number);
 }
 
 static void text_handler(GMarkupParseContext *context,
@@ -565,24 +564,30 @@ static gboolean mbpi_parse(const GMarkupParser *parser, gpointer userdata,
 	char *db;
 	int fd;
 	GMarkupParseContext *context;
-	gboolean ret;
+	gboolean ret = FALSE;
+	const char *snap;
+	char *filename;
 
-	fd = open(MBPI_DATABASE, O_RDONLY);
+	/* SNAP is a path to our data in snappy systems */
+	snap = getenv("SNAP");
+	filename = g_strdup_printf("%s%s", snap ? snap : "", MBPI_DATABASE);
+
+	fd = open(filename, O_RDONLY);
 	if (fd < 0) {
 		g_set_error(error, G_FILE_ERROR,
 				g_file_error_from_errno(errno),
-				"open(%s) failed: %s", MBPI_DATABASE,
+				"open(%s) failed: %s", filename,
 				g_strerror(errno));
-		return FALSE;
+		goto done;
 	}
 
 	if (fstat(fd, &st) < 0) {
 		close(fd);
 		g_set_error(error, G_FILE_ERROR,
 				g_file_error_from_errno(errno),
-				"fstat(%s) failed: %s", MBPI_DATABASE,
+				"fstat(%s) failed: %s", filename,
 				g_strerror(errno));
-		return FALSE;
+		goto done;
 	}
 
 	db = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
@@ -590,9 +595,9 @@ static gboolean mbpi_parse(const GMarkupParser *parser, gpointer userdata,
 		close(fd);
 		g_set_error(error, G_FILE_ERROR,
 				g_file_error_from_errno(errno),
-				"mmap(%s) failed: %s", MBPI_DATABASE,
+				"mmap(%s) failed: %s", filename,
 				g_strerror(errno));
-		return FALSE;
+		goto done;
 	}
 
 	context = g_markup_parse_context_new(parser,
@@ -608,6 +613,8 @@ static gboolean mbpi_parse(const GMarkupParser *parser, gpointer userdata,
 	close(fd);
 	g_markup_parse_context_free(context);
 
+done:
+	g_free(filename);
 	return ret;
 }
 
