@@ -513,6 +513,7 @@ static void ril_rat_mode_cb(struct ril_msg *message, gpointer user_data)
 	 */
 
 	switch (pref) {
++       case PREF_NET_TYPE_WCDMA:
 	case PREF_NET_TYPE_GSM_WCDMA:
 	case PREF_NET_TYPE_GSM_WCDMA_AUTO:
 		mode = OFONO_RADIO_ACCESS_MODE_UMTS;

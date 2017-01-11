@@ -33,7 +33,10 @@
 
 #include "ofono.h"
 #include "common.h"
+#include "storage.h"
 
+#define SETTINGS_STORE "radiosetting"
+#define SETTINGS_GROUP "Settings"
 #define RADIO_SETTINGS_FLAG_CACHED 0x1
 
 static GSList *g_drivers = NULL;
@@ -50,6 +53,8 @@ struct ofono_radio_settings {
 	enum ofono_radio_band_umts pending_band_umts;
 	ofono_bool_t fast_dormancy_pending;
 	uint32_t available_rats;
+        GKeyFile *settings;
+        char *imsi;
 	const struct ofono_radio_settings_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -306,6 +311,12 @@ static void radio_set_band(struct ofono_radio_settings *rs)
 						OFONO_RADIO_SETTINGS_INTERFACE,
 						"GsmBand", DBUS_TYPE_STRING,
 						&str_band);
+
+                if (rs->settings) {
+                        g_key_file_set_integer(rs->settings, SETTINGS_GROUP,
+                                        "GsmBand", rs->band_gsm);
+                        storage_sync(rs->imsi, SETTINGS_STORE, rs->settings);
+                }
 	}
 
 	if (rs->band_umts != rs->pending_band_umts) {
@@ -316,6 +327,13 @@ static void radio_set_band(struct ofono_radio_settings *rs)
 						OFONO_RADIO_SETTINGS_INTERFACE,
 						"UmtsBand", DBUS_TYPE_STRING,
 						&str_band);
+
+                if (rs->settings) {
+                        g_key_file_set_integer(rs->settings, SETTINGS_GROUP,
+                                        "UmtsBand", rs->band_umts);
+                        storage_sync(rs->imsi, SETTINGS_STORE, rs->settings);
+                }
+
 	}
 
 }
@@ -363,6 +381,12 @@ void ofono_radio_settings_set_rat_mode(struct ofono_radio_settings *rs,
 						OFONO_RADIO_SETTINGS_INTERFACE,
 						"TechnologyPreference",
 						DBUS_TYPE_STRING, &str_mode);
+
+        if (rs->settings) {
+                g_key_file_set_integer(rs->settings, SETTINGS_GROUP,
+                                "TechnologyPreference", rs->mode);
+                storage_sync(rs->imsi, SETTINGS_STORE, rs->settings);
+        }
 }
 
 static void radio_mode_set_callback(const struct ofono_error *error, void *data)
@@ -697,6 +721,14 @@ static void radio_settings_unregister(struct ofono_atom *atom)
 
 	ofono_modem_remove_interface(modem, OFONO_RADIO_SETTINGS_INTERFACE);
 	g_dbus_unregister_interface(conn, path, OFONO_RADIO_SETTINGS_INTERFACE);
+
+        if (rs->settings) {
+                storage_close(rs->imsi, SETTINGS_STORE, rs->settings, TRUE);
+
+                g_free(rs->imsi);
+                rs->imsi = NULL;
+                rs->settings = NULL;
+        }
 }
 
 static void radio_settings_remove(struct ofono_atom *atom)
@@ -750,24 +782,138 @@ struct ofono_radio_settings *ofono_radio_settings_create(struct ofono_modem *mod
 	return rs;
 }
 
+static void ofono_radio_finish_register(struct ofono_radio_settings *rs)
+{
+        DBusConnection *conn = ofono_dbus_get_connection();
+        struct ofono_modem *modem = __ofono_atom_get_modem(rs->atom);
+        const char *path = __ofono_atom_get_path(rs->atom);
+
+        if (!g_dbus_register_interface(conn, path,
+                                        OFONO_RADIO_SETTINGS_INTERFACE,
+                                        radio_methods, radio_signals,
+                                        NULL, rs, NULL)) {
+                ofono_error("Could not create %s interface",
+                                OFONO_RADIO_SETTINGS_INTERFACE);
+                return;
+        }
+
+        ofono_modem_add_interface(modem, OFONO_RADIO_SETTINGS_INTERFACE);
+
+        __ofono_atom_register(rs->atom, radio_settings_unregister);
+}
+
+static void radio_mode_set_callback_at_reg(const struct ofono_error *error,
+                                                void *data)
+{
+        struct ofono_radio_settings *rs = data;
+
+        if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+                DBG("Error setting radio access mode register time");
+
+        /*
+         * Continue with atom register even if request fail at modem
+         */
+        ofono_radio_finish_register(rs);
+}
+
+static void radio_band_set_callback_at_reg(const struct ofono_error *error,
+                                                void *data)
+{
+        if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+                DBG("Error setting radio access mode register time");
+        /* 
+         * Continue with atom register even if request fail at modem
+         * ofono_radio_finish_register called by radio_mode_set_callback_at_reg
+         */
+}
+
+static void radio_load_settings(struct ofono_radio_settings *rs,
+                                        const char *imsi)
+{
+        GError *error;
+
+        rs->settings = storage_open(imsi, SETTINGS_STORE);
+
+        /*
+         * If no settings present or error; Set default.
+         * Default RAT mode: ANY (LTE > UMTS > GSM)
+         */
+        if (rs->settings == NULL) {
+                DBG("radiosetting storage open failed");
+                rs->mode = OFONO_RADIO_ACCESS_MODE_ANY;
+                rs->band_gsm = OFONO_RADIO_BAND_GSM_ANY;
+                rs->band_umts = OFONO_RADIO_BAND_UMTS_ANY;
+                return;
+        }
+
+        rs->imsi = g_strdup(imsi);
+
+        error = NULL;
+        rs->band_gsm = g_key_file_get_integer(rs->settings, SETTINGS_GROUP,
+                                        "GsmBand", &error);
+
+        if (error || radio_band_gsm_to_string(rs->band_gsm) == NULL) {
+                rs->band_gsm = OFONO_RADIO_BAND_GSM_ANY;
+                g_key_file_set_integer(rs->settings, SETTINGS_GROUP,
+                                                "GsmBand", rs->band_gsm);
+        }
+
+        rs->pending_band_gsm = rs->band_gsm;
+
+        error = NULL;
+        rs->band_umts = g_key_file_get_integer(rs->settings, SETTINGS_GROUP,
+                                        "UmtsBand", &error);
+
+        if (error || radio_band_umts_to_string(rs->band_umts) == NULL) {
+                rs->band_umts = OFONO_RADIO_BAND_UMTS_ANY;
+                g_key_file_set_integer(rs->settings, SETTINGS_GROUP,
+                                                "UmtsBand", rs->band_umts);
+        }
+
+        rs->pending_band_umts = rs->band_umts;
+
+        error = NULL;
+        rs->mode = g_key_file_get_integer(rs->settings, SETTINGS_GROUP,
+                                        "TechnologyPreference", &error);
+
+        if (error || radio_access_mode_to_string(rs->mode) == NULL) {
+                rs->mode = OFONO_RADIO_ACCESS_MODE_ANY;
+                g_key_file_set_integer(rs->settings, SETTINGS_GROUP,
+                                        "TechnologyPreference", rs->mode);
+        }
+
+        DBG("TechnologyPreference: %d", rs->mode);
+        DBG("GsmBand: %d", rs->band_gsm);
+        DBG("UmtsBand: %d", rs->band_umts);
+}
+
 void ofono_radio_settings_register(struct ofono_radio_settings *rs)
 {
-	DBusConnection *conn = ofono_dbus_get_connection();
-	struct ofono_modem *modem = __ofono_atom_get_modem(rs->atom);
-	const char *path = __ofono_atom_get_path(rs->atom);
+        struct ofono_modem *modem = __ofono_atom_get_modem(rs->atom);
+        struct ofono_sim *sim = __ofono_atom_find(OFONO_ATOM_TYPE_SIM, modem);
 
-	if (!g_dbus_register_interface(conn, path,
-					OFONO_RADIO_SETTINGS_INTERFACE,
-					radio_methods, radio_signals,
-					NULL, rs, NULL)) {
-		ofono_error("Could not create %s interface",
-				OFONO_RADIO_SETTINGS_INTERFACE);
+        if (sim == NULL)
+                goto finish;
 
-		return;
-	}
+        radio_load_settings(rs, ofono_sim_get_imsi(sim));
 
-	ofono_modem_add_interface(modem, OFONO_RADIO_SETTINGS_INTERFACE);
-	__ofono_atom_register(rs->atom, radio_settings_unregister);
+        if (rs->driver->set_band != NULL)
+                rs->driver->set_band(rs, rs->band_gsm, rs->band_umts,
+                                        radio_band_set_callback_at_reg, rs);
+
+        if (rs->driver->set_rat_mode == NULL)
+                goto finish;
+
+        /*
+         * Diff callback used. No need of using DBUS pending concept.
+         * As its atom registration time - no DBUS clients.
+         */
+        rs->driver->set_rat_mode(rs, rs->mode,
+                                        radio_mode_set_callback_at_reg, rs);
+        return;
+
+finish:
+        ofono_radio_finish_register(rs);
 }
 
 void ofono_radio_settings_remove(struct ofono_radio_settings *rs)
