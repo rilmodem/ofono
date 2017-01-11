@@ -463,7 +463,7 @@ static void dispatch(struct ril_s *p, struct ril_msg *message)
 	gsize data_len;
 
 	if (message->buf_len == 0) {
-		ofono_error("RIL error: package with size 0");
+		ofono_error("RIL error: incoming message with size 0");
 		goto error;
 	}
 
