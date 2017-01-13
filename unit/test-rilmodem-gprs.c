@@ -169,19 +169,13 @@ static void call_set_attached_2_7(gpointer data)
 	rilmodem_test_engine_next_step(gprs->engined);
 }
 
-/* REQUEST_ALLOW_DATA, seq 3, set to not attach */
-static const char parcel_req_allow_data_2_8[] = {
-	0x00, 0x00, 0x00, 0x10, 0x7B, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
- 	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
 /* Response, no error */
-static const char parcel_rsp_allow_data_2_9[] = {
+static const char parcel_rsp_allow_data_2_8[] = {
 	0x00, 0x00, 0x00, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00
 };
 
-static void check_set_attached_2_10(const struct ofono_error *error,
+static void check_set_attached_2_9(const struct ofono_error *error,
 						struct ofono_gprs *gprs)
 {
 	g_assert(error->type == OFONO_ERROR_TYPE_NO_ERROR);
@@ -196,9 +190,8 @@ static void check_set_attached_2_10(const struct ofono_error *error,
  * Step 5: Driver calls ofono_gprs_register
  * Step 6: Driver calls ofono_gprs_set_cid_range
  * Step 7: Harness calls drv->set_attached(false)
- * Step 8: Driver sends REQUEST_ALLOW_DATA
- * Step 9: Harness answers with no error
- * Step 10: Driver calls the callback specified in step 7
+ * Step 8: Harness answers with no error
+ * Step 9: Driver calls the callback specified in step 7
  */
 static const struct rilmodem_test_step steps_test_2[] = {
 	{
@@ -236,19 +229,14 @@ static const struct rilmodem_test_step steps_test_2[] = {
 		.call_action = call_set_attached_2_7,
 	},
 	{
-		.type = TST_EVENT_RECEIVE,
-		.parcel_data = parcel_req_allow_data_2_8,
-		.parcel_size = sizeof(parcel_req_allow_data_2_8)
-	},
-	{
 		.type = TST_ACTION_SEND,
-		.parcel_data = parcel_rsp_allow_data_2_9,
-		.parcel_size = sizeof(parcel_rsp_allow_data_2_9)
+		.parcel_data = parcel_rsp_allow_data_2_8,
+		.parcel_size = sizeof(parcel_rsp_allow_data_2_8)
 	},
 	{
 		.type = TST_EVENT_CALL,
 		.call_func = (void (*)(void)) ofono_gprs_cb,
-		.check_func = (void (*)(void)) check_set_attached_2_10
+		.check_func = (void (*)(void)) check_set_attached_2_9
 	},
 };
 

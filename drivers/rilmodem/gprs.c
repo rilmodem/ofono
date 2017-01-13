@@ -214,13 +214,18 @@ void ril_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 
 	DBG("attached: %d", attached);
 
-	if (g_ril_get_version(gd->ril) < 10) {
+	if (g_ril_get_version(gd->ril) < 10 || attached == 0) {
 		/*
 		 * Older RILs offer no actual control over the GPRS 'attached'
 		 * state, we save the desired state, and use it to override
 		 * the actual modem's state in the 'attached_status' function.
 		 * This is similar to the way the core ofono gprs code handles
 		 * data roaming ( see src/gprs.c gprs_netreg_update() ).
+		 *
+		 * Additionally, we never explicitly detach because some broken
+		 * rils are not able to re-attach again after that (fp2). Note
+		 * however that we will still detach when switching the active
+		 * data SIM in the multi-sim case (see code in this function).
 		 *
 		 * The core gprs code calls driver->set_attached() when a netreg
 		 * notificaiton is received and any configured roaming
