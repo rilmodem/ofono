@@ -26,3 +26,6 @@ extern void mtk2_voicecall_exit(void);
 
 extern void mtk2_gprs_init(void);
 extern void mtk2_gprs_exit(void);
+
+extern void mtk2_netreg_init(void);
+extern void mtk2_netreg_exit(void);

@@ -43,6 +43,7 @@ static const char *mtk2_get_driver_type(enum ofono_atom_type atom)
 	switch (atom) {
 	case OFONO_ATOM_TYPE_VOICECALL:
 	case OFONO_ATOM_TYPE_GPRS:
+	case OFONO_ATOM_TYPE_NETREG:
 		return MTK2MODEM;
 	default:
 		return RILMODEM;

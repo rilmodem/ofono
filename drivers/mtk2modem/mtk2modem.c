@@ -39,7 +39,8 @@ static int mtk2modem_init(void)
 
 	mtk2_voicecall_init();
 	mtk2_gprs_init();
-
+	mtk2_netreg_init();
+	
 	return 0;
 }
 
@@ -49,6 +50,7 @@ static void mtk2modem_exit(void)
 
 	mtk2_voicecall_exit();
 	mtk2_gprs_exit();
+	mtk2_netreg_exit();
 }
 
 OFONO_PLUGIN_DEFINE(mtk2modem, "MTK2 modem driver", VERSION,

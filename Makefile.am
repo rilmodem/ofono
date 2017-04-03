@@ -169,7 +169,8 @@ builtin_sources += drivers/mtk2modem/mtk2modem.h \
 			drivers/mtk2modem/mtk2util.h \
 			drivers/mtk2modem/mtk2util.c \
 			drivers/mtk2modem/voicecall.c \
-			drivers/mtk2modem/gprs.c
+			drivers/mtk2modem/gprs.c \
+			drivers/mtk2modem/network-registration.c
 
 builtin_modules += rilmodem
 builtin_sources += drivers/rilmodem/rilmodem.h \
