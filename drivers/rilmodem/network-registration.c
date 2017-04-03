@@ -46,24 +46,7 @@
 #include "grilreply.h"
 #include "grilrequest.h"
 #include "grilunsol.h"
-
-struct netreg_data {
-	GRil *ril;
-	char mcc[OFONO_MAX_MCC_LENGTH + 1];
-	char mnc[OFONO_MAX_MNC_LENGTH + 1];
-	int signal_index; /* If strength is reported via CIND */
-	int signal_min; /* min strength reported via CIND */
-	int signal_max; /* max strength reported via CIND */
-	int signal_invalid; /* invalid strength reported via CIND */
-	int tech;
-	struct ofono_network_time time;
-	guint nitz_timeout;
-	unsigned int vendor;
-};
-
-static void ril_registration_status(struct ofono_netreg *netreg,
-					ofono_netreg_status_cb_t cb,
-					void *data);
+#include "network-registration.h"
 
 static int ril_tech_to_access_tech(int ril_tech)
 {
@@ -164,7 +147,7 @@ static void ril_creg_notify(struct ofono_error *error, int status, int lac,
 	ofono_netreg_status_notify(netreg, status, lac, ci, tech);
 }
 
-static void ril_network_state_change(struct ril_msg *message,
+void ril_network_state_change(struct ril_msg *message,
 							gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
@@ -175,7 +158,7 @@ static void ril_network_state_change(struct ril_msg *message,
 	ril_registration_status(netreg, NULL, NULL);
 }
 
-static void ril_registration_status(struct ofono_netreg *netreg,
+void ril_registration_status(struct ofono_netreg *netreg,
 					ofono_netreg_status_cb_t cb,
 					void *data)
 {
@@ -201,12 +184,6 @@ static void ril_registration_status(struct ofono_netreg *netreg,
 static void set_oper_name(const struct reply_operator *reply,
 				struct ofono_network_operator *op)
 {
-	/*
-	 * When there is no name provided by the network, modems either set it
-	 * as NULL or copy over the MCC/MNC code. If we detect this we try to
-	 * get a name from the spn DB. If this does not work either we set the
-	 * MCC/MNC as name. This can be further overriden by data in SIM files.
-	 */
 	if (reply->lalpha != NULL &&
 			g_strcmp0(reply->numeric, reply->lalpha) != 0) {
 		strncpy(op->name, reply->lalpha,
@@ -265,7 +242,7 @@ error:
 	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
 }
 
-static void ril_current_operator(struct ofono_netreg *netreg,
+void ril_current_operator(struct ofono_netreg *netreg,
 				ofono_netreg_operator_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
@@ -339,7 +316,7 @@ error:
 	g_ril_reply_free_avail_ops(reply);
 }
 
-static void ril_list_operators(struct ofono_netreg *netreg,
+void ril_list_operators(struct ofono_netreg *netreg,
 				ofono_netreg_operator_list_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
@@ -371,7 +348,7 @@ static void ril_register_cb(struct ril_msg *message, gpointer user_data)
 	cb(&error, cbd->data);
 }
 
-static void ril_register_auto(struct ofono_netreg *netreg,
+void ril_register_auto(struct ofono_netreg *netreg,
 				ofono_netreg_register_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
@@ -384,7 +361,7 @@ static void ril_register_auto(struct ofono_netreg *netreg,
 	}
 }
 
-static void ril_register_manual(struct ofono_netreg *netreg,
+void ril_register_manual(struct ofono_netreg *netreg,
 				const char *mcc, const char *mnc,
 				ofono_netreg_register_cb_t cb, void *data)
 {
@@ -406,7 +383,7 @@ static void ril_register_manual(struct ofono_netreg *netreg,
 	}
 }
 
-static void ril_strength_notify(struct ril_msg *message, gpointer user_data)
+void ril_strength_notify(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
@@ -442,7 +419,7 @@ error:
 	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 }
 
-static void ril_signal_strength(struct ofono_netreg *netreg,
+void ril_signal_strength(struct ofono_netreg *netreg,
 				ofono_netreg_strength_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
@@ -457,7 +434,7 @@ static void ril_signal_strength(struct ofono_netreg *netreg,
 	}
 }
 
-static void ril_nitz_notify(struct ril_msg *message, gpointer user_data)
+void ril_nitz_notify(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
@@ -552,7 +529,7 @@ static int ril_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 	return 0;
 }
 
-static void ril_netreg_remove(struct ofono_netreg *netreg)
+void ril_netreg_remove(struct ofono_netreg *netreg)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 
