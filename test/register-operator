@@ -1,0 +1,20 @@
+#!/usr/bin/python3
+
+import dbus
+import sys
+
+if len(sys.argv) == 2:
+    operator_path = sys.argv[1]
+else:
+    print("Usage: %s [operator]" % (sys.argv[0]))
+    sys.exit(1)
+
+bus = dbus.SystemBus()
+
+op = dbus.Interface(bus.get_object('org.ofono', operator_path),
+                'org.ofono.NetworkOperator')
+try:
+    op.Register()
+except Exception as e:
+    print("Can't register operator: {}".format(e))
+    sys.exit(1)
