@@ -728,13 +728,14 @@ static void radio_settings_register(const struct ofono_error *error,
 	/*
 	 * If the preferred technology was unknown/unsupported, change to a
 	 * valid one (midori can return PREF_NET_TYPE_CDMA_ONLY, for instance).
+	 * Changing to anything above GSM can prevent other radios restoring
+	 * their settings.
 	 */
 	if (rd->rat_mode == OFONO_RADIO_ACCESS_MODE_ANY) {
 		struct cb_data *cbd = cb_data_new(set_safe_preferred_cb, rd,
 							rd->radio_settings);
 
-		set_preferred_network(rd, cbd,
-				get_best_available_tech(rd->available_rats));
+		set_preferred_network(rd, cbd, OFONO_RADIO_ACCESS_MODE_GSM);
 	}
 
 	/*
