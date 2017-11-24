@@ -1,0 +1,59 @@
+Patches
+=======
+
+This package occasionally uses cdbs simple-patch-system to store
+modifications to the upstream source, although in most uploads no patches
+are needed.
+
+To get the fully patched source: make -f debian/rules patch
+
+To revert to what's in git: make -f debian/rules unpatch
+
+To add a patch: obtain a diff and put it in debian/patches, or see below
+
+To remove an existing patch: delete it from debian/patches
+
+Packaging using git
+===================
+
+The repository contains an appropriate debian/gbp.conf to build this package
+using git-buildpackage. The debian branch contains the latest upstream versions
+(for unstable, or experimental while a freeze is in progress). The debian-lenny
+branch contains versions targeted for lenny, etc.
+
+Here's how to build it:
+
+    git clone git://git.debian.org/git/pkg-telepathy/ofono
+    cd ofono
+    git checkout debian
+    git-buildpackage -us -uc
+
+or for testing/stable branches like debian-lenny:
+
+    git clone git://git.debian.org/git/pkg-telepathy/ofono
+    cd ofono
+    git checkout debian-lenny
+    git-buildpackage -us -uc --git-debian-branch=debian-lenny
+
+The branch 'upstream' is a copy of the contents of upstream tarballs. To import
+upstream tarballs use:
+
+    git checkout debian
+    git-import-orig ~/ofono-0.x.tar.gz
+
+The branch 'debian-patches' is 'upstream' plus any patches needed for Debian.
+It should be rebased on 'upstream' after each upstream release:
+
+    git checkout debian-patches
+    git rebase upstream
+
+The preferred way of adding patches is to cherry pick from an upstream
+repository:
+
+    git remote add ofono-upstream \
+        git://git.kernel.org/pub/scm/network/ofono/ofono.git
+    git fetch
+    git checkout debian-patches
+    git cherry-pick xxxxxxxxxxxxxx
+    git checkout debian
+    fakeroot debian/rules update-patches

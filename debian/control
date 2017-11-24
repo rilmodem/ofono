@@ -1,0 +1,95 @@
+Source: ofono
+Section: admin
+Priority: optional
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+XSBC-Original-Maintainer: Debian Telepathy maintainers <pkg-telepathy-maintainers@lists.alioth.debian.org>
+Uploaders: Jonny Lamb <jonny@debian.org>, Hector Oron <zumbi@debian.org>, Konstantinos Margaritis <markos@debian.org>
+Build-Depends: debhelper (>= 9),
+               dh-autoreconf,
+               dh-systemd,
+               libtool,
+               libglib2.0-dev (>= 2.22),
+               libdbus-glib-1-dev,
+               libudev-dev,
+               udev,
+               libbluetooth-dev (>= 4.30),
+               mobile-broadband-provider-info,
+               libc-ares-dev,
+               libsystemd-dev
+Standards-Version: 3.9.4
+Homepage: http://www.ofono.org/
+# If you aren't a member of ~phablet-team but need to upload
+# packaging changes, just go ahead. ~phablet-team will notice
+# and sync up the code again.
+Vcs-Bzr: https://code.launchpad.net/~phablet-team/ofono/ubuntu
+Vcs-Browser: http://bazaar.launchpad.net/~phablet-team/ofono/ubuntu
+
+Package: ofono
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, dbus
+Recommends: udev
+Description: Mobile telephony stack (daemon)
+ oFono is a stack for mobile telephony devices on Linux.  oFono supports
+ speaking to telephony devices through specific drivers, or with generic
+ AT commands.
+ .
+ oFono also includes a low-level plug-in API for integrating with other
+ telephony stacks, cellular modems and storage back-ends. The plug-in API
+ functionality is modeled on public standards, in particular
+ 3GPP TS 27.007 "AT command set for User Equipment (UE)."
+ .
+ This package includes the core daemon.
+
+Package: ofono-dev
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends},
+         libdbus-1-dev, libglib2.0-dev,
+         libc6-dev | libc-dev
+Description: Mobile telephony stack (development files)
+ oFono is a stack for mobile telephony devices on Linux.  oFono supports
+ speaking to telephony devices through specific drivers, or with generic
+ AT commands.
+ .
+ oFono also includes a low-level plug-in API for integrating with other
+ telephony stacks, cellular modems and storage back-ends. The plug-in API
+ functionality is modeled on public standards, in particular
+ 3GPP TS 27.007 "AT command set for User Equipment (UE)."
+ .
+ This package includes the header files for building oFono plugins.
+
+Package: ofono-dbg
+Section: debug
+Priority: extra
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ofono (= ${binary:Version})
+Description: Mobile telephony stack (debugging files)
+ oFono is a stack for mobile telephony devices on Linux.  oFono supports
+ speaking to telephony devices through specific drivers, or with generic
+ AT commands.
+ .
+ oFono also includes a low-level plug-in API for integrating with other
+ telephony stacks, cellular modems and storage back-ends. The plug-in API
+ functionality is modeled on public standards, in particular
+ 3GPP TS 27.007 "AT command set for User Equipment (UE)."
+ .
+ This package contains detached debugging symbols for the daemon.
+
+Package: ofono-scripts
+Architecture: all
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         ofono (>= ${source:Version}),
+	 python3,
+	 python3-dbus,
+	 python3-gi
+Description: Mobile telephony stack (test and maintenance script files)
+ oFono is a stack for mobile telephony devices on Linux.  oFono supports
+ speaking to telephony devices through specific drivers, or with generic
+ AT commands.
+ .
+ oFono also includes a low-level plug-in API for integrating with other
+ telephony stacks, cellular modems and storage back-ends. The plug-in API
+ functionality is modeled on public standards, in particular
+ 3GPP TS 27.007 "AT command set for User Equipment (UE)."
+ .
+ This package includes test and maintenance scripts.

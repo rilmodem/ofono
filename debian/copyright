@@ -1,0 +1,38 @@
+This package was debianized by Andres Salomon <dilinger@collabora.co.uk> on
+Sat, 11 Jul 2009 18:38:03 -0400.
+
+It was downloaded from: <http://www.kernel.org/pub/linux/network/ofono/>.
+
+Upstream Authors:
+	Denis Kenzior <denis.kenzior@intel.com>
+	Marcel Holtmann <marcel.holtmann@intel.com>
+	Andrzej Zaborowski <andrew.zaborowski@intel.com>
+	Minjun Li <minjun.li@intel.com>
+	Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
+	Aki Niemi <aki.niemi@nokia.com>
+	Yang Gu <yang.gu@intel.com>
+	Andres Salomon <dilinger@collabora.co.uk>
+
+
+Copyright (C) 2008-2009  Intel Corporation
+Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies)
+gdbus/: Copyright (C) 2004-2009  Marcel Holtmann <marcel@holtmann.org>
+plugins/g1.c: Copyright (C) 2009  Collabora Ltd
+
+License:
+
+	This program is free software; you can redistribute it and/or modify it
+	under the terms of the GNU General Public License version 2 as published
+	by the Free Software Foundation.
+
+	This package is distributed in the hope that it will be useful,  but
+	WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+	General Public License for more details.
+
+	You should have received a copy of the GNU Lesser General Public License
+	along with this package; if not, write to the Free Software Foundation,
+	Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+
+On Debian systems, the complete text of the GNU General Public License
+version 2 can be found in `/usr/share/common-licenses/GPL-2'.

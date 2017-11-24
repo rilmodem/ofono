@@ -1,0 +1,9 @@
+description "oFono Mobile telephony stack"
+
+start on started dbus
+stop on stopping dbus
+
+expect fork
+respawn
+
+exec ofonod -P ril

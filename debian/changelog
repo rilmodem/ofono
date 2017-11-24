@@ -1,0 +1,1158 @@
+ofono (1.17.0+ubports1) vivid; urgency=medium
+
+  [peat-psuwit]
+  * rilmodem: make SET_UICC_SUBSCRIPTION works on newer devices
+
+  [kelmes]
+  * Fallback to 2G only
+
+ -- Marius Gripsgard <marius@ubports.com>  Fri, 24 Nov 2017 01:05:16 +0100
+
+ofono (1.17.bzr6921+16.10.20160819.6-0ubuntu1) yakkety; urgency=medium
+
+  [ Alfonso Sanchez-Beato (email Canonical) ]
+  * Fix network name parsing for turbo (LP: #1598181)
+
+ -- Alfonso Sanchez-Beato <alfonso.sanchez-beato@canonical.com>  Fri, 19 Aug 2016 11:08:32 +0000
+
+ofono (1.17.bzr6919+16.10.20160719.1-0ubuntu1) yakkety; urgency=medium
+
+  [ Alfonso Sanchez-Beato ]
+  * Add automatic SIM slot capability switching for midori:
+   * include: gprs: remove set ia
+   * gprs: remove calls to set_ia_apn
+   * gril: fix memory leak, print radio_caps event
+   * ril: create radio settings when onlining
+   * rilmodem: gprs: remove set_ia_apn
+   * rilmodem: radio-settings: enable switch slots caps
+   * qcommsimmodem: remote set_ia_apn
+   * qcommsimmodem: adapt to radio settings changes
+   * mtkmodem: adapt to radio settings changes
+   * mtkmodem: remove set_ia_apn
+   * mtk2modem: remove set_ia_apn
+
+ -- Tony Espy <espy@canonical.com>  Tue, 19 Jul 2016 15:39:17 +0000
+
+ofono (1.17.bzr6919+16.10.20160701.2-0ubuntu1) yakkety; urgency=medium
+
+  [ Ratchanan Srirattanamet ]
+  * qcommsimmodem: fix slot selection for cellular data
+
+  [ Alfonso Sanchez-Beato ]
+  * gril: update requests to M
+  * ril: refactor management of radio power states
+  * mtk2: new driver to support midori
+  * Fix cellular data switch in turbo (LP: #1592258)
+  * Fix ofono re-starts on boot in turbo (LP: #1580908)
+
+  [ Rex Tsai ]
+  * voicecall: add emergency numbers required for China Market
+
+ -- Alfonso Sanchez-Beato <alfonso.sanchez-beato@canonical.com>  Fri, 01 Jul 2016 17:31:30 +0000
+
+ofono (1.17.bzr6914+16.04.20160413.1-0ubuntu1) xenial; urgency=medium
+
+  [ Alfonso Sanchez-Beato (email Canonical) ]
+  * Make sure we detach from old contexts in all cases (LP: #1533508)
+  * Refresh bearer always
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- Alfonso Sanchez-Beato <alfonso.sanchez-beato@canonical.com>  Wed, 13 Apr 2016 14:43:54 +0000
+
+ofono (1.17.bzr6912+16.04.20160314.3-0ubuntu1) xenial; urgency=medium
+
+  [ Tony Espy ]
+  * unit: new rilmodem tests for sms and call barring
+  * plugins: address upower plugin upstream comments
+  * unit: fix test-grilreply set_facility_lock test
+  * style fixes for wakelock support
+
+  [ Ratchanan Srirattanamet ]
+  * qcommsimmodem: fix setting 3G pref when one of the slots is empty
+
+  [ Alfonso Sanchez-Beato ]
+  * ril: set properly gril vendor
+  * support for system settings
+  * unit: make tests parallelizable
+
+  [ Vicamo Yang ]
+  * ril, gril: support for pro 5
+  * gril, rilmodem: set RIL version from CONNECTED event
+  * unit: fix warning
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- Alfonso Sanchez-Beato <alfonso.sanchez-beato@canonical.com>  Mon, 14 Mar 2016 09:11:26 +0000
+
+ofono (1.17.bzr6910+16.04.20160115.3-0ubuntu1) xenial; urgency=medium
+
+  [ Simon Fels ]
+  [ Simon Fels]
+
+  * voicecall: acquire wakelock when starting a HFP initated voicecall
+    (LP: #1533716)
+  * plugins: add android wakelock implementation
+  * src: add wakelock abstraction
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- Tony Espy <ci-train-bot@canonical.com>  Fri, 15 Jan 2016 17:37:10 +0000
+
+ofono (1.17.bzr6908+16.04.20151203-0ubuntu1) xenial; urgency=medium
+
+  [ Tony Espy ]
+  * Add unit test test-rilmodem-cs
+
+  [ Simon Fels ]
+  * voicecall: don't dereference a supplied null value
+
+  [ Alfonso Sanchez-Beato ]
+  * Support handling incoming calls for HFP + multi-SIM
+
+  [ CI Train Bot ]
+  * New rebuild forced.
+
+ -- Alfonso Sanchez-Beato <alfonso.sanchez-beato@canonical.com>  Thu, 03 Dec 2015 08:32:21 +0000
+
+ofono (1.17.bzr6906+16.04.20151119-0ubuntu1) xenial; urgency=medium
+
+  [ Simon Fels ]
+  * Improve HFP AG support for BlueZ 5.x
+  * Add support for HFP codec negotiation
+
+  [ Alfonso Sanchez-Beato ]
+  * Fix style issues found by checkpatch
+  * Address FIXME comments in gril
+  * Fix access to notify callbacks in gril
+
+  [ Tony Espy ]
+  * Add upower plugin to notify battery status to HFP headsets
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- Alfonso Sanchez-Beato <alfonso.sanchez-beato@canonical.com>  Thu, 19 Nov 2015 18:07:17 +0000
+
+ofono (1.17.bzr6904+15.10.20150928.1-0ubuntu1) wily; urgency=medium
+
+  [ Alfonso Sanchez-Beato (email Canonical) ]
+  * Update to upstream release 1.17
+  * Do not assert when the radio is unavailable (LP: #1490991)
+  * Fix crash when importing phonebook (LP: #1486004)
+  * Check only destination port when receiving push (LP: #1490673)
+  * Fix crash when retrying to close context (LP: #1492483)
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- Alfonso Sanchez-Beato <alfonso.sanchez-beato@canonical.com>  Mon, 28 Sep 2015 09:27:18 +0000
+
+ofono (1.16.bzr6902+15.10.20150911-0ubuntu1) wily; urgency=medium
+
+  [ Alfonso Sanchez-Beato ]
+  * New upstream release 1.16; Bluetooth disabled in prep for Bluez5.
+
+  [ CI Train Bot ]
+  * New rebuild forced.
+
+ -- Tony Espy <ci-train-bot@canonical.com>  Fri, 11 Sep 2015 13:56:31 +0000
+
+ofono (1.12.bzr6900+15.10.20150724.1-0ubuntu1) wily; urgency=medium
+
+  [ Alfonso Sanchez-Beato ]
+  * Fix writing of EF_MWIS SIM file (LP: #1469266)
+  * Improvement in DNS lookups to avoid the need to set routes for the
+    DNS servers, by disabling the rp filter.
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Fri, 24 Jul 2015 08:37:27 +0000
+
+ofono (1.12.bzr6900+15.10.20150702.3-0ubuntu1) wily; urgency=medium
+
+  [Tony Espy]
+  * test/rilmodem/sim: fix testing scripts for arale (LP: #1457775)
+  * test: reverse meaning of list-modems -p (LP: #1438715)
+
+  [ Alfonso Sanchez-Beato ]
+  * gril: cleanup traces
+  * src/gprs.c: set preferred for the used IA APN (LP: #1361864)
+  * rilmodem, mtkmodem, plugins/ril.c, plugins/mtk.c: retry when a
+    context deactivation request has finished with an error
+  * build, include, plugins/c-ares-dns-client.c, src/dns-client.c,
+    src/gprs.c: resolve MMS proxy/MMSC host name (LP: #1417976)
+
+  [ Ratchanan Srirattanamet ]
+  * build, rilmodem, qcommsimmodem, plugins/ril.c,
+    src/radio-settings.c: add multi-sim support for qcommsimmodem
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Thu, 02 Jul 2015 17:04:18 +0000
+
+ofono (1.12.bzr6896+15.04.20150521-0ubuntu1) vivid; urgency=medium
+
+  [ Ratchanan Srirattanamet ]
+  * build, gril, rilmodem, qcommsimmodem, plugins/qcom-msim.c: add
+    support for LG L90 Dual which uses a Qualcomm dual-SIM modem (LP: #1427788)
+
+  [ Alfonso Sanchez-Beato ]
+  * src/gprs.c: support for 'ResetContexts' (LP: #1338758)
+    Adds a new ConnectionManager 'ResetContexts' DBus method
+    which deletes all existing gprs contexts and forces
+    re-provisioning to occur.
+  * plugins/ubuntu-apndb.c: ignore 'ipv6' protocol
+    This change causes APNs with an 'ipv6' protocol value
+    to instead be provisioned with 'ip', forcing IPv4 to
+    be used.
+
+  [ Jonas Drange ]
+  * doc/connman-api.txt: add metion of 'ia' gprs context type
+
+  [ Tony Espy ]
+  * test/set-context-property: add 'Preferred' support (LP: #1454756, #1454751)
+    This change adds support for the 'Preferred' ( and 'Active')
+    properties which both need to be DBus variant wrapped booleans.
+    Also added support for multi-SIM which was lacking from this script.
+  * test/list-modems: add privacy support (LP: #1438715)
+    Obfuscate any properties which can be tied to the end-user
+    ( eg. SubscriberNumbers, SubscriberIdentity, ... ).
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Thu, 21 May 2015 08:44:39 +0000
+
+ofono (1.12.bzr6894+15.04.20150424.1-0ubuntu1) vivid; urgency=medium
+
+  [ Tony Espy ]
+  * rilmodem/gprs-context.c: notify if call-list is empty (LP: #1435328)
+
+  [ Alfonso Sanchez-Beato ]
+  * test/create-ia-context: new test script to create IA contexts
+  * rilmodem/voicecall.c: drop call if radio is not available (LP: #1445580)
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Fri, 24 Apr 2015 10:18:19 +0000
+
+ofono (1.12.bzr6892+15.04.20150407-0ubuntu1) vivid; urgency=medium
+
+  [ Alfonso Sanchez-Beato ]
+  * rilmodem/gprs.c: dynamically set authtype based on credentials (LP: #1435784)
+  * src/common.c: allow empty APNs when provisioning
+  * ubuntu-apndb.c, src/common.c, test-common.c: provision IA APNs
+    LTE modems may require a new IA APN for non-GPRS operation,
+    this change allows a new IA APN type to be provisioned along
+    with Internet and MMS APNs.
+  * gril/grilunsol.c: LTE signal strength fix (LP: #1433867)
+  * ubuntu-apndb.c: load APNS w/out explict type (LP: #1437200)
+  * mtkodem, plugins/mtk.c, unit/tesk-mtkunsol.c: Dynamic MTK firwmare switching
+    This change causes the firmware on specific MTK-based phone to be
+    dynamically switched/reset based on SIM type and roaming conditions.
+  * include, plugins/mtk.c, src/modem.c, gprs.c: set data for just one slot (LP: #1413672)
+    Make sure ConnectionManager.Powered property is set for only one slot in
+    case the modem is of type dual SIM stand-by.
+  * doc, gprs: add 'Preferred' property to GPRS contexts (LP: #1361864)
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Tue, 07 Apr 2015 06:50:28 +0000
+
+ofono (1.12.bzr6890+15.04.20150317-0ubuntu1) vivid; urgency=medium
+
+  [ Alfonso Sanchez-Beato ]
+  * mtk.c: Fix Set3g FlightMode regression on krillin (LP: #1430700 )
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Tue, 17 Mar 2015 11:26:04 +0000
+
+ofono (1.12.bzr6888+15.04.20150224-0ubuntu1) vivid; urgency=medium
+
+  [ Alfonso Sanchez-Beato ]
+  * mtkmodem/voicecall.c: fix fast call answer (LP: #1422401)
+    Fix problem that occurs when calls are answer too quickly.
+  * mtk.c: wait for radio event before onlining (LP: #1419675)
+    Ensure that the 2nd SIM slot on krillin is always
+    initialized properly.
+  * gril/grilrequest.c, unit: support empty APN
+    Allow data calls with GPRS contexts that have empty APNs.
+  * grilreply.c, grilutil.c, ril_constants.c: fix arale parcel parsing
+    Fix parcel parsing issues with radio tech and SIM PIN retries.
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Tue, 24 Feb 2015 18:27:43 +0000
+
+ofono (1.12.bzr6886+15.04.20150204-0ubuntu1) vivid; urgency=medium
+
+  [ Tony Espy ]
+  * test/rilmodem/sim: add new SIM test scripts
+  * test: fix test-call-forwarding script (LP: #1396323)
+
+  [ Vicamo Yang ]
+  * mtkmodem, rilmodem: re-factor naming
+    This change makes the naming of GRil, mtk_data,
+    ofono_modem, and ril_data instances consistent.
+  * rilmodem: fix duplicate APPSTATE* constants
+  * gril: get rid of duplicate ringbuffer.h (LP: #1408250)
+  * mtk.c: use RIL_RADIO_POWER request for single slot modems
+
+  [ Alfonso Sanchez-Beato ]
+  * gril, unit, mtk.c: SIM mode and session ID fixes for arale
+    For MTK modems, DUAL_SIM_MODE requests aren't necessary.  Also
+    add session-id to SIM IO requests for newer MTK modems.
+  * rilmodem, mtk.c, ril.c: add auto-answer support
+    This change adds auto-answer support which is triggered
+    by usage of a special test SIM (MCC/MNC 001/01 or 001/001).
+  * mtkmodem, unit, mtk.c: support arale firmware switch
+    This change will cause the correct modem firmware to
+    be loaded based upon the SIM MCC and MNC.  If new
+    firmware is loaded, a modem reset is triggered.
+  * mtkmodem, unit, mtk.c: handle suspend events
+    RIL_RESUME_REGISTRATION requests are not sent to
+    MTK modems if suspend events are received.
+  * gril, include, mbpi, rilmodem, mtkmodem, rilmodem,
+    gprs, unit, modem, ril.c, mtk.c: LTE updates
+    This changes detection logic for LTE modems to rilmodem
+    ( via an environment var ) and mtkmodem ( via a modem
+    query ).  If detected, a RIL_INITIAL_ATTACH_APN request
+    is not sent to the modem during gprs initialization.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 04 Feb 2015 09:18:00 +0000
+
+ofono (1.12.bzr6882+15.04.20150115-0ubuntu1) vivid; urgency=low
+
+  [ Martin Pitt ]
+  * Add systemd unit.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 15 Jan 2015 16:26:34 +0000
+
+ofono (1.12.bzr6882+15.04.20141126-0ubuntu1) vivid; urgency=medium
+
+  [ Alfonso Sanchez-Beato ]
+  * grilreply.c, parcel.c, rilmodem: merge data and voice reg parsing
+    This change splits the orginal parsing code for data and voice
+    registration replies, cleaning up some of original parsing code
+    which wasn't very elegant.
+  * Makefile.am, rilmodem, src/sim*.*, include/sim.h,
+    plugins/mtk.c, ril.c: enable SIM phonebook import support
+  * rilmodem/sim.c, plugins/mtk.c, ril.c: fix SIM interface signals (LP: #1376250)
+  * plugins/mtk.c: fix krillin slow socket disconnection (LP: #1388030)
+  * Makefile.am, doc/mtk-settings-api.txt, mtkmodem,
+    plugins/mtk.c, test, unit: support krillin 3g slot switch (LP: #1373388)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 26 Nov 2014 01:44:00 +0000
+
+ofono (1.12.bzr6880+14.10.20141010-0ubuntu1) utopic; urgency=medium
+
+  [ Alfonso Sanchez-Beato ]
+  * drivers/rilmodem/sim.c: enter PIN before unlocking (LP: #1375945)
+    Some modems require the PIN to be unlocked with a separate
+    command before the PIN lock can be disabled.
+
+  * src/sim.c: fix sim atom teardown crash (LP: #1374418)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 10 Oct 2014 08:53:32 +0000
+
+ofono (1.12.bzr6878+14.10.20140926-0ubuntu1) 14.09; urgency=medium
+
+  [ Alfonso Sanchez-Beato ]
+  * include, plugins/mtk.c, src/modem.c,sim.c: Fix PUK crash (LP: #1365481)
+    If the SIM gets locked in particular sequence, ofono will crash
+    while trying to free the list of SIM SPN watch events ( which
+    have already been freed ).  MTK fix is a bit more involved than
+    the stanard RIL logic.
+
+  * plugins/mtk.c,ril.c: Show emergency numbers in flight-mode (LP: #1366188)
+    Modify plugin logic to create the SimManager interface even if
+    no SIM is present.
+
+  * gril, unit: fix indicator-network crash (LP: #1368675)
+    RIL defines a set of network registration states for emergency
+    calling that don't map directly to ofono's states.  This results
+    in NetworkRegistration Status not being set at all, which in
+    turn crashes the indicator.
+
+  * rilmodem/gprs.c: fix crash due to stale timer event (LP: # 1373351)
+    A 5s timer is set to retry a STATUS request to RIL, however if
+    FlightMode is enabled, the gprs atom is destroyed, and the pending
+    timer callback has a stale gprs reference.  Now the timer id is
+    stored, and when the atom destroyed, the timer event is cancelled.
+
+  * mtkmodem/radio-setttings.c: fix RadioSettings creation (LP: #1374029 )
+    If the MTK modem returns a RADIO_NOT_AVAIL error in response
+    to a FastDormany RIL request, the RadioSetting initialization
+    callback sequence is broken, and thus the RadioSettings interface
+    isn't created.  This in turn prevents powerd from enabling
+    FastDorancy whenever the screen is turned off, and also has
+    implications for system-settings too.
+
+  [ Tony Espy ]
+  * plugins/ubuntu-apndb.c: allow MMS APNs w/out proxy (LP: #1362008)
+    Prior to this change, MMS APNs w/out a proxy were skipped.
+    Now APNs are skipped if message center is missing, which makes
+    more sense.
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 26 Sep 2014 17:34:10 +0000
+
+ofono (1.12.bzr6876+14.10.20140904-0ubuntu1) utopic; urgency=medium
+
+  [ Jussi Kangas ]
+  * src/gprs.c: Fix to allow MMS properties to be set (LP: #1362068)
+
+  [ Tony Espy ]
+  * rilmodem/sim.c: Fix EnterPIN logic (LP: #1363413)
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 04 Sep 2014 22:31:59 +0000
+
+ofono (1.12.bzr6874+14.10.20140820-0ubuntu1) utopic; urgency=medium
+
+  [ Martti Piirainen ]
+  * rilmodem, unit: Relax DNS validity check, unnecessary for MMS
+    (LP: #1350209)
+
+  [ Alfonso Sanchez-Beato ]
+  * gril, unit, rilmodem:  Fix zero signal strength in MTK modems
+  * gril, mtk, ril: Retry when failing to connect to rild
+  * ril, mtk, rilmodem: Create SimManager even when there is no SIM
+
+  [ Tony Espy ]
+  * plugins: Add max retry logic for rild connect
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 20 Aug 2014 09:47:55 +0000
+
+ofono (1.12.bzr6872+14.10.20140804-0ubuntu1) utopic; urgency=medium
+
+  [ Alfonso Sanchez-Beato ]
+  * doc, plugins/nettime.c: multi-modem support for nettime plugin
+  * build, doc, gril, mtkmodem, rilmodem, plugins/ril.c,mtk.c: expose
+    RadioSettings 'ModemTechnologies' property.  This property can be
+    used by clients to determine the supported raido technologies supported
+    by a specific modem instance (LP: #1346790).
+  * gril/gril.c, mtkmodem, plugins/mtk.c, unit: add support for SIM hot insertion/
+    removal support.  Hot-swap is disabled by default.  It can be enabled
+    by defining OFONO_RIL_HOT_SIM_SWAP env var.
+  * gril, rilmodem, plugins/mtk.c,ril.c: MTK MMS fix.  For standalone
+    MMS contexts, the cid and a special MMS-specific data profile need
+    to included in the SETUP_DATA_CALL request.
+  * gril, mtk, ril, mtkmodem, rilmodem: Fix MTK data attachment (LP: #1349911)
+
+  [ Martti Piirainen ]
+  * plugins/ubuntu-apndb.c: fix IMSI provisioning (LP: #1347733)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 04 Aug 2014 09:01:34 +0000
+
+ofono (1.12.bzr6870+14.10.20140721-0ubuntu1) utopic; urgency=medium
+
+  [ Martti Piirainen ]
+  * drivers/rilmodem/sim.c: notify on SIM removal (LP: #1332306)
+  * unit/rilmodem/test-sim-online: fix serial number check (LP: #1334867)
+
+  [ Alfonso Sanchez-Beato ]
+  * plugins/mtk.c: fix race condition when onlining modem
+  * build, drivers/infeonmodem, drivers/rilmodem, gril,
+    plugins/infeon.c, plugins/ril.*, unit: add Infeon OEM hooks
+
+  [ Tony Espy ]
+  * build, plugins/ubuntu-provision.c, ubuntu-apndb.*: re-named
+    provisioning plugin code from android-* to ubuntu-*.  Also removed
+    code that queries mobile-broadband-provider-info's db, and finally
+    implemented a /custom hook for custom apn dbs (LP: #1315509).
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 21 Jul 2014 18:59:17 +0000
+
+ofono (1.12.bzr6868+14.10.20140625-0ubuntu1) utopic; urgency=medium
+
+  [ Alfonso Sanchez-Beato ]
+  * src/network.c, src/simutil.c: use OF_OPL to check roaming status
+  * rilmodem/sim.c, plugins/ril.c, android-spn-table.c: fix memory leaks
+  * test: adapt test scripts to multi-sim scenarios
+  * build, drivers/mtkmodem, drivers/rilmodem, gril: add Low-Power mode
+    This change adds RadioSettings low-power support by leveraging
+    the existing FastDormancy property to control entering/exiting low-
+    power mode.  This change also includes support for mtkmodem, which
+    uses MTK-specific requests to handle the same logic.
+  * src/network.c: re-order emission of signals in network atom
+    This change ensures that the NetworkRegistration 'Technology'
+    property is emitted before 'CellId'.  This change was made
+    to fix an issue with a third party location service.
+
+  [ Martti Piirainen ]
+  * test/rilmodem/*: update for Python3, minor cleanup
+    Besides the Python3 change, this change revises some
+    of the tests as the Touch emulator now supports additional
+    modem properties which weren't previously exposed.
+
+  [ Tony Espy ]
+  * build, include, plugins, test: re-merge Nettime code from github
+    Nettime had been previously added directly to bzr, but wasn't
+    present in our upstream github repo for ofono, which caused a
+    conflict every time we merged from lp:~phablet-team/ofono/rilmodem
+    ( our auto-import tree ).
+
+  [ Martti Piirainen ]
+  * test/get-network-time: convert to Python3 & add support multi-SIM
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 25 Jun 2014 00:58:01 +0000
+
+ofono (1.12.bzr6868+14.10.20140513.1-0ubuntu2) utopic; urgency=medium
+
+  * debian/control: don't conflict with modemmanager.
+
+ -- Mathieu Trudel-Lapierre <mathieu-tl@ubuntu.com>  Thu, 29 May 2014 14:15:37 +0200
+
+ofono (1.12.bzr6868+14.10.20140513.1-0ubuntu1) utopic; urgency=medium
+
+  [ Tony Espy ]
+  * plugins/android-provision.c: fix crash
+    Fix a crash in provision_get_settings() caused by the code
+    freeing 'error' with g_error_free() but not setting the value
+    to NULL afterwards. This can cause a subsequent call to
+    g_error_free() to happen again with an invalid pointer value.
+
+  [ Alfonso Sanchez-Beato ]
+  * drivers/mtkmodem/voicecall.c, plugins/mtk: MTK update
+    Add additional new atoms to the mtk plugin.  Also fixed a
+    double voicecall register issue.
+  * gril/grilreply.c, unit/test-grilreply.c: fix infineon reply parsing
+  * rilmodem/ussd.c, src/smsutil, src/ussd: USSD UCS2 support (LP: #1314143)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 13 May 2014 18:28:01 +0000
+
+ofono (1.12.bzr6858+14.10.20140501-0ubuntu1) utopic; urgency=low
+
+  [ Tony Espy ]
+  * build, gril, rilmodem, plugins/ril, test: call-forwarding support.
+
+  [ Alfonso Sanchez-Beato ]
+  * build, gril, plugins/rildev: dynamic plugin loading for ril-type modems.
+    The new rildev plugin reads an environment variable to determine
+    which device plugin to load ( defaults to the standard ril plugin ).
+  * build, gril, plugins/ril, rilmodem, unit: radio-settings support.
+    Allow radio technology ( ie. use 2G-only ) preference to be configured.
+
+  [ Tony Espy ]
+  * test: update remaining test scripts to Python 3.
+  * build, src, plugins, src/gprs: add MMS support.
+    Added new android-provision plugin and associated -apndb code to
+    provision GPRS and MMS contexts using apns-conf.xml as the primary
+    provisioning database, while mobile-broadband-provider-info is still
+    queried in order to pickup additional Apns. Also added support for
+    combined Internet/MMS contexts by allowing MMS specific properties
+    to be set for OFONO_GPRS_CONTEXT_TYPE_INTERNET contexts.
+
+  [ Alfonso Sanchez-Beato ]
+  * rilmodem/ussd: Fix USSD Initiate hang (LP: #1299227 ).
+  * gril, rilmodem, unit: add SIM write support.
+    This allows ofono's core call-forwarding and message-waiting logic
+    to update persistent state on the SIM, in order to preserve it across
+    reboots.
+  * build, gril, include, plugins, src, drivers/mtkmodem,
+    drivers/rilmodem: add MTK support.
+    This change adds support for MTK-ril modems without breaking compatibility
+    with AOSP-ril modems.
+  * examples, include, plugins, src: support for gid type MVNOs in Android
+    APN database.
+  * gril, rilmodem: fix for call redirections (LP: #1239869).
+    This fix checks and ignores a Qualcomm specific error code that indicates a
+    call has been re-directed by an operator while roaming.
+  * build, gril, rilmodem, unit: add call-barring support.
+  * gril, mtkmodem, rilmodem, unit: MTK followup changes.
+    This change adds unit tests for MTK specific messages. It also consolidates
+    parsing logic for parsing data call lists, which is a valid payload for
+    multiple message types. Finally, the deactivate data call logic on start-
+    up has been re-worked to query the active calls before attempting to
+    deactivate any.
+  * src/smsutil: use UTF-16 instead of UCS-2 (LP: #1269017).
+    If an incoming SMS is indicated to be UCS-2, use UTF-16 instead to
+    decode so that emoji's ( which use larger codepoints than can be
+    encoded in UCS-2 ) are properly decoded.
+
+  [ Jussi Pakkanen ]
+  * phonesim: add a DBus control interface.
+    This control interface has been added in order to make phonesime more
+    flexible for auto-pilot testing of Touch's network-indicator code.
+
+  [ Alfonso Sanchez-Beato ]
+  * android-apndb.c/-provision.c: fix string comparisions.
+    Change all usage of g_str_equal() to g_strcmp0(). This fixes a crash that
+    may happen if the SIM doesn't contain a SPN file.
+  * gril: switch process to radio user.
+    Temporarily switch ofono's effective uid and gid during startup to that
+    of the radio user to allow connection to the rild socket.
+  * gril, rilmodem/sim, unit: retrieve SIM PIN retries (LP: #1206941).
+    Read PIN retires from ENTER-PIN reply if available.
+
+  [ Tony Espy ]
+  * gril, rilmodem,unit: fix data_call reply error.
+    Fix a parse error with setup_data_call replies. Also re-worked
+    SETUP_DATA_CALL to use the current registered data tech value.
+    Optimized gprs-context to only register for DATA_CALL_LIST_CHANGED
+    events if the context is being actively used.
+
+  [ Alfonso Sanchez-Beato ]
+  * src/smsutil, unit: allow concatenated UTF-16 SMS.
+    This change properly handles split surrogate pairs in concatenated SMSes,
+    as this can now happen now that UTF-16 is used instead of UCS-2 for decoding
+    SMS messages that specify UCS-2 encoding. (LP: #1269017, #1299227, #1239869,
+    #1206941)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 01 May 2014 17:16:43 +0000
+
+ofono (1.12.bzr6858+14.04.20140318-0ubuntu1) trusty; urgency=medium
+
+  [ Dimitri John Ledkov ]
+  * Correct ofono-scripts dependency on python3-dbus, not python-dbus.
+
+  [ Tony Espy ]
+  * src: fix build-failure on ppc64le arch
+  * btio: fix build-failure on ppc64le arch
+
+  [ Sergio Schvezov ]
+  * Changing version to cope with citrain 
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 18 Mar 2014 12:04:21 +0000
+
+ofono (1.12+bzr6858-0ubuntu1) trusty; urgency=medium
+
+  [ Tony Espy ]
+  * test: add exception handling to enable-modem & list-modems
+
+ -- Ricardo Salveti de Araujo <ricardo.salveti@canonical.com>  Mon, 03 Mar 2014 16:38:09 -0300
+
+ofono (1.12+bzr6856-0ubuntu1) trusty; urgency=low
+
+  [ Tony Espy ]
+  * unit: fix fail-to-build on powerpc
+    The previously released version enabled -Wall,
+    which triggered build failures due to unused
+    functions on powerpc.  This is due to the fact
+    that the unit tests only run on LITTLE_ENDIAN
+    systems via an ifdef, which leaves unused functions
+    and data.  This change exends the ifdef to cover
+    the unused functions and test data.
+  * idmap: use UL for bitshift literals (LP: #1271284)
+    This change fixes a failing unit test on ppc64le
+    due to the undefined behavior when the left bitshift
+    operator is given a value that excedes the size of
+    the value being shifted.
+  * gril, rilmodem/sim, unit: fix SIM IO crash (LP: #1268743)
+    - cleanup gril_reply_parse_sim_io() to add malformed parcel
+      check and fix memory leak.
+    - add check for null hex_response in ril_file_io_cb(), as
+      the emulator can return such responses.
+    - add additional unit tests to cover crash scenarios.
+  * ril, src: enable message-waiting-interface
+    - register message_waiting atom in ril plugin
+    - register message_waiting atom in ril plugin
+    - fix sms_mwi_dcs_decode bug which prevented incoming message
+      waiting indications from being set.
+  * rilmodem/voicecall: fix call-decline bug (LP: #1260988)
+    Send a RIL_REQUEST_HANGUP_WAITING_OR_BACKGROUND instead of
+    was used correctly for displaying operator name, however
+    some modems failed to handle roaming correctly for MVNOs.
+    This fix is transparent to modems that do the right thing.
+  * gril/gril.c, plugins/ril.c: API changes for OEMS
+    This change introduces a socket-path to the g_ril_new()
+    function, and also adds a new disconnect function.
+  * gril/grilunsol.c: add support for v5 signal strength message
+  * debian/control: adjust ofono-scripts dependencies for Python 3
+  * test/rilmodem: add copyright/license headers
+
+  [ Martin Pitt ]
+  * test: convert tests scripts to Python 3 (LP: #1283571)
+
+ -- Ricardo Salveti de Araujo <ricardo.salveti@canonical.com>  Fri, 28 Feb 2014 17:50:54 -0300
+
+ofono (1.12+bzr6851-0ubuntu1) trusty; urgency=low
+
+  [ Tony Espy ]
+  * debian/rules: add -Wall to CFLAGS;
+    mirrors upstream build
+  * plugins/nettime.c: fix build error
+    by adding <stdlib.h> include
+  * src/log.c: fix build error by adding
+    a print_backtrace() function declaration
+    with __attribute__ ((unused))
+  * gril: fix cancel_group/offline crash (LP: #1262340)
+  * gril, plugins/ril: Re-worked RIL power code to prepare for flight-
+    mode implementation (LP: #1245860), (LP: #1208657).
+
+  [ Alfonso Sanchez-Beato ]
+  * gril, unit, rilmodem/call-settings: Add Call-settings suport
+    - merge applicable nemomobile code
+    - re-factor parcel code
+    - add call-volume parcel unit tests
+  * gril, unit, rilmodem/ussd: Add USSD support (LP: #1195398)
+    - merge applicable nemomobile code
+    - re-factor parcel code
+    - add call-volume parcel unit tests
+  * rilmodem/voicecall: fix conference calls for maguro (LP: #1257206)
+
+ -- Ricardo Salveti de Araujo <ricardo.salveti@canonical.com>  Mon, 20 Jan 2014 19:44:46 -0200
+
+ofono (1.12+bzr6848-0ubuntu1) trusty; urgency=low
+
+  [ Tony Espy ]
+  * rilmodem/sms: Don't parse SMS error reply (LP: #1260388)
+
+ -- Ricardo Salveti de Araujo <ricardo.salveti@canonical.com>  Fri, 13 Dec 2013 07:06:43 -0200
+
+ofono (1.12+bzr6846-0ubuntu1) trusty; urgency=low
+
+  [ Alfonso Sanchez-Beato ]
+  * gril, include, rilmodem/sms, unit: SMS re-factoring
+    - merge applicable nemomobile code
+    - re-factor parcel code
+    - add sms parcel unit tests
+  * build, doc, plugins, test: Add SMS history plugin
+    - adds support for SMS delivery reports (LP: #1223314)
+  * gril, src, unit: Fix build warning
+  * gril, rilmodem/voicecall, unit: Voicecall re-factoring
+    - merge applicable nemomobile code, including support
+      for multi-party calling and call hold
+    - re-factor parcel code
+    - add voicecall parcel unit tests
+  * rilmodem: fix memory leaks reported by valgrind
+  * gril, rilmodem/sim: Remove SIM file-not-found error logging
+    - includes low-level gril fix to handle ril messages
+      that include a failure code, but also include event
+      data (LP: #1254219)
+  * gril, rilmodem/call-volume, unit: Call-volume re-factoring
+    - merge applicable nemomobile code
+    - re-factor parcel code
+    - add call-volume parcel unit tests
+  * gril, rilmodem/devinfo, unit: Devinfo re-factoring
+    - re-factor parcel code
+    - add devinfo parcel unit tests
+
+  [ Tony Espy ]
+  * unit: Add rilmodem gprs/netreg parcel unit tests
+  * debian/rules: Add CFLAGS to enable strict warnings checking
+  * gril, unit: fix const casts in gril and unit tests
+  * rilmodem/gprs: set default max_cids to 1 (LP: 1254746)
+
+ -- Ricardo Salveti de Araujo <ricardo.salveti@canonical.com>  Mon, 09 Dec 2013 23:05:49 -0200
+
+ofono (1.12+bzr6844-0ubuntu1) trusty; urgency=low
+
+  [ Alfonso Sanchez-Beato ]
+  * gril: enable low-level multi-request support
+  * plugins: add mnclength plugin; re-factored fix (LP: #1231320)
+
+  [ Tony Espy ]
+  * rilmodem: re-factor cb_data_new to include user param.
+  * gril, rilmodem/gprs, rilmodem/network-registration:
+    - merge nemomobile gprs/netreg code
+    - re-factor parcel code
+    - add gprs/netreg parcel unit tests
+
+ -- Ricardo Salveti de Araujo <ricardo.salveti@canonical.com>  Tue, 03 Dec 2013 00:16:40 -0200
+
+ofono (1.12+bzr6842-0ubuntu1) trusty; urgency=low
+
+  [ Mikko Hurskainen ]
+  * gril / rilmodem / plugins/ril: fix compilation issues/warnings
+
+  [ Tony Espy ]
+  * Updating README.
+
+  [ Alfonso Sanchez-Beato ]
+  * gril, rilmodem/sim, plugins/ril:
+    - merge nemomobile SIM code
+    - re-factor parcel code
+    - add SIM parcel unit tests
+
+ -- Ricardo Salveti de Araujo <ricardo.salveti@canonical.com>  Mon, 25 Nov 2013 14:09:33 -0200
+
+ofono (1.12+bzr6839-0ubuntu1) saucy; urgency=low
+
+  [ Tony Espy ]
+  * rilmodem: Fix GPRS attach/detach logic (LP: #1234434)
+
+ -- Ricardo Salveti de Araujo <ricardo.salveti@canonical.com>  Wed, 16 Oct 2013 11:30:48 -0300
+
+ofono (1.12+bzr6837-0ubuntu1) saucy; urgency=low
+
+  [ Alfonso Sanchez-Beato ]
+  * Fix for LP: #1231320: GPRS provisioning is broken for old
+    (non-USIM) SIM cards in Ubuntu
+  * Fix for LP: #1222106: ofono is picking the wrong APN settings
+    in Ubuntu
+
+  [ Tony Espy ]
+  * Fix crash in ril_query_passwd_state() (LP: #1231995).
+
+ -- Ricardo Salveti de Araujo <ricardo.salveti@canonical.com>  Sun, 13 Oct 2013 18:14:48 -0300
+
+ofono (1.12+bzr6836-0ubuntu1) saucy; urgency=low
+
+  [ Ricardo Salveti de Araujo ]
+  * Changing packaging tree to make it part of the daily CI jobs
+    - Changing source format to 1.0 (required by CI)
+    - Creating bzr bd compatible branch, with the same content as available in
+      the previous package
+
+  [ Tony Espy ]
+  - Ensure that *netreg_data is always set in callback data (LP: #1234491)
+  - Re-factor rilmodem initialization code to enable set online/offline
+    (LP: #1210502)
+  - Fixing parcel parsing when probing for mute.
+
+  [ Mathieu Trudel-Lapierre ]
+  * Make the package use bzr-builddeb split-mode to properly build the source
+    tarball.
+
+ -- Mathieu Trudel-Lapierre <mathieu-tl@ubuntu.com>  Tue, 08 Oct 2013 10:47:02 -0400
+
+ofono (1.12-0ubuntu8) saucy; urgency=low
+
+  * Update debian/compat to 9
+  * debian/control:
+    - Bump debhelper build-dep to >= 9
+    - Make ofono-scripts depend directly on python
+    - Changing ofono-dev to arch:any, as it contains an arch specific
+      pkg-config file
+    - Adding missing dependencies for ofono-dev
+  * Updated Standard-Version to 3.9.4
+
+ -- Ricardo Salveti de Araujo <ricardo.salveti@canonical.com>  Thu, 05 Sep 2013 14:52:54 -0300
+
+ofono (1.12-0ubuntu7) saucy; urgency=low
+
+  * debian/rules: add logic to prevent -dbg package from
+    being stripped.
+  * debian/patches/rilmodem-support.patch: cleanup build warnings.
+
+ -- Tony Espy <espy@canonical.com>  Wed, 14 Aug 2013 17:12:58 -0400
+
+ofono (1.12-0ubuntu6) saucy; urgency=low
+
+  * debian/patches/rilmodem-support.patch: disable unit tests
+    for PowerPC by adding BYTE_ORDER == LITTLE_ENDIAN guards.
+
+ -- Tony Espy <espy@canonical.com>  Fri, 09 Aug 2013 18:03:42 -0400
+
+ofono (1.12-0ubuntu5) saucy; urgency=low
+
+  * debian/control: changing ofono-scripts to all
+
+ -- Ricardo Salveti de Araujo <ricardo.salveti@canonical.com>  Fri, 09 Aug 2013 18:29:50 -0300
+
+ofono (1.12-0ubuntu4) saucy; urgency=low
+
+  [ Tony Espy ]
+  * debian/patches/forward-port-udev-generation.patch: re-factored
+    patch to modify Makefile.am instead of Makefile.in.
+  * debian/patches/rilmodem-support.patch: added rilmodem code
+    previously hosted in a touch-specific PPA.
+  * debian/patches/nettime-plugin.patch: add nettime plugin.
+  * debian/rules: converted from cdbs to dh.
+  * debian/ofono.upstart: disable ril plugin by default to prevent
+    ofonod from exiting due to lack of RILD socket.  This is a
+    temporary workaround and will be addressed in a further update
+    to the rilmodem-support.patch.
+
+  [ Ricardo Salveti de Araujo ]
+  * Enabling parallel build
+  * Adding test and maintenance scripts ofono-scripts binary package, useful
+    for ofono debugging, needed by Ubuntu Touch
+
+ -- Ricardo Salveti de Araujo <ricardo.salveti@canonical.com>  Fri, 09 Aug 2013 17:12:15 -0300
+
+ofono (1.12-0ubuntu3) saucy; urgency=low
+
+  * debian/patches/ericsson_h5321gw_network_device_detection.patch: properly
+    detect the Lenovo (really Ericsson) H5321gw modem's network adapter device
+    by matching via udev's DEVTYPE.
+  * debian/patches/ericsson_rules.patch: add a udev rule for the Lenovo H5321gw
+    to be correctly matched to the mbm driver.
+
+ -- Mathieu Trudel-Lapierre <mathieu-tl@ubuntu.com>  Wed, 29 May 2013 10:55:01 -0400
+
+ofono (1.12-0ubuntu2b1) raring; urgency=low
+
+  * No-change rebuild against libudev1
+
+ -- Martin Pitt <martin.pitt@ubuntu.com>  Wed, 13 Mar 2013 07:07:59 +0000
+
+ofono (1.12-0ubuntu2) raring; urgency=low
+
+  * Add missing include of sys/types.h in src/storage.h to fix FTBFS.
+
+ -- Stéphane Graber <stgraber@ubuntu.com>  Mon, 28 Jan 2013 15:29:38 -0500
+
+ofono (1.12-0ubuntu1) raring; urgency=low
+
+  * New upstream release. (1.12)
+    - 1.12:
+      + Fix issue with alpha ID and self explanatory icons.
+      + Fix issue with SIM Refresh handling and resetting state.
+      + Fix issue with SMS initiated by STK proactive command.
+      + Fix issue with CBS treating carriage return as padding.
+      + Fix issue with USSD terminated by network notification.
+      + Add support for battery charge level with Handsfree devices.
+      + Add support for technology and band changes with IFX modems.
+      + Add support for SIM file handling with Qualcomm QMI modems.
+      + Add support for SIM file system 2G and 3G path handling.
+      + Add support for SIM Toolkit end-to-end testing.
+    - 1.11:
+      + Fix issue with Bluetooth disconnect handling.
+      + Fix issue with handling EFspn with filler characters.
+      + Fix issue with processing multiple *EMRDY notifications.
+      + Fix issue with wrong data bearer property signal.
+      + Add support for data bearer reporting and Telit modems.
+      + Add support for SIM status notification and Telit modems.
+      + Add support for PIN retry counter status and Telit modems.
+      + Add support for long phone number format and SIM Toolkit.
+      + Add support for RequestQuickDigit to SIM Toolkit agent.
+    - 1.10:
+      + Update multiple descriptions of the API documentation.
+      + Add support for ReleaseAndSwap call handling.
+
+ -- Stéphane Graber <stgraber@ubuntu.com>  Mon, 28 Jan 2013 14:07:46 -0500
+
+ofono (1.9-1ubuntu1) quantal; urgency=low
+
+  * Merge with Debian experimental; remaining changes:
+    - debian/control: explicitly Conflicts with modemmanager: having both
+      installed / running at the same time causes issues causes issues with
+      both claiming modem devices.
+    - debian/patches/02-dont-handle-stacktraces.patch: stop catching stacktraces
+      and printing the information internally, so apport can catch and report
+      the possible bugs.
+    - debian/ofono.postinst: on configure, notify the user that a reboot is
+      required (so ofono can get started by upstart). (LP: #600501)
+    - debian/rules: pass --no-restart-on-upgrade so ofono isn't automatically
+      restarted when upgrades.
+    - Adding upstart config / Removing standard init script
+    - Adding Apport support
+    - Patch for recognizing special Huawei devices with weird serial
+    - Override lintian to avoid script-in-etc-init.d... warnings.
+    - Update debian/compat to 7
+  * debian/series: add our patches to debian/patches/series now that the package
+    uses quilt.
+  * debian/patches/02-dont-handle-stacktraces.patch: refreshed.
+  * debian/ofono-dev.install, debian/ofono.install:
+    - Install usr/sbin/dundee and ofono.pc to the proper packages.
+
+ -- Mathieu Trudel-Lapierre <mathieu-tl@ubuntu.com>  Wed, 22 Aug 2012 19:59:08 -0400
+
+ofono (1.9-1) experimental; urgency=low
+
+  * New upstream release
+
+ -- Konstantinos Margaritis <markos@debian.org>  Tue, 31 Jul 2012 11:00:42 +0300
+
+ofono (1.6-2) unstable; urgency=low
+
+  * Add build dependency on mobile-broadband-provider-info 
+
+ -- Hector Oron <zumbi@debian.org>  Sat, 02 Jun 2012 00:55:18 +0200
+
+ofono (1.6-1) unstable; urgency=low
+
+  * New upstream release.
+  * Add myself to uploaders. 
+  * Update Standards-Version. 
+  * Change source/format to 3.0 (quilt)
+
+ -- Hector Oron <zumbi@debian.org>  Fri, 01 Jun 2012 18:29:37 +0200
+
+ofono (0.53-2) unstable; urgency=low
+
+  * debian/ofono.init: Add dbus as a dependency to start and stop. Thanks
+    to Johannes Schauer for the patch and report. (Closes: #631707)
+
+ -- Jonny Lamb <jonny@debian.org>  Wed, 24 Aug 2011 15:36:44 +0100
+
+ofono (0.53-1) unstable; urgency=low
+
+  * New upstream release.
+  * debian/control: Add Vcs-* fields.
+  * Ensure ofono is built with bluetooth support (pass --enable-bluetooth
+    and add libbluetooth-dev build-dep).
+
+ -- Jonny Lamb <jonny@debian.org>  Wed, 24 Aug 2011 14:40:25 +0100
+
+ofono (0.41-0ubuntu1) natty; urgency=low
+
+  * New upstream release.
+  * debian/control: explicitly Conflicts with modemmanager: having both
+    installed / running at the same time causes issues causes issues with both
+    claiming modem devices. (LP: #688472)
+  * debian/patches/02-dont-handle-stacktraces.patch: stop catching stacktraces
+    and printing the information internally, so apport can catch and report
+    the possible bugs. (LP: #691450)
+  * debian/ofono.postinst: on configure, notify the user that a reboot is
+    required (so ofono can get started by upstart). (LP: #600501)
+  * debian/control: add new Build-Depends on libbluetooth-dev to build with
+    bluetooth support.
+  * debian/rules: drop override_dh_strip, not needed for debug symbols with
+    cdbs.
+  * debian/rules: pass --no-restart-on-upgrade so ofono isn't automatically
+    restarted when upgrades.
+
+ -- Mathieu Trudel-Lapierre <mathieu-tl@ubuntu.com>  Mon, 21 Feb 2011 15:08:51 +0100
+
+ofono (0.36-1ubuntu1) natty; urgency=low
+
+  * Merge from Debian unstable (LP: #683302), remaining changes:
+    - Adding upstart config and preinst rules
+    - Removing standard init script
+    - Adding Apport support
+    - Patch for recognizing special Huawei devices with weird serial
+    - Bump debhelper build-depend to >= 7.0.50~ for override support
+    - Add a dh_strip override to add debugging symbols to ofono-dbg
+    - Override lintian to avoid script-in-etc-init.d... warnings.
+    - Update debian/compat to 7
+    - Add preinst script to remove old conf file (needed until next LTS)
+  * Refreshed 01-check-that-modem-name-is-valid.patch for new release.
+
+ -- Mathieu Trudel-Lapierre <mathieu-tl@ubuntu.com>  Mon, 13 Dec 2010 22:08:29 -0600
+
+ofono (0.36-1) unstable; urgency=low
+
+  * New upstream release.
+  * debian/: Added some files relating to building with git.
+  * debian/control:
+    + Adopt the package from Andres. Thanks for your work, dude!
+    + Upped versioned build-dep on glib.
+    + Upped Standards-Version. (no changes)
+  * debinan/ofono.install: Updated.
+  * debian/rules: Switch to cdbs to be like the rest of the pkg-telepathy
+    packages.
+  * debian/ofono.init: Add dependency on $remote_fs in required-start and
+    required-stop.
+  * debian/compat: Lower to 5 for misc reasons.
+  * debian/patches/: Add patch to fix small lintian problem.
+
+ -- Jonny Lamb <jonny@debian.org>  Mon, 29 Nov 2010 18:14:48 +0000
+
+ofono (0.26-0ubuntu2) maverick; urgency=low
+
+  [ Kalle Valo <kalle.valo@canonical.com> ]
+  * Ofono should use upstart (LP: #600503)
+    - add debian/ofono.upstart
+    - add debian/ofono.preinst
+    - remove debian/ofono.init
+    - remote debian/ofono.default
+  * Add Apport support (LP: #600502)
+    - add debian/ofono-crashdb.conf
+    - add debian/source_ofono.py
+  * Fix LP: #612479 - Huawei with invalid serial not recognised
+    - add debian/patches/01-check-that-modem-name-is-valid.patch
+    - add debian/patches/series
+
+  [ Chris Coulson <chris.coulson@canonical.com> ]
+  * Switch to dpkg-source 3.0 (quilt) format
+    - add debian/source/format
+  * Fix script-in-etc-init.d-not-registered-via-update-rc.d warning
+    triggered by shipping the symlink to the upstart job
+    - add debian/ofono.lintian-overrides
+
+ -- Kalle Valo <kalle.valo@canonical.com>  Thu, 02 Sep 2010 18:21:57 +0100
+
+ofono (0.26-0ubuntu1) maverick; urgency=low
+
+  [ Kalle Valo <kalle.valo@canonical.com> ]
+  * New upstream release 0.26.
+  * Add watch file.
+
+  [ Chris Coulson <chris.coulson@canonical.com> ]
+  * Bump Standards-Version to 3.9.1, no other changes required
+    - update debian/control
+  * Bump debhelper build-depend to >= 7.0.50~ for override support
+    (fixes a lintian warning)
+  * Add a dependency on $remote_fs to init script
+    - update debian/ofono.init
+
+ -- Kalle Valo <kalle.valo@canonical.com>  Wed, 04 Aug 2010 17:59:41 +0300
+
+ofono (0.23-0ubuntu1) maverick; urgency=low
+
+  * New upstream version
+  * debian/control:
+    - build-depends on libcap-ng-dev
+
+ -- Sebastien Bacher <seb128@ubuntu.com>  Mon, 28 Jun 2010 17:09:26 +0200
+
+ofono (0.20-0ubuntu1) maverick; urgency=low
+
+  * New upstream release v0.20
+
+ -- Chris Coulson <chris.coulson@canonical.com>  Wed, 26 May 2010 11:18:35 +0100
+
+ofono (0.18-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Andres Salomon <dilinger@debian.org>  Thu, 18 Feb 2010 03:58:18 +0000
+
+ofono (0.9-1) unstable; urgency=low
+
+  * New upstream release.
+  * Since it runs w/out it, change the udev Depends to a Recommends.
+
+ -- Andres Salomon <dilinger@debian.org>  Mon, 02 Nov 2009 18:46:37 +0000
+
+ofono (0.8-1) unstable; urgency=low
+
+  * New upstream release.
+  * Drop cdbs and use debhelper 7 features instead.
+
+ -- Andres Salomon <dilinger@debian.org>  Sun, 18 Oct 2009 23:54:52 +0000
+
+ofono (0.7-1) unstable; urgency=low
+
+  * New upstream release.
+  * Also build-dep upon udev, as otherwise UDEV_DATADIR is set incorrectly
+    (closes: #549544).
+  * Ofono itself should also probably depend upon udev, eh?
+
+ -- Andres Salomon <dilinger@debian.org>  Sun, 04 Oct 2009 15:27:21 +0000
+
+ofono (0.6-3) unstable; urgency=low
+
+  * Build-dep upon libudev-dev and enable udev support.
+
+ -- Andres Salomon <dilinger@debian.org>  Sat, 03 Oct 2009 20:22:58 +0000
+
+ofono (0.6-2) unstable; urgency=low
+
+  * Add a -dbg package.
+
+ -- Andres Salomon <dilinger@debian.org>  Tue, 29 Sep 2009 20:05:20 +0000
+
+ofono (0.6-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Andres Salomon <dilinger@debian.org>  Mon, 28 Sep 2009 16:21:52 +0000
+
+ofono (0.5-1) unstable; urgency=low
+
+  * New upstream release.
+  * Be sure to create /var/lib/ofono (for the lulz).
+  * Silence some lintian warnings.
+
+ -- Andres Salomon <dilinger@debian.org>  Fri, 25 Sep 2009 22:58:23 +0000
+
+ofono (0.4-1) unstable; urgency=low
+
+  * New upstream release.
+  * Update copyright file.
+  * Include the new modem.conf.
+
+ -- Andres Salomon <dilinger@debian.org>  Thu, 03 Sep 2009 19:51:21 +0000
+
+ofono (0.3-1) unstable; urgency=low
+
+  * New upstream release.
+  * Drop ofonod manpage; merged upstream.
+
+ -- Andres Salomon <dilinger@debian.org>  Sat, 15 Aug 2009 15:55:11 +0000
+
+ofono (0.1-1) unstable; urgency=low
+
+  * Initial release.
+
+ -- Andres Salomon <dilinger@debian.org>  Sat, 11 Jul 2009 18:37:48 -0400
+

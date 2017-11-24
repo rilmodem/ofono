@@ -1,0 +1,1 @@
+ofono: postrm-does-not-call-updaterc.d-for-init.d-script etc/init.d/ofono

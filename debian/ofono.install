@@ -1,0 +1,5 @@
+debian/tmp/etc/dbus-1/system.d/*
+debian/tmp/usr/sbin/ofonod
+debian/tmp/etc/ofono
+debian/tmp/lib/udev/rules.d/*
+debian/tmp/usr/share/man
