@@ -209,7 +209,12 @@ static void clcc_poll_cb(struct ril_msg *message, gpointer user_data)
 			if (nc->type) {
 				ofono_voicecall_notify(vc, nc);
 
-				if (vd->cb) {
+				if (nc->status != CALL_STATUS_INCOMING
+						&& vd->cb) {
+					/*
+					 * This is the call we've just dialed.
+					 * Call the dialing callback here.
+					 */
 					struct ofono_error error;
 					ofono_voicecall_cb_t cb = vd->cb;
 					decode_ril_error(&error, "OK");
@@ -372,19 +377,32 @@ static void rild_cb(struct ril_msg *message, gpointer user_data)
 
 	g_ril_print_response_no_args(vd->ril, message);
 
-	/* CLCC will update the oFono call list with proper ids  */
-	if (!vd->clcc_source)
+	/*
+	 * CLCC will update the oFono call list with proper ids. However, if
+	 * the callback isn't there, it's likely that an
+	 * UNSOL_RESPONSE_CALL_STATE_CHANGED has been issued and the CLCC
+	 * has been called already. So, there's no need to trigger another CLCC.
+	 */
+	if (!vd->clcc_source && vd->cb)
 		vd->clcc_source = g_timeout_add(POLL_CLCC_INTERVAL,
 						ril_poll_clcc, vc);
-
-	/* we cannot answer just yet since we don't know the call id */
-	vd->cb = cb;
-	vd->data = cbd->data;
-
 	return;
 
 out:
-	cb(&error, cbd->data);
+	/*
+	 * If the callback isn't there, it's likely that the callback has been
+	 * called with success already in CLCC's response, so, we can't signal
+	 * the error to the caller. However, it's unlikely to have the new call
+	 * in the call list but the dial itself fails.
+	 */
+	if (!vd->cb) {
+		ofono_error("%s: DIAL request fails after the call appeared "
+				"in the call list.", __func__);
+	} else {
+		cb(&error, cbd->data);
+		vd->cb = NULL;
+		vd->data = NULL;
+	}
 }
 
 static void dial(struct ofono_voicecall *vc,
@@ -403,6 +421,15 @@ static void dial(struct ofono_voicecall *vc,
 			rild_cb, cbd, g_free) == 0) {
 		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, data);
+	} else {
+		/*
+		 * The modem may issue an UNSOL_RESPONSE_CALL_STATE_CHANGED
+		 * before respond to the dial request. As we can notice the new
+		 * call only at the first CLCC, we have to put the callback in
+		 * the vd right now.
+		 */
+		vd->cb = cb;
+		vd->data = data;
 	}
 }
 
