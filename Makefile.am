@@ -51,6 +51,10 @@ confdir = $(sysconfdir)/ofono
 
 dist_conf_DATA =
 
+rules_files = plugins/ofono.rules plugins/ofono-speedup.rules
+rulesdir = @UDEV_DATADIR@
+rules_DATA = $(foreach file,$(rules_files), plugins/97-$(notdir $(file))) 
+
 statedir = $(localstatedir)/lib/ofono
 
 state_DATA =
@@ -816,8 +820,7 @@ testdir = $(pkglibdir)/test
 test_SCRIPTS = $(test_scripts)
 endif
 
-EXTRA_DIST = src/genbuiltin plugins/ofono.rules plugins/ofono-speedup.rules \
-				$(doc_files) $(test_scripts)
+EXTRA_DIST = src/genbuiltin $(rules_files) $(doc_files) $(test_scripts)
 
 dist_man_MANS = doc/ofonod.8
 
