@@ -156,11 +156,9 @@ static void gprs_allow_data_cb(struct ril_msg *message, gpointer user_data)
 	}
 
 	if (message->error != RIL_E_SUCCESS) {
-		ofono_error("%s: RIL error %s", __func__,
+		ofono_error("%s: RIL error %s, trying fallback", __func__,
 				ril_error_to_string(message->error));
-		CALLBACK_WITH_FAILURE(cb, cbd->data);
-		free_attach_cbd(cbd);
-		return;
+		// Fallback by ignore this
 	}
 
 	gd->ofono_attached = attach_data->set_attached;
@@ -172,7 +170,8 @@ static void gprs_allow_data_cb(struct ril_msg *message, gpointer user_data)
 
 static void send_allow_data(struct cb_data *cbd, GRil *ril, int attached)
 {
-	ofono_gprs_cb_t cb = cbd->cb;
+	struct gprs_attach_data *attach_data = cbd->user;
+	struct ril_gprs_data *gd = attach_data->gd;
 	struct parcel rilp;
 
 	/* ALLOW_DATA payload: int[] with attach value */
@@ -184,9 +183,11 @@ static void send_allow_data(struct cb_data *cbd, GRil *ril, int attached)
 
 	if (g_ril_send(ril, RIL_REQUEST_ALLOW_DATA, &rilp,
 					gprs_allow_data_cb, cbd, NULL) == 0) {
-		ofono_error("%s: send failed", __func__);
-		free_attach_cbd(cbd);
-		CALLBACK_WITH_FAILURE(cb, cbd->data);
+		ofono_error("%s: send failed, trying fallback", __func__);
+
+		// Fallback
+		gd->ofono_attached = attached;
+		g_idle_add(ril_gprs_set_attached_cb, cbd);
 	}
 }
 

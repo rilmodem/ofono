@@ -610,7 +610,7 @@ void ril_set_fast_dormancy(struct ofono_radio_settings *rs,
 	}
 }
 
-static ofono_bool_t query_available_rats_cb(gpointer user_data)
+static void query_available_rats(gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_radio_settings_available_rats_query_cb_t cb = cbd->cb;
@@ -624,8 +624,12 @@ static ofono_bool_t query_available_rats_cb(gpointer user_data)
 		rd->available_rats |= OFONO_RADIO_ACCESS_MODE_LTE;
 
 	CALLBACK_WITH_SUCCESS(cb, rd->available_rats, cbd->data);
+}
 
-	g_free(cbd);
+static ofono_bool_t query_available_rats_cb(gpointer user_data)
+{
+	query_available_rats(user_data);
+	g_free(user_data);
 
 	return FALSE;
 }
@@ -641,16 +645,20 @@ static void get_radio_caps_cb(struct ril_msg *message, gpointer user_data)
 	unsigned all_rats;
 
 	if (message->error != RIL_E_SUCCESS) {
-		ofono_error("%s: error %s", __func__,
+		ofono_error("%s: error %s, using fallback", __func__,
 				ril_error_to_string(message->error));
-		CALLBACK_WITH_FAILURE(cb, 0, cbd->data);
+		// Fallback to query_available_rats_cb
+		// This requires envar to use LTE, but better then staight up failing.
+		query_available_rats(cbd);
 		return;
 	}
 
 	caps = g_ril_reply_parse_get_radio_capability(rd->ril, message);
 	if (caps == NULL) {
-		ofono_error("%s: parse error", __func__);
-		CALLBACK_WITH_FAILURE(cb, 0, cbd->data);
+		ofono_error("%s: parse error, using fallback", __func__);
+		// Fallback to query_available_rats_cb
+		// This requires envar to use LTE, but better then staight up failing.
+		query_available_rats(cbd);
 		return;
 	}
 
@@ -685,8 +693,10 @@ void ril_query_available_rats(struct ofono_radio_settings *rs,
 
 	if (g_ril_send(rd->ril, RIL_REQUEST_GET_RADIO_CAPABILITY, NULL,
 					get_radio_caps_cb, cbd, g_free) <= 0) {
-		g_free(cbd);
-		CALLBACK_WITH_FAILURE(cb, 0, data);
+		ofono_error("%s: request radio capability failed, using fallback", __func__);
+		// Fallback to query_available_rats_cb
+		// This requires envar to use LTE, but better then staight up failing.
+		g_idle_add(query_available_rats_cb, cbd);
 	}
 }
 

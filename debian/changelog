@@ -1,4 +1,4 @@
-ofono (1.18.0+ubports1) vivid; urgency=medium
+ofono (1.18.0+ubports1) xenial; urgency=medium
 
   [peat-psuwit]
   * rilmodem: make SET_UICC_SUBSCRIPTION works on newer devices
