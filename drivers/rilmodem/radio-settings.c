@@ -156,8 +156,8 @@ static void set_preferred_network(struct radio_data *rd, struct cb_data *cbd,
 	if (g_ril_send(rd->ril, RIL_REQUEST_SET_PREFERRED_NETWORK_TYPE,
 				&rilp, ril_set_rat_cb, cbd, g_free) == 0) {
 		ofono_error("%s: unable to set rat mode", __func__);
-		g_free(cbd);
 		CALLBACK_WITH_FAILURE(cb, cbd->data);
+		g_free(cbd);
 	}
 }
 
