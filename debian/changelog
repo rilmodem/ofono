@@ -1,3 +1,15 @@
+ofono (1.18.0+ubports2) xenial; urgency=medium
+
+  [ Marius Gripsgard ]
+  * Add fallback option for gprs_allow_data_cb and get_radio_caps_cb
+
+  [ Ratchanan Srirattanamet ]
+  * rilmodem: radio-settings: fix very obvious use-after-free
+  * rilmodem: radio-settings: implement legacy cap switch
+  * qcommsimmodem: remove radio-settings atom
+
+ -- Ratchanan Srirattanamet <ratchanan@ubports.com>  Tue, 05 Nov 2019 20:48:29 +0700
+
 ofono (1.18.0+ubports1) xenial; urgency=medium
 
   [peat-psuwit]
