@@ -6,6 +6,8 @@
  *  Copyright (C) 2013 Jolla Ltd
  *  Contact: Jussi Kangas <jussi.kangas@tieto.com>
  *  Copyright (C) 2014 Canonical Ltd
+ *  Copyright (C) 2019 UBports foundation.
+ *  Author: Ratchanan Srirattanamet <ratchanan@ubports.com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -440,6 +442,94 @@ static void get_rs_with_mode(struct ofono_modem *modem, void *data)
 	sd->rd_2 = rd;
 }
 
+static void set_other_modem_to_gsm_cb(const struct ofono_error *error,
+								void *data)
+{
+	struct switch_data *sd = data;
+	ofono_radio_settings_rat_mode_set_cb_t cb = sd->cbd->cb;
+	sd->rd_2->switch_d = NULL;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_error("%s: error setting radio access mode", __func__);
+		CALLBACK_WITH_FAILURE(cb, sd->cbd->data);
+		g_free(sd->cbd);
+	} else {
+		ofono_radio_settings_set_rat_mode(sd->rd_2->radio_settings,
+							sd->rd_2->rat_mode);
+		set_preferred_network(sd->rd_1, sd->cbd, sd->mode_to_switch);
+	}
+
+	g_free(sd);
+}
+
+static void set_other_modem_to_gsm(struct switch_data *sd)
+{
+	struct cb_data *cbd = cb_data_new(set_other_modem_to_gsm_cb, sd,
+						sd->rd_2->radio_settings);
+
+	sd->rd_2->switch_d = sd;
+
+	set_preferred_network(sd->rd_2, cbd, OFONO_RADIO_ACCESS_MODE_GSM);
+}
+
+static void get_rs_with_non_gsm_rat(struct ofono_modem *modem, void *data)
+{
+	struct switch_data *sd = data;
+	struct radio_data *rd_ref = sd->rd_1;
+	struct ofono_atom *rs_atom, *sim_atom;
+	struct ofono_radio_settings *rs;
+	struct ofono_sim *sim;
+	struct radio_data *rd;
+	const char *standby_group, *modem_group;
+
+	if (sd->rd_2 != NULL)
+		/* It's already been found. */
+		return;
+
+	if (sd->cbd == NULL)
+		/* It's already been errored out. */
+		return;
+
+	standby_group = ofono_modem_get_string(rd_ref->modem, "StandbyGroup");
+	if (standby_group == NULL)
+		return;
+
+	modem_group = ofono_modem_get_string(modem, "StandbyGroup");
+	if (g_strcmp0(standby_group, modem_group) != 0)
+		return;
+
+	rs_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_RADIO_SETTINGS);
+	if (rs_atom == NULL)
+		return;
+
+	rs = __ofono_atom_get_data(rs_atom);
+	rd = ofono_radio_settings_get_data(rs);
+	if (rd == rd_ref)
+		return;
+
+	if (rd->rat_mode == OFONO_RADIO_ACCESS_MODE_GSM)
+		/* This modem is already in the correct mode. */
+		return;
+
+	if (rd->switch_d) {
+		ofono_error("%s: already setting rat mode", __func__);
+		/* Only clear this field, the caller will handle callback. */
+		sd->cbd = NULL;
+		return;
+	}
+
+	sim_atom = __ofono_modem_find_atom(rd->modem, OFONO_ATOM_TYPE_SIM);
+	if (sim_atom == NULL)
+		return;
+
+	sim = __ofono_atom_get_data(sim_atom);
+	if (ofono_sim_get_state(sim) == OFONO_SIM_STATE_NOT_PRESENT)
+		/* No need to set prefered network to the blank SIM slot. */
+		return;
+
+	sd->rd_2 = rd;
+}
+
 void ril_set_rat_mode(struct ofono_radio_settings *rs,
 			enum ofono_radio_access_mode mode,
 			ofono_radio_settings_rat_mode_set_cb_t cb,
@@ -448,11 +538,50 @@ void ril_set_rat_mode(struct ofono_radio_settings *rs,
 	struct radio_data *rd = ofono_radio_settings_get_data(rs);
 	struct cb_data *cbd = cb_data_new(cb, data, rs);
 	struct switch_data *sd = NULL;
+	unsigned int legacy_cap_switch = 0;
+	char *legacy_cap_switch_env;
 
 	if (rd->switch_d != NULL)
 		goto error;
 
-	if ((rd->available_rats & mode) == 0) {
+	/* FIXME: is this the right place to do this */
+	legacy_cap_switch_env = getenv("OFONO_RIL_LEGACY_CAP_SWITCH");
+	if (legacy_cap_switch_env && legacy_cap_switch_env[0] != '\0') {
+		char *endp;
+		legacy_cap_switch = strtoul(legacy_cap_switch_env, &endp, 10);
+		if (*endp != '\0')
+			/* Invalid value, assume not using legacy cap switch */
+			legacy_cap_switch = 0;
+	}
+
+	if (mode != OFONO_RADIO_ACCESS_MODE_GSM && (
+			g_ril_get_version(rd->ril) < 11 ||
+			legacy_cap_switch)) {
+		/* In older versions of RIL (and some newer one), capability
+		 * switch can be done simply by setting the other slot's
+		 * prefered network to GSM.
+		 */
+
+		sd = g_malloc0(sizeof (*sd));
+		sd->rd_1 = rd;
+		sd->mode_to_switch = mode;
+		sd->cbd = cbd;
+
+		__ofono_modem_foreach(get_rs_with_non_gsm_rat, sd);
+
+		if (sd->cbd == NULL)
+			/* This field gets cleared out if there's error. */
+			goto error;
+
+		if (sd->rd_2 != NULL) {
+			/* Initiate preference set to GSM */
+			set_other_modem_to_gsm(sd);
+		} else {
+			/* No modem needs to be set to GSM first. */
+			g_free(sd);
+			set_preferred_network(rd, cbd, mode);
+		}
+	} else if ((rd->available_rats & mode) == 0) {
 		if (g_ril_get_version(rd->ril) < 11)
 			goto error;
 
