@@ -44,7 +44,6 @@ static const char *qcom_msim_get_driver_type(enum ofono_atom_type atom)
 {
 	switch (atom) {
 	case OFONO_ATOM_TYPE_GPRS:
-	case OFONO_ATOM_TYPE_RADIO_SETTINGS:
 		return QCOMMSIMMODEM;
 	default:
 		return RILMODEM;

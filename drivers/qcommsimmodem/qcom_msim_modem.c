@@ -39,7 +39,6 @@ static int qcom_msim_modem_init(void)
 {
 	DBG("");
 
-	qcom_msim_radio_settings_init();
 	qcom_msim_gprs_init();
 
 	return 0;
@@ -49,7 +48,6 @@ static void qcom_msim_modem_exit(void)
 {
 	DBG("");
 
-	qcom_msim_radio_settings_exit();
 	qcom_msim_gprs_exit();
 }
 
