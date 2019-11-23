@@ -238,7 +238,7 @@ static void ril_cops_cb(struct ril_msg *message, gpointer user_data)
 	struct ofono_network_operator op;
 
 	if (message->error != RIL_E_SUCCESS) {
-		ofono_error("%s: failed to retrive the current operator",
+		ofono_error("%s: failed to retrieve the current operator",
 				__func__);
 		goto error;
 	}

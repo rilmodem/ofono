@@ -234,9 +234,9 @@ struct reply_operator *g_ril_reply_parse_operator(GRil *gril,
 	g_ril_init_parcel(message, &rilp);
 
 	num_params = parcel_r_int32(&rilp);
-	if (num_params != OPERATOR_NUM_PARAMS) {
+	if (num_params < OPERATOR_NUM_PARAMS) {
 		ofono_error("%s: invalid OPERATOR reply: "
-				"number of params is %d; should be 3.",
+				"number of params is %d; should be at least 3.",
 				__func__,
 				num_params);
 		goto error;
