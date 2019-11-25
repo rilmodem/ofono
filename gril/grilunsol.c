@@ -546,7 +546,7 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
 	int lte_signal;
 	int signal;
 
-	auto samsungQuirks = TRUE;
+	gboolean samsungQuirks = TRUE;
 
 	g_ril_init_parcel(message, &rilp);
 
@@ -583,10 +583,8 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
 		if (samsungQuirks) {
 			if ((lte_sigstr & 0xff) == 255 || lte_sigstr == 99) {
 				lte_sigstr = 99;
-				lteRsrp = -1;
-				lteRsrq = -1;
-				lteRssnr = -1;
-				lteCqi = -1;
+				lte_rsrp = INT_MAX;
+				lte_rssnr = INT_MAX;
 			} else {
 				lte_sigstr &= 0xff;
 			}
