@@ -546,11 +546,16 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
 	int lte_signal;
 	int signal;
 
+	auto samsungQuirks = TRUE;
+
 	g_ril_init_parcel(message, &rilp);
 
 	/* RIL_SignalStrength_v5 */
 	/* GW_SignalStrength */
 	gw_sigstr = parcel_r_int32(&rilp);
+	if (samsungQuirks) {
+		gw_sigstr &= 0xFF;
+	}
 	gw_signal = get_gsm_strength(gw_sigstr);
 	parcel_r_int32(&rilp); /* bitErrorRate */
 
@@ -560,12 +565,12 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
 
 	/* CDMA_SignalStrength */
 	cdma_dbm = parcel_r_int32(&rilp);
-	parcel_r_int32(&rilp); /* ecio */
+	parcel_r_int32(&rilp); /* cdmaEcio */
 
 	/* EVDO_SignalStrength */
 	evdo_dbm = parcel_r_int32(&rilp);
-	parcel_r_int32(&rilp); /* ecio */
-	parcel_r_int32(&rilp); /* signalNoiseRatio */
+	parcel_r_int32(&rilp); /* evdoEcio */
+	parcel_r_int32(&rilp); /* evdoSnr */
 
 	/* Present only for RIL_SignalStrength_v6 or newer */
 	if (parcel_data_avail(&rilp) > 0) {
@@ -575,7 +580,19 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
 		parcel_r_int32(&rilp); /* rsrq */
 		lte_rssnr = parcel_r_int32(&rilp);
 		parcel_r_int32(&rilp); /* cqi */
+		if (samsungQuirks) {
+			if ((lte_sigstr & 0xff) == 255 || lte_sigstr == 99) {
+				lte_sigstr = 99;
+				lteRsrp = -1;
+				lteRsrq = -1;
+				lteRssnr = -1;
+				lteCqi = -1;
+			} else {
+				lte_sigstr &= 0xff;
+			}
+		}
 		lte_signal = get_lte_strength(lte_sigstr, lte_rsrp, lte_rssnr);
+		parcel_r_int32(&rilp); /* tdScdmaRscp */
 	} else {
 		lte_signal = -1;
 	}
