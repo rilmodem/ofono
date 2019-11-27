@@ -2187,6 +2187,11 @@ static const GDBusSignalTable manager_signals[] = {
 	{ }
 };
 
+gboolean ofono_voicecall_is_emergency_number(struct ofono_voicecall *vc, const struct ofono_phone_number *ph)
+{
+    return is_emergency_number(vc, phone_number_to_string(ph));
+}
+
 void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 				enum ofono_disconnect_reason reason,
 				const struct ofono_error *error)

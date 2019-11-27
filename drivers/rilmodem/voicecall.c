@@ -405,11 +405,6 @@ out:
 	}
 }
 
-static gboolean is_emergency_number(struct ofono_voicecall *vc,
-                                    const char *number) {
-    return g_hash_table_lookup_extended(vc->en_list, number, NULL, NULL);
-}
-
 static void dial(struct ofono_voicecall *vc,
 			const struct ofono_phone_number *ph,
 			enum ofono_clir_option clir, ofono_voicecall_cb_t cb,
@@ -420,7 +415,7 @@ static void dial(struct ofono_voicecall *vc,
 	struct parcel rilp;
 
 	//Samsung wants emergency number indicated also in the parcel to rild
-	g_ril_request_dial(vd->ril, ph, is_emergency_number(vc, phone_number_to_string(ph)), clir, &rilp);
+	g_ril_request_dial(vd->ril, ph, ofono_voicecall_is_emergency_number(vc, ph), clir, &rilp);
 
 	/* Send request to RIL */
 	if (g_ril_send(vd->ril, RIL_REQUEST_DIAL, &rilp,
