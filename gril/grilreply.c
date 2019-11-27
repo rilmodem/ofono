@@ -500,8 +500,10 @@ struct reply_data_reg_state *g_ril_reply_parse_data_reg_state(GRil *gril,
 			g_ril_append_print_buf(gril, "%s,", print_buf);
 
 		switch (i) {
-		case RST_IX_STATE: case RST_IX_LAC:
-		case RST_IX_CID:   case RST_IX_RAT:
+		case RST_IX_STATE:
+		case RST_IX_LAC:
+		case RST_IX_CID:
+		case RST_IX_RAT:
 			set_reg_state(gril, &reply->reg_state, i, str);
 			break;
 		case RDST_IX_MAXDC:
