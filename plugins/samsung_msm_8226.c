@@ -25,10 +25,18 @@ static const char *samsung_msm_8226_get_driver_type(enum ofono_atom_type atom)
     }
 }
 
+static const char *samsung_msm_8226_request_id_to_string(int req)
+{
+    switch (req) {
+    default:
+        return NULL;
+    }
+}
+
 static int samsung_msm_8226_probe(struct ofono_modem *modem)
 {
     return ril_create(modem, OFONO_RIL_VENDOR_SAMSUNG_MSM_8226,
-                      NULL,
+                      samsung_msm_8226_request_id_to_string,
                       NULL,
                       samsung_msm_8226_get_driver_type);
 }
