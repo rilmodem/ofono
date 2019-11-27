@@ -4,18 +4,33 @@
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 
+#include <stddef.h>
+
 #include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
 
 #include "ofono.h"
 
+#include "drivers/rilmodem/rilmodem.h"
 #include "drivers/rilmodem/vendor.h"
+#include "gril.h"
 #include "ril.h"
+
+static const char *samsung_msm_8226_get_driver_type(enum ofono_atom_type atom)
+{
+    switch (atom) {
+    default:
+        return RILMODEM;
+    }
+}
 
 static int samsung_msm_8226_probe(struct ofono_modem *modem)
 {
-    return ril_create(modem, OFONO_RIL_VENDOR_SAMSUNG_MSM_8226);
+    return ril_create(modem, OFONO_RIL_VENDOR_SAMSUNG_MSM_8226,
+                      NULL,
+                      NULL,
+                      samsung_msm_8226_get_driver_type);
 }
 
 static struct ofono_modem_driver samsung_msm_8226_driver = {
