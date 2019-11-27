@@ -812,21 +812,22 @@ void g_ril_request_dial(GRil *gril,
 			enum ofono_clir_option clir,
 			struct parcel *rilp)
 {
-	parcel_init(rilp);
-	auto phoneNoString = phone_number_to_string(ph);
+    const char *phoneNoString;
+    parcel_init(rilp);
+    phoneNoString = phone_number_to_string(ph);
 
-	/* Number to dial */
-	parcel_w_string(rilp, phoneNoString);
-	/* CLIR mode */
-	parcel_w_int32(rilp, clir);
-	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_8226) {
-		parcel_w_int32(rilp, 0); // CallDetails.call_type
-		if (isEmergency) {
-			parcel_w_int32(rilp, 3); // Emergency call domain?
-		} else {
-			parcel_w_int32(rilp, 1); // Default call domain?
-		}
-		parcel_w_string(rilp, ""; // CallDetails.getCsvFromExtras
+    /* Number to dial */
+    parcel_w_string(rilp, phoneNoString);
+    /* CLIR mode */
+    parcel_w_int32(rilp, clir);
+    if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_8226) {
+        parcel_w_int32(rilp, 0); // CallDetails.call_type
+        if (isEmergency) {
+            parcel_w_int32(rilp, 3); // Emergency call domain?
+        } else {
+            parcel_w_int32(rilp, 1); // Default call domain?
+        }
+		parcel_w_string(rilp, ""); // CallDetails.getCsvFromExtras
 	}
 	/* USS, empty string */
 	/* TODO: Deal with USS properly */

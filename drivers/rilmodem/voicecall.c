@@ -405,6 +405,11 @@ out:
 	}
 }
 
+static gboolean is_emergency_number(struct ofono_voicecall *vc,
+                                    const char *number) {
+    return g_hash_table_lookup_extended(vc->en_list, number, NULL, NULL);
+}
+
 static void dial(struct ofono_voicecall *vc,
 			const struct ofono_phone_number *ph,
 			enum ofono_clir_option clir, ofono_voicecall_cb_t cb,

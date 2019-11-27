@@ -498,7 +498,7 @@ struct reply_data_reg_state *g_ril_reply_parse_data_reg_state(GRil *gril,
          * In some cases from Vodaphone we are receiving a RAT of 102
          * while in tunnels of the metro. Let's assume that if we
          * receive 102 we actually want a RAT of 2 for EDGE service */
-		if (str_arr->num_str > 4 && str_arr->str[0] == "1" && str_arr->str[3] == "102") {
+		if (str_arr->num_str > 4 && strcmp(str_arr->str[0], "1") && strcmp(str_arr->str[3], "102")) {
 			str_arr->str[3] = "2";
 		}
 	}
@@ -864,7 +864,10 @@ GSList *g_ril_reply_parse_get_calls(GRil *gril, const struct ril_msg *message)
 	struct parcel rilp;
 	GSList *l = NULL;
 	int num, i;
-	gchar *number, *name;
+	int uusInfoPresent = 0;
+	int arrayLen;
+	gchar *number,
+		*name;
 
 	g_ril_init_parcel(message, &rilp);
 
@@ -911,13 +914,12 @@ GSList *g_ril_reply_parse_get_calls(GRil *gril, const struct ril_msg *message)
 		}
 
 		parcel_r_int32(&rilp); /* namePresentation */
-		auto uusInfoPresent = parcel_r_int32(&rilp); /* uusInfo */
+		uusInfoPresent = parcel_r_int32(&rilp); /* uusInfo */
 		if (uusInfoPresent == 1) {
 			parcel_r_int32(&rilp); /* Type */
 			parcel_r_int32(&rilp); /* Dcs */
-			//Read byte array with user data and ignore it
-			int arrayLen;
-			parcel_r_raw(&rilp, arrayLen);
+			//Read byte array with user data and ignore it		
+			parcel_r_raw(&rilp, &arrayLen);
 		}
 		if (strlen(call->phone_number.number) > 0)
 			call->clip_validity = 0;
@@ -1349,6 +1351,7 @@ int *g_ril_reply_parse_retries(GRil *gril, const struct ril_msg *message,
 	switch (g_ril_vendor(gril)) {
 	case OFONO_RIL_VENDOR_AOSP:
 	case OFONO_RIL_VENDOR_QCOM_MSIM:
+	case OFONO_RIL_VENDOR_SAMSUNG_MSM_8226:
 		/*
 		 * The number of retries is valid only when a wrong password has
 		 * been introduced in Nexus 4. TODO: check Nexus 5 behaviour.
