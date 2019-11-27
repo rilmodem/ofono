@@ -493,6 +493,16 @@ struct reply_data_reg_state *g_ril_reply_parse_data_reg_state(GRil *gril,
 
 	g_ril_append_print_buf(gril, "{");
 
+	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_8226) {
+		/* DANGER WILL ROBINSON
+         * In some cases from Vodaphone we are receiving a RAT of 102
+         * while in tunnels of the metro. Let's assume that if we
+         * receive 102 we actually want a RAT of 2 for EDGE service */
+		if (str_arr->num_str > 4 && str_arr->str[0] == "1" && str_arr->str[3] == "102") {
+			str_arr->str[3] = "2";
+		}
+	}
+	
 	for (i = 0; i < str_arr->num_str; ++i) {
 		char *str = str_arr->str[i];
 
@@ -511,7 +521,7 @@ struct reply_data_reg_state *g_ril_reply_parse_data_reg_state(GRil *gril,
 			break;
 		default:
 			g_ril_append_print_buf(gril, "%s%s", print_buf,
-						str ? str : "(null)");
+									str ? str : "(null)");
 		}
 	}
 
@@ -879,11 +889,16 @@ GSList *g_ril_reply_parse_get_calls(GRil *gril, const struct ril_msg *message)
 		parcel_r_int32(&rilp); /* isMT */
 		parcel_r_int32(&rilp); /* als */
 		call->type = parcel_r_int32(&rilp); /* isVoice */
+		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_8226) {
+			parcel_r_int32(&rilp); // CallDetails.call_type
+			parcel_r_int32(&rilp); // CallDetails.call_domain
+			parcel_r_string(&rilp); // CallDetails.getCsvFromExtras
+		}
 		parcel_r_int32(&rilp); /* isVoicePrivacy */
 		number = parcel_r_string(&rilp);
 		if (number) {
 			strncpy(call->phone_number.number, number,
-				OFONO_MAX_PHONE_NUMBER_LENGTH);
+					OFONO_MAX_PHONE_NUMBER_LENGTH);
 			g_free(number);
 		}
 
@@ -891,7 +906,7 @@ GSList *g_ril_reply_parse_get_calls(GRil *gril, const struct ril_msg *message)
 		name = parcel_r_string(&rilp);
 		if (name) {
 			strncpy(call->name, name,
-				OFONO_MAX_CALLER_NAME_LENGTH);
+					OFONO_MAX_CALLER_NAME_LENGTH);
 			g_free(name);
 		}
 
@@ -910,11 +925,11 @@ GSList *g_ril_reply_parse_get_calls(GRil *gril, const struct ril_msg *message)
 			call->clip_validity = 2;
 
 		g_ril_append_print_buf(gril,
-					"%s [id=%d,status=%d,type=%d,"
-					"number=%s,name=%s]",
-					print_buf,
-					call->id, call->status, call->type,
-					call->phone_number.number, call->name);
+								"%s [id=%d,status=%d,type=%d,"
+								"number=%s,name=%s]",
+								print_buf,
+								call->id, call->status, call->type,
+								call->phone_number.number, call->name);
 
 		l = g_slist_insert_sorted(l, call, g_ril_call_compare);
 	}

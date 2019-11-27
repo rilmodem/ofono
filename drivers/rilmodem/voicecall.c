@@ -414,7 +414,8 @@ static void dial(struct ofono_voicecall *vc,
 	struct cb_data *cbd = cb_data_new(cb, data, vc);
 	struct parcel rilp;
 
-	g_ril_request_dial(vd->ril, ph, clir, &rilp);
+	//Samsung wants emergency number indicated also in the parcel to rild
+	g_ril_request_dial(vd->ril, ph, is_emergency_number(vc, phone_number_to_string(ph)), clir, &rilp);
 
 	/* Send request to RIL */
 	if (g_ril_send(vd->ril, RIL_REQUEST_DIAL, &rilp,
