@@ -894,8 +894,14 @@ GSList *g_ril_reply_parse_get_calls(GRil *gril, const struct ril_msg *message)
 		}
 
 		parcel_r_int32(&rilp); /* namePresentation */
-		parcel_r_int32(&rilp); /* uusInfo */
-
+		auto uusInfoPresent = parcel_r_int32(&rilp); /* uusInfo */
+		if (uusInfoPresent == 1) {
+			parcel_r_int32(&rilp); /* Type */
+			parcel_r_int32(&rilp); /* Dcs */
+			//Read byte array with user data and ignore it
+			int arrayLen;
+			parcel_r_raw(&rilp, arrayLen);
+		}
 		if (strlen(call->phone_number.number) > 0)
 			call->clip_validity = 0;
 		else
