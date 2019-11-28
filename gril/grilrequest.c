@@ -838,6 +838,16 @@ void g_ril_request_dial(GRil *gril,
                             clir);
 }
 
+void g_ril_request_answer(GRil *gril,
+                          struct parcel *rilp)
+{
+    parcel_init(rilp);
+    if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_8226) {
+        parcel_w_int32(rilp, 1); /* Always 1 - AT+CHLD=1x */
+        parcel_w_int32(rilp, 0); /* Always 0 */
+    }
+}
+
 void g_ril_request_hangup(GRil *gril,
 				unsigned call_id,
 				struct parcel *rilp)

@@ -210,9 +210,12 @@ void g_ril_request_dial(GRil *gril,
                     enum ofono_clir_option clir,
                     struct parcel *rilp);
 
+void g_ril_request_answer(GRil *gril,
+                          struct parcel *rilp);
+
 void g_ril_request_hangup(GRil *gril,
-				unsigned call_id,
-				struct parcel *rilp);
+                          unsigned call_id,
+                          struct parcel *rilp);
 
 void g_ril_request_dtmf(GRil *gril,
 			char dtmf_char,

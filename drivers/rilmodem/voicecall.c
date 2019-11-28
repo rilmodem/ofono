@@ -599,10 +599,15 @@ static void ril_ss_notify(struct ril_msg *message, gpointer user_data)
 
 void ril_answer(struct ofono_voicecall *vc, ofono_voicecall_cb_t cb, void *data)
 {
-	DBG("Answering current call");
+    struct parcel rilp;
+    struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
 
-	/* Send request to RIL */
-	ril_template(RIL_REQUEST_ANSWER, vc, generic_cb, 0, NULL, cb, data);
+    DBG("Answering current call");
+
+    g_ril_request_answer(vd->ril, &rilp);
+    /* Send request to RIL */
+    g_ril_send(vd->ril, RIL_REQUEST_ANSWER, &rilp,
+               generic_cb, vd, NULL);
 }
 
 static void ril_send_dtmf_cb(struct ril_msg *message, gpointer user_data)
