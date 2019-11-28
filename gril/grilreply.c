@@ -498,9 +498,9 @@ struct reply_data_reg_state *g_ril_reply_parse_data_reg_state(GRil *gril,
          * In some cases from Vodaphone we are receiving a RAT of 102
          * while in tunnels of the metro. Let's assume that if we
          * receive 102 we actually want a RAT of 2 for EDGE service */
-		if (str_arr->num_str > 4 && strcmp(str_arr->str[0], "1") && strcmp(str_arr->str[3], "102")) {
+/* 		if (str_arr->num_str > 4 && strcmp(str_arr->str[0], "1") && strcmp(str_arr->str[3], "102")) {
 			str_arr->str[3] = "2";
-		}
+		} */
 	}
 	
 	for (i = 0; i < str_arr->num_str; ++i) {
