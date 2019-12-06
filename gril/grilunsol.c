@@ -229,9 +229,9 @@ struct ril_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
 	struct ril_data_call *call;
 	struct parcel rilp;
 	struct ril_data_call_list *reply = NULL;
-	unsigned int active, cid, i, num_calls, retry, status;
+	unsigned int active, cid, i, num_calls, retry, status, mtu;
 	char *type = NULL, *ifname = NULL, *raw_addrs = NULL;
-	char *raw_dns = NULL, *raw_gws = NULL;
+	char *raw_dns = NULL, *raw_gws = NULL, *raw_pcscf = NULL;
 
 	DBG("");
 
@@ -281,16 +281,10 @@ struct ril_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
 		raw_dns = parcel_r_string(&rilp);
 		raw_gws = parcel_r_string(&rilp);
 
-		/* malformed check */
-		if (rilp.malformed) {
-			ofono_error("%s: malformed parcel received", __func__);
-			goto error;
-		}
-
 		g_ril_append_print_buf(gril,
 					"%s [status=%d,retry=%d,cid=%d,"
 					"active=%d,type=%s,ifname=%s,"
-					"address=%s,dns=%s,gateways=%s]",
+					"address=%s,dns=%s,gateways=%s",
 					print_buf,
 					status,
 					retry,
@@ -301,6 +295,37 @@ struct ril_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
 					raw_addrs,
 					raw_dns,
 					raw_gws);
+
+		/*
+		 * XXX: ril.h says this field is available since v9, but
+		 * Android 7.1's RIL.java starts reading this field since v10.
+		 * Following ril.h seems to cause a problem with some Android
+		 * 4.4 devices.
+		 */
+		if (reply->version >= 10) {
+			raw_pcscf = parcel_r_string(&rilp);
+			/*
+			 * TODO: what is "Proxy Call State Control Function"?
+			 * It seems to relate to IMS/VoLTE according to ril.h.
+			 */
+			g_ril_append_print_buf(gril, "%s,pcscf=%s",
+						print_buf, raw_pcscf);
+		}
+
+		if (reply->version >= 11) {
+			mtu = parcel_r_int32(&rilp);
+			/* TODO: what can we do with MTU? */
+			g_ril_append_print_buf(gril, "%s,mtu=%d",
+						print_buf, mtu);
+		}
+
+		g_ril_append_print_buf(gril, "%s]", print_buf);
+
+		/* malformed check */
+		if (rilp.malformed) {
+			ofono_error("%s: malformed parcel received", __func__);
+			goto error;
+		}
 
 		call = g_try_new0(struct ril_data_call, 1);
 		if (call == NULL) {
@@ -323,6 +348,7 @@ struct ril_data_call_list *g_ril_unsol_parse_data_call_list(GRil *gril,
 		g_free(raw_addrs);
 		g_free(raw_dns);
 		g_free(raw_gws);
+		g_free(raw_pcscf);
 
 		reply->calls =
 			g_slist_insert_sorted(reply->calls, call,
@@ -345,6 +371,7 @@ error:
 	g_free(raw_addrs);
 	g_free(raw_dns);
 	g_free(raw_gws);
+	g_free(raw_pcscf);
 	g_ril_unsol_free_data_call_list(reply);
 
 	return NULL;
