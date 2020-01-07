@@ -807,10 +807,10 @@ void g_ril_request_set_smsc_address(GRil *gril,
 }
 
 void g_ril_request_dial(GRil *gril,
-            const struct ofono_phone_number *ph,
-            gboolean isEmergency,
-            enum ofono_clir_option clir,
-            struct parcel *rilp)
+                      const struct ofono_phone_number *ph,
+                      gboolean isEmergency,
+                      enum ofono_clir_option clir,
+                      struct parcel *rilp)
 {
     const char *phoneNoString;
     parcel_init(rilp);
@@ -820,7 +820,7 @@ void g_ril_request_dial(GRil *gril,
     parcel_w_string(rilp, phoneNoString);
     /* CLIR mode */
     parcel_w_int32(rilp, clir);
-    if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_8226) {
+    if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_822x) {
         parcel_w_int32(rilp, 0); // CallDetails.call_type
         if (isEmergency) {
             parcel_w_int32(rilp, 3); // Emergency call domain?
@@ -842,7 +842,7 @@ void g_ril_request_answer(GRil *gril,
                           struct parcel *rilp)
 {
     parcel_init(rilp);
-    if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_8226) {
+    if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_822x) {
         parcel_w_int32(rilp, 1); /* Always 1 - AT+CHLD=1x */
         parcel_w_int32(rilp, 0); /* Always 0 */
     }
