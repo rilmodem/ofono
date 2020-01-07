@@ -599,21 +599,21 @@ static void ril_ss_notify(struct ril_msg *message, gpointer user_data)
 
 void ril_answer(struct ofono_voicecall *vc, ofono_voicecall_cb_t cb, void *data)
 {
-    struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
-    struct parcel rilp;
+      struct ril_voicecall_data *vd = ofono_voicecall_get_data(vc);
+      struct parcel rilp;
 
-    DBG("Answering current call");
+      DBG("Answering current call");
 
-    g_ril_request_answer(vd->ril, &rilp);
+      g_ril_request_answer(vd->ril, &rilp);
 
-    /* Send request to RIL */
-    if (rilp.size > 0) {
-        ril_template(RIL_REQUEST_ANSWER, vc,
-                     generic_cb, 0, &rilp, cb, data);
-    } else {
-        ril_template(RIL_REQUEST_ANSWER, vc,
-                     generic_cb, 0, NULL, cb, data);
-    }
+      /* Send request to RIL */
+      if (rilp.size > 0) {
+          ril_template(RIL_REQUEST_ANSWER, vc,
+                       generic_cb, 0, &rilp, cb, data);
+      } else {
+          ril_template(RIL_REQUEST_ANSWER, vc,
+                       generic_cb, 0, NULL, cb, data);
+      }
 }
 
 static void ril_send_dtmf_cb(struct ril_msg *message, gpointer user_data)
