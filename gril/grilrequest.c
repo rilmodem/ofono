@@ -832,6 +832,7 @@ void g_ril_request_dial(GRil *gril,
 	/* USS, empty string */
 	/* TODO: Deal with USS properly */
 	parcel_w_int32(rilp, 0);
+	parcel_w_int32(rilp, 0);
 
 	g_ril_append_print_buf(gril, "(%s,%d,0,0)",
 				phoneNoString,
