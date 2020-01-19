@@ -665,8 +665,6 @@ const char *ril_unsol_request_to_string(int request)
 		return "RIL_UNSOL_RADIO_CAPABILITY";
 	case RIL_UNSOL_ON_SS:
 		return "RIL_UNSOL_ON_SS";
-	case RIL_UNSOL_ON_SS_LL:
-		return "RIL_UNSOL_ON_SS_LL";
 	case RIL_UNSOL_STK_CC_ALPHA_NOTIFY:
 		return "RIL_UNSOL_STK_CC_ALPHA_NOTIFY";
 	case RIL_UNSOL_LCEDATA_RECV:

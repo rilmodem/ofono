@@ -145,8 +145,8 @@ int ofono_voicecall_is_emergency_number(struct ofono_voicecall *vc,
 				const struct ofono_phone_number *ph);
 
 void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
-                              enum ofono_disconnect_reason reason,
-                              const struct ofono_error *error);
+				enum ofono_disconnect_reason reason,
+				const struct ofono_error *error);
 
 /*
  * For those protocols where MPTY creation happens outside of oFono's control,

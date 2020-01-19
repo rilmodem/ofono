@@ -565,12 +565,12 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
 
 	/* CDMA_SignalStrength */
 	cdma_dbm = parcel_r_int32(&rilp);
-	parcel_r_int32(&rilp); /* cdmaEcio */
+	parcel_r_int32(&rilp); /* ecio */
 
 	/* EVDO_SignalStrength */
 	evdo_dbm = parcel_r_int32(&rilp);
-	parcel_r_int32(&rilp); /* evdoEcio */
-	parcel_r_int32(&rilp); /* evdoSnr */
+	parcel_r_int32(&rilp); /* ecio */
+	parcel_r_int32(&rilp); /* signalNoiseRatio */
 
 	/* Present only for RIL_SignalStrength_v6 or newer */
 	if (parcel_data_avail(&rilp) > 0) {
