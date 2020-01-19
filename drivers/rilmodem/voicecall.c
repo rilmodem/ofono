@@ -608,11 +608,9 @@ void ril_answer(struct ofono_voicecall *vc, ofono_voicecall_cb_t cb, void *data)
 
 	/* Send request to RIL */
 	if (rilp.size > 0) {
-		ril_template(RIL_REQUEST_ANSWER, vc,
-					generic_cb, 0, &rilp, cb, data);
+		ril_template(RIL_REQUEST_ANSWER, vc, generic_cb, 0, &rilp, cb, data);
 	} else {
-		ril_template(RIL_REQUEST_ANSWER, vc,
-					generic_cb, 0, NULL, cb, data);
+		ril_template(RIL_REQUEST_ANSWER, vc, generic_cb, 0, NULL, cb, data);
 	}
 }
 

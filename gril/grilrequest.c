@@ -834,8 +834,8 @@ void g_ril_request_dial(GRil *gril,
 	parcel_w_int32(rilp, 0);
 
 	g_ril_append_print_buf(gril, "(%s,%d,0,0)",
-							phoneNoString,
-							clir);
+				phoneNoString,
+				clir);
 }
 
 void g_ril_request_answer(GRil *gril,
