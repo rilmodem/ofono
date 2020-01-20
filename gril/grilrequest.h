@@ -211,7 +211,7 @@ void g_ril_request_dial(GRil *gril,
 			struct parcel *rilp);
 
 void g_ril_request_answer(GRil *gril,
-					struct parcel *rilp);
+				struct parcel *rilp);
 
 void g_ril_request_hangup(GRil *gril,
 				unsigned call_id,
