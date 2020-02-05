@@ -853,8 +853,8 @@ GSList *g_ril_reply_parse_get_calls(GRil *gril, const struct ril_msg *message)
 	GSList *l = NULL;
 	int num, i;
 	gchar *number, *name;
-	int uusInfoPresent = 0;
-	int arrayLen;
+	int has_uusinfo;
+	int array_len;
 
 	g_ril_init_parcel(message, &rilp);
 
@@ -901,12 +901,12 @@ GSList *g_ril_reply_parse_get_calls(GRil *gril, const struct ril_msg *message)
 		}
 
 		parcel_r_int32(&rilp); /* namePresentation */
-		uusInfoPresent = parcel_r_int32(&rilp); /* uusInfo */
-		if (uusInfoPresent == 1) {
+		has_uusinfo = parcel_r_int32(&rilp); /* uusInfo */
+		if (has_uusinfo == 1) {
 			parcel_r_int32(&rilp); /* Type */
 			parcel_r_int32(&rilp); /* Dcs */
 			//Read byte array with user data and ignore it		
-			g_free(parcel_r_raw(&rilp, &arrayLen));
+			g_free(parcel_r_raw(&rilp, &array_len));
 		}
 		if (strlen(call->phone_number.number) > 0)
 			call->clip_validity = 0;

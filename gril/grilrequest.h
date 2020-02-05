@@ -206,7 +206,7 @@ void g_ril_request_set_smsc_address(GRil *gril,
 
 void g_ril_request_dial(GRil *gril,
 			const struct ofono_phone_number *ph,
-			gboolean isEmergency,
+			gboolean is_emergency,
 			enum ofono_clir_option clir,
 			struct parcel *rilp);
 

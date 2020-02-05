@@ -546,16 +546,16 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
 	int lte_signal;
 	int signal;
 
-	gboolean samsungQuirks = g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_822x;
+	gboolean samsung_quirks = (g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_822x);
 
 	g_ril_init_parcel(message, &rilp);
 
 	/* RIL_SignalStrength_v5 */
 	/* GW_SignalStrength */
 	gw_sigstr = parcel_r_int32(&rilp);
-	if (samsungQuirks) {
+	/* Samsung on MSM822x does need a weird masking here. From vendor's java file. */
+	if (samsung_quirks)
 		gw_sigstr &= 0xFF;
-	}
 	gw_signal = get_gsm_strength(gw_sigstr);
 	parcel_r_int32(&rilp); /* bitErrorRate */
 
@@ -580,7 +580,8 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
 		parcel_r_int32(&rilp); /* rsrq */
 		lte_rssnr = parcel_r_int32(&rilp);
 		parcel_r_int32(&rilp); /* cqi */
-		if (samsungQuirks) {
+		/* Samsung on MSM822x calculation of signal strength. From vendor's java file. */
+		if (samsung_quirks) {
 			if ((lte_sigstr & 0xff) == 255 || lte_sigstr == 99) {
 				lte_sigstr = 99;
 				lte_rsrp = INT_MAX;

@@ -142,7 +142,7 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 				const struct ofono_call *call);
 
 int ofono_voicecall_is_emergency_number(struct ofono_voicecall *vc,
-				const struct ofono_phone_number *ph);
+				const char *number);
 
 void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 				enum ofono_disconnect_reason reason,
