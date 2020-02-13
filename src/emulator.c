@@ -1930,24 +1930,20 @@ int ofono_emulator_start_codec_negotiation(struct ofono_emulator *em,
 
 	if (!em->bac_received || em->negotiated_codec > 0) {
 		/*
-		 * Report we're done even if we don't have done any
-		 * negotiation as the other side may have to clean up.
-		 */
-		cb(0, data);
-
-		/*
 		 * If we didn't received any +BAC during the SLC setup the
 		 * remote side doesn't support codec negotiation and we can
 		 * directly connect our card. Otherwise if we got +BAC and
 		 * already have a negotiated codec we can proceed here
 		 * without doing any negotiation again.
+		 *
+		 * Report success/error via the callback even if we have not
+		 * done any negotiation as the other side may have to clean up.
 		 */
 		err = ofono_handsfree_card_connect_sco(em->card);
-		if (err < 0) {
+		if (err < 0)
 			ofono_error("SCO connection failed");
-			return err;
-		}
 
+		cb(err, data);
 		return 0;
 	}
 
