@@ -607,10 +607,8 @@ void ril_answer(struct ofono_voicecall *vc, ofono_voicecall_cb_t cb, void *data)
 	g_ril_request_answer(vd->ril, &rilp);
 
 	/* Send request to RIL */
-	if (rilp.size > 0)
-		ril_template(RIL_REQUEST_ANSWER, vc, generic_cb, 0, &rilp, cb, data);
-	else
-		ril_template(RIL_REQUEST_ANSWER, vc, generic_cb, 0, NULL, cb, data);
+	ril_template(RIL_REQUEST_ANSWER, vc, generic_cb, 0,
+				rilp.size > 0 ? &rilp : NULL, cb, data);
 }
 
 static void ril_send_dtmf_cb(struct ril_msg *message, gpointer user_data)
