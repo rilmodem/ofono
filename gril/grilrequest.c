@@ -812,12 +812,11 @@ void g_ril_request_dial(GRil *gril,
 			enum ofono_clir_option clir,
 			struct parcel *rilp)
 {
-	const char *number = phone_number_to_string(ph);
 	int call_domain = is_emergency ? 3 : 1;
 	parcel_init(rilp);
 
 	/* Number to dial */
-	parcel_w_string(rilp, number);
+	parcel_w_string(rilp, phone_number_to_string(ph));
 	/* CLIR mode */
 	parcel_w_int32(rilp, clir);
 	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_822x) {
@@ -831,7 +830,7 @@ void g_ril_request_dial(GRil *gril,
 	parcel_w_int32(rilp, 0);
 
 	g_ril_append_print_buf(gril, "(%s,%d,0,0)",
-				number,
+				phone_number_to_string(ph),
 				clir);
 }
 
