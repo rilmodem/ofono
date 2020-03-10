@@ -905,7 +905,7 @@ GSList *g_ril_reply_parse_get_calls(GRil *gril, const struct ril_msg *message)
 		if (has_uusinfo == 1) {
 			parcel_r_int32(&rilp); /* Type */
 			parcel_r_int32(&rilp); /* Dcs */
-			//Read byte array with user data and ignore it		
+			//Read byte array with user data and ignore it
 			g_free(parcel_r_raw(&rilp, &array_len));
 		}
 		if (strlen(call->phone_number.number) > 0)

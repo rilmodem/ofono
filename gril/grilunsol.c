@@ -537,7 +537,8 @@ static int get_gsm_strength(int signal)
 		return -1;
 }
 
-int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
+int g_ril_unsol_parse_signal_strength(GRil *gril,
+					const struct ril_msg *message,
 					int ril_tech)
 {
 	struct parcel rilp;
@@ -546,14 +547,18 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
 	int lte_signal;
 	int signal;
 
-	gboolean samsung_quirks = (g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_822x);
+	gboolean samsung_quirks =
+		(g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_822x);
 
 	g_ril_init_parcel(message, &rilp);
 
 	/* RIL_SignalStrength_v5 */
 	/* GW_SignalStrength */
 	gw_sigstr = parcel_r_int32(&rilp);
-	/* Samsung on MSM822x does need a weird masking here. From vendor's java file. */
+	// Samsung on MSM822x does need a weird masking here, according to
+	// LineageOS's RIL adaptor taken from https://github.com/LineageOS/
+	// android_device_samsung_msm8226-common/blob/cm-12.1/ril/
+	// SamsungMSM8226RIL.java
 	if (samsung_quirks)
 		gw_sigstr &= 0xFF;
 	gw_signal = get_gsm_strength(gw_sigstr);
@@ -580,7 +585,8 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
 		parcel_r_int32(&rilp); /* rsrq */
 		lte_rssnr = parcel_r_int32(&rilp);
 		parcel_r_int32(&rilp); /* cqi */
-		/* Samsung on MSM822x calculation of signal strength. From vendor's java file. */
+		/* Samsung on MSM822x calculation of signal strength,
+		according to LineageOS's RIL adaptor */
 		if (samsung_quirks) {
 			if ((lte_sigstr & 0xff) == 255 || lte_sigstr == 99) {
 				lte_sigstr = 99;

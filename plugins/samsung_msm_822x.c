@@ -38,9 +38,9 @@ static struct ofono_modem_driver samsung_msm_822x_driver = {
 };
 
 /*
- * This plugin is a device plugin for Samsung's devices with MSM-822x baseband that use
- * RIL interface. The plugin 'rildev' is used to determine which RIL plugin
- * should be loaded based upon an environment variable.
+ * This plugin is a device plugin for Samsung's devices with MSM-822x baseband
+ * that use the RIL interface. The plugin 'rildev' is used to determine which
+ * RIL plugin should be loaded based upon an environment variable.
  */
 static int samsung_msm_822x_init(void)
 {

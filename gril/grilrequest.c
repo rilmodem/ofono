@@ -822,7 +822,7 @@ void g_ril_request_dial(GRil *gril,
 	parcel_w_int32(rilp, clir);
 	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_822x) {
 		parcel_w_int32(rilp, 0); // CallDetails.call_type
-		parcel_w_int32(rilp, call_domain); // Normal or emergency call domain
+		parcel_w_int32(rilp, call_domain); // Normal or emergency
 		parcel_w_string(rilp, ""); // CallDetails.getCsvFromExtras
 	}
 	/* USS, empty string */
