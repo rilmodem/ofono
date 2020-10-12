@@ -834,8 +834,7 @@ void g_ril_request_dial(GRil *gril,
 				clir);
 }
 
-void g_ril_request_answer(GRil *gril,
-				struct parcel *rilp)
+void g_ril_request_answer(GRil *gril, struct parcel *rilp)
 {
 	parcel_init(rilp);
 	if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_822x) {
