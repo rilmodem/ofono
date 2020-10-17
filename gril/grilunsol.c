@@ -598,7 +598,6 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
 			}
 		}
 		lte_signal = get_lte_strength(lte_sigstr, lte_rsrp, lte_rssnr);
-		parcel_r_int32(&rilp); /* tdScdmaRscp */
 	} else {
 		lte_signal = -1;
 	}
