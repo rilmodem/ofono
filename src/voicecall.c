@@ -405,7 +405,7 @@ static void tone_request_finish(struct ofono_voicecall *vc,
 	g_free(entry);
 }
 
-static gboolean is_emergency_number(struct ofono_voicecall *vc,
+gboolean ofono_voicecall_is_emergency_number(struct ofono_voicecall *vc,
 					const char *number)
 {
 	return g_hash_table_lookup_extended(vc->en_list, number, NULL, NULL);
@@ -480,7 +480,7 @@ static void append_voicecall_properties(struct voicecall *v,
 		ofono_dbus_dict_append(dict, "Icon",
 						DBUS_TYPE_BYTE, &v->icon_id);
 
-	if (is_emergency_number(v->vc, callerid) == TRUE)
+	if (ofono_voicecall_is_emergency_number(v->vc, callerid) == TRUE)
 		emergency_call = TRUE;
 	else
 		emergency_call = FALSE;
@@ -1000,7 +1000,7 @@ static void voicecall_set_call_lineid(struct voicecall *v,
 						"LineIdentification",
 						DBUS_TYPE_STRING, &lineid_str);
 
-	if (is_emergency_number(v->vc, lineid_str)) {
+	if (ofono_voicecall_is_emergency_number(v->vc, lineid_str)) {
 		dbus_bool_t emergency_call = TRUE;
 
 		ofono_dbus_signal_property_changed(conn, path,
@@ -1489,7 +1489,7 @@ static void manager_dial_callback(const struct ofono_error *error, void *data)
 	} else {
 		struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
 
-		if (is_emergency_number(vc, number) == TRUE)
+		if (ofono_voicecall_is_emergency_number(vc, number) == TRUE)
 			__ofono_modem_dec_emergency_mode(modem);
 
 		reply = __ofono_error_failed(vc->pending);
@@ -1533,7 +1533,7 @@ static int voicecall_dial(struct ofono_voicecall *vc, const char *number,
 	if (voicecalls_have_active(vc) && voicecalls_have_held(vc))
 		return -EBUSY;
 
-	if (is_emergency_number(vc, number) == TRUE)
+	if (ofono_voicecall_is_emergency_number(vc, number) == TRUE)
 		__ofono_modem_inc_emergency_mode(modem);
 
 	string_to_phone_number(number, &ph);
@@ -2238,7 +2238,7 @@ void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 		voicecall_emit_disconnect_reason(call, reason);
 
 	number = phone_number_to_string(&call->call->phone_number);
-	if (is_emergency_number(vc, number) == TRUE)
+	if (ofono_voicecall_is_emergency_number(vc, number) == TRUE)
 		__ofono_modem_dec_emergency_mode(modem);
 
 	voicecall_set_call_status(call, CALL_STATUS_DISCONNECTED);
@@ -3406,7 +3406,7 @@ static void emulator_dial_callback(const struct ofono_error *error, void *data)
 	if (v == NULL) {
 		struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
 
-		if (is_emergency_number(vc, number) == TRUE)
+		if (ofono_voicecall_is_emergency_number(vc, number) == TRUE)
 			__ofono_modem_dec_emergency_mode(modem);
 	}
 
@@ -3681,7 +3681,7 @@ static void dial_request_cb(const struct ofono_error *error, void *data)
 	v = dial_handle_result(vc, error, number, &need_to_emit);
 
 	if (v == NULL) {
-		if (is_emergency_number(vc, number) == TRUE) {
+		if (ofono_voicecall_is_emergency_number(vc, number) == TRUE) {
 			struct ofono_modem *modem =
 				__ofono_atom_get_modem(vc->atom);
 
@@ -3716,7 +3716,7 @@ static void dial_request(struct ofono_voicecall *vc)
 {
 	const char *number = phone_number_to_string(&vc->dial_req->ph);
 
-	if (is_emergency_number(vc, number) == TRUE) {
+	if (ofono_voicecall_is_emergency_number(vc, number) == TRUE) {
 		struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
 
 		__ofono_modem_inc_emergency_mode(modem);

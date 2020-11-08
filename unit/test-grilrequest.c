@@ -1213,7 +1213,7 @@ static void test_request_dial(gconstpointer data)
 	enum ofono_clir_option clir = test_data->clir;
 	struct parcel rilp;
 
-	g_ril_request_dial(NULL, ph, clir, &rilp);
+	g_ril_request_dial(NULL, ph, FALSE, clir, &rilp);
 
 	g_assert(!memcmp(rilp.data, test_data->parcel_data,
 			test_data->parcel_size));

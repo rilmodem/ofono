@@ -234,9 +234,9 @@ struct reply_operator *g_ril_reply_parse_operator(GRil *gril,
 	g_ril_init_parcel(message, &rilp);
 
 	num_params = parcel_r_int32(&rilp);
-	if (num_params != OPERATOR_NUM_PARAMS) {
+	if (num_params < OPERATOR_NUM_PARAMS) {
 		ofono_error("%s: invalid OPERATOR reply: "
-				"number of params is %d; should be 3.",
+				"number of params is %d; should be at least 3.",
 				__func__,
 				num_params);
 		goto error;
@@ -853,6 +853,8 @@ GSList *g_ril_reply_parse_get_calls(GRil *gril, const struct ril_msg *message)
 	GSList *l = NULL;
 	int num, i;
 	gchar *number, *name;
+	int has_uusinfo;
+	int array_len;
 
 	g_ril_init_parcel(message, &rilp);
 
@@ -877,6 +879,11 @@ GSList *g_ril_reply_parse_get_calls(GRil *gril, const struct ril_msg *message)
 		parcel_r_int32(&rilp); /* isMT */
 		parcel_r_int32(&rilp); /* als */
 		call->type = parcel_r_int32(&rilp); /* isVoice */
+		if (g_ril_vendor(gril) == OFONO_RIL_VENDOR_SAMSUNG_MSM_822x) {
+			parcel_r_int32(&rilp); // CallDetails.call_type
+			parcel_r_int32(&rilp); // CallDetails.call_domain
+			parcel_r_string(&rilp); // CallDetails.getCsvFromExtras
+		}
 		parcel_r_int32(&rilp); /* isVoicePrivacy */
 		number = parcel_r_string(&rilp);
 		if (number) {
@@ -894,8 +901,13 @@ GSList *g_ril_reply_parse_get_calls(GRil *gril, const struct ril_msg *message)
 		}
 
 		parcel_r_int32(&rilp); /* namePresentation */
-		parcel_r_int32(&rilp); /* uusInfo */
-
+		has_uusinfo = parcel_r_int32(&rilp); /* uusInfo */
+		if (has_uusinfo == 1) {
+			parcel_r_int32(&rilp); /* Type */
+			parcel_r_int32(&rilp); /* Dcs */
+			//Read byte array with user data and ignore it
+			g_free(parcel_r_raw(&rilp, &array_len));
+		}
 		if (strlen(call->phone_number.number) > 0)
 			call->clip_validity = 0;
 		else
@@ -1326,6 +1338,7 @@ int *g_ril_reply_parse_retries(GRil *gril, const struct ril_msg *message,
 	switch (g_ril_vendor(gril)) {
 	case OFONO_RIL_VENDOR_AOSP:
 	case OFONO_RIL_VENDOR_QCOM_MSIM:
+	case OFONO_RIL_VENDOR_SAMSUNG_MSM_822x:
 		/*
 		 * The number of retries is valid only when a wrong password has
 		 * been introduced in Nexus 4. TODO: check Nexus 5 behaviour.
