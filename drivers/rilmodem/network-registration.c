@@ -99,6 +99,7 @@ static int ril_tech_to_access_tech(int ril_tech)
 
 		return ACCESS_TECHNOLOGY_UTRAN_HSDPA_HSUPA;
 	case RADIO_TECH_LTE:
+	case RADIO_TECH_LTE_CA:
 		return ACCESS_TECHNOLOGY_EUTRAN;
 	default:
 		return -1;

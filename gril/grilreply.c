@@ -1561,6 +1561,9 @@ struct reply_radio_capability *g_ril_reply_parse_get_radio_capability(
 	if (reply->rat & RIL_RAF_LTE)
 		g_ril_append_print_buf(gril, "%s%s,", print_buf,
 				ril_radio_tech_to_string(RADIO_TECH_LTE));
+	if (reply->rat & RIL_RAF_LTE_CA)
+		g_ril_append_print_buf(gril, "%s%s,", print_buf,
+				ril_radio_tech_to_string(RADIO_TECH_LTE_CA));
 	if (reply->rat & RIL_RAF_HSPAP)
 		g_ril_append_print_buf(gril, "%s%s,", print_buf,
 				ril_radio_tech_to_string(RADIO_TECH_HSPAP));

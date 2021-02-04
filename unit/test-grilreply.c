@@ -460,6 +460,38 @@ static const reg_state_test data_reg_valid_10 = {
 };
 
 /*
+ * The following hex data represents a valid RIL_REQUEST_DATA_REGISTRATION_STATE
+ * reply with the following parameters:
+ *
+ * RADIO_TECH_LTE_CA (19)
+ *
+ * {registered,1b3f,07eaf3dc,LTE_CA,(null),20}
+ */
+static const guchar reply_data_reg_state_valid_parcel11[] = {
+	0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x31, 0x00, 0x00, 0x00,
+	0x04, 0x00, 0x00, 0x00, 0x31, 0x00, 0x62, 0x00, 0x33, 0x00, 0x66, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x30, 0x00, 0x37, 0x00,
+	0x65, 0x00, 0x61, 0x00, 0x66, 0x00, 0x33, 0x00, 0x64, 0x00, 0x63, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x31, 0x00, 0x34, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x02, 0x00, 0x00, 0x00,
+	0x32, 0x00, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+
+static const reg_state_test data_reg_valid_11 = {
+	.status = NETWORK_REGISTRATION_STATUS_REGISTERED,
+	.tech = RADIO_TECH_LTE_CA,
+	.msg = {
+		.buf = (gchar *) &reply_data_reg_state_valid_parcel11,
+		.buf_len = sizeof(reply_data_reg_state_valid_parcel11),
+		.unsolicited = FALSE,
+		.req = RIL_REQUEST_DATA_REGISTRATION_STATE,
+		.serial_no = 0,
+		.error = 0,
+	}
+};
+
+/*
  * TODO: investigate creation of a base reply, which could
  * then be modified for each test, as opposed to duplicating
  * the bulk of the data for each test.
@@ -1903,6 +1935,11 @@ int main(int argc, char **argv)
 	g_test_add_data_func("/testgrilreply/gprs: "
 				"valid DATA_REG_STATE Test 10",
 				&data_reg_valid_10,
+				test_reply_data_reg_state_valid);
+
+	g_test_add_data_func("/testgrilreply/gprs: "
+				"valid DATA_REG_STATE Test 11",
+				&data_reg_valid_11,
 				test_reply_data_reg_state_valid);
 
 	g_test_add_data_func("/testgrilreply/netreg: "

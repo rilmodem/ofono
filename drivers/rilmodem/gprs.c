@@ -100,6 +100,7 @@ static int ril_tech_to_bearer_tech(int ril_tech)
 		 */
 		return PACKET_BEARER_HSUPA_HSDPA;
 	case RADIO_TECH_LTE:
+	case RADIO_TECH_LTE_CA:
 		return PACKET_BEARER_EPS;
 	default:
 		return PACKET_BEARER_NONE;

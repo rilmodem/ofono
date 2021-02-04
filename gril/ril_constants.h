@@ -144,6 +144,7 @@
 #define RADIO_TECH_GSM 16
 #define RADIO_TECH_TD_SCDMA 17
 #define RADIO_TECH_IWLAN 18
+#define RADIO_TECH_LTE_CA 19
 /* MTK specific values for radio technologies */
 #define MTK_RADIO_TECH_BASE 128
 #define MTK_RADIO_TECH_HSDPAP (MTK_RADIO_TECH_BASE + 1)
@@ -491,6 +492,7 @@
 #define RIL_RAF_HSPAP (1 << RADIO_TECH_HSPAP)
 #define RIL_RAF_GSM (1 << RADIO_TECH_GSM)
 #define RIL_RAF_TD_SCDMA (1 << RADIO_TECH_TD_SCDMA)
+#define RIL_RAF_LTE_CA (1 << RADIO_TECH_LTE_CA)
 
 /* Radio capability status */
 #define RIL_RC_STATUS_NONE 0

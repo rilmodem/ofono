@@ -264,6 +264,8 @@ const char *ril_radio_tech_to_string(int radio_tech)
 		return "EHRPD";
 	case RADIO_TECH_LTE:
 		return "LTE";
+	case RADIO_TECH_LTE_CA:
+		return "LTE_CA";
 	case RADIO_TECH_HSPAP:
 		return "HSPAP";
 	case RADIO_TECH_GSM:

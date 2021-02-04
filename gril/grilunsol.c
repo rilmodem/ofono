@@ -614,7 +614,7 @@ int g_ril_unsol_parse_signal_strength(GRil *gril, const struct ril_msg *message,
 
 	/* Return the first valid one */
 	if (gw_signal != -1 && lte_signal != -1)
-		if (ril_tech == RADIO_TECH_LTE)
+		if (ril_tech == RADIO_TECH_LTE || ril_tech == RADIO_TECH_LTE_CA)
 			signal = lte_signal;
 		else
 			signal = gw_signal;
